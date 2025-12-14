@@ -40,7 +40,7 @@ jobs:
 
       - name: Deploy API services
         run: |
-          cd ../../api/services
+          cd api/services
           eb init ${{ secrets.EB_SERVICES_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
           eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
           eb deploy
