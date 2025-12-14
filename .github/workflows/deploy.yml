@@ -31,9 +31,16 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy to Elastic Beanstalk
+      - name: Deploy frontend
         run: |
           cd admin/admin-app
           eb init ${{ secrets.EB_APP_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
           eb use ${{ secrets.EB_ENV_NAME }}
+          eb deploy
+
+      - name: Deploy API services
+        run: |
+          cd ../../api/services
+          eb init ${{ secrets.EB_SERVICES_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
+          eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
           eb deploy
