@@ -6,6 +6,7 @@ function App() {
     <>
       <div>
         This is a placeholder for Admin App..
+        Keep looking here for updates!
       </div>
     </>
   )
