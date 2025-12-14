@@ -31,6 +31,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Set API URL
+        run: |
+          echo "VITE_API_URL=${{ secrets.FRONTEND_API_URL }}" > admin/admin-app/.env.production
+
       - name: Deploy frontend
         run: |
           cd admin/admin-app
