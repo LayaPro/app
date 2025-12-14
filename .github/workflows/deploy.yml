@@ -46,12 +46,12 @@ jobs:
           eb use ${{ secrets.EB_ENV_NAME }}
           eb deploy
 
-      # - name: Deploy API services
-      #   env:
-      #     MONGO_URI: ${{ secrets.MONGO_URI }}
-      #   run: |
-      #     cd api/services
-      #     eb init ${{ secrets.EB_SERVICES_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
-      #     eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
-      #     eb setenv MONGO_URI=$MONGO_URI
-      #     eb deploy
+      - name: Deploy API services
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: |
+          cd api/services
+          eb init ${{ secrets.EB_SERVICES_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
+          eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
+          eb setenv MONGO_URI=$MONGO_URI
+          eb deploy

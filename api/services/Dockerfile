@@ -1,7 +1,20 @@
+# Use official Node.js 24 image
 FROM node:24
+
+# Set working directory
 WORKDIR /app
-COPY package.json ./
-RUN npm install
+
+# Copy dependency manifests
+COPY package.json package-lock.json* ./
+
+# Install only production dependencies
+RUN npm ci --only=production
+
+# Copy source code
 COPY . .
+
+# Expose the port your service listens on
 EXPOSE 4000
-CMD ["npm", "start"]
+
+# Start the service
+CMD ["node", "src/server.js"]
