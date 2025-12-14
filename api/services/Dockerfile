@@ -7,14 +7,17 @@ WORKDIR /app
 # Copy dependency manifests
 COPY package.json package-lock.json* ./
 
-# Install only production dependencies
-RUN npm ci --only=production
+# Install dependencies (including dev for build)
+RUN npm ci
 
 # Copy source code
 COPY . .
 
+# Build TypeScript
+RUN npm run build
+
 # Expose the port your service listens on
 EXPOSE 4000
 
-# Start the service
-CMD ["node", "server.js"]
+# Start the compiled server
+CMD ["node", "dist/server.js"]
