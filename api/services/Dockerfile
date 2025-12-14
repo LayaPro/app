@@ -1,17 +1,14 @@
-# Use official Node.js 24 image
 FROM node:24
 
-# Set working directory
-WORKDIR /app
+# Copy full repository so file: dependencies resolve (e.g. ../../packages/shared)
+WORKDIR /workspace
+COPY . /workspace
 
-# Copy dependency manifests
-COPY package.json package-lock.json* ./
-
-# Install dependencies (including dev for build)
+# Install dependencies for the service from within its folder
+WORKDIR /workspace/api/services
+# Always use `npm ci` in deployment for reproducible installs.
+# Ensure package-lock.json and any file: package targets (e.g. packages/shared) are present in the image.
 RUN npm ci
-
-# Copy source code
-COPY . .
 
 # Build TypeScript
 RUN npm run build
