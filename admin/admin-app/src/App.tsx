@@ -5,7 +5,7 @@ function App() {
   return (
     <>
       <div>
-        This is a placeholder for Admin App
+        This is a placeholder for Admin App.
       </div>
     </>
   )
