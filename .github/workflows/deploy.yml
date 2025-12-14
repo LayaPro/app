@@ -31,9 +31,13 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Set API URL
+      - name: Build frontend
+        env:
+          VITE_API_URL: ${{ secrets.FRONTEND_API_URL }}
         run: |
-          echo "VITE_API_URL=${{ secrets.FRONTEND_API_URL }}" > admin/admin-app/.env.production
+          cd admin/admin-app
+          npm ci
+          npm run build
 
       - name: Deploy frontend
         run: |
@@ -42,12 +46,12 @@ jobs:
           eb use ${{ secrets.EB_ENV_NAME }}
           eb deploy
 
-      - name: Deploy API services
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-        run: |
-          cd api/services
-          eb init ${{ secrets.EB_SERVICES_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
-          eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
-          eb setenv MONGO_URI=$MONGO_URI
-          eb deploy
+      # - name: Deploy API services
+      #   env:
+      #     MONGO_URI: ${{ secrets.MONGO_URI }}
+      #   run: |
+      #     cd api/services
+      #     eb init ${{ secrets.EB_SERVICES_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
+      #     eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
+      #     eb setenv MONGO_URI=$MONGO_URI
+      #     eb deploy
