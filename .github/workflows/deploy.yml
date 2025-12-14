@@ -1,5 +1,3 @@
-on:
-
 name: Deploy to AWS Elastic Beanstalk
 
 on:
