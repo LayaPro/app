@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 4000
 
 # Start the service
-CMD ["node", "src/server.js"]
+CMD ["node", "server.js"]
