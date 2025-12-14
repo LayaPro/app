@@ -12,7 +12,7 @@ COPY . .
 
 
 # # Expose dev server port
-# EXPOSE 5173
+EXPOSE 5173
 
 # Start the dev server (for Vite)
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
