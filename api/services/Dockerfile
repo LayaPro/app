@@ -1,17 +1,14 @@
 FROM node:24
 
 # Copy full repository so file: dependencies resolve (e.g. ../../packages/shared)
-WORKDIR /workspace
+WORKDIR /workspace/api/services
 # Copy only the service and the shared package so a trimmed EB bundle works.
 # The deployment bundle MUST include `api/services` and `packages/shared`.
-COPY api/services /workspace/api/services
-COPY packages/shared /workspace/packages/shared
+COPY api/services/package.json api/services/package-lock.json ./
 
-# Install dependencies for the service from within its folder
-WORKDIR /workspace/api/services
-# Always use `npm ci` in deployment for reproducible installs.
-# Ensure package-lock.json is present; dependencies will be installed from npm registry.
 RUN npm ci
+
+COPY api/services ./
 
 # Build TypeScript
 RUN npm run build
