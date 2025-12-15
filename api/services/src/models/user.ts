@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { User as SharedUser } from '@laya/shared';
+import { User as SharedUser } from 'laya-shared';
 
 export interface IUser extends Document, SharedUser {
   tokenVersion: number;

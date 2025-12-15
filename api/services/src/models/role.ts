@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { Role as SharedRole } from '@laya/shared';
+import { Role as SharedRole } from 'laya-shared';
 
 export interface IRole extends Document, SharedRole {}
 

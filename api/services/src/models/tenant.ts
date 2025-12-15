@@ -1,5 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
-import { Tenant as SharedTenant } from '@laya/shared';
+import { Tenant as SharedTenant } from 'laya-shared';
 
 export interface ITenant extends Document, SharedTenant {
   isInternal?: boolean;
