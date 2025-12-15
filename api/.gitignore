@@ -4,3 +4,9 @@ node_modules/
 npm-debug.log
 yarn-debug.log
 yarn-error.log
+
+# Ignore build outputs
+dist/
+
+# If packed shared package was copied during CI builds
+dist/packages/shared/
