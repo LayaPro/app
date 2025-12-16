@@ -1,9 +1,7 @@
 import { Schema, model, Document } from 'mongoose';
 import { User as SharedUser } from 'laya-shared';
-import { Types } from 'mongoose';
 
-export interface IUser extends Document, Omit<SharedUser, 'roleId'> {
-  roleId: Types.ObjectId;
+export interface IUser extends Document, SharedUser {
   tokenVersion: number;
 }
 
@@ -16,10 +14,8 @@ const UserSchema = new Schema<IUser>(
     passwordSalt: { type: String },
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
-    roleId: { type: Schema.Types.ObjectId, required: true, ref: 'Role' },
+    role: { type: String, required: true },
     isActive: { type: Boolean, default: true },
-    isPasswordSet: { type: Boolean, default: false },
-    temporaryPassword: { type: String },
     lastLogin: { type: Date },
     resetPasswordToken: { type: String, default: null },
     resetPasswordExpires: { type: Date, default: null },
