@@ -1,5 +1,3 @@
-export type UserRole = 'superadmin' | 'admin' | 'user' | 'photographer' | 'editor';
-
 export interface User {
   tenantId: string; // tenantId the user belongs to (single tenant)
   userId: string; // UUID
@@ -8,8 +6,10 @@ export interface User {
   passwordSalt?: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
+  roleId: string; // Reference to Role._id (ObjectId)
   isActive: boolean;
+  isPasswordSet: boolean; // false for new users with temporary password
+  temporaryPassword?: string; // temporary password for first-time login
   createdAt: Date;
   updatedAt: Date;
   lastLogin?: Date;
