@@ -11,6 +11,9 @@ export interface Project {
   address?: string;
   referredBy?: string;
   projectDeliveryStatusId?: string; // Reference to ProjectDeliveryStatus
+  s3BucketName?: string;
+  displayPic?: string;
+  coverPhoto?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

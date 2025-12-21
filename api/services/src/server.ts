@@ -16,6 +16,7 @@ import projectController from './controllers/projectController';
 import clientEventController from './controllers/clientEventController';
 import eventExpenseController from './controllers/eventExpenseController';
 import projectFinanceController from './controllers/projectFinanceController';
+import imageController from './controllers/imageController';
 import { authenticate, requireSuperAdmin } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 
@@ -117,6 +118,18 @@ app.get('/get-project-finance/:financeId', authenticate, projectFinanceControlle
 app.get('/get-project-finance-by-project/:projectId', authenticate, projectFinanceController.getProjectFinanceByProjectId);
 app.put('/update-project-finance/:financeId', authenticate, requireAdmin, projectFinanceController.updateProjectFinance);
 app.delete('/delete-project-finance/:financeId', authenticate, requireAdmin, projectFinanceController.deleteProjectFinance);
+
+// ---------- Image routes ----------
+app.post('/create-image', authenticate, requireAdmin, imageController.createImage);
+app.post('/bulk-create-images', authenticate, requireAdmin, imageController.bulkCreateImages);
+app.get('/get-all-images', authenticate, imageController.getAllImages);
+app.get('/get-images-by-client-event/:clientEventId', authenticate, imageController.getImagesByClientEvent);
+app.get('/get-images-by-project/:projectId', authenticate, imageController.getImagesByProject);
+app.get('/get-image/:imageId', authenticate, imageController.getImageById);
+app.put('/update-image/:imageId', authenticate, imageController.updateImage);
+app.put('/bulk-update-images', authenticate, imageController.bulkUpdateImages);
+app.delete('/delete-image/:imageId', authenticate, requireAdmin, imageController.deleteImage);
+app.delete('/bulk-delete-images', authenticate, requireAdmin, imageController.bulkDeleteImages);
 
 // ---------- Users routes ----------
 // TODO: add user controllers and mount endpoints here (e.g., /create-user, /get-users)

@@ -12,6 +12,7 @@ export interface ClientEvent {
   teamMembersAssigned?: string[]; // Array of team member IDs
   equipmentsAssigned?: string[]; // Array of equipment IDs
   expenseId?: string; // Reference to Expense (to be created later)
+  coverPhoto?: string;
   notes?: string;
   createdBy?: string;
   updatedBy?: string;

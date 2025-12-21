@@ -18,6 +18,7 @@ const ClientEventSchema = new Schema<IClientEvent>(
     teamMembersAssigned: [{ type: String }], // Array of team member IDs
     equipmentsAssigned: [{ type: String }], // Array of equipment IDs
     expenseId: { type: String }, // Reference to Expense
+    coverPhoto: { type: String },
     notes: { type: String },
     createdBy: { type: String },
     updatedBy: { type: String }

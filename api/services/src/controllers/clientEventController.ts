@@ -17,6 +17,7 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
       teamMembersAssigned,
       equipmentsAssigned,
       expenseId,
+      coverPhoto,
       notes
     } = req.body;
     const tenantId = req.user?.tenantId;
@@ -45,6 +46,7 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
       teamMembersAssigned,
       equipmentsAssigned,
       expenseId,
+      coverPhoto,
       notes,
       createdBy: userId
     });

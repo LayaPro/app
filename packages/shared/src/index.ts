@@ -11,3 +11,4 @@ export * from '../models/project';
 export * from '../models/clientEvent';
 export * from '../models/eventExpense';
 export * from '../models/projectFinance';
+export * from '../models/image';

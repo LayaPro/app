@@ -16,7 +16,10 @@ const ProjectSchema = new Schema<IProject>(
     budget: { type: Number },
     address: { type: String },
     referredBy: { type: String, trim: true },
-    projectDeliveryStatusId: { type: String, index: true } // Reference to ProjectDeliveryStatus
+    projectDeliveryStatusId: { type: String, index: true }, // Reference to ProjectDeliveryStatus
+    s3BucketName: { type: String, unique: true, sparse: true },
+    displayPic: { type: String },
+    coverPhoto: { type: String }
   },
   { timestamps: true }
 );

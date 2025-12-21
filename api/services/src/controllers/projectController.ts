@@ -15,7 +15,9 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       budget,
       address,
       referredBy,
-      projectDeliveryStatusId
+      projectDeliveryStatusId,
+      displayPic,
+      coverPhoto
     } = req.body;
     const tenantId = req.user?.tenantId;
 
@@ -28,6 +30,11 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     }
 
     const projectId = `project_${nanoid()}`;
+    
+    // Generate S3-compliant bucket name from projectId
+    // S3 rules: lowercase, numbers, hyphens only, 3-63 chars, start/end with letter/number
+    const s3BucketName = `laya-${tenantId.toLowerCase()}-${projectId.toLowerCase()}`;
+    
     const project = await Project.create({
       projectId,
       tenantId,
@@ -40,7 +47,10 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       budget,
       address,
       referredBy,
-      projectDeliveryStatusId
+      projectDeliveryStatusId,
+      s3BucketName,
+      displayPic,
+      coverPhoto
     });
 
     return res.status(201).json({
