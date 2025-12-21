@@ -26,6 +26,9 @@ function App() {
         Keep looking here for updates!<br />
         - LAYA Productions
         <hr />
+        <strong>Example Role (from laya-shared):</strong>
+        <pre>{JSON.stringify(exampleRole, null, 2)}</pre>
+        <hr />
         <strong>API /test result:</strong>
         <pre>{apiResult}</pre>
       </div>
