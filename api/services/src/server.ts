@@ -17,6 +17,9 @@ import clientEventController from './controllers/clientEventController';
 import eventExpenseController from './controllers/eventExpenseController';
 import projectFinanceController from './controllers/projectFinanceController';
 import imageController from './controllers/imageController';
+import dashboardController from './controllers/dashboardController';
+import searchController from './controllers/searchController';
+import userController from './controllers/userController';
 import { authenticate, requireSuperAdmin } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 
@@ -33,6 +36,9 @@ app.get('/test', testController.getTest);
 app.post('/login', authController.login);
 app.post('/logout', authController.logout);
 app.get('/verify-token', authController.verifyToken);
+app.post('/refresh-token', authController.refreshToken);
+app.post('/forgot-password', authController.forgotPassword);
+app.post('/reset-password', authController.resetPassword);
 
 // ---------- Roles routes ----------
 app.post('/create-role', authenticate, roleController.createRole);
@@ -131,8 +137,23 @@ app.put('/bulk-update-images', authenticate, imageController.bulkUpdateImages);
 app.delete('/delete-image/:imageId', authenticate, requireAdmin, imageController.deleteImage);
 app.delete('/bulk-delete-images', authenticate, requireAdmin, imageController.bulkDeleteImages);
 
+// ---------- Dashboard routes ----------
+app.get('/dashboard/stats', authenticate, dashboardController.getStats);
+app.get('/dashboard/revenue-summary', authenticate, requireAdmin, dashboardController.getRevenueSummary);
+app.get('/dashboard/project-status-counts', authenticate, dashboardController.getProjectStatusCounts);
+app.get('/dashboard/event-status-counts', authenticate, dashboardController.getEventStatusCounts);
+
+// ---------- Search routes ----------
+app.get('/search', authenticate, searchController.globalSearch);
+
 // ---------- Users routes ----------
-// TODO: add user controllers and mount endpoints here (e.g., /create-user, /get-users)
+app.post('/create-user', authenticate, requireAdmin, userController.createUser);
+app.get('/get-all-users', authenticate, requireAdmin, userController.getAllUsers);
+app.get('/get-user/:userId', authenticate, userController.getUserById);
+app.put('/update-user/:userId', authenticate, userController.updateUser);
+app.delete('/delete-user/:userId', authenticate, requireAdmin, userController.deleteUser);
+app.post('/change-password', authenticate, userController.changePassword);
+app.post('/admin-reset-password/:userId', authenticate, requireAdmin, userController.adminResetPassword);
 
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || '';

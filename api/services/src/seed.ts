@@ -167,6 +167,7 @@ async function seedDatabase() {
 
     // 6. Create default event delivery statuses for LayaPro tenant
     const defaultEventStatuses = [
+      { statusCode: 'Not Started', step: 0 },
       { statusCode: 'Shoot Done', step: 1 },
       { statusCode: 'Editor Upload', step: 2 },
       { statusCode: 'Admin Reviewed', step: 3 },
