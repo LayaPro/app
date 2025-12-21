@@ -14,13 +14,12 @@ services:
 
 api-services:
   build:
-    context: .
-    dockerfile: ./api/services/Dockerfile.dev
+    context: ./api/services
+    dockerfile: Dockerfile.dev
   ports:
     - "4000:4000"
   volumes:
-    - ./api/services:/app/api/services
-    - ./packages/shared:/app/packages/shared
+    - ./api/services:/app
   environment:
     - NODE_ENV=development
     - PORT=4000
