@@ -1,0 +1,10 @@
+# Exclude from Elastic Beanstalk deployment
+node_modules/
+.git/
+.github/
+admin/
+docker-compose.yml
+*.log
+.env.local
+.env.development
+.DS_Store

@@ -23,5 +23,3 @@ api-services:
   environment:
     - NODE_ENV=development
     - PORT=4000
-  depends_on:
-    - admin-app
