@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import testController from './controllers/testController';
 import roleController from './controllers/roleController';
+import authController from './controllers/authController';
 
 dotenv.config();
 
@@ -13,6 +14,11 @@ app.use(cors());
 
 // ---------- Miscellaneous routes ----------
 app.get('/test', testController.getTest);
+
+// ---------- Auth routes ----------
+app.post('/login', authController.login);
+app.post('/logout', authController.logout);
+app.get('/verify-token', authController.verifyToken);
 
 // ---------- Roles routes ----------
 app.post('/create-role', roleController.createRole);

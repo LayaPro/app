@@ -1,0 +1,123 @@
+import { Request, Response } from 'express';
+import jwt, { Secret, SignOptions } from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
+import User from '../models/user';
+import Role from '../models/role';
+
+const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your-secret-key-change-this';
+const JWT_EXPIRES_IN: number = Number(process.env.JWT_EXPIRES_IN) || 7 * 24 * 60 * 60;
+
+interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export const login = async (req: Request, res: Response) => {
+  try {
+    const { email, password }: LoginRequest = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Find user by email
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if user is active
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Account is deactivated' });
+    }
+
+    // Verify password
+    const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Get user role
+    const role = await Role.findOne({ roleId: user.roleId });
+    if (!role) {
+      return res.status(500).json({ message: 'User role not found' });
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+
+    // Generate JWT token
+    const payload = {
+      userId: user.userId,
+      email: user.email,
+      roleId: user.roleId,
+      roleName: role.name,
+      tenantId: user.tenantId
+    };
+    
+    const options: SignOptions = {
+      expiresIn: JWT_EXPIRES_IN
+    };
+    
+    const token = jwt.sign(payload, JWT_SECRET, options);
+
+    // Return success response
+    return res.status(200).json({
+      message: 'Login successful',
+      token,
+      user: {
+        userId: user.userId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roleId: user.roleId,
+        roleName: role.name,
+        tenantId: user.tenantId
+      }
+    });
+  } catch (err: any) {
+    console.error('Login error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const logout = async (req: Request, res: Response) => {
+  // For JWT, logout is typically handled client-side by removing the token
+  // Optionally, you can implement token blacklisting here
+  return res.status(200).json({ message: 'Logout successful' });
+};
+
+export const verifyToken = async (req: Request, res: Response) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, JWT_SECRET) as any;
+
+    // Optionally verify user still exists and is active
+    const user = await User.findOne({ userId: decoded.userId });
+    if (!user || !user.isActive) {
+      return res.status(401).json({ message: 'Invalid token' });
+    }
+
+    return res.status(200).json({
+      valid: true,
+      user: {
+        userId: decoded.userId,
+        email: decoded.email,
+        roleId: decoded.roleId,
+        roleName: decoded.roleName,
+        tenantId: decoded.tenantId
+      }
+    });
+  } catch (err: any) {
+    return res.status(401).json({ message: 'Invalid or expired token' });
+  }
+};
+
+export default { login, logout, verifyToken };
