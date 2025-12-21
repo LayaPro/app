@@ -6,7 +6,10 @@ import testController from './controllers/testController';
 import roleController from './controllers/roleController';
 import authController from './controllers/authController';
 import tenantController from './controllers/tenantController';
+import profileController from './controllers/profileController';
+import teamController from './controllers/teamController';
 import { authenticate, requireSuperAdmin } from './middleware/auth';
+import requireAdmin from './middleware/requireAdmin';
 
 dotenv.config();
 
@@ -33,6 +36,20 @@ app.get('/get-tenant/:tenantId', authenticate, tenantController.getTenantById);
 app.put('/update-tenant/:tenantId', authenticate, requireSuperAdmin, tenantController.updateTenant);
 app.delete('/delete-tenant/:tenantId', authenticate, requireSuperAdmin, tenantController.deleteTenant);
 app.patch('/toggle-tenant-status/:tenantId', authenticate, requireSuperAdmin, tenantController.toggleTenantStatus);
+
+// ---------- Profile routes ----------
+app.post('/create-profile', authenticate, requireAdmin, profileController.createProfile);
+app.get('/get-all-profiles', authenticate, requireAdmin, profileController.getAllProfiles);
+app.get('/get-profile/:profileId', authenticate, requireAdmin, profileController.getProfileById);
+app.put('/update-profile/:profileId', authenticate, requireAdmin, profileController.updateProfile);
+app.delete('/delete-profile/:profileId', authenticate, requireAdmin, profileController.deleteProfile);
+
+// ---------- Team routes ----------
+app.post('/create-team-member', authenticate, requireAdmin, teamController.createTeamMember);
+app.get('/get-all-team-members', authenticate, requireAdmin, teamController.getAllTeamMembers);
+app.get('/get-team-member/:memberId', authenticate, teamController.getTeamMemberById);
+app.put('/update-team-member/:memberId', authenticate, teamController.updateTeamMember);
+app.delete('/delete-team-member/:memberId', authenticate, requireAdmin, teamController.deleteTeamMember);
 
 // ---------- Users routes ----------
 // TODO: add user controllers and mount endpoints here (e.g., /create-user, /get-users)

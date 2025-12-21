@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import Role from './models/role';
 import Tenant from './models/tenant';
 import User from './models/user';
+import Profile from './models/profile';
 
 dotenv.config();
 
@@ -74,7 +75,50 @@ async function seedDatabase() {
     } else {
       console.log('✓ Superadmin user already exists');
     }
+// 4. Create default profiles for LayaPro tenant
+    const defaultProfiles = [
+      { name: 'Candid Photographer', description: 'Captures candid moments and natural expressions' },
+      { name: 'Cinematographer', description: 'Creates cinematic video content' },
+      { name: 'Traditional Photographer', description: 'Specializes in traditional photography styles' },
+      { name: 'Traditional Videographer', description: 'Captures traditional video content' },
+      { name: 'Photo Editor', description: 'Edits and enhances photographs' },
+      { name: 'Video Editor', description: 'Edits and produces video content' },
+      { name: 'Album Designer', description: 'Designs photo albums and layouts' }
+    ];
 
+    console.log('\n✓ Creating default profiles...');
+    let createdCount = 0;
+    let existingCount = 0;
+
+    for (const profileData of defaultProfiles) {
+      const existing = await Profile.findOne({ 
+        name: profileData.name, 
+        tenantId: layaproTenant.tenantId 
+      });
+
+      if (!existing) {
+        const profileId = `profile_${nanoid()}`;
+        await Profile.create({
+          profileId,
+          tenantId: layaproTenant.tenantId,
+          name: profileData.name,
+          description: profileData.description
+        });
+        createdCount++;
+        console.log(`  ✓ Created profile: ${profileData.name}`);
+      } else {
+        existingCount++;
+      }
+    }
+
+    if (createdCount > 0) {
+      console.log(`✓ Created ${createdCount} new profile(s)`);
+    }
+    if (existingCount > 0) {
+      console.log(`✓ ${existingCount} profile(s) already exist`);
+    }
+
+    
     console.log('\n✅ Database seeding completed successfully!');
     process.exit(0);
   } catch (error) {
