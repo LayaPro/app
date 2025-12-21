@@ -8,3 +8,6 @@ export * from '../models/eventDeliveryStatus';
 export * from '../models/projectDeliveryStatus';
 export * from '../models/equipment';
 export * from '../models/project';
+export * from '../models/clientEvent';
+export * from '../models/eventExpense';
+export * from '../models/projectFinance';
