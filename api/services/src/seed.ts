@@ -7,7 +7,8 @@ import Tenant from './models/tenant';
 import User from './models/user';
 import Profile from './models/profile';
 import Event from './models/event';
-import DeliveryStatus from './models/deliveryStatus';
+import EventDeliveryStatus from './models/eventDeliveryStatus';
+import ProjectDeliveryStatus from './models/projectDeliveryStatus';
 
 dotenv.config();
 
@@ -164,47 +165,92 @@ async function seedDatabase() {
       console.log(`✓ ${existingEventCount} event(s) already exist`);
     }
 
-    // 6. Create default delivery statuses for LayaPro tenant
-    const defaultStatuses = [
-      'Shoot Done',
-      'Editor Upload',
-      'Admin Reviewed',
-      'Client Selected',
-      'Album Selected',
-      'Album Designed',
-      'Album Printed',
-      'Album Delivered'
+    // 6. Create default event delivery statuses for LayaPro tenant
+    const defaultEventStatuses = [
+      { statusCode: 'Shoot Done', step: 1 },
+      { statusCode: 'Editor Upload', step: 2 },
+      { statusCode: 'Admin Reviewed', step: 3 },
+      { statusCode: 'Client Selected', step: 4 },
+      { statusCode: 'Album Selected', step: 5 },
+      { statusCode: 'Album Designed', step: 6 },
+      { statusCode: 'Album Printed', step: 7 },
+      { statusCode: 'Album Delivered', step: 8 }
     ];
 
-    console.log('\n✓ Creating default delivery statuses...');
-    let createdStatusCount = 0;
-    let existingStatusCount = 0;
+    console.log('\n✓ Creating default event delivery statuses...');
+    let createdEventStatusCount = 0;
+    let existingEventStatusCount = 0;
 
-    for (const statusCode of defaultStatuses) {
-      const existing = await DeliveryStatus.findOne({ 
-        statusCode, 
+    for (const statusData of defaultEventStatuses) {
+      const existing = await EventDeliveryStatus.findOne({ 
+        statusCode: statusData.statusCode, 
         tenantId: layaproTenant.tenantId 
       });
 
       if (!existing) {
         const statusId = `status_${nanoid()}`;
-        await DeliveryStatus.create({
+        await EventDeliveryStatus.create({
           statusId,
           tenantId: layaproTenant.tenantId,
-          statusCode
+          statusCode: statusData.statusCode,
+          step: statusData.step
         });
-        createdStatusCount++;
-        console.log(`  ✓ Created status: ${statusCode}`);
+        createdEventStatusCount++;
+        console.log(`  ✓ Created event status: ${statusData.statusCode} (Step ${statusData.step})`);
       } else {
-        existingStatusCount++;
+        existingEventStatusCount++;
       }
     }
 
-    if (createdStatusCount > 0) {
-      console.log(`✓ Created ${createdStatusCount} new status(es)`);
+    if (createdEventStatusCount > 0) {
+      console.log(`✓ Created ${createdEventStatusCount} new event status(es)`);
     }
-    if (existingStatusCount > 0) {
-      console.log(`✓ ${existingStatusCount} status(es) already exist`);
+    if (existingEventStatusCount > 0) {
+      console.log(`✓ ${existingEventStatusCount} event status(es) already exist`);
+    }
+
+    // 7. Create default project delivery statuses for LayaPro tenant
+    const defaultProjectStatuses = [
+      { statusCode: 'Lead', step: 1 },
+      { statusCode: 'Negotiation', step: 2 },
+      { statusCode: 'Booking Confirmed', step: 3 },
+      { statusCode: 'Advance Paid', step: 4 },
+      { statusCode: 'Event Completed', step: 5 },
+      { statusCode: 'Final Payment Pending', step: 6 },
+      { statusCode: 'Delivered', step: 7 },
+      { statusCode: 'Closed', step: 8 }
+    ];
+
+    console.log('\n✓ Creating default project delivery statuses...');
+    let createdProjectStatusCount = 0;
+    let existingProjectStatusCount = 0;
+
+    for (const statusData of defaultProjectStatuses) {
+      const existing = await ProjectDeliveryStatus.findOne({ 
+        statusCode: statusData.statusCode, 
+        tenantId: layaproTenant.tenantId 
+      });
+
+      if (!existing) {
+        const statusId = `status_${nanoid()}`;
+        await ProjectDeliveryStatus.create({
+          statusId,
+          tenantId: layaproTenant.tenantId,
+          statusCode: statusData.statusCode,
+          step: statusData.step
+        });
+        createdProjectStatusCount++;
+        console.log(`  ✓ Created project status: ${statusData.statusCode} (Step ${statusData.step})`);
+      } else {
+        existingProjectStatusCount++;
+      }
+    }
+
+    if (createdProjectStatusCount > 0) {
+      console.log(`✓ Created ${createdProjectStatusCount} new project status(es)`);
+    }
+    if (existingProjectStatusCount > 0) {
+      console.log(`✓ ${existingProjectStatusCount} project status(es) already exist`);
     }
 
     console.log('\n✅ Database seeding completed successfully!');

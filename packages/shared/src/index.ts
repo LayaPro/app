@@ -4,4 +4,7 @@ export * from '../models/user';
 export * from '../models/profile';
 export * from '../models/team';
 export * from '../models/event';
-export * from '../models/deliveryStatus';
+export * from '../models/eventDeliveryStatus';
+export * from '../models/projectDeliveryStatus';
+export * from '../models/equipment';
+export * from '../models/project';

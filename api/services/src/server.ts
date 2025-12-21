@@ -9,7 +9,10 @@ import tenantController from './controllers/tenantController';
 import profileController from './controllers/profileController';
 import teamController from './controllers/teamController';
 import eventController from './controllers/eventController';
-import deliveryStatusController from './controllers/deliveryStatusController';
+import eventDeliveryStatusController from './controllers/eventDeliveryStatusController';
+import projectDeliveryStatusController from './controllers/projectDeliveryStatusController';
+import equipmentController from './controllers/equipmentController';
+import projectController from './controllers/projectController';
 import { authenticate, requireSuperAdmin } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 
@@ -60,12 +63,33 @@ app.get('/get-event/:eventId', authenticate, requireAdmin, eventController.getEv
 app.put('/update-event/:eventId', authenticate, requireAdmin, eventController.updateEvent);
 app.delete('/delete-event/:eventId', authenticate, requireAdmin, eventController.deleteEvent);
 
-// ---------- Delivery Status routes ----------
-app.post('/create-delivery-status', authenticate, requireAdmin, deliveryStatusController.createDeliveryStatus);
-app.get('/get-all-delivery-statuses', authenticate, requireAdmin, deliveryStatusController.getAllDeliveryStatuses);
-app.get('/get-delivery-status/:statusId', authenticate, requireAdmin, deliveryStatusController.getDeliveryStatusById);
-app.put('/update-delivery-status/:statusId', authenticate, requireAdmin, deliveryStatusController.updateDeliveryStatus);
-app.delete('/delete-delivery-status/:statusId', authenticate, requireAdmin, deliveryStatusController.deleteDeliveryStatus);
+// ---------- Event Delivery Status routes ----------
+app.post('/create-event-delivery-status', authenticate, requireAdmin, eventDeliveryStatusController.createEventDeliveryStatus);
+app.get('/get-all-event-delivery-statuses', authenticate, requireAdmin, eventDeliveryStatusController.getAllEventDeliveryStatuses);
+app.get('/get-event-delivery-status/:statusId', authenticate, requireAdmin, eventDeliveryStatusController.getEventDeliveryStatusById);
+app.put('/update-event-delivery-status/:statusId', authenticate, requireAdmin, eventDeliveryStatusController.updateEventDeliveryStatus);
+app.delete('/delete-event-delivery-status/:statusId', authenticate, requireAdmin, eventDeliveryStatusController.deleteEventDeliveryStatus);
+
+// ---------- Project Delivery Status routes ----------
+app.post('/create-project-delivery-status', authenticate, requireAdmin, projectDeliveryStatusController.createProjectDeliveryStatus);
+app.get('/get-all-project-delivery-statuses', authenticate, requireAdmin, projectDeliveryStatusController.getAllProjectDeliveryStatuses);
+app.get('/get-project-delivery-status/:statusId', authenticate, requireAdmin, projectDeliveryStatusController.getProjectDeliveryStatusById);
+app.put('/update-project-delivery-status/:statusId', authenticate, requireAdmin, projectDeliveryStatusController.updateProjectDeliveryStatus);
+app.delete('/delete-project-delivery-status/:statusId', authenticate, requireAdmin, projectDeliveryStatusController.deleteProjectDeliveryStatus);
+
+// ---------- Equipment routes ----------
+app.post('/create-equipment', authenticate, requireAdmin, equipmentController.createEquipment);
+app.get('/get-all-equipment', authenticate, requireAdmin, equipmentController.getAllEquipment);
+app.get('/get-equipment/:equipmentId', authenticate, requireAdmin, equipmentController.getEquipmentById);
+app.put('/update-equipment/:equipmentId', authenticate, requireAdmin, equipmentController.updateEquipment);
+app.delete('/delete-equipment/:equipmentId', authenticate, requireAdmin, equipmentController.deleteEquipment);
+
+// ---------- Project routes ----------
+app.post('/create-project', authenticate, requireAdmin, projectController.createProject);
+app.get('/get-all-projects', authenticate, requireAdmin, projectController.getAllProjects);
+app.get('/get-project/:projectId', authenticate, requireAdmin, projectController.getProjectById);
+app.put('/update-project/:projectId', authenticate, requireAdmin, projectController.updateProject);
+app.delete('/delete-project/:projectId', authenticate, requireAdmin, projectController.deleteProject);
 
 // ---------- Users routes ----------
 // TODO: add user controllers and mount endpoints here (e.g., /create-user, /get-users)
