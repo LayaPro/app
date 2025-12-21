@@ -15,9 +15,23 @@ import Projects from './pages/Projects.js';
 import Finances from './pages/Finances.js';
 import Calendar from './pages/Calendar.js';
 import Statistics from './pages/Statistics.js';
-import Team from './pages/Team.js';
-import Equipments from './pages/Equipments.js';
 import Settings from './pages/Settings.js';
+
+// Access Control pages
+import Users from './pages/Users.js';
+import Roles from './pages/Roles.js';
+import Tenants from './pages/Tenants.js';
+
+// Team pages
+import TeamMembers from './pages/TeamMembers.js';
+import Designations from './pages/Designations.js';
+import Equipments from './pages/Equipments.js';
+
+// Workflow pages
+import ProjectTypes from './pages/ProjectTypes.js';
+import ProjectStatus from './pages/ProjectStatus.js';
+import EventTypes from './pages/EventTypes.js';
+import DeliveryStatus from './pages/DeliveryStatus.js';
 
 function App() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -57,8 +71,23 @@ function App() {
           <Route path={ROUTES.FINANCES} element={<Finances />} />
           <Route path={ROUTES.CALENDAR} element={<Calendar />} />
           <Route path={ROUTES.STATISTICS} element={<Statistics />} />
-          <Route path={ROUTES.TEAM} element={<Team />} />
+          
+          {/* Access Control routes */}
+          <Route path={ROUTES.USERS} element={<Users />} />
+          <Route path={ROUTES.ROLES} element={<Roles />} />
+          <Route path={ROUTES.TENANTS} element={<Tenants />} />
+          
+          {/* Team routes */}
+          <Route path={ROUTES.TEAM_MEMBERS} element={<TeamMembers />} />
+          <Route path={ROUTES.DESIGNATIONS} element={<Designations />} />
           <Route path={ROUTES.EQUIPMENTS} element={<Equipments />} />
+          
+          {/* Workflow routes */}
+          <Route path={ROUTES.PROJECT_TYPES} element={<ProjectTypes />} />
+          <Route path={ROUTES.PROJECT_STATUS} element={<ProjectStatus />} />
+          <Route path={ROUTES.EVENT_TYPES} element={<EventTypes />} />
+          <Route path={ROUTES.DELIVERY_STATUS} element={<DeliveryStatus />} />
+          
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
         </Routes>
       </main>

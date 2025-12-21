@@ -7,10 +7,25 @@ export const ROUTES = {
   PROJECTS: '/projects',
   ALBUMS: '/albums',
   CALENDAR: '/calendar',
-  TEAM: '/team',
-  EQUIPMENTS: '/equipments',
   FINANCES: '/finances',
   STATISTICS: '/statistics',
+  
+  // Access Management
+  USERS: '/access/users',
+  ROLES: '/access/roles',
+  TENANTS: '/access/tenants',
+  
+  // Team Management
+  TEAM_MEMBERS: '/team/members',
+  DESIGNATIONS: '/team/designations',
+  EQUIPMENTS: '/team/equipments',
+  
+  // Workflow Setup
+  PROJECT_TYPES: '/workflow/project-types',
+  PROJECT_STATUS: '/workflow/project-status',
+  EVENT_TYPES: '/workflow/event-types',
+  DELIVERY_STATUS: '/workflow/delivery-status',
+  
   SETTINGS: '/settings',
 } as const;
 
