@@ -24,11 +24,84 @@
   }
 }
 
-/* Logo Section */
-.logoSection {
+/* Hamburger Menu */
+.hamburger {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+  transition: background-color 0.2s;
+}
+
+.hamburger:hover {
+  background-color: var(--bg-tertiary);
+}
+
+.hamburger svg {
+  width: 24px;
+  height: 24px;
+}
+
+@media (min-width: 640px) {
+  .hamburger {
+    display: none;
+  }
+}
+
+/* Mobile Brand Title (Center) */
+.mobileBrand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (min-width: 640px) {
+  .mobileBrand {
+    display: none;
+  }
+}
+
+.mobileLogo {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  border-radius: 8px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.mobileLogo svg {
+  width: 18px;
+  height: 18px;
+}
+
+.mobileBrandTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 28px;
+}
+
+/* Logo Section */
+.logoSection {
+  display: none;
+  align-items: center;
   gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .logoSection {
+    display: flex;
+  }
 }
 
 .logoIcon {
@@ -60,16 +133,28 @@
 }
 
 .brandTitle {
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 700;
   color: var(--text-primary);
   transition: color 0.3s;
 }
 
+@media (min-width: 640px) {
+  .brandTitle {
+    font-size: 20px;
+  }
+}
+
 .brandSubtitle {
-  font-size: 12px;
+  font-size: 10px;
   color: var(--text-secondary);
   transition: color 0.3s;
+}
+
+@media (min-width: 640px) {
+  .brandSubtitle {
+    font-size: 12px;
+  }
 }
 
 /* Search Bar */
@@ -86,6 +171,23 @@
   }
 }
 
+@media (min-width: 1440px) {
+  .searchContainer {
+    position: static;
+    transform: none;
+    margin-left: 24px;
+  }
+}
+
+@media (min-width: 1800px) {
+  .searchContainer {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-left: 0;
+  }
+}
+
 .searchWrapper {
   position: relative;
 }
@@ -94,12 +196,21 @@
   width: 240px;
   padding: 10px 16px 10px 40px;
   background-color: var(--bg-tertiary);
-  border: 0;
+  border: 1px solid transparent;
   border-radius: 8px;
   font-size: 14px;
   outline: none;
   color: var(--text-primary);
   transition: all 0.3s;
+}
+
+.searchInput:focus {
+  border-color: var(--color-primary);
+  background-color: var(--bg-primary);
+}
+
+.searchInput:focus + .searchIcon {
+  color: var(--color-primary);
 }
 
 @media (min-width: 768px) {
@@ -109,6 +220,18 @@
 }
 
 @media (min-width: 1024px) {
+  .searchInput {
+    width: 384px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .searchInput {
+    width: 280px;
+  }
+}
+
+@media (min-width: 1800px) {
   .searchInput {
     width: 384px;
   }
@@ -143,7 +266,7 @@
   transition: all 0.3s;
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 1440px) {
   .statsTicker {
     display: flex;
     gap: 16px;
@@ -151,7 +274,7 @@
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1600px) {
   .statsTicker {
     gap: 24px;
     padding: 10px 20px;
@@ -217,7 +340,7 @@
 
 /* Icon Buttons */
 .iconButton {
-  display: none;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 10px;
@@ -230,6 +353,16 @@
 
 @media (min-width: 640px) {
   .iconButton {
+    padding: 10px;
+  }
+}
+
+.themeToggle {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .themeToggle {
     display: flex;
   }
 }

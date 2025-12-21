@@ -43,6 +43,7 @@ export interface UIState {
   sidebarCollapsed: boolean;
   notificationPanelOpen: boolean;
   profilePanelOpen: boolean;
+  mobileMenuOpen: boolean;
 }
 
 // API Response Types

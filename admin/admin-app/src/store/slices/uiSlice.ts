@@ -6,6 +6,7 @@ const initialState: UIState = {
   sidebarCollapsed: localStorage.getItem('sidebarCollapsed') === 'true',
   notificationPanelOpen: false,
   profilePanelOpen: false,
+  mobileMenuOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -24,17 +25,27 @@ const uiSlice = createSlice({
       state.notificationPanelOpen = !state.notificationPanelOpen;
       if (state.notificationPanelOpen) {
         state.profilePanelOpen = false;
+        state.mobileMenuOpen = false;
       }
     },
     toggleProfilePanel: (state) => {
       state.profilePanelOpen = !state.profilePanelOpen;
       if (state.profilePanelOpen) {
         state.notificationPanelOpen = false;
+        state.mobileMenuOpen = false;
+      }
+    },
+    toggleMobileMenu: (state) => {
+      state.mobileMenuOpen = !state.mobileMenuOpen;
+      if (state.mobileMenuOpen) {
+        state.notificationPanelOpen = false;
+        state.profilePanelOpen = false;
       }
     },
     closeAllPanels: (state) => {
       state.notificationPanelOpen = false;
       state.profilePanelOpen = false;
+      state.mobileMenuOpen = false;
     },
   },
 });
@@ -44,6 +55,7 @@ export const {
   setSidebarCollapsed,
   toggleNotificationPanel,
   toggleProfilePanel,
+  toggleMobileMenu,
   closeAllPanels,
 } = uiSlice.actions;
 export default uiSlice.reducer;
