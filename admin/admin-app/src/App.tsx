@@ -1,12 +1,27 @@
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAppSelector } from './store/index.js';
 import { Header } from './components/layout/Header.js';
+import { Sidebar } from './components/layout/Sidebar.js';
 import { NotificationPanel } from './components/panels/NotificationPanel.js';
 import { ProfilePanel } from './components/panels/ProfilePanel.js';
 import { MobileMenuDrawer } from './components/panels/MobileMenuDrawer.js';
 import { Login } from './components/auth/Login.js';
+import { ROUTES } from './utils/constants.js';
+
+// Page imports
+import Dashboard from './pages/Dashboard.js';
+import Albums from './pages/Albums.js';
+import Projects from './pages/Projects.js';
+import Finances from './pages/Finances.js';
+import Calendar from './pages/Calendar.js';
+import Statistics from './pages/Statistics.js';
+import Team from './pages/Team.js';
+import Equipments from './pages/Equipments.js';
+import Settings from './pages/Settings.js';
 
 function App() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
+  const sidebarCollapsed = useAppSelector((state) => state.ui.sidebarCollapsed);
 
   // Show login page if not authenticated
   if (!isAuthenticated) {
@@ -17,12 +32,40 @@ function App() {
   return (
     <div>
       <Header />
+      <Sidebar />
       <NotificationPanel />
       <ProfilePanel />
       <MobileMenuDrawer />
+      
+      {/* Main Content Area */}
+      <main
+        style={{
+          marginLeft: window.innerWidth >= 1025 ? (sidebarCollapsed ? '80px' : '256px') 
+                   : window.innerWidth >= 769 ? (sidebarCollapsed ? '80px' : '200px') 
+                   : '0',
+          marginTop: '80px',
+          padding: window.innerWidth >= 640 ? '24px' : '16px',
+          transition: 'margin-left 0.3s ease',
+          minHeight: 'calc(100vh - 80px)',
+        }}
+      >
+        <Routes>
+          <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+          <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+          <Route path={ROUTES.ALBUMS} element={<Albums />} />
+          <Route path={ROUTES.PROJECTS} element={<Projects />} />
+          <Route path={ROUTES.FINANCES} element={<Finances />} />
+          <Route path={ROUTES.CALENDAR} element={<Calendar />} />
+          <Route path={ROUTES.STATISTICS} element={<Statistics />} />
+          <Route path={ROUTES.TEAM} element={<Team />} />
+          <Route path={ROUTES.EQUIPMENTS} element={<Equipments />} />
+          <Route path={ROUTES.SETTINGS} element={<Settings />} />
+        </Routes>
+      </main>
     </div>
   );
 }
 
 export default App;
+
 

@@ -18,7 +18,7 @@
   width: 100%;
   padding: 12px 16px;
   background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-primary);
   border-radius: 8px;
   font-size: 15px;
   color: var(--text-primary);
@@ -32,8 +32,8 @@
 
 .input:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
 }
 
 .withIcon {
@@ -65,8 +65,8 @@
 }
 
 .error:focus {
-  border-color: #ef4444;
-  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  border-color: transparent;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.3);
 }
 
 .errorText {

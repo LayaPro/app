@@ -1,0 +1,27 @@
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pageContainer {
+  animation: fadeIn 0.4s ease-out;
+}
+
+.pageTitle {
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+.pageDescription {
+  font-size: 16px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
