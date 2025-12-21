@@ -16,6 +16,13 @@
     "noEmit": true,
     "jsx": "react-jsx",
 
+    /* Path aliases */
+    "baseUrl": ".",
+    "paths": {
+      "laya-shared": ["../../packages/shared/src"],
+      "laya-shared/*": ["../../packages/shared/src/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

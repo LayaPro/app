@@ -1,8 +1,4 @@
 {
   "name": "laya-root",
-  "private": true,
-  "workspaces": [
-    "packages/*",
-    "api/services"
-  ]
+  "private": true
 }
