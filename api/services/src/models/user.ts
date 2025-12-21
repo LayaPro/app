@@ -14,7 +14,7 @@ const UserSchema = new Schema<IUser>(
     passwordSalt: { type: String },
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
-    role: { type: String, required: true },
+    roleId: { type: String, required: true },
     isActive: { type: Boolean, default: true },
     lastLogin: { type: Date },
     resetPasswordToken: { type: String, default: null },

@@ -1,5 +1,3 @@
-export type UserRole = 'superadmin' | 'admin' | 'user' | 'photographer' | 'editor';
-
 export interface User {
   tenantId: string; // tenantId the user belongs to (single tenant)
   userId: string; // UUID
@@ -8,7 +6,7 @@ export interface User {
   passwordSalt?: string;
   firstName: string;
   lastName: string;
-  role: UserRole;
+  roleId: string; // Reference to Role table
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
