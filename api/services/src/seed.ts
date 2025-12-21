@@ -6,6 +6,8 @@ import Role from './models/role';
 import Tenant from './models/tenant';
 import User from './models/user';
 import Profile from './models/profile';
+import Event from './models/event';
+import DeliveryStatus from './models/deliveryStatus';
 
 dotenv.config();
 
@@ -118,7 +120,93 @@ async function seedDatabase() {
       console.log(`✓ ${existingCount} profile(s) already exist`);
     }
 
-    
+    // 5. Create default events for LayaPro tenant
+    const defaultEvents = [
+      { eventCode: 'PREWEDDING', eventDesc: 'Pre Wedding', eventAlias: 'Pre-Wedding Shoot' },
+      { eventCode: 'SANGEET', eventDesc: 'Sangeet', eventAlias: 'Sangeet Ceremony' },
+      { eventCode: 'HALDI', eventDesc: 'Haldi', eventAlias: 'Haldi Ceremony' },
+      { eventCode: 'MEHANDI', eventDesc: 'Mehandi', eventAlias: 'Mehandi Ceremony' },
+      { eventCode: 'RECEPTION', eventDesc: 'Reception', eventAlias: 'Wedding Reception' },
+      { eventCode: 'WEDDING', eventDesc: 'Wedding', eventAlias: 'Wedding Ceremony' },
+      { eventCode: 'PHERA', eventDesc: 'Phera', eventAlias: 'Phera Ceremony' }
+    ];
+
+    console.log('\n✓ Creating default events...');
+    let createdEventCount = 0;
+    let existingEventCount = 0;
+
+    for (const eventData of defaultEvents) {
+      const existing = await Event.findOne({ 
+        eventCode: eventData.eventCode, 
+        tenantId: layaproTenant.tenantId 
+      });
+
+      if (!existing) {
+        const eventId = `event_${nanoid()}`;
+        await Event.create({
+          eventId,
+          tenantId: layaproTenant.tenantId,
+          eventCode: eventData.eventCode,
+          eventDesc: eventData.eventDesc,
+          eventAlias: eventData.eventAlias
+        });
+        createdEventCount++;
+        console.log(`  ✓ Created event: ${eventData.eventCode}`);
+      } else {
+        existingEventCount++;
+      }
+    }
+
+    if (createdEventCount > 0) {
+      console.log(`✓ Created ${createdEventCount} new event(s)`);
+    }
+    if (existingEventCount > 0) {
+      console.log(`✓ ${existingEventCount} event(s) already exist`);
+    }
+
+    // 6. Create default delivery statuses for LayaPro tenant
+    const defaultStatuses = [
+      'Shoot Done',
+      'Editor Upload',
+      'Admin Reviewed',
+      'Client Selected',
+      'Album Selected',
+      'Album Designed',
+      'Album Printed',
+      'Album Delivered'
+    ];
+
+    console.log('\n✓ Creating default delivery statuses...');
+    let createdStatusCount = 0;
+    let existingStatusCount = 0;
+
+    for (const statusCode of defaultStatuses) {
+      const existing = await DeliveryStatus.findOne({ 
+        statusCode, 
+        tenantId: layaproTenant.tenantId 
+      });
+
+      if (!existing) {
+        const statusId = `status_${nanoid()}`;
+        await DeliveryStatus.create({
+          statusId,
+          tenantId: layaproTenant.tenantId,
+          statusCode
+        });
+        createdStatusCount++;
+        console.log(`  ✓ Created status: ${statusCode}`);
+      } else {
+        existingStatusCount++;
+      }
+    }
+
+    if (createdStatusCount > 0) {
+      console.log(`✓ Created ${createdStatusCount} new status(es)`);
+    }
+    if (existingStatusCount > 0) {
+      console.log(`✓ ${existingStatusCount} status(es) already exist`);
+    }
+
     console.log('\n✅ Database seeding completed successfully!');
     process.exit(0);
   } catch (error) {

@@ -3,3 +3,5 @@ export * from '../models/tenant';
 export * from '../models/user';
 export * from '../models/profile';
 export * from '../models/team';
+export * from '../models/event';
+export * from '../models/deliveryStatus';

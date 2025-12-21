@@ -8,6 +8,8 @@ import authController from './controllers/authController';
 import tenantController from './controllers/tenantController';
 import profileController from './controllers/profileController';
 import teamController from './controllers/teamController';
+import eventController from './controllers/eventController';
+import deliveryStatusController from './controllers/deliveryStatusController';
 import { authenticate, requireSuperAdmin } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 
@@ -50,6 +52,20 @@ app.get('/get-all-team-members', authenticate, requireAdmin, teamController.getA
 app.get('/get-team-member/:memberId', authenticate, teamController.getTeamMemberById);
 app.put('/update-team-member/:memberId', authenticate, teamController.updateTeamMember);
 app.delete('/delete-team-member/:memberId', authenticate, requireAdmin, teamController.deleteTeamMember);
+
+// ---------- Event routes ----------
+app.post('/create-event', authenticate, requireAdmin, eventController.createEvent);
+app.get('/get-all-events', authenticate, requireAdmin, eventController.getAllEvents);
+app.get('/get-event/:eventId', authenticate, requireAdmin, eventController.getEventById);
+app.put('/update-event/:eventId', authenticate, requireAdmin, eventController.updateEvent);
+app.delete('/delete-event/:eventId', authenticate, requireAdmin, eventController.deleteEvent);
+
+// ---------- Delivery Status routes ----------
+app.post('/create-delivery-status', authenticate, requireAdmin, deliveryStatusController.createDeliveryStatus);
+app.get('/get-all-delivery-statuses', authenticate, requireAdmin, deliveryStatusController.getAllDeliveryStatuses);
+app.get('/get-delivery-status/:statusId', authenticate, requireAdmin, deliveryStatusController.getDeliveryStatusById);
+app.put('/update-delivery-status/:statusId', authenticate, requireAdmin, deliveryStatusController.updateDeliveryStatus);
+app.delete('/delete-delivery-status/:statusId', authenticate, requireAdmin, deliveryStatusController.deleteDeliveryStatus);
 
 // ---------- Users routes ----------
 // TODO: add user controllers and mount endpoints here (e.g., /create-user, /get-users)
