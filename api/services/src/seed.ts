@@ -16,11 +16,12 @@ async function seedDatabase() {
     console.log('Connected to DB');
 
     // 1. Create superadmin role if it doesn't exist
-    let superadminRole = await Role.findOne({ name: 'superadmin' });
+    let superadminRole = await Role.findOne({ name: 'superadmin', tenantId: '-1' });
     if (!superadminRole) {
       const roleId = `role_${nanoid()}`;
       superadminRole = await Role.create({
         roleId,
+        tenantId: '-1', // Global role
         name: 'superadmin',
         description: 'Super administrator with full system access'
       });

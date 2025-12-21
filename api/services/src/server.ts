@@ -5,6 +5,8 @@ import cors from 'cors';
 import testController from './controllers/testController';
 import roleController from './controllers/roleController';
 import authController from './controllers/authController';
+import tenantController from './controllers/tenantController';
+import { authenticate, requireSuperAdmin } from './middleware/auth';
 
 dotenv.config();
 
@@ -25,7 +27,12 @@ app.post('/create-role', roleController.createRole);
 app.get('/get-roles', roleController.getRoles);
 
 // ---------- Tenants routes ----------
-// TODO: add tenant controllers and mount endpoints here (e.g., /create-tenant, /get-tenants)
+app.post('/create-tenant', authenticate, requireSuperAdmin, tenantController.createTenant);
+app.get('/get-all-tenants', authenticate, requireSuperAdmin, tenantController.getAllTenants);
+app.get('/get-tenant/:tenantId', authenticate, tenantController.getTenantById);
+app.put('/update-tenant/:tenantId', authenticate, requireSuperAdmin, tenantController.updateTenant);
+app.delete('/delete-tenant/:tenantId', authenticate, requireSuperAdmin, tenantController.deleteTenant);
+app.patch('/toggle-tenant-status/:tenantId', authenticate, requireSuperAdmin, tenantController.toggleTenantStatus);
 
 // ---------- Users routes ----------
 // TODO: add user controllers and mount endpoints here (e.g., /create-user, /get-users)
