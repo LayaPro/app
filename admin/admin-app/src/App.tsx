@@ -2,10 +2,11 @@
 import './App.css'
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-
+import type { Role } from 'laya-shared';
 
 function App() {
   const [apiResult, setApiResult] = useState<string>('');
+  const exampleRole: Role = {name: 'admin', roleId: '123e4567-e89b-12d3-a456-426614174000', description: 'Administrator role'};
 
   useEffect(() => {
     const apiUrl = `${import.meta.env.VITE_API_URL}/test`;
