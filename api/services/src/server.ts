@@ -23,8 +23,8 @@ app.post('/logout', authController.logout);
 app.get('/verify-token', authController.verifyToken);
 
 // ---------- Roles routes ----------
-app.post('/create-role', roleController.createRole);
-app.get('/get-roles', roleController.getRoles);
+app.post('/create-role', authenticate, roleController.createRole);
+app.get('/get-roles', authenticate, roleController.getRoles);
 
 // ---------- Tenants routes ----------
 app.post('/create-tenant', authenticate, requireSuperAdmin, tenantController.createTenant);
