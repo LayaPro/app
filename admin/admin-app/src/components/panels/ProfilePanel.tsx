@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAppSelector, useAppDispatch } from '../../store/index.js';
 import { toggleProfilePanel } from '../../store/slices/uiSlice.js';
+import { logout } from '../../store/slices/authSlice.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import styles from './ProfilePanel.module.css';
 
@@ -15,8 +16,8 @@ export const ProfilePanel: React.FC = () => {
   const displayInitials = user ? `${user.firstName?.[0]}${user.lastName?.[0]}` : 'JD';
 
   const handleLogout = () => {
-    // TODO: Implement logout logic
-    console.log('Logout clicked');
+    dispatch(logout());
+    dispatch(toggleProfilePanel());
   };
 
   if (!isOpen) return null;
