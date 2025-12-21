@@ -23,4 +23,4 @@ RUN npm run build
 
 # Expose port and run
 EXPOSE 4000
-CMD ["node", "dist/server.js"]
+CMD ["node", "dist/api/services/src/server.js"]
