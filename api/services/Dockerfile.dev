@@ -1,0 +1,17 @@
+FROM node:24
+
+WORKDIR /app
+
+# Copy shared package
+COPY packages/shared ./packages/shared
+
+# Copy api/services files
+COPY api/services/package.json ./api/services/
+WORKDIR /app/api/services
+RUN npm install
+
+# Copy source files
+COPY api/services ./
+
+EXPOSE 4000
+CMD ["npm", "run", "dev"]
