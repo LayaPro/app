@@ -4,6 +4,7 @@ import { login } from '../../store/slices/authSlice.js';
 import { Button } from '../ui/Button.js';
 import { Input } from '../ui/Input.js';
 import { Checkbox } from '../ui/Checkbox.js';
+import { Alert } from '../ui/Alert.js';
 import styles from './Login.module.css';
 
 export const Login: React.FC = () => {
@@ -61,9 +62,9 @@ export const Login: React.FC = () => {
 
       // Store token based on remember me
       if (rememberMe) {
-        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('token', data.token);
       } else {
-        sessionStorage.setItem('authToken', data.token);
+        sessionStorage.setItem('token', data.token);
       }
 
       // Dispatch login action to Redux
@@ -137,12 +138,7 @@ export const Login: React.FC = () => {
           </div>
 
           {errors.general && (
-            <div className={styles.errorAlert}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              {errors.general}
-            </div>
+            <Alert type="error" message={errors.general} className={styles.errorAlert} />
           )}
 
           <Button

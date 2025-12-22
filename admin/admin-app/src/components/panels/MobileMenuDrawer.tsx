@@ -121,6 +121,44 @@ export const MobileMenuDrawer: React.FC = () => {
 
           {/* Collapsible Sections */}
           <div className={styles.menuSection}>
+            {/* Workflow Setup Section */}
+            <div className={styles.collapsibleSection}>
+              <button
+                onClick={() => setExpandedSection(expandedSection === 'workflow' ? null : 'workflow')}
+                className={styles.collapsibleHeader}
+              >
+                <div className={styles.collapsibleHeaderContent}>
+                  <svg className={styles.menuIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                  </svg>
+                  <span>Workflow Setup</span>
+                </div>
+                <svg className={`${styles.chevron} ${expandedSection === 'workflow' ? styles.chevronExpanded : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div className={`${styles.subMenu} ${expandedSection === 'workflow' ? styles.subMenuExpanded : ''}`}>
+                <Link to={ROUTES.EVENTS_SETUP} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.EVENTS_SETUP ? styles.active : ''}`}>
+                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Events Setup</span>
+                </Link>
+                <Link to={ROUTES.GALLERY_SETUP} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.GALLERY_SETUP ? styles.active : ''}`}>
+                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Gallery Setup</span>
+                </Link>
+                <Link to={ROUTES.PROJECTS_SETUP} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.PROJECTS_SETUP ? styles.active : ''}`}>
+                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                  <span>Projects Setup</span>
+                </Link>
+              </div>
+            </div>
+
             {/* Access Control Section */}
             <div className={styles.collapsibleSection}>
               <button
@@ -188,50 +226,6 @@ export const MobileMenuDrawer: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <span>Equipments</span>
-                </Link>
-              </div>
-            </div>
-
-            {/* Workflow Setup Section */}
-            <div className={styles.collapsibleSection}>
-              <button
-                onClick={() => setExpandedSection(expandedSection === 'workflow' ? null : 'workflow')}
-                className={styles.collapsibleHeader}
-              >
-                <div className={styles.collapsibleHeaderContent}>
-                  <svg className={styles.menuIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                  <span>Workflow Setup</span>
-                </div>
-                <svg className={`${styles.chevron} ${expandedSection === 'workflow' ? styles.chevronExpanded : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <div className={`${styles.subMenu} ${expandedSection === 'workflow' ? styles.subMenuExpanded : ''}`}>
-                <Link to={ROUTES.PROJECT_TYPES} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.PROJECT_TYPES ? styles.active : ''}`}>
-                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                  </svg>
-                  <span>Project Types</span>
-                </Link>
-                <Link to={ROUTES.PROJECT_STATUS} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.PROJECT_STATUS ? styles.active : ''}`}>
-                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
-                  </svg>
-                  <span>Project Status</span>
-                </Link>
-                <Link to={ROUTES.EVENT_TYPES} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.EVENT_TYPES ? styles.active : ''}`}>
-                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span>Event Types</span>
-                </Link>
-                <Link to={ROUTES.DELIVERY_STATUS} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.DELIVERY_STATUS ? styles.active : ''}`}>
-                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span>Delivery Status</span>
                 </Link>
               </div>
             </div>

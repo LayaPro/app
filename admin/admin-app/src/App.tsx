@@ -27,11 +27,10 @@ import TeamMembers from './pages/TeamMembers.js';
 import Designations from './pages/Designations.js';
 import Equipments from './pages/Equipments.js';
 
-// Workflow pages
-import ProjectTypes from './pages/ProjectTypes.js';
-import ProjectStatus from './pages/ProjectStatus.js';
-import EventTypes from './pages/EventTypes.js';
-import DeliveryStatus from './pages/DeliveryStatus.js';
+// Workflow Setup pages
+import EventsSetup from './pages/EventsSetup.js';
+import GallerySetup from './pages/GallerySetup.js';
+import ProjectsSetup from './pages/ProjectsSetup.js';
 
 function App() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -82,11 +81,10 @@ function App() {
           <Route path={ROUTES.DESIGNATIONS} element={<Designations />} />
           <Route path={ROUTES.EQUIPMENTS} element={<Equipments />} />
           
-          {/* Workflow routes */}
-          <Route path={ROUTES.PROJECT_TYPES} element={<ProjectTypes />} />
-          <Route path={ROUTES.PROJECT_STATUS} element={<ProjectStatus />} />
-          <Route path={ROUTES.EVENT_TYPES} element={<EventTypes />} />
-          <Route path={ROUTES.DELIVERY_STATUS} element={<DeliveryStatus />} />
+          {/* Workflow Setup */}
+          <Route path={ROUTES.EVENTS_SETUP} element={<EventsSetup />} />
+          <Route path={ROUTES.GALLERY_SETUP} element={<GallerySetup />} />
+          <Route path={ROUTES.PROJECTS_SETUP} element={<ProjectsSetup />} />
           
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
         </Routes>

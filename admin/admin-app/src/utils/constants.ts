@@ -21,10 +21,9 @@ export const ROUTES = {
   EQUIPMENTS: '/team/equipments',
   
   // Workflow Setup
-  PROJECT_TYPES: '/workflow/project-types',
-  PROJECT_STATUS: '/workflow/project-status',
-  EVENT_TYPES: '/workflow/event-types',
-  DELIVERY_STATUS: '/workflow/delivery-status',
+  EVENTS_SETUP: '/workflow/events-setup',
+  GALLERY_SETUP: '/workflow/gallery-setup',
+  PROJECTS_SETUP: '/workflow/projects-setup',
   
   SETTINGS: '/settings',
 } as const;

@@ -4,7 +4,7 @@ import type { AuthState, User } from '../../types/index.js';
 
 // Check both localStorage and sessionStorage for existing token
 const getStoredToken = () => {
-  return localStorage.getItem('authToken') || sessionStorage.getItem('authToken') || null;
+  return localStorage.getItem('token') || sessionStorage.getItem('token') || null;
 };
 
 const getStoredUser = () => {
@@ -38,7 +38,7 @@ const authSlice = createSlice({
       state.token = action.payload.token;
       state.isAuthenticated = true;
       // Store user in same location as token
-      const storage = localStorage.getItem('authToken') ? localStorage : sessionStorage;
+      const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
       storage.setItem('user', JSON.stringify(action.payload.user));
     },
     setCredentials: (
@@ -55,10 +55,9 @@ const authSlice = createSlice({
       state.user = null;
       state.token = null;
       state.isAuthenticated = false;
-      localStorage.removeItem('authToken');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      sessionStorage.removeItem('authToken');
+      sessionStorage.removeItem('token');
       sessionStorage.removeItem('user');
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
