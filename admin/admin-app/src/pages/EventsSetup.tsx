@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import styles from './EventsSetup.module.css';
 import { DataTable } from '../components/ui/DataTable.js';
 import type { Column } from '../components/ui/DataTable.js';
@@ -8,7 +7,6 @@ import { Alert, Modal } from '../components/ui/index.js';
 import { EventForm } from '../components/forms/EventForm.js';
 
 const EventsSetup = () => {
-  const navigate = useNavigate();
   const [expandedCard, setExpandedCard] = useState<string | null>('eventTypes');
   const [eventTypes, setEventTypes] = useState<any[]>([]);
   const [eventStatuses, setEventStatuses] = useState<any[]>([]);
@@ -261,9 +259,6 @@ const EventsSetup = () => {
                 emptyMessage={loading ? "Loading..." : "No event types configured yet"}
                 onCreateClick={() => setIsCreateModalOpen(true)}
                 createButtonText="Add Event Type"
-                additionalSortOptions={[
-                  { key: 'createdAt', label: 'Date Created' },
-                ]}
                 emptyIcon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -308,10 +303,6 @@ const EventsSetup = () => {
                 emptyMessage={loading ? "Loading..." : "No delivery status steps defined yet"}
                 onCreateClick={() => console.log('Create Status Step')}
                 createButtonText="Add Status Step"
-                additionalSortOptions={[
-                  { key: 'lastUpdatedDate', label: 'Last Updated' },
-                  { key: 'step', label: 'Step Number' },
-                ]}
                 emptyIcon={
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />

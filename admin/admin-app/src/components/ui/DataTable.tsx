@@ -16,7 +16,6 @@ interface DataTableProps<T> {
   emptyIcon?: React.ReactNode;
   onCreateClick?: () => void;
   createButtonText?: string;
-  additionalSortOptions?: { key: string; label: string }[];
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -27,12 +26,10 @@ export function DataTable<T extends Record<string, any>>({
   emptyIcon,
   onCreateClick,
   createButtonText = 'Create New',
-  additionalSortOptions = []
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [additionalSort, setAdditionalSort] = useState<string>('');
 
   // Filter data - search across all columns
   const filteredData = useMemo(() => {
@@ -48,21 +45,18 @@ export function DataTable<T extends Record<string, any>>({
 
   // Sort data
   const sortedData = useMemo(() => {
-    const keyToSort = additionalSort || sortConfig?.key;
-    if (!keyToSort) return filteredData;
-
-    const direction = additionalSort ? 'desc' : sortConfig?.direction || 'asc';
+    if (!sortConfig) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const aValue = a[keyToSort];
-      const bValue = b[keyToSort];
+      const aValue = a[sortConfig.key];
+      const bValue = b[sortConfig.key];
 
       if (aValue === bValue) return 0;
 
       const comparison = aValue < bValue ? -1 : 1;
-      return direction === 'asc' ? comparison : -comparison;
+      return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
-  }, [filteredData, sortConfig, additionalSort]);
+  }, [filteredData, sortConfig]);
 
   // Pagination
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);

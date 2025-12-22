@@ -15,6 +15,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
+  gap: 8px;
 }
 
 @media (min-width: 640px) {
@@ -57,7 +58,8 @@
 .mobileBrand {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  flex: 1;
 }
 
 @media (min-width: 640px) {
