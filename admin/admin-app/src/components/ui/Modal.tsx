@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styles from './Modal.module.css';
 
 interface ModalProps {
@@ -16,16 +16,25 @@ export const Modal: React.FC<ModalProps> = ({
   children,
   size = 'medium' 
 }) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
+
   useEffect(() => {
     if (isOpen) {
+      setShouldRender(true);
       document.body.style.overflow = 'hidden';
+      // Small delay to allow initial render before animation
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          setIsAnimating(true);
+        });
+      });
     } else {
+      setIsAnimating(false);
       document.body.style.overflow = 'unset';
+      const timer = setTimeout(() => setShouldRender(false), 300);
+      return () => clearTimeout(timer);
     }
-    
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
   }, [isOpen]);
 
   useEffect(() => {
@@ -44,12 +53,12 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!shouldRender) return null;
 
   return (
-    <div className={styles.overlay} onClick={onClose}>
+    <div className={`${styles.overlay} ${isAnimating ? styles.open : ''}`} onClick={onClose}>
       <div 
-        className={`${styles.modal} ${styles[size]}`}
+        className={`${styles.modal} ${styles[size]} ${isAnimating ? styles.open : ''}`}
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.header}>

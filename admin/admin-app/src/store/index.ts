@@ -4,6 +4,7 @@ import type { TypedUseSelectorHook } from 'react-redux';
 import authReducer from './slices/authSlice.js';
 import themeReducer from './slices/themeSlice.js';
 import uiReducer from './slices/uiSlice.js';
+import eventsReducer from './slices/eventsSlice.js';
 import { baseApi } from './api/baseApi.js';
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     auth: authReducer,
     theme: themeReducer,
     ui: uiReducer,
+    events: eventsReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
