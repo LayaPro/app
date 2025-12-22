@@ -30,7 +30,6 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
-  const [touchCurrentY, setTouchCurrentY] = useState<number | null>(null);
 
   // Initialize Redux state when prop changes and there are no unsaved changes
   React.useEffect(() => {
@@ -92,11 +91,6 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
     // After successful API call: dispatch(clearUnsavedWorkflowChanges());
   };
 
-  const handleCancel = () => {
-    const sorted = [...eventStatuses].sort((a, b) => a.step - b.step);
-    dispatch(setEventStatuses(sorted));
-  };
-
   const handleAddClick = () => {
     setIsModalOpen(true);
   };
@@ -139,7 +133,6 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
     if (!isReorderMode || draggedIndex === null || touchStartY === null) return;
     e.preventDefault();
     const touch = e.touches[0];
-    setTouchCurrentY(touch.clientY);
     
     const delta = touch.clientY - touchStartY;
     const cardHeight = 100; // card height including gap
@@ -160,20 +153,7 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
 
   const handleTouchEnd = () => {
     setTouchStartY(null);
-    setTouchCurrentY(null);
     setDraggedIndex(null);
-  };
-
-  const handleMoveUp = (index: number) => {
-    if (index > 0) {
-      dispatch(reorderWorkflowStatuses({ fromIndex: index, toIndex: index - 1 }));
-    }
-  };
-
-  const handleMoveDown = (index: number) => {
-    if (index < displayStatuses.length - 1) {
-      dispatch(reorderWorkflowStatuses({ fromIndex: index, toIndex: index + 1 }));
-    }
   };
 
   return (

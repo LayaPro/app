@@ -50,7 +50,7 @@ const eventsSlice = createSlice({
       state.hasUnsavedWorkflowChanges = false;
     },
     addWorkflowStatus: (state, action: PayloadAction<{ statusCode: string; statusDescription?: string }>) => {
-      const { statusCode, statusDescription } = action.payload;
+      const { statusCode } = action.payload;
       
       // Calculate the next step number
       const maxStep = state.eventStatuses.length > 0 
