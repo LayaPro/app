@@ -7,9 +7,9 @@ interface WorkflowStepFormProps {
   step?: {
     statusId?: string;
     statusCode: string;
-    statusDescription?: string;
+    statusDescription: string;
   };
-  onSubmit: (data: { statusCode: string; statusDescription?: string }) => Promise<void>;
+  onSubmit: (data: { statusCode: string; statusDescription: string }) => Promise<void>;
   onCancel: () => void;
   isLoading?: boolean;
 }
@@ -40,12 +40,14 @@ export const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.statusCode.trim()) {
-      newErrors.statusCode = 'Status name is required';
+      newErrors.statusCode = 'Status code is required';
     } else if (formData.statusCode.length > 50) {
-      newErrors.statusCode = 'Status name must be 50 characters or less';
+      newErrors.statusCode = 'Status code must be 50 characters or less';
     }
 
-    if (formData.statusDescription && formData.statusDescription.length > 200) {
+    if (!formData.statusDescription.trim()) {
+      newErrors.statusDescription = 'Status description is required';
+    } else if (formData.statusDescription.length > 200) {
       newErrors.statusDescription = 'Description must be 200 characters or less';
     }
 
@@ -74,14 +76,14 @@ export const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
     <form onSubmit={handleSubmit} className={styles.form}>
       <div className={styles.formGroup}>
         <label htmlFor="statusCode" className={styles.label}>
-          Status Name <span className={styles.required}>*</span>
+          Status Code <span className={styles.required}>*</span>
         </label>
         <Input
           id="statusCode"
           type="text"
           value={formData.statusCode}
           onChange={(e) => handleChange('statusCode', e.target.value)}
-          placeholder="e.g., Not Started, In Progress, Completed"
+          placeholder="e.g., SHOOT_SCHEDULED, EDITING_IN_PROGRESS"
           error={errors.statusCode}
           disabled={isLoading}
         />
@@ -89,14 +91,14 @@ export const WorkflowStepForm: React.FC<WorkflowStepFormProps> = ({
 
       <div className={styles.formGroup}>
         <label htmlFor="statusDescription" className={styles.label}>
-          Description (Optional)
+          Status Description <span className={styles.required}>*</span>
         </label>
         <Input
           id="statusDescription"
           type="text"
           value={formData.statusDescription}
           onChange={(e) => handleChange('statusDescription', e.target.value)}
-          placeholder="Brief description of this workflow step"
+          placeholder="e.g., Scheduled, Editing ongoing"
           error={errors.statusDescription}
           disabled={isLoading}
         />

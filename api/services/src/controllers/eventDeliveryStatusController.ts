@@ -5,11 +5,11 @@ import { AuthRequest } from '../middleware/auth';
 
 export const createEventDeliveryStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { statusCode, step } = req.body;
+    const { statusCode, statusDescription, step } = req.body;
     const tenantId = req.user?.tenantId;
 
-    if (!statusCode || step === undefined) {
-      return res.status(400).json({ message: 'Status code and step are required' });
+    if (!statusCode || !statusDescription || step === undefined) {
+      return res.status(400).json({ message: 'Status code, description, and step are required' });
     }
 
     if (!tenantId) {
@@ -27,6 +27,7 @@ export const createEventDeliveryStatus = async (req: AuthRequest, res: Response)
       statusId,
       tenantId,
       statusCode,
+      statusDescription,
       step,
       lastUpdatedDate: new Date(),
       updatedBy: req.user?.userId

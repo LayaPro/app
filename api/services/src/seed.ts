@@ -167,15 +167,21 @@ async function seedDatabase() {
 
     // 6. Create default event delivery statuses for LayaPro tenant
     const defaultEventStatuses = [
-      { statusCode: 'Not Started', step: 1 },
-      { statusCode: 'Shoot Done', step: 2 },
-      { statusCode: 'Editor Upload', step: 3 },
-      { statusCode: 'Admin Reviewed', step: 4 },
-      { statusCode: 'Client Selected', step: 5 },
-      { statusCode: 'Album Selected', step: 6 },
-      { statusCode: 'Album Designed', step: 7 },
-      { statusCode: 'Album Printed', step: 8 },
-      { statusCode: 'Album Delivered', step: 9 }
+      { statusCode: 'SHOOT_SCHEDULED', statusDescription: 'Scheduled', step: 1, isHidden: false },
+      { statusCode: 'SHOOT_IN_PROGRESS', statusDescription: 'Shoot ongoing', step: 2, isHidden: false },
+      { statusCode: 'SHOOT_COMPLETED', statusDescription: 'Shoot completed', step: 3, isHidden: false },
+      { statusCode: 'AWAITING_EDITS', statusDescription: 'Awaiting editing', step: 4, isHidden: false },
+      { statusCode: 'EDITING_IN_PROGRESS', statusDescription: 'Editing ongoing', step: 5, isHidden: false },
+      { statusCode: 'UPLOADED_FOR_REVIEW', statusDescription: 'Admin review pending', step: 6, isHidden: false },
+      { statusCode: 'CHANGES_REQUESTED', statusDescription: 'Admin changes suggested', step: 7, isHidden: true },
+      { statusCode: 'CONTENT_REJECTED', statusDescription: 'Rejected by admin', step: 8, isHidden: true },
+      { statusCode: 'PUBLISHED', statusDescription: 'Published', step: 9, isHidden: false },
+      { statusCode: 'CLIENT_SELECTION_PENDING', statusDescription: 'Client selection pending', step: 10, isHidden: false },
+      { statusCode: 'ALBUM_DESIGN_PENDING', statusDescription: 'Album design pending', step: 11, isHidden: false },
+      { statusCode: 'ALBUM_DESIGNING', statusDescription: 'Album design ongoing', step: 12, isHidden: false },
+      { statusCode: 'ALBUM_UPLOADED', statusDescription: 'Album client review pending', step: 13, isHidden: false },
+      { statusCode: 'ALBUM_PRINT_READY', statusDescription: 'Album approved by client', step: 14, isHidden: false },
+      { statusCode: 'COMPLETED', statusDescription: 'Delivered', step: 15, isHidden: false }
     ];
 
     console.log('\n✓ Creating default event delivery statuses...');
@@ -194,10 +200,13 @@ async function seedDatabase() {
           statusId,
           tenantId: layaproTenant.tenantId,
           statusCode: statusData.statusCode,
-          step: statusData.step
+          statusDescription: statusData.statusDescription,
+          step: statusData.step,
+          isHidden: statusData.isHidden || false
         });
         createdEventStatusCount++;
-        console.log(`  ✓ Created event status: ${statusData.statusCode} (Step ${statusData.step})`);
+        const hiddenText = statusData.isHidden ? ' (Hidden)' : '';
+        console.log(`  ✓ Created event status: ${statusData.statusCode} - ${statusData.statusDescription} (Step ${statusData.step})${hiddenText}`);
       } else {
         existingEventStatusCount++;
       }

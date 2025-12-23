@@ -72,7 +72,7 @@ export const eventDeliveryStatusApi = {
     return handleResponse(response);
   },
 
-  create: async (data: { statusCode: string; step: number }) => {
+  create: async (data: { statusCode: string; statusDescription: string; step: number }) => {
     const response = await fetch(`${API_BASE_URL}/create-event-delivery-status`, {
       method: 'POST',
       headers: {
@@ -84,7 +84,7 @@ export const eventDeliveryStatusApi = {
     return handleResponse(response);
   },
 
-  update: async (statusId: string, data: { statusCode?: string; step?: number }) => {
+  update: async (statusId: string, data: { statusCode?: string; statusDescription?: string; step?: number }) => {
     const response = await fetch(`${API_BASE_URL}/update-event-delivery-status/${statusId}`, {
       method: 'PUT',
       headers: {

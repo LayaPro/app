@@ -50,7 +50,9 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
   }, [eventStatuses, reduxEventStatuses.length, dispatch]);
 
   // Use Redux state if available, otherwise fall back to props
-  const displayStatuses = reduxEventStatuses.length > 0 ? reduxEventStatuses : eventStatuses;
+  // Filter out hidden statuses (they should only appear when triggered)
+  const allStatuses = reduxEventStatuses.length > 0 ? reduxEventStatuses : eventStatuses;
+  const displayStatuses = allStatuses.filter(status => !status.isHidden);
 
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedIndex(index);
@@ -124,7 +126,7 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
     setIsModalOpen(false);
   };
 
-  const handleFormSubmit = async (data: { statusCode: string; statusDescription?: string }) => {
+  const handleFormSubmit = async (data: { statusCode: string; statusDescription: string }) => {
     setIsSubmitting(true);
     try {
       // Calculate the next step number
@@ -136,6 +138,7 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
       // Call API to create new workflow step
       const response = await eventDeliveryStatusApi.create({
         statusCode: data.statusCode,
+        statusDescription: data.statusDescription,
         step: nextStep
       });
 
@@ -234,8 +237,8 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
         }
-        title="Event Workflow"
-        subtitle="Define workflow steps for event delivery (Booking → Shooting → Editing → Delivered)"
+        title="Event/Album Workflow"
+        subtitle="Define workflow steps for event/album delivery (Booking → Shooting → Editing → Delivered)"
         isExpanded={isExpanded}
         onToggle={onToggle}
       >
@@ -318,7 +321,7 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
                         <button 
                           className={workflowStyles.deleteButton} 
                           title="Delete"
-                          onClick={() => handleDeleteClick(status.statusId, status.statusCode)}
+                          onClick={() => handleDeleteClick(status.statusId, status.statusDescription)}
                         >
                           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -326,7 +329,7 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
                         </button>
                       </div>
                       <div className={workflowStyles.stepContent}>
-                        <h4 className={workflowStyles.statusCode}>{status.statusCode}</h4>
+                        <h4 className={workflowStyles.statusCode}>{status.statusDescription}</h4>
                       </div>
                     </div>
                     {index < displayStatuses.length - 1 && (

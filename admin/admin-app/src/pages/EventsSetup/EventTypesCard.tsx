@@ -133,7 +133,7 @@ export const EventTypesCard: React.FC<EventTypesCardProps> = ({
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         }
-        title="Event Types"
+        title="Events"
         subtitle="Manage different types of events (Wedding, Birthday, Corporate, etc.)"
         isExpanded={isExpanded}
         onToggle={onToggle}
@@ -142,9 +142,9 @@ export const EventTypesCard: React.FC<EventTypesCardProps> = ({
           columns={eventTypesColumns}
           data={eventTypes}
           itemsPerPage={10}
-          emptyMessage={loading ? "Loading..." : "No event types found"}
+          emptyMessage={loading ? "Loading..." : "No events found"}
           onCreateClick={() => setIsCreateModalOpen(true)}
-          createButtonText="Add Event Type"
+          createButtonText="Add Event"
         />
       </CollapsibleCard>
 
