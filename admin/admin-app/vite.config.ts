@@ -13,6 +13,12 @@ export default defineConfig({
   server: {
     allowedHosts: [
       'laya-server-m-env.eba-qw4gep8b.ap-south-1.elasticbeanstalk.com'
-    ]
+    ],
+    // SPA fallback for dev server - serves index.html for all routes
+    historyApiFallback: true
+  },
+  preview: {
+    // SPA fallback for preview server
+    historyApiFallback: true
   }
 })
