@@ -12,16 +12,22 @@ export const Input: React.FC<InputProps> = ({
   error,
   icon,
   className = '',
+  required,
   ...props
 }) => {
   return (
     <div className={styles.inputGroup}>
-      {label && <label className={styles.label}>{label}</label>}
+      {label && (
+        <label className={styles.label}>
+          {label}
+          {required && <span className={styles.required}> *</span>}
+        </label>
+      )}
       <div className={styles.inputWrapper}>
         {icon && <div className={styles.icon}>{icon}</div>}
         <input
-          className={`${styles.input} ${icon ? styles.withIcon : ''} ${error ? styles.error : ''} ${className}`}
           {...props}
+          className={`${styles.input} ${icon ? styles.withIcon : ''} ${error ? styles.error : ''} ${className}`}
         />
       </div>
       {error && <span className={styles.errorText}>{error}</span>}

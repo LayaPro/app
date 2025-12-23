@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DataTable } from '../../components/ui/DataTable.js';
 import type { Column } from '../../components/ui/DataTable.js';
 import { Modal } from '../../components/ui/Modal.js';
+import { CollapsibleCard } from '../../components/ui/CollapsibleCard.js';
 import { EventForm } from '../../components/forms/EventForm.js';
 import { eventApi } from '../../services/api.js';
 import styles from './EventCard.module.css';
@@ -126,48 +127,26 @@ export const EventTypesCard: React.FC<EventTypesCardProps> = ({
 
   return (
     <>
-      <div className={styles.card}>
-        <button
-          className={styles.cardHeader}
-          onClick={onToggle}
-        >
-          <div className={styles.cardHeaderContent}>
-            <svg className={styles.cardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            <div>
-              <h2 className={styles.cardTitle}>Event Types</h2>
-              <p className={styles.cardSubtitle}>Manage different types of events (Wedding, Birthday, Corporate, etc.)</p>
-            </div>
-          </div>
-          <svg
-            className={`${styles.chevron} ${isExpanded ? styles.chevronExpanded : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      <CollapsibleCard
+        icon={
+          <svg className={styles.cardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-        </button>
-
-        <div className={`${styles.cardContent} ${isExpanded ? styles.cardContentExpanded : ''}`}>
-          <div className={styles.contentInner}>
-            <DataTable
-              columns={eventTypesColumns}
-              data={eventTypes}
-              itemsPerPage={5}
-              emptyMessage={loading ? "Loading..." : "No event types configured yet"}
-              onCreateClick={() => setIsCreateModalOpen(true)}
-              createButtonText="Add Event Type"
-              emptyIcon={
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              }
-            />
-          </div>
-        </div>
-      </div>
+        }
+        title="Event Types"
+        subtitle="Manage different types of events (Wedding, Birthday, Corporate, etc.)"
+        isExpanded={isExpanded}
+        onToggle={onToggle}
+      >
+        <DataTable
+          columns={eventTypesColumns}
+          data={eventTypes}
+          itemsPerPage={10}
+          emptyMessage={loading ? "Loading..." : "No event types found"}
+          onCreateClick={() => setIsCreateModalOpen(true)}
+          createButtonText="Add Event Type"
+        />
+      </CollapsibleCard>
 
       {/* Create Event Modal */}
       <Modal

@@ -4,6 +4,7 @@ import { useAppDispatch, useAppSelector } from '../../store/index.js';
 import { reorderWorkflowStatuses, setEventStatuses, clearUnsavedWorkflowChanges, deleteWorkflowStatus } from '../../store/slices/eventsSlice.js';
 import { Modal } from '../../components/ui/Modal.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
+import { CollapsibleCard } from '../../components/ui/CollapsibleCard.js';
 import { WorkflowStepForm } from '../../components/forms/WorkflowStepForm.js';
 import { eventDeliveryStatusApi } from '../../services/api.js';
 import styles from './EventCard.module.css';
@@ -226,32 +227,18 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
   };
 
   return (
-    <div className={styles.card}>
-      <button
-        className={styles.cardHeader}
-        onClick={onToggle}
-      >
-        <div className={styles.cardHeaderContent}>
+    <>
+      <CollapsibleCard
+        icon={
           <svg className={styles.cardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
           </svg>
-          <div>
-            <h2 className={styles.cardTitle}>Event Workflow</h2>
-            <p className={styles.cardSubtitle}>Define workflow steps for event delivery (Booking → Shooting → Editing → Delivered)</p>
-          </div>
-        </div>
-        <svg
-          className={`${styles.chevron} ${isExpanded ? styles.chevronExpanded : ''}`}
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      <div className={`${styles.cardContent} ${isExpanded ? styles.cardContentExpanded : ''}`}>
-        <div className={styles.contentInner}>
+        }
+        title="Event Workflow"
+        subtitle="Define workflow steps for event delivery (Booking → Shooting → Editing → Delivered)"
+        isExpanded={isExpanded}
+        onToggle={onToggle}
+      >
           {loading ? (
             <div className={workflowStyles.loading}>Loading workflow...</div>
           ) : displayStatuses.length === 0 ? (
@@ -353,8 +340,8 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
                 ))}
               </div>
             </>
-          )}        </div>
-      </div>
+          )}
+      </CollapsibleCard>
 
       <Modal
         isOpen={isModalOpen}
@@ -380,6 +367,6 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
         isLoading={isDeleting}
         variant="danger"
       />
-    </div>
+    </>
   );
 };

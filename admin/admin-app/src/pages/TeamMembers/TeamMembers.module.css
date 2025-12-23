@@ -1,0 +1,21 @@
+.pageContainer {
+  padding: 0;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

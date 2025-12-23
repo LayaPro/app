@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DataTable } from '../../components/ui/DataTable.js';
 import type { Column } from '../../components/ui/DataTable.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
+import { CollapsibleCard } from '../../components/ui/CollapsibleCard.js';
 import styles from './AccessCard.module.css';
 import { roleApi } from '../../services/api';
 import { RoleForm } from './RoleForm';
@@ -116,43 +117,26 @@ export const RolesCard: React.FC<RolesCardProps> = ({
 
   return (
     <>
-      <div className={styles.card}>
-        <button
-          className={styles.cardHeader}
-          onClick={onToggle}
-        >
-          <div className={styles.cardHeaderContent}>
-            <svg className={styles.cardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            <div>
-              <h2 className={styles.cardTitle}>Roles</h2>
-              <p className={styles.cardSubtitle}>Define roles and permissions for access control</p>
-            </div>
-          </div>
-          <svg
-            className={`${styles.chevron} ${isExpanded ? styles.chevronExpanded : ''}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      <CollapsibleCard
+        icon={
+          <svg className={styles.cardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
           </svg>
-        </button>
-
-        <div className={`${styles.cardContent} ${isExpanded ? styles.cardContentExpanded : ''}`}>
-          <div className={styles.contentInner}>
-            <DataTable
-              columns={rolesColumns}
-              data={roles}
-              itemsPerPage={10}
-              emptyMessage={loading ? "Loading..." : "No roles found"}
-              onCreateClick={handleCreateRole}
-              createButtonText="Add Role"
-            />
-          </div>
-        </div>
-      </div>
+        }
+        title="Roles"
+        subtitle="Define roles and permissions for access control"
+        isExpanded={isExpanded}
+        onToggle={onToggle}
+      >
+        <DataTable
+          columns={rolesColumns}
+          data={roles}
+          itemsPerPage={10}
+          emptyMessage={loading ? "Loading..." : "No roles found"}
+          onCreateClick={handleCreateRole}
+          createButtonText="Add Role"
+        />
+      </CollapsibleCard>
 
       <RoleForm
         isOpen={isFormOpen}

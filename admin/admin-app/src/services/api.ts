@@ -227,3 +227,146 @@ export const roleApi = {
     return handleResponse(response);
   },
 };
+
+// Team API
+export const teamApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-team-members`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: { firstName: string; lastName: string; email: string; phoneNumber?: string; profileId?: string; address?: string; isFreelancer?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}/create-team-member`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (memberId: string, data: { firstName?: string; lastName?: string; email?: string; phoneNumber?: string; profileId?: string; address?: string; isFreelancer?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}/update-team-member/${memberId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (memberId: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-team-member/${memberId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
+
+// Profile API (Work Profiles)
+export const profileApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-profiles`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: { name: string; description?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/create-profile`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (profileId: string, data: { name?: string; description?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/update-profile/${profileId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (profileId: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-profile/${profileId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
+
+export const equipmentApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-equipment`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: { name: string; type?: string; serialNumber?: string; purchaseDate?: string; status?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/create-equipment`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (equipmentId: string, data: { name?: string; type?: string; serialNumber?: string; purchaseDate?: string; status?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/update-equipment/${equipmentId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (equipmentId: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-equipment/${equipmentId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};

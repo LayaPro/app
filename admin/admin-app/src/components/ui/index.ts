@@ -8,6 +8,7 @@ export { Breadcrumb } from './Breadcrumb.js';
 export { Select } from './Select.js';
 export { Toast } from './Toast.js';
 export { ToastContainer } from './ToastContainer.js';
+export { CollapsibleCard } from './CollapsibleCard.js';
 export type { Column } from './DataTable.js';
 export type { BreadcrumbItem } from './Breadcrumb.js';
 export type { SelectOption } from './Select.js';

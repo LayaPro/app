@@ -16,10 +16,10 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   return (
     <div className={`${styles.checkboxWrapper} ${className}`}>
       <input
+        {...props}
         type="checkbox"
         id={checkboxId}
         className={styles.checkbox}
-        {...props}
       />
       {label && (
         <label htmlFor={checkboxId} className={styles.label}>
