@@ -69,7 +69,6 @@
   box-shadow: var(--shadow-lg);
   z-index: 1000;
   padding: 12px;
-  animation: slideDown 0.2s ease-out;
   min-width: 280px;
 }
 
@@ -255,4 +254,41 @@
   font-size: 13px;
   color: #dc2626;
   font-weight: 500;
+}
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .dropdown {
+    left: 50%;
+    margin-left: -160px;
+    min-width: auto;
+    width: calc(100vw - 32px);
+    max-width: 320px;
+  }
+
+  .timeInputWrapper {
+    flex-wrap: nowrap;
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .timeInput {
+    font-size: 15px;
+    min-width: 0;
+  }
+
+  .setButton {
+    padding: 8px 14px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .day {
+    font-size: 12px;
+    min-height: 36px;
+  }
+
+  .monthLabel {
+    font-size: 13px;
+  }
 }

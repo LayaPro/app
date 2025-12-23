@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Input } from '../../components/ui/Input';
-import { Select } from '../../components/ui/Select';
+import { Textarea } from '../../components/ui/Textarea';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { DatePicker } from '../../components/ui/DatePicker';
 import { Breadcrumb } from '../../components/ui/index.js';
@@ -14,6 +14,10 @@ interface ProjectWizardProps {
 
 interface ProjectData {
   // Step 1: Basic Details
+  brideFirstName: string;
+  brideLastName: string;
+  groomFirstName: string;
+  groomLastName: string;
   clientName: string;
   contactPerson: string;
   email: string;
@@ -45,14 +49,18 @@ interface ProjectData {
 const STEPS = [
   { id: 1, label: 'Basic Details' },
   { id: 2, label: 'Events' },
-  { id: 3, label: 'Payment' },
-  { id: 4, label: 'Team Assignment' },
+  { id: 3, label: 'Team Assignment' },
+  { id: 4, label: 'Payment' },
   { id: 5, label: 'Review' },
 ];
 
 export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<ProjectData>({
+    brideFirstName: '',
+    brideLastName: '',
+    groomFirstName: '',
+    groomLastName: '',
     clientName: '',
     contactPerson: '',
     email: '',
@@ -98,7 +106,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       }
     }
 
-    if (step === 3) {
+    if (step === 4) {
       if (!formData.totalBudget.trim()) newErrors.totalBudget = 'Total budget is required';
     }
 
@@ -135,9 +143,9 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       case 2:
         return <Step2Events formData={formData} onChange={handleChange} errors={errors} />;
       case 3:
-        return <Step3Payment formData={formData} onChange={handleChange} errors={errors} />;
+        return <Step4TeamAssignment formData={formData} onChange={handleChange} />;
       case 4:
-        return <Step4TeamAssignment />;
+        return <Step3Payment formData={formData} onChange={handleChange} errors={errors} />;
       case 5:
         return <Step5Review formData={formData} onEdit={setCurrentStep} />;
       default:
@@ -204,6 +212,16 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
               </button>
             )}
             
+            {currentStep === 3 && (
+              <button
+                type="button"
+                className={`${styles.button} ${styles.skipButton}`}
+                onClick={() => setCurrentStep(4)}
+              >
+                Skip
+              </button>
+            )}
+            
             {currentStep < STEPS.length ? (
               <button
                 type="button"
@@ -243,20 +261,18 @@ const Step1BasicDetails: React.FC<any> = ({ formData, onChange, errors }) => {
   return (
     <div className={styles.form}>
       <div className={styles.formSection}>
-        <h3 className={styles.sectionTitle}>Client Information</h3>
-        
-        <div className={styles.formRow}>
+        <div className={styles.formRow3Col}>
           <div className={styles.formGroup}>
             <Input
-              label="Client Name"
+              label="Project Name"
               value={formData.clientName}
               onChange={(e) => onChange('clientName', e.target.value)}
               error={errors.clientName}
-              placeholder="e.g., John & Jane Doe"
+              placeholder="e.g., John & Jane Wedding"
               required
             />
           </div>
-          
+
           <div className={styles.formGroup}>
             <Input
               label="Contact Person"
@@ -267,9 +283,67 @@ const Step1BasicDetails: React.FC<any> = ({ formData, onChange, errors }) => {
               required
             />
           </div>
+
+          <div className={styles.formGroup}>
+            <Input
+              label="Phone Number"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => onChange('phone', e.target.value)}
+              error={errors.phone}
+              placeholder="+91 9876543210"
+              required
+            />
+          </div>
         </div>
 
-        <div className={styles.formRow}>
+        <div className={styles.formRow3Col}>
+          <div className={styles.formGroup}>
+            <Input
+              label="Bride First Name"
+              value={formData.brideFirstName}
+              onChange={(e) => onChange('brideFirstName', e.target.value)}
+              error={errors.brideFirstName}
+              placeholder="e.g., Jane"
+              required
+            />
+          </div>
+          
+          <div className={styles.formGroup}>
+            <Input
+              label="Bride Last Name"
+              value={formData.brideLastName}
+              onChange={(e) => onChange('brideLastName', e.target.value)}
+              error={errors.brideLastName}
+              placeholder="e.g., Smith"
+              required
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <Input
+              label="Groom First Name"
+              value={formData.groomFirstName}
+              onChange={(e) => onChange('groomFirstName', e.target.value)}
+              error={errors.groomFirstName}
+              placeholder="e.g., John"
+              required
+            />
+          </div>
+        </div>
+
+        <div className={styles.formRow3Col}>
+          <div className={styles.formGroup}>
+            <Input
+              label="Groom Last Name"
+              value={formData.groomLastName}
+              onChange={(e) => onChange('groomLastName', e.target.value)}
+              error={errors.groomLastName}
+              placeholder="e.g., Doe"
+              required
+            />
+          </div>
+
           <div className={styles.formGroup}>
             <Input
               label="Email"
@@ -284,20 +358,6 @@ const Step1BasicDetails: React.FC<any> = ({ formData, onChange, errors }) => {
           
           <div className={styles.formGroup}>
             <Input
-              label="Phone Number"
-              type="tel"
-              value={formData.phone}
-              onChange={(e) => onChange('phone', e.target.value)}
-              error={errors.phone}
-              placeholder="+91 9876543210"
-              required
-            />
-          </div>
-        </div>
-
-        <div className={styles.formRow}>
-          <div className={styles.formGroup}>
-            <Input
               label="City"
               value={formData.city}
               onChange={(e) => onChange('city', e.target.value)}
@@ -305,25 +365,29 @@ const Step1BasicDetails: React.FC<any> = ({ formData, onChange, errors }) => {
               placeholder="e.g., Mumbai"
             />
           </div>
-          
+        </div>
+
+        <div className={styles.formRow3Col}>
           <div className={styles.formGroup}>
-            <Select
+            <SearchableSelect
               label="Referral Source"
               value={formData.referralSource}
               onChange={(value) => onChange('referralSource', value)}
               options={referralOptions}
+              placeholder="Search referral source..."
             />
           </div>
-        </div>
 
-        <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-          <Input
-            label="Address"
-            value={formData.address}
-            onChange={(e) => onChange('address', e.target.value)}
-            error={errors.address}
-            placeholder="Full address"
-          />
+          <div className={styles.formGroup}>
+            <Textarea
+              label="Address"
+              value={formData.address}
+              onChange={(e) => onChange('address', e.target.value)}
+              error={errors.address}
+              placeholder="Full address"
+              rows={2}
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -452,12 +516,13 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
 
         <div className={styles.formRow3Col}>
           <div className={styles.formGroup}>
-            <Input
+            <Textarea
               label="Venue"
               value={newEvent.venue}
               onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })}
-              placeholder="Enter venue name"
+              placeholder="Enter venue name and address"
               required
+              rows={2}
             />
           </div>
           <div className={styles.formGroup}>
@@ -574,9 +639,7 @@ const Step3Payment: React.FC<any> = ({ formData, onChange, errors }) => {
   return (
     <div className={styles.form}>
       <div className={styles.formSection}>
-        <h3 className={styles.sectionTitle}>Payment Details</h3>
-        
-        <div className={styles.formRow}>
+        <div className={styles.formRow3Col}>
           <div className={styles.formGroup}>
             <Input
               label="Total Budget"
@@ -598,9 +661,7 @@ const Step3Payment: React.FC<any> = ({ formData, onChange, errors }) => {
               placeholder="e.g., 50000"
             />
           </div>
-        </div>
 
-        <div className={styles.formRow}>
           <div className={styles.formGroup}>
             <Input
               label="Advance Received Date"
@@ -609,7 +670,9 @@ const Step3Payment: React.FC<any> = ({ formData, onChange, errors }) => {
               onChange={(e) => onChange('advanceReceivedDate', e.target.value)}
             />
           </div>
-          
+        </div>
+
+        <div className={styles.formRow3Col}>
           <div className={styles.formGroup}>
             <Input
               label="Next Payment Date"
@@ -618,15 +681,15 @@ const Step3Payment: React.FC<any> = ({ formData, onChange, errors }) => {
               onChange={(e) => onChange('nextPaymentDate', e.target.value)}
             />
           </div>
-        </div>
 
-        <div className={`${styles.formGroup} ${styles.fullWidth}`}>
-          <Input
-            label="Payment Terms"
-            value={formData.paymentTerms}
-            onChange={(e) => onChange('paymentTerms', e.target.value)}
-            placeholder="e.g., 50% advance, 50% on delivery"
-          />
+          <div className={styles.formGroup}>
+            <Input
+              label="Payment Terms"
+              value={formData.paymentTerms}
+              onChange={(e) => onChange('paymentTerms', e.target.value)}
+              placeholder="e.g., 50% advance, 50% on delivery"
+            />
+          </div>
         </div>
       </div>
     </div>
@@ -634,17 +697,170 @@ const Step3Payment: React.FC<any> = ({ formData, onChange, errors }) => {
 };
 
 // Step 4: Team Assignment (Optional)
-const Step4TeamAssignment: React.FC<any> = () => {
+const Step4TeamAssignment: React.FC<any> = ({ formData, onChange }) => {
+  const [selectedMember, setSelectedMember] = useState<Record<string, string>>({});
+  
+  // Mock team members - in production, fetch from API
+  const teamMembers = [
+    { value: 'tm1', label: 'John Doe - Photographer' },
+    { value: 'tm2', label: 'Jane Smith - Videographer' },
+    { value: 'tm3', label: 'Mike Johnson - Drone Operator' },
+    { value: 'tm4', label: 'Sarah Williams - Editor' },
+    { value: 'tm5', label: 'David Brown - Assistant' },
+    { value: 'tm6', label: 'Emily Davis - Coordinator' },
+  ];
+
+  const formatEventDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const formatEventTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const handleAddMember = (eventId: string) => {
+    const memberId = selectedMember[eventId];
+    if (!memberId) return;
+    
+    const currentAssignments = formData.teamAssignments[eventId] || [];
+    if (currentAssignments.includes(memberId)) {
+      // Already added
+      setSelectedMember({ ...selectedMember, [eventId]: '' });
+      return;
+    }
+    
+    const newAssignments = { ...formData.teamAssignments };
+    newAssignments[eventId] = [...currentAssignments, memberId];
+    onChange('teamAssignments', newAssignments);
+    setSelectedMember({ ...selectedMember, [eventId]: '' });
+  };
+
+  const handleRemoveMember = (eventId: string, memberId: string) => {
+    const currentAssignments = formData.teamAssignments[eventId] || [];
+    const newAssignments = { ...formData.teamAssignments };
+    newAssignments[eventId] = currentAssignments.filter((id: string) => id !== memberId);
+    onChange('teamAssignments', newAssignments);
+  };
+
+  const getAvailableMembers = (eventId: string) => {
+    const assignedMembers = formData.teamAssignments[eventId] || [];
+    return [
+      { value: '', label: 'Select team member...' },
+      ...teamMembers.filter(m => !assignedMembers.includes(m.value))
+    ];
+  };
+
+  if (formData.events.length === 0) {
+    return (
+      <div className={styles.form}>
+        <div className={styles.formSection}>
+          <div className={styles.emptyState}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '15px' }}>
+              No events added yet. Add events in Step 2 to assign team members.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.form}>
       <div className={styles.formSection}>
-        <h3 className={styles.sectionTitle}>Team Assignment (Optional)</h3>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>
-          Assign team members to events. You can skip this step and assign later.
-        </p>
-        
-        <div className={styles.emptyState}>
-          <p>Team assignment will be available after events are configured</p>
+        <div className={styles.teamAssignmentList}>
+          {formData.events.map((event: any) => {
+            const assignedMembers = formData.teamAssignments[event.eventId] || [];
+            
+            return (
+              <div key={event.eventId} className={styles.teamEventCard}>
+                <div className={styles.teamEventHeader}>
+                  <h4 className={styles.teamEventName}>{event.eventName}</h4>
+                  <div className={styles.teamEventMeta}>
+                    <div className={styles.teamEventMetaItem}>
+                      <svg className={styles.teamEventIcon} width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>{formatEventDate(event.fromDate)}</span>
+                    </div>
+                    {event.fromTime && (
+                      <div className={styles.teamEventMetaItem}>
+                        <svg className={styles.teamEventIcon} width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{formatEventTime(event.fromTime)}</span>
+                      </div>
+                    )}
+                    {event.venue && (
+                      <div className={styles.teamEventMetaItem}>
+                        <svg className={styles.teamEventIcon} width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        <span>{event.venue}</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className={styles.teamEventBadge}>
+                    {assignedMembers.length}
+                  </div>
+                </div>
+                
+                <div className={styles.teamSelectContainer}>
+                  <div className={styles.selectWrapper}>
+                    <SearchableSelect
+                      value={selectedMember[event.eventId] || ''}
+                      onChange={(value) => setSelectedMember({ ...selectedMember, [event.eventId]: value })}
+                      options={getAvailableMembers(event.eventId)}
+                      placeholder="Search team members..."
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.addButton}
+                    onClick={() => handleAddMember(event.eventId)}
+                    disabled={!selectedMember[event.eventId]}
+                  >
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Add
+                  </button>
+                  
+                  {assignedMembers.map((memberId: string) => {
+                    const member = teamMembers.find(m => m.value === memberId);
+                    if (!member) return null;
+                    
+                    return (
+                      <div key={memberId} className={styles.assignedMemberItem}>
+                        <span className={styles.memberLabel}>{member.label}</span>
+                        <button
+                          type="button"
+                          className={styles.removeMemberButton}
+                          onClick={() => handleRemoveMember(event.eventId, memberId)}
+                          title="Remove member"
+                        >
+                          <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

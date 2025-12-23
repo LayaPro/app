@@ -1,25 +1,25 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import styles from './SearchableSelect.module.css';
+import styles from './MultiSelect.module.css';
 
 interface Option {
   value: string;
   label: string;
 }
 
-interface SearchableSelectProps {
+interface MultiSelectProps {
   label?: string;
-  value: string;
-  onChange: (value: string) => void;
+  value: string[]; // Array of selected values
+  onChange: (value: string[]) => void;
   options: Option[];
   placeholder?: string;
   error?: string;
   required?: boolean;
 }
 
-export const SearchableSelect: React.FC<SearchableSelectProps> = ({
+export const MultiSelect: React.FC<MultiSelectProps> = ({
   label,
-  value,
+  value = [],
   onChange,
   options,
   placeholder = 'Select...',
@@ -33,8 +33,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const selectedOption = options.find(opt => opt.value === value);
-  const displayValue = selectedOption?.label || '';
+  const selectedOptions = options.filter(opt => value.includes(opt.value));
 
   const filteredOptions = options.filter(option =>
     option.label.toLowerCase().includes(searchTerm.toLowerCase())
@@ -69,10 +68,28 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }
   }, [isOpen]);
 
-  const handleSelect = (optionValue: string) => {
-    onChange(optionValue);
-    setIsOpen(false);
-    setSearchTerm('');
+  const handleToggle = (optionValue: string) => {
+    if (value.includes(optionValue)) {
+      onChange(value.filter(v => v !== optionValue));
+    } else {
+      onChange([...value, optionValue]);
+    }
+  };
+
+  const handleOptionClick = (optionValue: string, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    handleToggle(optionValue);
+  };
+
+  const handleRemove = (optionValue: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange(value.filter(v => v !== optionValue));
+  };
+
+  const handleClearAll = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onChange([]);
   };
 
   return (
@@ -96,9 +113,42 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
             setIsOpen(!isOpen);
           }}
         >
-          <span className={displayValue ? styles.selectedText : styles.placeholder}>
-            {displayValue || placeholder}
-          </span>
+          <div className={styles.selectedContainer}>
+            {selectedOptions.length > 0 ? (
+              <>
+                <div className={styles.selectedChips}>
+                  {selectedOptions.map(option => (
+                    <span key={option.value} className={styles.chip}>
+                      {option.label}
+                      <button
+                        type="button"
+                        className={styles.chipRemove}
+                        onClick={(e) => handleRemove(option.value, e)}
+                      >
+                        <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                {selectedOptions.length > 0 && (
+                  <button
+                    type="button"
+                    className={styles.clearAll}
+                    onClick={handleClearAll}
+                    title="Clear all"
+                  >
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </>
+            ) : (
+              <span className={styles.placeholder}>{placeholder}</span>
+            )}
+          </div>
           <svg 
             className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}
             width="20" 
@@ -138,21 +188,31 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
             <div className={styles.optionsList}>
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`${styles.option} ${option.value === value ? styles.selected : ''}`}
-                    onClick={() => handleSelect(option.value)}
-                  >
-                    {option.label}
-                    {option.value === value && (
-                      <svg className={styles.checkIcon} width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </button>
-                ))
+                filteredOptions.map((option) => {
+                  const isSelected = value.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${styles.option} ${isSelected ? styles.selected : ''}`}
+                      onClick={(e) => handleOptionClick(option.value, e)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => {}}
+                        className={styles.checkbox}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {option.label}
+                      {isSelected && (
+                        <svg className={styles.checkIcon} width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })
               ) : (
                 <div className={styles.noResults}>No results found</div>
               )}

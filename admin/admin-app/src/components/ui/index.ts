@@ -1,5 +1,7 @@
 export { Button } from './Button.js';
 export { Input } from './Input.js';
+export { Textarea } from './Textarea.js';
+export { MultiSelect } from './MultiSelect.js';
 export { Checkbox } from './Checkbox.js';
 export { Alert } from './Alert.js';
 export { DataTable } from './DataTable.js';
