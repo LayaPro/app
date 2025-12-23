@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import styles from './EventsSetup.module.css';
-import { eventApi, eventDeliveryStatusApi } from '../services/api.js';
-import { Alert, Breadcrumb } from '../components/ui/index.js';
-import { EventTypesCard } from '../components/events/EventTypesCard.js';
-import { EventWorkflowCard } from '../components/events/EventWorkflowCard.js';
+import { eventApi, eventDeliveryStatusApi } from '../../services/api.js';
+import { Alert, Breadcrumb } from '../../components/ui/index.js';
+import { EventTypesCard } from './EventTypesCard.js';
+import { EventWorkflowCard } from './EventWorkflowCard.js';
 
 const EventsSetup = () => {
   const [expandedCard, setExpandedCard] = useState<string | null>('eventWorkflow');

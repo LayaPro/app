@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { DataTable } from '../ui/DataTable.js';
-import type { Column } from '../ui/DataTable.js';
-import { Modal } from '../ui/Modal.js';
-import { EventForm } from '../forms/EventForm.js';
+import { DataTable } from '../../components/ui/DataTable.js';
+import type { Column } from '../../components/ui/DataTable.js';
+import { Modal } from '../../components/ui/Modal.js';
+import { EventForm } from '../../components/forms/EventForm.js';
 import { eventApi } from '../../services/api.js';
 import styles from './EventCard.module.css';
 

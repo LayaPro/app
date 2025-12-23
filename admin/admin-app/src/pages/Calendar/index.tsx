@@ -1,4 +1,4 @@
-import styles from './Page.module.css';
+import styles from '../Page.module.css';
 
 const Calendar = () => {
   return (

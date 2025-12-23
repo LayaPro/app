@@ -9,28 +9,28 @@ import { Login } from './components/auth/Login.js';
 import { ROUTES } from './utils/constants.js';
 
 // Page imports
-import Dashboard from './pages/Dashboard.js';
-import Albums from './pages/Albums.js';
-import Projects from './pages/Projects.js';
-import Finances from './pages/Finances.js';
-import Calendar from './pages/Calendar.js';
-import Statistics from './pages/Statistics.js';
-import Settings from './pages/Settings.js';
+import Dashboard from './pages/Dashboard/index.js';
+import Albums from './pages/Albums/index.js';
+import Projects from './pages/Projects/index.js';
+import Finances from './pages/Finances/index.js';
+import Calendar from './pages/Calendar/index.js';
+import Statistics from './pages/Statistics/index.js';
+import Settings from './pages/Settings/index.js';
 
 // Access Control pages
-import Users from './pages/Users.js';
-import Roles from './pages/Roles.js';
-import Tenants from './pages/Tenants.js';
+import Users from './pages/Users/index.js';
+import Roles from './pages/Roles/index.js';
+import Tenants from './pages/Tenants/index.js';
 
 // Team pages
-import TeamMembers from './pages/TeamMembers.js';
-import Designations from './pages/Designations.js';
-import Equipments from './pages/Equipments.js';
+import TeamMembers from './pages/TeamMembers/index.js';
+import Designations from './pages/Designations/index.js';
+import Equipments from './pages/Equipments/index.js';
 
 // Workflow Setup pages
-import EventsSetup from './pages/EventsSetup.js';
-import GallerySetup from './pages/GallerySetup.js';
-import ProjectsSetup from './pages/ProjectsSetup.js';
+import EventsSetup from './pages/EventsSetup/index.js';
+import GallerySetup from './pages/GallerySetup/index.js';
+import ProjectsSetup from './pages/ProjectsSetup/index.js';
 
 function App() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
