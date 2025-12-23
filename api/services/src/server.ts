@@ -78,6 +78,7 @@ app.post('/create-event-delivery-status', authenticate, requireAdmin, eventDeliv
 app.get('/get-all-event-delivery-statuses', authenticate, requireAdmin, eventDeliveryStatusController.getAllEventDeliveryStatuses);
 app.get('/get-event-delivery-status/:statusId', authenticate, requireAdmin, eventDeliveryStatusController.getEventDeliveryStatusById);
 app.put('/update-event-delivery-status/:statusId', authenticate, requireAdmin, eventDeliveryStatusController.updateEventDeliveryStatus);
+app.put('/bulk-update-event-delivery-status-steps', authenticate, requireAdmin, eventDeliveryStatusController.bulkUpdateSteps);
 app.delete('/delete-event-delivery-status/:statusId', authenticate, requireAdmin, eventDeliveryStatusController.deleteEventDeliveryStatus);
 
 // ---------- Project Delivery Status routes ----------

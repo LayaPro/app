@@ -1,0 +1,116 @@
+.content {
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.icon svg {
+  width: 36px;
+  height: 36px;
+}
+
+.icon.danger {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+}
+
+.icon.warning {
+  background-color: rgba(251, 191, 36, 0.1);
+  color: #fbbf24;
+}
+
+.icon.info {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+}
+
+.message {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0;
+  max-width: 400px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--border-color);
+}
+
+.cancelButton,
+.confirmButton {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  min-width: 100px;
+}
+
+.cancelButton {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+}
+
+.cancelButton:hover:not(:disabled) {
+  background-color: var(--bg-tertiary);
+}
+
+.confirmButton {
+  color: white;
+}
+
+.confirmButton.danger {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.confirmButton.danger:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.confirmButton.warning {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+.confirmButton.warning:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+.confirmButton.info {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.confirmButton.info:hover:not(:disabled) {
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.cancelButton:disabled,
+.confirmButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

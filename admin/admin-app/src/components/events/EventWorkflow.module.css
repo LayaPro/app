@@ -365,6 +365,31 @@
   height: 16px;
 }
 
+.cancelButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.cancelButton:hover {
+  background: var(--bg-tertiary);
+  transform: translateY(-1px);
+}
+
+.cancelButton svg {
+  width: 16px;
+  height: 16px;
+}
+
 .loading,
 .empty {
   display: flex;
@@ -404,8 +429,8 @@
   transform: translateY(-1px);
 }
 
-/* Mobile responsive */
-@media (max-width: 768px) {
+/* Tablet and Mobile responsive */
+@media (max-width: 1024px) {
   .toolbar {
     padding: 0 12px 12px 12px;
   }
@@ -512,5 +537,34 @@
     justify-content: center;
     font-size: 13px;
     padding: 10px 20px;
+  }
+}
+
+/* Extra narrow cards on small mobile screens */
+@media (max-width: 640px) {
+  .stepCard {
+    padding: 6px 10px;
+    height: 36px;
+    gap: 8px;
+  }
+
+  .stepBadge {
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+  }
+
+  .statusCode {
+    font-size: 12px;
+  }
+
+  .deleteButton {
+    width: 20px;
+    height: 20px;
+  }
+
+  .deleteButton svg {
+    width: 12px;
+    height: 12px;
   }
 }

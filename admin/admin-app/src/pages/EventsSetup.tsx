@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import styles from './EventsSetup.module.css';
 import { eventApi, eventDeliveryStatusApi } from '../services/api.js';
-import { Alert } from '../components/ui/index.js';
+import { Alert, Breadcrumb } from '../components/ui/index.js';
 import { EventTypesCard } from '../components/events/EventTypesCard.js';
 import { EventWorkflowCard } from '../components/events/EventWorkflowCard.js';
 
@@ -69,12 +69,7 @@ const EventsSetup = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>Events Setup</h1>
-        <p className={styles.pageDescription}>
-          Configure event types and delivery workflow statuses for your photography business
-        </p>
-      </div>
+      <Breadcrumb />
 
       {error && <Alert type="warning" message={error} />}
       {success && <Alert type="success" message={success} />}

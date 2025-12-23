@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import React from 'react';
 import { useAppDispatch, useAppSelector } from '../../store/index.js';
-import { reorderWorkflowStatuses, setEventStatuses, addWorkflowStatus } from '../../store/slices/eventsSlice.js';
+import { reorderWorkflowStatuses, setEventStatuses, clearUnsavedWorkflowChanges, deleteWorkflowStatus } from '../../store/slices/eventsSlice.js';
 import { Modal } from '../ui/Modal.js';
+import { ConfirmationModal } from '../ui/ConfirmationModal.js';
 import { WorkflowStepForm } from '../forms/WorkflowStepForm.js';
+import { eventDeliveryStatusApi } from '../../services/api.js';
 import styles from './EventCard.module.css';
 import workflowStyles from './EventWorkflow.module.css';
 
@@ -30,14 +32,21 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isReorderMode, setIsReorderMode] = useState(false);
   const [touchStartY, setTouchStartY] = useState<number | null>(null);
+  const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; statusId: string; statusCode: string }>({ 
+    isOpen: false, 
+    statusId: '', 
+    statusCode: '' 
+  });
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Initialize Redux state when prop changes and there are no unsaved changes
+  // Only sync from props if Redux state is empty or if we explicitly need to reload
   React.useEffect(() => {
-    if (eventStatuses.length > 0 && !hasUnsavedChanges) {
+    if (eventStatuses.length > 0 && reduxEventStatuses.length === 0) {
       const sorted = [...eventStatuses].sort((a, b) => a.step - b.step);
       dispatch(setEventStatuses(sorted));
     }
-  }, [eventStatuses, hasUnsavedChanges, dispatch]);
+  }, [eventStatuses, reduxEventStatuses.length, dispatch]);
 
   // Use Redux state if available, otherwise fall back to props
   const displayStatuses = reduxEventStatuses.length > 0 ? reduxEventStatuses : eventStatuses;
@@ -79,16 +88,31 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
     setDragOverIndex(null);
   };
 
-  const handleSave = () => {
-    console.log('Saving workflow order:');
-    console.log('Updated statuses:', reduxEventStatuses.map((s, idx) => ({
-      statusId: s.statusId,
-      statusCode: s.statusCode,
-      step: s.step,
-      position: idx + 1
-    })));
-    // TODO: Call API to save the new order
-    // After successful API call: dispatch(clearUnsavedWorkflowChanges());
+  const handleSave = async () => {
+    try {
+      // Prepare data for API call
+      const statuses = reduxEventStatuses.map((s, idx) => ({
+        statusId: s.statusId,
+        step: idx // Use array index as the new step value
+      }));
+
+      console.log('Saving workflow order:', statuses);
+      
+      // Call API to save the new order
+      const response = await eventDeliveryStatusApi.bulkUpdateSteps(statuses);
+      
+      // Update Redux state with the saved statuses from API
+      const updatedStatuses = response.eventDeliveryStatuses;
+      dispatch(setEventStatuses(updatedStatuses));
+      
+      // Clear unsaved changes flag
+      dispatch(clearUnsavedWorkflowChanges());
+      
+      console.log('Workflow order saved successfully');
+    } catch (error) {
+      console.error('Error saving workflow order:', error);
+      alert('Failed to save workflow order. Please try again.');
+    }
   };
 
   const handleAddClick = () => {
@@ -102,12 +126,27 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
   const handleFormSubmit = async (data: { statusCode: string; statusDescription?: string }) => {
     setIsSubmitting(true);
     try {
-      // TODO: Call API to create new workflow step
-      // For now, just add to Redux state
-      dispatch(addWorkflowStatus(data));
+      // Calculate the next step number
+      const maxStep = reduxEventStatuses.length > 0 
+        ? Math.max(...reduxEventStatuses.map(s => s.step))
+        : -1;
+      const nextStep = maxStep + 1;
+
+      // Call API to create new workflow step
+      const response = await eventDeliveryStatusApi.create({
+        statusCode: data.statusCode,
+        step: nextStep
+      });
+
+      // Add to Redux state with the real data from API
+      const newStatus = response.eventDeliveryStatus;
+      dispatch(setEventStatuses([...reduxEventStatuses, newStatus]));
+      
       setIsModalOpen(false);
-    } catch (error) {
+      console.log('Workflow step created successfully:', newStatus);
+    } catch (error: any) {
       console.error('Error adding workflow step:', error);
+      alert(error.message || 'Failed to create workflow step. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -119,6 +158,36 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
       handleSave();
     }
     setIsReorderMode(!isReorderMode);
+  };
+
+  const handleCancelReorder = () => {
+    // Reset to original order from props
+    const sorted = [...eventStatuses].sort((a, b) => a.step - b.step);
+    dispatch(setEventStatuses(sorted));
+    setIsReorderMode(false);
+  };
+
+  const handleDeleteClick = (statusId: string, statusCode: string) => {
+    setDeleteConfirmation({ isOpen: true, statusId, statusCode });
+  };
+
+  const handleDeleteConfirm = async () => {
+    setIsDeleting(true);
+    try {
+      await eventDeliveryStatusApi.delete(deleteConfirmation.statusId);
+      dispatch(deleteWorkflowStatus(deleteConfirmation.statusId));
+      setDeleteConfirmation({ isOpen: false, statusId: '', statusCode: '' });
+      console.log('Workflow step deleted successfully');
+    } catch (error: any) {
+      console.error('Error deleting workflow step:', error);
+      alert(error.message || 'Failed to delete workflow step. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirmation({ isOpen: false, statusId: '', statusCode: '' });
   };
 
   const handleTouchStart = (e: React.TouchEvent, index: number) => {
@@ -213,6 +282,17 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
                   )}
                   {isReorderMode ? 'Done' : 'Reorder'}
                 </button>
+                {isReorderMode && (
+                  <button 
+                    className={workflowStyles.cancelButton}
+                    onClick={handleCancelReorder}
+                  >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    Cancel
+                  </button>
+                )}
                 <button 
                   className={workflowStyles.addStepButton}
                   onClick={handleAddClick}
@@ -251,7 +331,7 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
                         <button 
                           className={workflowStyles.deleteButton} 
                           title="Delete"
-                          onClick={() => console.log('Delete status', status)}
+                          onClick={() => handleDeleteClick(status.statusId, status.statusCode)}
                         >
                           <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -288,6 +368,18 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
           isLoading={isSubmitting}
         />
       </Modal>
+
+      <ConfirmationModal
+        isOpen={deleteConfirmation.isOpen}
+        onClose={handleDeleteCancel}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Workflow Step"
+        message={`Are you sure you want to delete the workflow step "${deleteConfirmation.statusCode}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        variant="danger"
+      />
     </div>
   );
 };

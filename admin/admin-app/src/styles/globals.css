@@ -11,6 +11,7 @@
   --bg-secondary: #f9fafb;
   --bg-tertiary: #f3f4f6;
   --bg-hover: #f3f4f6;
+  --bg-primary-neutral: #ffffff;
   --text-primary: #111827;
   --text-secondary: #6b7280;
   --text-tertiary: #9ca3af;
@@ -51,6 +52,7 @@
   --bg-secondary: #111827;
   --bg-tertiary: #374151;
   --bg-hover: #374151;
+  --bg-primary-neutral: #111827;
   --text-primary: #f9fafb;
   --text-secondary: #d1d5db;
   --text-tertiary: #9ca3af;

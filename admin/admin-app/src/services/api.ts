@@ -106,4 +106,16 @@ export const eventDeliveryStatusApi = {
     });
     return handleResponse(response);
   },
+
+  bulkUpdateSteps: async (statuses: Array<{ statusId: string; step: number }>) => {
+    const response = await fetch(`${API_BASE_URL}/bulk-update-event-delivery-status-steps`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ statuses }),
+    });
+    return handleResponse(response);
+  },
 };

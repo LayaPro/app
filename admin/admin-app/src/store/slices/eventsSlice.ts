@@ -68,6 +68,10 @@ const eventsSlice = createSlice({
       state.eventStatuses.push(newStatus);
       state.hasUnsavedWorkflowChanges = true;
     },
+    deleteWorkflowStatus: (state, action: PayloadAction<string>) => {
+      const statusId = action.payload;
+      state.eventStatuses = state.eventStatuses.filter(s => s.statusId !== statusId);
+    },
   },
 });
 
@@ -77,6 +81,7 @@ export const {
   resetWorkflowChanges,
   clearUnsavedWorkflowChanges,
   addWorkflowStatus,
+  deleteWorkflowStatus,
 } = eventsSlice.actions;
 
 export default eventsSlice.reducer;

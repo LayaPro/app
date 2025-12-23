@@ -156,10 +156,63 @@ export const deleteEventDeliveryStatus = async (req: AuthRequest, res: Response)
   }
 };
 
+export const bulkUpdateSteps = async (req: AuthRequest, res: Response) => {
+  try {
+    const { statuses } = req.body; // Array of { statusId, step }
+    const tenantId = req.user?.tenantId;
+
+    if (!statuses || !Array.isArray(statuses)) {
+      return res.status(400).json({ message: 'Statuses array is required' });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Verify all statuses belong to the user's tenant
+    const statusIds = statuses.map(s => s.statusId);
+    const existingStatuses = await EventDeliveryStatus.find({ 
+      statusId: { $in: statusIds },
+      tenantId 
+    });
+
+    if (existingStatuses.length !== statuses.length) {
+      return res.status(403).json({ message: 'Access denied. Some statuses do not belong to your tenant.' });
+    }
+
+    // Update each status with new step
+    const updatePromises = statuses.map(({ statusId, step }) =>
+      EventDeliveryStatus.findOneAndUpdate(
+        { statusId, tenantId },
+        { 
+          $set: { 
+            step,
+            lastUpdatedDate: new Date(),
+            updatedBy: req.user?.userId
+          }
+        },
+        { new: true }
+      )
+    );
+
+    const updatedStatuses = await Promise.all(updatePromises);
+
+    return res.status(200).json({
+      message: 'Event delivery status order updated successfully',
+      eventDeliveryStatuses: updatedStatuses
+    });
+  } catch (err: any) {
+    console.error('Bulk update steps error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export default {
   createEventDeliveryStatus,
   getAllEventDeliveryStatuses,
   getEventDeliveryStatusById,
   updateEventDeliveryStatus,
-  deleteEventDeliveryStatus
+  deleteEventDeliveryStatus,
+  bulkUpdateSteps
 };
+
