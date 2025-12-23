@@ -159,38 +159,6 @@ export const MobileMenuDrawer: React.FC = () => {
               </div>
             </div>
 
-            {/* Access Control Section */}
-            <div className={styles.collapsibleSection}>
-              <button
-                onClick={() => setExpandedSection(expandedSection === 'access' ? null : 'access')}
-                className={styles.collapsibleHeader}
-              >
-                <div className={styles.collapsibleHeaderContent}>
-                  <svg className={styles.menuIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <span>Access Control</span>
-                </div>
-                <svg className={`${styles.chevron} ${expandedSection === 'access' ? styles.chevronExpanded : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </button>
-              <div className={`${styles.subMenu} ${expandedSection === 'access' ? styles.subMenuExpanded : ''}`}>
-                <Link to={ROUTES.USERS} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.USERS ? styles.active : ''}`}>
-                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                  </svg>
-                  <span>Users</span>
-                </Link>
-                <Link to={ROUTES.ROLES} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.ROLES ? styles.active : ''}`}>
-                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                  <span>Roles</span>
-                </Link>
-              </div>
-            </div>
-
             {/* Team & Resources Section */}
             <div className={styles.collapsibleSection}>
               <button
@@ -214,18 +182,18 @@ export const MobileMenuDrawer: React.FC = () => {
                   </svg>
                   <span>Team Members</span>
                 </Link>
-                <Link to={ROUTES.DESIGNATIONS} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.DESIGNATIONS ? styles.active : ''}`}>
-                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                  </svg>
-                  <span>Designations</span>
-                </Link>
                 <Link to={ROUTES.EQUIPMENTS} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.EQUIPMENTS ? styles.active : ''}`}>
                   <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   <span>Equipments</span>
+                </Link>
+                <Link to={ROUTES.ACCESS_MANAGEMENT} onClick={handleClose} className={`${styles.subMenuItem} ${location.pathname === ROUTES.ACCESS_MANAGEMENT ? styles.active : ''}`}>
+                  <svg className={styles.subIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  </svg>
+                  <span>Access Management</span>
                 </Link>
               </div>
             </div>

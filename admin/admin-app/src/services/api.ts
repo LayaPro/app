@@ -119,3 +119,111 @@ export const eventDeliveryStatusApi = {
     return handleResponse(response);
   },
 };
+
+// User API
+export const userApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-users`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: { email: string; password: string; firstName: string; lastName: string; roleId: string; isActive?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}/create-user`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (userId: string, data: { email?: string; firstName?: string; lastName?: string; roleId?: string; isActive?: boolean }) => {
+    const response = await fetch(`${API_BASE_URL}/update-user/${userId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (userId: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-user/${userId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  toggleActive: async (userId: string, isActive: boolean) => {
+    const response = await fetch(`${API_BASE_URL}/toggle-user-active/${userId}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ isActive }),
+    });
+    return handleResponse(response);
+  },
+};
+
+// Role API
+export const roleApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-roles`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: { name: string; description?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/create-role`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (roleId: string, data: { name?: string; description?: string }) => {
+    const response = await fetch(`${API_BASE_URL}/update-role/${roleId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (roleId: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-role/${roleId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};

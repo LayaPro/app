@@ -1,0 +1,185 @@
+/* Card Styles */
+.card {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.cardHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background-color: var(--bg-primary-neutral);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cardHeader:hover {
+  background-color: var(--bg-hover);
+}
+
+.cardHeaderContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex: 1;
+}
+
+.cardIcon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  text-align: left;
+}
+
+.cardSubtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: left;
+  line-height: 1.5;
+}
+
+.chevron {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.chevronExpanded {
+  transform: rotate(180deg);
+}
+
+.cardContent {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.cardContentExpanded {
+  max-height: 2000px;
+  overflow: visible;
+}
+
+.contentInner {
+  padding: 24px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* Action Buttons */
+.actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.editButton,
+.deleteButton {
+  padding: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editButton svg,
+.deleteButton svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.editButton {
+  color: #3b82f6;
+}
+
+.editButton:hover {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+  transform: scale(1.05);
+}
+
+.deleteButton {
+  color: #ef4444;
+}
+
+.deleteButton:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: #dc2626;
+  transform: scale(1.05);
+}
+
+/* Toggle Switch Styles */
+.toggleSwitch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  cursor: pointer;
+}
+
+.toggleSwitch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggleSlider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.3s;
+  border-radius: 24px;
+}
+
+.toggleSlider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+
+.toggleSwitch input:checked + .toggleSlider {
+  background-color: var(--color-primary);
+}
+
+.toggleSwitch input:checked + .toggleSlider:before {
+  transform: translateX(20px);
+}
+
+.toggleSwitch input:disabled + .toggleSlider {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

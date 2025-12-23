@@ -89,14 +89,17 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
     const currentUserId = req.user?.userId;
     const roleName = req.user?.roleName;
 
+    // Extract password for separate handling
+    const { password, ...otherUpdates } = updates;
+
     // Don't allow updating critical fields
-    delete updates.userId;
-    delete updates.tenantId;
-    delete updates.passwordHash;
-    delete updates.passwordSalt;
-    delete updates.resetPasswordToken;
-    delete updates.resetPasswordExpires;
-    delete updates.tokenVersion;
+    delete otherUpdates.userId;
+    delete otherUpdates.tenantId;
+    delete otherUpdates.passwordHash;
+    delete otherUpdates.passwordSalt;
+    delete otherUpdates.resetPasswordToken;
+    delete otherUpdates.resetPasswordExpires;
+    delete otherUpdates.tokenVersion;
 
     const user = await User.findOne({ userId });
 
@@ -119,13 +122,21 @@ export const updateUser = async (req: AuthRequest, res: Response) => {
 
     // Regular users cannot change their role or isActive status
     if (!isAdmin) {
-      delete updates.roleId;
-      delete updates.isActive;
+      delete otherUpdates.roleId;
+      delete otherUpdates.isActive;
+    }
+
+    // Handle password change if provided
+    if (password) {
+      if (password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      }
+      otherUpdates.passwordHash = await bcrypt.hash(password, 10);
     }
 
     const updatedUser = await User.findOneAndUpdate(
       { userId },
-      { $set: updates },
+      { $set: otherUpdates },
       { new: true, runValidators: true }
     ).select('-passwordHash -passwordSalt -resetPasswordToken -resetPasswordExpires -tokenVersion');
 
@@ -264,15 +275,25 @@ export const createUser = async (req: AuthRequest, res: Response) => {
   try {
     const {
       email,
+      password,
       firstName,
       lastName,
-      roleId
+      roleId,
+      isActive
     } = req.body;
     const tenantId = req.user?.tenantId;
     const currentUserId = req.user?.userId;
 
     if (!email || !firstName || !lastName || !roleId) {
       return res.status(400).json({ message: 'Email, first name, last name, and role ID are required' });
+    }
+
+    if (!password) {
+      return res.status(400).json({ message: 'Password is required' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
     }
 
     if (!tenantId) {
@@ -295,9 +316,8 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Invalid role ID' });
     }
 
-    // Generate temporary password (12 characters)
-    const tempPassword = nanoid(12);
-    const passwordHash = await bcrypt.hash(tempPassword, 10);
+    // Hash the provided password
+    const passwordHash = await bcrypt.hash(password, 10);
 
     // Create user
     const userId = `user_${nanoid()}`;
@@ -309,7 +329,7 @@ export const createUser = async (req: AuthRequest, res: Response) => {
       firstName,
       lastName,
       roleId,
-      isActive: true
+      isActive: isActive ?? true
     });
 
     return res.status(201).json({
@@ -322,12 +342,49 @@ export const createUser = async (req: AuthRequest, res: Response) => {
         roleId: user.roleId,
         roleName: role.name,
         tenantId: user.tenantId,
-        isActive: user.isActive,
-        tempPassword // In production, send this via email and remove from response
+        isActive: user.isActive
       }
     });
   } catch (err: any) {
     console.error('Create user error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const toggleUserActive = async (req: AuthRequest, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { isActive } = req.body;
+    const tenantId = req.user?.tenantId;
+    const currentUserId = req.user?.userId;
+
+    if (typeof isActive !== 'boolean') {
+      return res.status(400).json({ message: 'isActive must be a boolean' });
+    }
+
+    const user = await User.findOne({ userId, tenantId });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Prevent users from deactivating themselves
+    if (userId === currentUserId) {
+      return res.status(400).json({ message: 'Cannot change your own active status' });
+    }
+
+    user.isActive = isActive;
+    await user.save();
+
+    return res.status(200).json({
+      message: `User ${isActive ? 'activated' : 'deactivated'} successfully`,
+      user: {
+        userId: user.userId,
+        isActive: user.isActive
+      }
+    });
+  } catch (err: any) {
+    console.error('Toggle user active error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -339,5 +396,6 @@ export default {
   deleteUser,
   changePassword,
   adminResetPassword,
-  createUser
+  createUser,
+  toggleUserActive
 };

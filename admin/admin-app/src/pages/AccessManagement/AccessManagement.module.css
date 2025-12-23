@@ -1,0 +1,144 @@
+.pageContainer {
+  padding: 0;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cardsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.card {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  transition: box-shadow 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.cardHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background: var(--bg-primary-neutral);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.cardHeader:hover {
+  background: var(--bg-hover);
+}
+
+.cardHeaderContent {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.cardIcon {
+  width: 32px;
+  height: 32px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.cardHeaderText {
+  text-align: left;
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+}
+
+.cardDescription {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.chevron {
+  width: 20px;
+  height: 20px;
+  color: var(--text-tertiary);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.chevronExpanded {
+  transform: rotate(180deg);
+}
+
+.cardContent {
+  padding: 24px;
+  border-top: 1px solid var(--border-color);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.placeholderText {
+  color: var(--text-secondary);
+  text-align: center;
+  padding: 40px 20px;
+  font-size: 14px;
+}
+
+/* Mobile Responsive */
+@media (max-width: 640px) {
+  .cardHeader {
+    padding: 16px;
+  }
+
+  .cardHeaderContent {
+    gap: 12px;
+  }
+
+  .cardIcon {
+    width: 24px;
+    height: 24px;
+  }
+
+  .cardTitle {
+    font-size: 16px;
+  }
+
+  .cardDescription {
+    font-size: 13px;
+  }
+
+  .cardContent {
+    padding: 16px;
+  }
+}

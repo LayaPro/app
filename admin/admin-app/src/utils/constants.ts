@@ -11,6 +11,7 @@ export const ROUTES = {
   STATISTICS: '/statistics',
   
   // Access Management
+  ACCESS_MANAGEMENT: '/access-management',
   USERS: '/access/users',
   ROLES: '/access/roles',
   TENANTS: '/access/tenants',

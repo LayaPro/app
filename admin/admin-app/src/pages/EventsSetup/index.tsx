@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import styles from './EventsSetup.module.css';
 import { eventApi, eventDeliveryStatusApi } from '../../services/api.js';
-import { Alert, Breadcrumb } from '../../components/ui/index.js';
+import { Breadcrumb } from '../../components/ui/index.js';
 import { EventTypesCard } from './EventTypesCard.js';
 import { EventWorkflowCard } from './EventWorkflowCard.js';
+import { useToast } from '../../context/ToastContext';
 
 const EventsSetup = () => {
   const [expandedCard, setExpandedCard] = useState<string | null>('eventWorkflow');
   const [eventTypes, setEventTypes] = useState<any[]>([]);
   const [eventStatuses, setEventStatuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchData();
@@ -20,7 +20,6 @@ const EventsSetup = () => {
   const fetchData = async () => {
     try {
       setLoading(true);
-      setError(null);
       
       const [eventsResponse, statusesResponse] = await Promise.all([
         eventApi.getAll(),
@@ -44,9 +43,9 @@ const EventsSetup = () => {
       ]);
       
       if (error.message.includes('token') || error.message.includes('expired')) {
-        setError('Session expired. Showing sample data. Please login to see real data.');
+        showToast('warning', 'Session expired. Showing sample data. Please login to see real data.');
       } else {
-        setError('Unable to connect to server. Showing sample data.');
+        showToast('warning', 'Unable to connect to server. Showing sample data.');
       }
     } finally {
       setLoading(false);
@@ -58,21 +57,16 @@ const EventsSetup = () => {
   };
 
   const handleSuccess = (message: string) => {
-    setSuccess(message);
-    setTimeout(() => setSuccess(null), 3000);
+    showToast('success', message);
   };
 
   const handleError = (message: string) => {
-    setError(message);
-    setTimeout(() => setError(null), 5000);
+    showToast('error', message);
   };
 
   return (
     <div className={styles.pageContainer}>
       <Breadcrumb />
-
-      {error && <Alert type="warning" message={error} />}
-      {success && <Alert type="success" message={success} />}
 
       <div className={styles.cardsContainer}>
         <EventWorkflowCard

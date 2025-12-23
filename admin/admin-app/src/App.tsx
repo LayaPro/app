@@ -7,6 +7,8 @@ import { ProfilePanel } from './components/panels/ProfilePanel.js';
 import { MobileMenuDrawer } from './components/panels/MobileMenuDrawer.js';
 import { Login } from './components/auth/Login.js';
 import { ROUTES } from './utils/constants.js';
+import { ToastProvider } from './context/ToastContext.js';
+import { ToastContainer } from './components/ui/ToastContainer.js';
 
 // Page imports
 import Dashboard from './pages/Dashboard/index.js';
@@ -18,6 +20,7 @@ import Statistics from './pages/Statistics/index.js';
 import Settings from './pages/Settings/index.js';
 
 // Access Control pages
+import AccessManagement from './pages/AccessManagement/index.js';
 import Users from './pages/Users/index.js';
 import Roles from './pages/Roles/index.js';
 import Tenants from './pages/Tenants/index.js';
@@ -43,15 +46,17 @@ function App() {
 
   // Show main app if authenticated
   return (
-    <div>
-      <Header />
-      <Sidebar />
-      <NotificationPanel />
-      <ProfilePanel />
-      <MobileMenuDrawer />
-      
-      {/* Main Content Area */}
-      <main
+    <ToastProvider>
+      <div>
+        <Header />
+        <Sidebar />
+        <NotificationPanel />
+        <ProfilePanel />
+        <MobileMenuDrawer />
+        <ToastContainer />
+        
+        {/* Main Content Area */}
+        <main
         style={{
           marginLeft: window.innerWidth >= 1025 ? (sidebarCollapsed ? '80px' : '256px') 
                    : window.innerWidth >= 769 ? (sidebarCollapsed ? '80px' : '200px') 
@@ -72,6 +77,7 @@ function App() {
           <Route path={ROUTES.STATISTICS} element={<Statistics />} />
           
           {/* Access Control routes */}
+          <Route path={ROUTES.ACCESS_MANAGEMENT} element={<AccessManagement />} />
           <Route path={ROUTES.USERS} element={<Users />} />
           <Route path={ROUTES.ROLES} element={<Roles />} />
           <Route path={ROUTES.TENANTS} element={<Tenants />} />
@@ -89,7 +95,8 @@ function App() {
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
         </Routes>
       </main>
-    </div>
+      </div>
+    </ToastProvider>
   );
 }
 

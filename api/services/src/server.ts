@@ -42,7 +42,10 @@ app.post('/reset-password', authController.resetPassword);
 
 // ---------- Roles routes ----------
 app.post('/create-role', authenticate, roleController.createRole);
+app.get('/get-all-roles', authenticate, roleController.getRoles);
 app.get('/get-roles', authenticate, roleController.getRoles);
+app.put('/update-role/:roleId', authenticate, requireAdmin, roleController.updateRole);
+app.delete('/delete-role/:roleId', authenticate, requireAdmin, roleController.deleteRole);
 
 // ---------- Tenants routes ----------
 app.post('/create-tenant', authenticate, requireSuperAdmin, tenantController.createTenant);
@@ -153,6 +156,7 @@ app.get('/get-all-users', authenticate, requireAdmin, userController.getAllUsers
 app.get('/get-user/:userId', authenticate, userController.getUserById);
 app.put('/update-user/:userId', authenticate, userController.updateUser);
 app.delete('/delete-user/:userId', authenticate, requireAdmin, userController.deleteUser);
+app.patch('/toggle-user-active/:userId', authenticate, requireAdmin, userController.toggleUserActive);
 app.post('/change-password', authenticate, userController.changePassword);
 app.post('/admin-reset-password/:userId', authenticate, requireAdmin, userController.adminResetPassword);
 
