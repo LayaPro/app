@@ -43,7 +43,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + 4,
+        top: rect.bottom,
         left: rect.left,
         width: rect.width
       });
@@ -119,7 +119,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 <div className={styles.selectedChips}>
                   {selectedOptions.map(option => (
                     <span key={option.value} className={styles.chip}>
-                      {option.label}
+                      <span>{option.label}</span>
                       <button
                         type="button"
                         className={styles.chipRemove}
@@ -200,9 +200,8 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                       <input
                         type="checkbox"
                         checked={isSelected}
-                        onChange={() => {}}
+                        readOnly
                         className={styles.checkbox}
-                        onClick={(e) => e.stopPropagation()}
                       />
                       {option.label}
                       {isSelected && (

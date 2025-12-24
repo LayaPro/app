@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Input } from '../../components/ui/Input';
 import { Textarea } from '../../components/ui/Textarea';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
+import { MultiSelect } from '../../components/ui/MultiSelect';
 import { DatePicker } from '../../components/ui/DatePicker';
 import { Breadcrumb } from '../../components/ui/index.js';
 import styles from './ProjectWizard.module.css';
@@ -33,6 +34,7 @@ interface ProjectData {
     date: string;
     time: string;
     venue: string;
+    teamMembers: string[];
   }>;
   
   // Step 3: Payment Details
@@ -41,17 +43,13 @@ interface ProjectData {
   advanceReceivedDate: string;
   nextPaymentDate: string;
   paymentTerms: string;
-  
-  // Step 4: Team Assignment
-  teamAssignments: Record<string, string[]>; // eventId -> teamMemberIds[]
 }
 
 const STEPS = [
   { id: 1, label: 'Basic Details' },
   { id: 2, label: 'Events' },
-  { id: 3, label: 'Team Assignment' },
-  { id: 4, label: 'Payment' },
-  { id: 5, label: 'Review' },
+  { id: 3, label: 'Payment' },
+  { id: 4, label: 'Review' },
 ];
 
 export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }) => {
@@ -74,7 +72,6 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
     advanceReceivedDate: '',
     nextPaymentDate: '',
     paymentTerms: '',
-    teamAssignments: {},
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -106,7 +103,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       }
     }
 
-    if (step === 4) {
+    if (step === 3) {
       if (!formData.totalBudget.trim()) newErrors.totalBudget = 'Total budget is required';
     }
 
@@ -143,10 +140,8 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       case 2:
         return <Step2Events formData={formData} onChange={handleChange} errors={errors} />;
       case 3:
-        return <Step4TeamAssignment formData={formData} onChange={handleChange} />;
-      case 4:
         return <Step3Payment formData={formData} onChange={handleChange} errors={errors} />;
-      case 5:
+      case 4:
         return <Step5Review formData={formData} onEdit={setCurrentStep} />;
       default:
         return null;
@@ -209,16 +204,6 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
                 onClick={handleBack}
               >
                 ← Back
-              </button>
-            )}
-            
-            {currentStep === 3 && (
-              <button
-                type="button"
-                className={`${styles.button} ${styles.skipButton}`}
-                onClick={() => setCurrentStep(4)}
-              >
-                Skip
               </button>
             )}
             
@@ -404,7 +389,18 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
     toTime: '',
     venue: '',
     venueLocation: '',
+    teamMembers: [] as string[],
   });
+
+  // Mock team members - in production, fetch from API
+  const teamMemberOptions = [
+    { value: 'tm1', label: 'John Doe - Photographer' },
+    { value: 'tm2', label: 'Jane Smith - Videographer' },
+    { value: 'tm3', label: 'Mike Johnson - Drone Operator' },
+    { value: 'tm4', label: 'Sarah Williams - Editor' },
+    { value: 'tm5', label: 'David Brown - Assistant' },
+    { value: 'tm6', label: 'Emily Davis - Coordinator' },
+  ];
 
   const eventTypeOptions = [
     { value: '', label: 'Select Event Type' },
@@ -433,6 +429,7 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
       toTime: newEvent.toTime,
       venue: newEvent.venue,
       venueLocation: newEvent.venueLocation,
+      teamMembers: newEvent.teamMembers,
     };
 
     const updatedEvents = [...formData.events, event].sort((a, b) => 
@@ -449,6 +446,7 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
       toTime: '',
       venue: '',
       venueLocation: '',
+      teamMembers: [],
     });
   };
 
@@ -533,6 +531,15 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
               placeholder="https://maps.google.com/..."
             />
           </div>
+          <div className={styles.formGroup}>
+            <MultiSelect
+              label="Team Members"
+              value={newEvent.teamMembers}
+              onChange={(value) => setNewEvent({ ...newEvent, teamMembers: value })}
+              options={teamMemberOptions}
+              placeholder="Select team members..."
+            />
+          </div>
         </div>
 
         <button
@@ -549,7 +556,7 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
       </div>
 
       {/* Events List Section */}
-      <div className={styles.formSection} style={{ marginTop: '32px' }}>
+      <div className={styles.formSection} style={{ marginTop: '16px' }}>
         {errors.events && (
           <div style={{ color: '#dc2626', fontSize: '14px', marginBottom: '16px' }}>
             {errors.events}
@@ -584,21 +591,17 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                     <span className={styles.metaText}>
-                      {formatEventDate(event.fromDate)}
-                      {event.toDate && event.toDate !== event.fromDate && (
-                        <> - {formatEventDate(event.toDate)}</>
-                      )}
+                      <strong>From:</strong> {formatEventDate(event.fromDate)}{event.fromTime && `, ${formatEventTime(event.fromTime)}`}
                     </span>
                   </div>
 
-                  {event.fromTime && (
+                  {(event.toDate || event.toTime) && (
                     <div className={styles.eventMetaItem}>
                       <svg className={styles.metaIcon} width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <span className={styles.metaText}>
-                        {formatEventTime(event.fromTime)}
-                        {event.toTime && <> - {formatEventTime(event.toTime)}</>}
+                        <strong>To:</strong> {event.toDate ? formatEventDate(event.toDate) : formatEventDate(event.fromDate)}{event.toTime && `, ${formatEventTime(event.toTime)}`}
                       </span>
                     </div>
                   )}
@@ -625,6 +628,25 @@ const Step2Events: React.FC<any> = ({ formData, onChange, errors }) => {
                     </a>
                   )}
                 </div>
+
+                {event.teamMembers && event.teamMembers.length > 0 && (
+                  <div className={styles.eventTeamMembers}>
+                    <span className={styles.teamMembersLabel}>
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                      </svg>
+                      Team:
+                    </span>
+                    {event.teamMembers.map((memberId: string) => {
+                      const member = teamMemberOptions.find(m => m.value === memberId);
+                      return member ? (
+                        <span key={memberId} className={styles.teamMemberChip}>
+                          {member.label}
+                        </span>
+                      ) : null;
+                    })}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -869,24 +891,57 @@ const Step4TeamAssignment: React.FC<any> = ({ formData, onChange }) => {
 
 // Step 5: Review
 const Step5Review: React.FC<any> = ({ formData, onEdit }) => {
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return 'N/A';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('en-US', { 
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  };
+
+  const formatTime = (timeStr: string) => {
+    if (!timeStr) return '';
+    const [hours, minutes] = timeStr.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour % 12 || 12;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
+
   return (
     <div className={styles.reviewContainer}>
       {/* Basic Details */}
       <div className={styles.reviewSection}>
-        <div className={styles.reviewSectionTitle}>
-          Basic Details
+        <div className={styles.reviewHeader}>
+          <div>
+            <h3 className={styles.reviewSectionTitle}>Basic Details</h3>
+            <p className={styles.reviewSectionSubtitle}>Project and contact information</p>
+          </div>
           <button className={styles.editButton} onClick={() => onEdit(1)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </button>
         </div>
         <div className={styles.reviewGrid}>
           <div className={styles.reviewItem}>
-            <div className={styles.reviewLabel}>Client Name</div>
+            <div className={styles.reviewLabel}>Project Name</div>
             <div className={styles.reviewValue}>{formData.clientName || 'N/A'}</div>
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Contact Person</div>
             <div className={styles.reviewValue}>{formData.contactPerson || 'N/A'}</div>
+          </div>
+          <div className={styles.reviewItem}>
+            <div className={styles.reviewLabel}>Bride</div>
+            <div className={styles.reviewValue}>{formData.brideFirstName && formData.brideLastName ? `${formData.brideFirstName} ${formData.brideLastName}` : 'N/A'}</div>
+          </div>
+          <div className={styles.reviewItem}>
+            <div className={styles.reviewLabel}>Groom</div>
+            <div className={styles.reviewValue}>{formData.groomFirstName && formData.groomLastName ? `${formData.groomFirstName} ${formData.groomLastName}` : 'N/A'}</div>
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Email</div>
@@ -905,35 +960,84 @@ const Step5Review: React.FC<any> = ({ formData, onEdit }) => {
             <div className={styles.reviewValue}>{formData.referralSource || 'N/A'}</div>
           </div>
         </div>
+        {formData.address && (
+          <div className={styles.reviewFullItem}>
+            <div className={styles.reviewLabel}>Address</div>
+            <div className={styles.reviewValue}>{formData.address}</div>
+          </div>
+        )}
       </div>
 
       {/* Events */}
       <div className={styles.reviewSection}>
-        <div className={styles.reviewSectionTitle}>
-          Events ({formData.events.length})
+        <div className={styles.reviewHeader}>
+          <div>
+            <h3 className={styles.reviewSectionTitle}>Events</h3>
+            <p className={styles.reviewSectionSubtitle}>{formData.events.length} event{formData.events.length !== 1 ? 's' : ''} scheduled</p>
+          </div>
           <button className={styles.editButton} onClick={() => onEdit(2)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </button>
         </div>
-        <div className={styles.eventsList}>
-          {formData.events.map((event: any, index: number) => (
-            <div key={index} className={styles.eventCard}>
-              <div className={styles.eventInfo}>
-                <div className={styles.eventName}>{event.eventName}</div>
-                <div className={styles.eventDetails}>
-                  {event.date} • {event.time} • {event.venue}
+        <div className={styles.reviewEventsList}>
+          {formData.events.length > 0 ? (
+            formData.events.map((event: any, index: number) => (
+              <div key={index} className={styles.reviewEventCard}>
+                <div className={styles.reviewEventHeader}>
+                  <div className={styles.reviewEventName}>{event.eventName}</div>
                 </div>
+                <div className={styles.reviewEventDetails}>
+                  <div className={styles.reviewEventMeta}>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <strong>From:</strong> {formatDate(event.fromDate)}{event.fromTime && `, ${formatTime(event.fromTime)}`}
+                  </div>
+                  {(event.toDate || event.toTime) && (
+                    <div className={styles.reviewEventMeta}>
+                      <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <strong>To:</strong> {event.toDate ? formatDate(event.toDate) : formatDate(event.fromDate)}{event.toTime && `, ${formatTime(event.toTime)}`}
+                    </div>
+                  )}
+                  <div className={styles.reviewEventMeta}>
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    </svg>
+                    {event.venue}
+                  </div>
+                </div>
+                {event.teamMembers && event.teamMembers.length > 0 && (
+                  <div className={styles.reviewEventTeam}>
+                    <div className={styles.reviewEventTeamLabel}>Team:</div>
+                    <div className={styles.reviewEventTeamMembers}>
+                      {event.teamMembers.length} member{event.teamMembers.length !== 1 ? 's' : ''} assigned
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            ))
+          ) : (
+            <div className={styles.reviewEmptyState}>No events added</div>
+          )}
         </div>
       </div>
 
       {/* Payment */}
       <div className={styles.reviewSection}>
-        <div className={styles.reviewSectionTitle}>
-          Payment Details
+        <div className={styles.reviewHeader}>
+          <div>
+            <h3 className={styles.reviewSectionTitle}>Payment Details</h3>
+            <p className={styles.reviewSectionSubtitle}>Budget and payment information</p>
+          </div>
           <button className={styles.editButton} onClick={() => onEdit(3)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </button>
         </div>
@@ -948,13 +1052,19 @@ const Step5Review: React.FC<any> = ({ formData, onEdit }) => {
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Advance Date</div>
-            <div className={styles.reviewValue}>{formData.advanceReceivedDate || 'N/A'}</div>
+            <div className={styles.reviewValue}>{formatDate(formData.advanceReceivedDate)}</div>
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Next Payment Date</div>
-            <div className={styles.reviewValue}>{formData.nextPaymentDate || 'N/A'}</div>
+            <div className={styles.reviewValue}>{formatDate(formData.nextPaymentDate)}</div>
           </div>
         </div>
+        {formData.paymentTerms && (
+          <div className={styles.reviewFullItem}>
+            <div className={styles.reviewLabel}>Payment Terms</div>
+            <div className={styles.reviewValue}>{formData.paymentTerms}</div>
+          </div>
+        )}
       </div>
     </div>
   );

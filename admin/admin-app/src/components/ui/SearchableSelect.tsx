@@ -44,7 +44,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     if (buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.bottom + 4,
+        top: rect.bottom,
         left: rect.left,
         width: rect.width
       });
