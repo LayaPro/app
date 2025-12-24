@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { projectApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
@@ -470,19 +470,21 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   };
 
   // Filter by date range - must be before early returns for hooks
-  const filteredProjects = projects.filter(project => {
-    if (!startDate && !endDate) return true;
-    if (!project.createdAt) return false;
-    
-    const projectDate = new Date(project.createdAt);
-    if (startDate && projectDate < new Date(startDate)) return false;
-    if (endDate) {
-      const endDateTime = new Date(endDate);
-      endDateTime.setHours(23, 59, 59, 999);
-      if (projectDate > endDateTime) return false;
-    }
-    return true;
-  });
+  const filteredProjects = useMemo(() => {
+    return projects.filter(project => {
+      if (!startDate && !endDate) return true;
+      if (!project.createdAt) return false;
+      
+      const projectDate = new Date(project.createdAt);
+      if (startDate && projectDate < new Date(startDate)) return false;
+      if (endDate) {
+        const endDateTime = new Date(endDate);
+        endDateTime.setHours(23, 59, 59, 999);
+        if (projectDate > endDateTime) return false;
+      }
+      return true;
+    });
+  }, [projects, startDate, endDate]);
 
   // Calculate and update stats whenever filteredProjects changes
   useEffect(() => {
@@ -499,7 +501,8 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       
       onStatsUpdate({ active, completed, revenue, dueSoon });
     }
-  }, [filteredProjects, loading, onStatsUpdate, getLatestEventDate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredProjects, loading]);
 
   if (loading) {
     return (
