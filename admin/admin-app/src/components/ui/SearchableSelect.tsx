@@ -63,9 +63,19 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       }
     };
 
+    const handleScroll = () => {
+      if (isOpen) {
+        updateDropdownPosition();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
     }
   }, [isOpen]);
 

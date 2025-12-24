@@ -62,9 +62,19 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
       }
     };
 
+    const handleScroll = () => {
+      if (isOpen) {
+        updateDropdownPosition();
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', handleScroll, true);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
     }
   }, [isOpen]);
 
@@ -120,29 +130,43 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                   {selectedOptions.map(option => (
                     <span key={option.value} className={styles.chip}>
                       <span>{option.label}</span>
-                      <button
-                        type="button"
+                      <span
                         className={styles.chipRemove}
                         onClick={(e) => handleRemove(option.value, e)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            handleRemove(option.value, e as any);
+                          }
+                        }}
                       >
                         <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                         </svg>
-                      </button>
+                      </span>
                     </span>
                   ))}
                 </div>
                 {selectedOptions.length > 0 && (
-                  <button
-                    type="button"
+                  <span
                     className={styles.clearAll}
                     onClick={handleClearAll}
                     title="Clear all"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        handleClearAll(e as any);
+                      }
+                    }}
                   >
                     <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
-                  </button>
+                  </span>
                 )}
               </>
             ) : (

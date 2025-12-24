@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import Team from '../models/team';
 import User from '../models/user';
 import Role from '../models/role';
+import Profile from '../models/profile';
 import { AuthRequest } from '../middleware/auth';
 
 export const createTeamMember = async (req: AuthRequest, res: Response) => {
@@ -109,13 +110,35 @@ export const getAllTeamMembers = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    // All users (including superadmin) only see their own tenant's members
+    // Get all team members for this tenant
     const teamMembers = await Team.find({ tenantId }).sort({ createdAt: -1 }).lean();
+
+    // Get all profile IDs from team members
+    const profileIds = teamMembers
+      .map(member => member.profileId)
+      .filter(id => id != null);
+
+    // Fetch all profiles in one query
+    const profiles = await Profile.find({ 
+      profileId: { $in: profileIds },
+      tenantId 
+    }).lean();
+
+    // Create a map for quick lookup
+    const profileMap = new Map(
+      profiles.map(profile => [profile.profileId, profile])
+    );
+
+    // Attach profile data to team members
+    const teamMembersWithProfiles = teamMembers.map(member => ({
+      ...member,
+      profile: member.profileId ? profileMap.get(member.profileId) : null
+    }));
 
     return res.status(200).json({
       message: 'Team members retrieved successfully',
-      count: teamMembers.length,
-      teamMembers
+      count: teamMembersWithProfiles.length,
+      teamMembers: teamMembersWithProfiles
     });
   } catch (err: any) {
     console.error('Get all team members error:', err);

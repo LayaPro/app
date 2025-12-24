@@ -16,6 +16,9 @@ interface DataTableProps<T> {
   emptyIcon?: React.ReactNode;
   onCreateClick?: () => void;
   createButtonText?: string;
+  renderExpandedRow?: (row: T) => React.ReactNode;
+  getRowKey?: (row: T) => string;
+  customFilters?: React.ReactNode;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -26,10 +29,26 @@ export function DataTable<T extends Record<string, any>>({
   emptyIcon,
   onCreateClick,
   createButtonText = 'Create New',
+  renderExpandedRow,
+  getRowKey,
+  customFilters,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRow = (key: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(key)) {
+        newSet.delete(key);
+      } else {
+        newSet.add(key);
+      }
+      return newSet;
+    });
+  };
 
   // Filter data - search across all columns
   const filteredData = useMemo(() => {
@@ -110,6 +129,7 @@ export function DataTable<T extends Record<string, any>>({
               </button>
             )}
           </div>
+          {customFilters}
         </div>
         
         {onCreateClick && (
@@ -126,6 +146,7 @@ export function DataTable<T extends Record<string, any>>({
         <table className={styles.table}>
           <thead className={styles.thead}>
             <tr>
+              {renderExpandedRow && <th className={styles.thExpand}></th>}
               {columns.map((column, index) => (
                 <th key={index} className={styles.th}>
                   <div className={styles.thContent}>
@@ -172,17 +193,47 @@ export function DataTable<T extends Record<string, any>>({
                 </td>
               </tr>
             ) : (
-              paginatedData.map((row, rowIndex) => (
-                <tr key={rowIndex} className={styles.tr}>
-                  {columns.map((column, colIndex) => (
-                    <td key={colIndex} className={styles.td}>
-                      {column.render
-                        ? column.render(row)
-                        : String(row[column.key as keyof T] || '-')}
-                    </td>
-                  ))}
-                </tr>
-              ))
+              paginatedData.map((row, rowIndex) => {
+                const rowKey = getRowKey ? getRowKey(row) : String(rowIndex);
+                const isExpanded = expandedRows.has(rowKey);
+                return (
+                  <>
+                    <tr key={rowIndex} className={styles.tr}>
+                      {renderExpandedRow && (
+                        <td className={styles.tdExpand}>
+                          <button
+                            className={styles.expandButton}
+                            onClick={() => toggleRow(rowKey)}
+                          >
+                            <svg
+                              className={`${styles.expandIcon} ${isExpanded ? styles.expanded : ''}`}
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </td>
+                      )}
+                      {columns.map((column, colIndex) => (
+                        <td key={colIndex} className={styles.td}>
+                          {column.render
+                            ? column.render(row)
+                            : String(row[column.key as keyof T] || '-')}
+                        </td>
+                      ))}
+                    </tr>
+                    {isExpanded && renderExpandedRow && (
+                      <tr key={`${rowIndex}-expanded`} className={styles.expandedRow}>
+                        <td colSpan={columns.length + 1} className={styles.expandedCell}>
+                          {renderExpandedRow(row)}
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })
             )}
           </tbody>
         </table>

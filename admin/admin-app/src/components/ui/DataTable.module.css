@@ -1,5 +1,69 @@
 .tableContainer {
   width: 100%;
+  background: var(--bg-primary);
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  overflow: visible;
+}
+
+/* Expand/Collapse */
+.thExpand {
+  width: 40px;
+  padding: 12px 16px;
+}
+
+.tdExpand {
+  width: 40px;
+  padding: 16px;
+}
+
+.expandButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.expandButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.expandIcon {
+  width: 16px;
+  height: 16px;
+  transition: transform 0.2s;
+}
+
+.expandIcon.expanded {
+  transform: rotate(90deg);
+}
+
+.expandedRow {
+  background: var(--bg-secondary);
+}
+
+.expandedCell {
+  padding: 24px !important;
+  animation: slideDown 0.2s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Toolbar */
@@ -8,21 +72,23 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 16px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
 }
 
 .toolbarLeft {
   display: flex;
   align-items: center;
-  gap: 12px;
-  flex: 1;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Search Box */
 .searchContainer {
   position: relative;
-  max-width: 400px;
-  flex: 1;
+  width: 400px;
+  min-width: 280px;
 }
 
 .searchIcon {
@@ -30,20 +96,20 @@
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   color: var(--text-tertiary);
   pointer-events: none;
 }
 
 .searchInput {
   width: 100%;
-  padding: 10px 40px 10px 44px;
-  border: 1px solid var(--border-color);
+  padding: 8px 12px 8px 36px;
+  border: none;
   border-radius: 8px;
   font-size: 14px;
   color: var(--text-primary);
-  background-color: var(--bg-primary);
+  background: var(--bg-secondary);
   transition: all 0.2s;
 }
 
@@ -53,8 +119,8 @@
 
 .searchInput:focus {
   outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  background: var(--bg-primary);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
 }
 
 .clearButton {
@@ -99,7 +165,7 @@
 
 .sortSelect:focus {
   outline: none;
-  border-color: var(--color-primary);
+  border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -133,8 +199,7 @@
 
 .tableWrapper {
   overflow-x: auto;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
+  overflow-y: visible;
 }
 
 .table {
@@ -145,17 +210,22 @@
 
 .thead {
   background-color: var(--bg-secondary);
-  border-bottom: 2px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .th {
-  padding: 16px;
+  padding: 12px 24px;
   text-align: left;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
-  color: var(--text-primary);
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+.thExpand {
+  width: 40px;
+  padding: 12px 16px;
 }
 
 .thContent {
@@ -176,7 +246,7 @@
 }
 
 .sortButton:hover {
-  color: var(--color-primary);
+  color: var(--primary);
 }
 
 .sortIcon {
@@ -192,13 +262,13 @@
 
 .sortAsc {
   opacity: 1 !important;
-  color: var(--color-primary);
+  color: var(--primary);
   transform: rotate(180deg);
 }
 
 .sortDesc {
   opacity: 1 !important;
-  color: var(--color-primary);
+  color: var(--primary);
 }
 
 .filterInput {
@@ -219,9 +289,14 @@
 }
 
 .td {
-  padding: 16px;
+  padding: 16px 24px;
   font-size: 14px;
   color: var(--text-secondary);
+}
+
+.tdExpand {
+  width: 40px;
+  padding: 16px;
 }
 
 /* Empty Cell for no data */
@@ -259,8 +334,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-top: 16px;
-  padding: 12px 0;
+  padding: 16px;
+  border-top: 1px solid var(--border-color);
 }
 
 .paginationInfo {
@@ -293,8 +368,8 @@
 
 .pageButton:hover:not(:disabled) {
   background-color: var(--bg-secondary);
-  border-color: var(--color-primary);
-  color: var(--color-primary);
+  border-color: var(--primary);
+  color: var(--primary);
 }
 
 .pageButton:disabled {

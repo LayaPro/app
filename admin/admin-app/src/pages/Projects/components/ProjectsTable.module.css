@@ -1,0 +1,742 @@
+/* Projects Container */
+.projectsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Stats Cards */
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.statCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.2s;
+}
+
+.statCard:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.statIcon svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+  stroke-width: 2;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.statLabel {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+  margin: 0;
+}
+
+.statValue {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1;
+}
+
+/* Loading */
+.loadingContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  color: var(--text-secondary);
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border-color);
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.customerCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 700;
+  font-size: 16px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.customerName {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.customerSubtext {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.phoneText {
+  color: var(--text-secondary);
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.budgetText {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.dateText {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.dateWithIcon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendarIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* Status Badge */
+.statusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: white;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+/* Tasks Cell */
+.tasksCell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 80px;
+}
+
+.tasksText {
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.progressBar {
+  width: 100%;
+  height: 4px;
+  background: var(--bg-secondary);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+  transition: width 0.3s ease;
+}
+
+/* Actions Cell */
+.actionsCell {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  position: relative;
+  overflow: visible;
+}
+
+.actionsDropdownContainer {
+  position: relative;
+  overflow: visible;
+}
+
+.actionsDropdownButton {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.actionsDropdownButton:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: #6366f1;
+}
+
+.actionsDropdownButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.actionsDropdownMenu {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 180px;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.actionsDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.actionsDropdownItem:hover {
+  background: var(--bg-secondary);
+}
+
+.actionsDropdownItem svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.actionsDropdownDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.actionsDropdownItemDanger {
+  color: #ef4444;
+}
+
+.actionsDropdownItemDanger:hover {
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Date Filters */
+.expandedContent {
+  padding: 2px 24px;
+  background: var(--bg-secondary);
+}
+
+.noEventsText {
+  padding: 32px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.eventsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 4px;
+}
+
+.eventCard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.eventCard:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-color: #6366f1;
+}
+
+.eventCardHeader {
+  padding: 10px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.eventTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+.eventCardIcon {
+  width: 18px;
+  height: 18px;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.eventCardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.eventCardBody {
+  padding: 0 14px 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.eventCardRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.eventCardRowIcon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.eventCardLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.eventCardValue {
+  font-size: 11px;
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: right;
+}
+
+.eventStatusBadge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.statusCompleted {
+  background: rgba(34, 197, 94, 0.1);
+  color: #22c55e;
+}
+
+.statusUpcoming {
+  background: rgba(245, 158, 11, 0.1);
+  color: #f59e0b;
+}
+
+.statusScheduled {
+  background: rgba(99, 102, 241, 0.1);
+  color: #6366f1;
+}
+
+.statusPending {
+  background: rgba(148, 163, 184, 0.1);
+  color: #94a3b8;
+}
+
+.detailsContent {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.detailsSection {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.detailsTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 0;
+}
+
+.detailsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+
+.detailItem {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.detailLabel {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.detailValue {
+  font-size: 14px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.eventsList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.eventCard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.eventHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.eventIcon {
+  width: 18px;
+  height: 18px;
+  color: #6366f1;
+  flex-shrink: 0;
+}
+
+.eventName {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.eventDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.eventDetail {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.eventLabel {
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.eventValue {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Date Range Filter Styles */
+.dateRangeContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.dateRangeButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  height: 36px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dateRangeButton:hover {
+  background: var(--bg-secondary);
+}
+
+.quickClearButton {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.quickClearButton:hover {
+  background: var(--bg-secondary);
+  color: #ef4444;
+  border-color: #ef4444;
+}
+
+.quickClearButton svg {
+  width: 16px;
+  height: 16px;
+}
+
+.dateIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.filterBadge {
+  color: #6366f1;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.dateRangeDropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 8px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  z-index: 100;
+  min-width: 320px;
+}
+
+.dateRangeContent {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.datePickerWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dateLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.dateRangeActions {
+  display: flex;
+  gap: 8px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.dateRangeClear {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dateRangeClear:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.dateRangeApply {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #6366f1;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dateRangeApply:hover {
+  background: #4f46e5;
+}
+
+/* Export Dropdown */
+.exportContainer {
+  position: relative;
+}
+
+.exportButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.exportButton:hover {
+  background: var(--bg-secondary);
+  border-color: #6366f1;
+}
+
+.exportButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.exportDropdown {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  min-width: 180px;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+.exportDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.exportDropdownItem:hover {
+  background: var(--bg-secondary);
+}
+
+.exportDropdownItem svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.exportDropdownDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}

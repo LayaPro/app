@@ -1,6 +1,9 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import Project from '../models/project';
+import ClientEvent from '../models/clientEvent';
+import ProjectFinance from '../models/projectFinance';
+import Event from '../models/event';
 import { AuthRequest } from '../middleware/auth';
 
 export const createProject = async (req: AuthRequest, res: Response) => {
@@ -71,13 +74,40 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    // All users (including superadmin) only see their own tenant's projects
+    // Get all projects for the tenant
     const projects = await Project.find({ tenantId }).sort({ createdAt: -1 }).lean();
+
+    // Fetch related events and finance for each project
+    const projectsWithDetails = await Promise.all(
+      projects.map(async (project) => {
+        const clientEvents = await ClientEvent.find({ projectId: project.projectId }).lean();
+        const finance = await ProjectFinance.findOne({ projectId: project.projectId }).lean();
+        
+        // Populate event descriptions
+        const eventsWithDetails = await Promise.all(
+          clientEvents.map(async (ce) => {
+            const event = await Event.findOne({ eventId: ce.eventId }).lean();
+            console.log('Event lookup:', { eventId: ce.eventId, found: !!event, eventDesc: event?.eventDesc });
+            return {
+              ...ce,
+              eventTitle: event?.eventDesc || null,
+              eventCode: event?.eventCode || null
+            };
+          })
+        );
+        
+        return {
+          ...project,
+          events: eventsWithDetails,
+          finance
+        };
+      })
+    );
 
     return res.status(200).json({
       message: 'Projects retrieved successfully',
-      count: projects.length,
-      projects
+      count: projectsWithDetails.length,
+      projects: projectsWithDetails
     });
   } catch (err: any) {
     console.error('Get all projects error:', err);
@@ -173,8 +203,92 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const createProjectWithDetails = async (req: AuthRequest, res: Response) => {
+  try {
+    const { project: projectData, events, finance } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!projectData.projectName) {
+      return res.status(400).json({ message: 'Project name is required' });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    const projectId = `project_${nanoid()}`;
+    const s3BucketName = `laya-${tenantId.toLowerCase()}-${projectId.toLowerCase()}`;
+    
+    // Create project
+    const project = await Project.create({
+      projectId,
+      tenantId,
+      projectName: projectData.projectName,
+      brideFirstName: projectData.brideFirstName,
+      groomFirstName: projectData.groomFirstName,
+      brideLastName: projectData.brideLastName,
+      groomLastName: projectData.groomLastName,
+      phoneNumber: projectData.phoneNumber,
+      budget: finance?.totalBudget,
+      address: projectData.address,
+      referredBy: projectData.referredBy,
+      s3BucketName,
+    });
+
+    // Create events if provided
+    const createdEvents = [];
+    if (events && events.length > 0) {
+      for (const eventData of events) {
+        const clientEventId = `clientevent_${nanoid()}`;
+        const clientEvent = await ClientEvent.create({
+          clientEventId,
+          tenantId,
+          projectId,
+          eventId: eventData.eventId,
+          fromDatetime: eventData.fromDatetime,
+          toDatetime: eventData.toDatetime,
+          venue: eventData.venue,
+          venueMapUrl: eventData.venueMapUrl,
+          city: eventData.city,
+          teamMembersAssigned: eventData.teamMembersAssigned || [],
+          createdBy: userId,
+        });
+        createdEvents.push(clientEvent);
+      }
+    }
+
+    // Create finance record if provided
+    let projectFinance = null;
+    if (finance) {
+      const financeId = `finance_${nanoid()}`;
+      projectFinance = await ProjectFinance.create({
+        financeId,
+        tenantId,
+        projectId,
+        totalBudget: finance.totalBudget,
+        receivedAmount: finance.receivedAmount,
+        receivedDate: finance.receivedDate,
+        nextDueDate: finance.nextDueDate,
+        createdBy: userId,
+      });
+    }
+
+    return res.status(201).json({
+      message: 'Project created successfully',
+      project,
+      events: createdEvents,
+      finance: projectFinance,
+    });
+  } catch (err: any) {
+    console.error('Create project with details error:', err);
+    return res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+};
+
 export default {
   createProject,
+  createProjectWithDetails,
   getAllProjects,
   getProjectById,
   updateProject,

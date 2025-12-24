@@ -12,9 +12,11 @@ interface EventsStepProps {
   formData: ProjectFormData;
   onChange: (field: string, value: any) => void;
   errors: Record<string, string>;
+  events: any[];
+  teamMembers: any[];
 }
 
-export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, errors }) => {
+export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, errors, events, teamMembers }) => {
   const [newEvent, setNewEvent] = useState({
     eventType: '',
     fromDate: '',
@@ -26,26 +28,19 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
     teamMembers: [] as string[],
   });
 
-  const teamMemberOptions = [
-    { value: 'tm1', label: 'John Doe - Photographer' },
-    { value: 'tm2', label: 'Jane Smith - Videographer' },
-    { value: 'tm3', label: 'Mike Johnson - Drone Operator' },
-    { value: 'tm4', label: 'Sarah Williams - Editor' },
-    { value: 'tm5', label: 'David Brown - Assistant' },
-    { value: 'tm6', label: 'Emily Davis - Coordinator' },
-  ];
+  // Transform team members from API into MultiSelect options
+  const teamMemberOptions = Array.isArray(teamMembers) ? teamMembers.map((member: any) => ({
+    value: member.memberId || member._id,
+    label: `${member.firstName} ${member.lastName}${member.profile?.name ? ` - ${member.profile.name}` : ''}`,
+  })) : [];
 
+  // Transform events from API into SearchableSelect options
   const eventTypeOptions = [
     { value: '', label: 'Select Event Type' },
-    { value: 'wedding', label: 'Wedding' },
-    { value: 'pre_wedding', label: 'Pre-Wedding Shoot' },
-    { value: 'engagement', label: 'Engagement' },
-    { value: 'birthday', label: 'Birthday' },
-    { value: 'corporate', label: 'Corporate Event' },
-    { value: 'conference', label: 'Conference' },
-    { value: 'reception', label: 'Reception' },
-    { value: 'party', label: 'Party' },
-    { value: 'other', label: 'Other' },
+    ...(Array.isArray(events) ? events.map((event: any) => ({
+      value: event.eventId || event._id,
+      label: event.eventDesc || event.eventCode,
+    })) : [])
   ];
 
   const handleAddEvent = () => {
@@ -54,7 +49,7 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
     }
 
     const event = {
-      eventId: Date.now().toString(),
+      eventId: newEvent.eventType, // Use the selected event ID from dropdown
       eventName: eventTypeOptions.find(opt => opt.value === newEvent.eventType)?.label || '',
       fromDate: newEvent.fromDate,
       toDate: newEvent.toDate || newEvent.fromDate,

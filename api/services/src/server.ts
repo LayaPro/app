@@ -99,6 +99,7 @@ app.put('/update-equipment/:equipmentId', authenticate, requireAdmin, equipmentC
 app.delete('/delete-equipment/:equipmentId', authenticate, requireAdmin, equipmentController.deleteEquipment);
 
 // ---------- Project routes ----------
+app.post('/projects', authenticate, requireAdmin, projectController.createProjectWithDetails);
 app.post('/create-project', authenticate, requireAdmin, projectController.createProject);
 app.get('/get-all-projects', authenticate, requireAdmin, projectController.getAllProjects);
 app.get('/get-project/:projectId', authenticate, requireAdmin, projectController.getProjectById);
