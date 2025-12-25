@@ -5,8 +5,10 @@ import ClientEvent from '../models/clientEvent';
 import ProjectFinance from '../models/projectFinance';
 import Event from '../models/event';
 import { AuthRequest } from '../middleware/auth';
+import { generateBucketName, createS3Bucket, bucketExists } from '../utils/s3Bucket';
 
 export const createProject = async (req: AuthRequest, res: Response) => {
+  console.log('[Project] ========== CREATE PROJECT REQUEST RECEIVED ==========');
   try {
     const {
       projectName,
@@ -23,6 +25,8 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       coverPhoto
     } = req.body;
     const tenantId = req.user?.tenantId;
+    
+    console.log('[Project] Request data:', { projectName, tenantId });
 
     if (!projectName) {
       return res.status(400).json({ message: 'Project name is required' });
@@ -34,9 +38,29 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 
     const projectId = `project_${nanoid()}`;
     
-    // Generate S3-compliant bucket name from projectId
-    // S3 rules: lowercase, numbers, hyphens only, 3-63 chars, start/end with letter/number
-    const s3BucketName = `laya-${tenantId.toLowerCase()}-${projectId.toLowerCase()}`;
+    // Generate unique S3 bucket name from project name
+    const s3BucketName = generateBucketName(projectName, tenantId);
+    console.log(`[Project] Creating project ${projectId} with S3 bucket: ${s3BucketName}`);
+    
+    // Create S3 bucket
+    try {
+      console.log('[Project] Calling createS3Bucket...');
+      await createS3Bucket(s3BucketName);
+      console.log('[Project] S3 bucket created successfully');
+    } catch (bucketError) {
+      console.error('[Project] S3 bucket creation failed:', {
+        projectId,
+        projectName,
+        s3BucketName,
+        tenantId,
+        error: bucketError instanceof Error ? bucketError.message : 'Unknown error',
+        stack: bucketError instanceof Error ? bucketError.stack : undefined
+      });
+      return res.status(500).json({ 
+        message: 'Failed to create S3 bucket for project',
+        error: bucketError instanceof Error ? bucketError.message : 'Unknown error'
+      });
+    }
     
     const project = await Project.create({
       projectId,
@@ -87,7 +111,6 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
         const eventsWithDetails = await Promise.all(
           clientEvents.map(async (ce) => {
             const event = await Event.findOne({ eventId: ce.eventId }).lean();
-            console.log('Event lookup:', { eventId: ce.eventId, found: !!event, eventDesc: event?.eventDesc });
             return {
               ...ce,
               eventTitle: event?.eventDesc || null,
@@ -204,10 +227,18 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
 };
 
 export const createProjectWithDetails = async (req: AuthRequest, res: Response) => {
+  console.log('[ProjectWithDetails] ========== CREATE PROJECT WITH DETAILS REQUEST ==========');
   try {
     const { project: projectData, events, finance } = req.body;
     const tenantId = req.user?.tenantId;
     const userId = req.user?.userId;
+
+    console.log('[ProjectWithDetails] Request data:', { 
+      projectName: projectData?.projectName, 
+      tenantId,
+      eventsCount: events?.length,
+      hasFinance: !!finance
+    });
 
     if (!projectData.projectName) {
       return res.status(400).json({ message: 'Project name is required' });
@@ -218,7 +249,30 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
     }
 
     const projectId = `project_${nanoid()}`;
-    const s3BucketName = `laya-${tenantId.toLowerCase()}-${projectId.toLowerCase()}`;
+    
+    // Generate unique S3 bucket name from project name
+    const s3BucketName = generateBucketName(projectData.projectName, tenantId);
+    console.log(`[ProjectWithDetails] Creating project ${projectId} with S3 bucket: ${s3BucketName}`);
+    
+    // Create S3 bucket
+    try {
+      console.log('[ProjectWithDetails] Calling createS3Bucket...');
+      await createS3Bucket(s3BucketName);
+      console.log('[ProjectWithDetails] S3 bucket created successfully');
+    } catch (bucketError) {
+      console.error('[ProjectWithDetails] S3 bucket creation failed:', {
+        projectId,
+        projectName: projectData.projectName,
+        s3BucketName,
+        tenantId,
+        error: bucketError instanceof Error ? bucketError.message : 'Unknown error',
+        stack: bucketError instanceof Error ? bucketError.stack : undefined
+      });
+      return res.status(500).json({ 
+        message: 'Failed to create S3 bucket for project',
+        error: bucketError instanceof Error ? bucketError.message : 'Unknown error'
+      });
+    }
     
     // Create project
     const project = await Project.create({

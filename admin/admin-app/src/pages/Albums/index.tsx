@@ -41,6 +41,8 @@ const Albums = () => {
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
@@ -236,6 +238,75 @@ const Albums = () => {
 
   const toggleSortDropdown = () => {
     setShowSortDropdown(!showSortDropdown);
+  };
+
+  const handleUploadImages = async () => {
+    if (uploadedImages.length === 0 || !selectedProject || !selectedEvent) {
+      alert('No images to upload');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const formData = new FormData();
+      formData.append('projectId', selectedProject.projectId);
+      formData.append('clientEventId', selectedEvent.clientEventId);
+
+      // Add all files
+      uploadedImages.forEach((img) => {
+        if (img.file) {
+          formData.append('images', img.file);
+        }
+      });
+
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      console.log('[Upload] Token exists:', !!token);
+      console.log('[Upload] Token preview:', token?.substring(0, 20));
+      
+      if (!token) {
+        alert('You are not logged in. Please login again.');
+        return;
+      }
+
+      const response = await fetch('http://localhost:4000/upload-batch-images', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      const result = await response.json();
+      console.log('[Upload] Response:', response.status, result);
+
+      if (response.ok) {
+        alert(`Successfully uploaded ${result.stats.successful} of ${result.stats.total} images!`);
+        
+        // Clean up blob URLs
+        uploadedImages.forEach((img) => {
+          if (img.url.startsWith('blob:')) {
+            URL.revokeObjectURL(img.url);
+          }
+        });
+        
+        // Clear uploaded images
+        setUploadedImages([]);
+        setIsUploadExpanded(false);
+        
+        // Optionally refresh the images list
+        // fetchAllImages();
+      } else {
+        alert(`Upload failed: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload images. Please try again.');
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
   };
 
   const handleSelectImage = (imageId: string) => {
@@ -525,11 +596,15 @@ const Albums = () => {
                       </div>
 
                       <div className={styles.uploadActions}>
-                        <button className={styles.saveButton}>
+                        <button 
+                          className={styles.saveButton}
+                          onClick={handleUploadImages}
+                          disabled={isUploading}
+                        >
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                           </svg>
-                          Save {uploadedImages.length} {uploadedImages.length === 1 ? 'Image' : 'Images'}
+                          {isUploading ? 'Uploading...' : `Save ${uploadedImages.length} ${uploadedImages.length === 1 ? 'Image' : 'Images'}`}
                         </button>
                         <button
                           className={styles.cancelButton}

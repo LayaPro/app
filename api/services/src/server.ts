@@ -22,6 +22,7 @@ import searchController from './controllers/searchController';
 import userController from './controllers/userController';
 import { authenticate, requireSuperAdmin } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
+import { upload } from './middleware/upload';
 
 dotenv.config();
 
@@ -135,6 +136,7 @@ app.delete('/delete-project-finance/:financeId', authenticate, requireAdmin, pro
 // ---------- Image routes ----------
 app.post('/create-image', authenticate, requireAdmin, imageController.createImage);
 app.post('/bulk-create-images', authenticate, requireAdmin, imageController.bulkCreateImages);
+app.post('/upload-batch-images', authenticate, upload.array('images', 500), imageController.uploadBatchImages);
 app.get('/get-all-images', authenticate, imageController.getAllImages);
 app.get('/get-images-by-client-event/:clientEventId', authenticate, imageController.getImagesByClientEvent);
 app.get('/get-images-by-project/:projectId', authenticate, imageController.getImagesByProject);

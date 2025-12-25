@@ -1,7 +1,13 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import Image from '../models/image';
+import Project from '../models/project';
+import ClientEvent from '../models/clientEvent';
+import Event from '../models/event';
 import { AuthRequest } from '../middleware/auth';
+import { compressImage } from '../utils/imageProcessor';
+import { uploadToS3, uploadBothVersions } from '../utils/s3';
+import pMap from 'p-map';
 
 export const createImage = async (req: AuthRequest, res: Response) => {
   try {
@@ -329,6 +335,173 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Batch upload endpoint with compression
+export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId, clientEventId, eventDeliveryStatusId } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!projectId || !clientEventId) {
+      return res.status(400).json({ 
+        message: 'Project ID and Client Event ID are required' 
+      });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No images provided' });
+    }
+
+    // Fetch project to get S3 bucket name
+    const project = await Project.findOne({ projectId, tenantId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const s3BucketName = project.s3BucketName;
+    if (!s3BucketName) {
+      return res.status(400).json({ message: 'Project does not have an S3 bucket configured' });
+    }
+
+    // Fetch client event to get eventId
+    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+    if (!clientEvent) {
+      return res.status(404).json({ message: 'Client event not found' });
+    }
+
+    // Fetch event to get event name
+    const event = await Event.findOne({ eventId: clientEvent.eventId });
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    // Sanitize event name for folder (remove special chars, spaces to hyphens)
+    const eventFolderName = event.eventDesc
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/--+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    console.log(`Starting batch upload of ${files.length} images to bucket: ${s3BucketName}, folder: ${eventFolderName}...`);
+
+    // Process images in batches of 15 for optimal performance
+    const results = await pMap(
+      files,
+      async (file) => {
+        try {
+          // Get original buffer
+          const originalBuffer = file.buffer;
+          const originalMetadata = await require('sharp')(originalBuffer).metadata();
+
+          // Compress image
+          const compressed = await compressImage(originalBuffer, {
+            maxWidth: 1920,
+            quality: 80,
+            format: 'jpeg',
+          });
+
+          // Upload original and compressed versions to project's bucket
+          const uploadResult = await uploadBothVersions(
+            originalBuffer,
+            compressed.buffer,
+            file.originalname,
+            file.mimetype,
+            s3BucketName,
+            eventFolderName
+          );
+
+          // Create database record
+          const imageId = `image_${nanoid()}`;
+          const image = await Image.create({
+            imageId,
+            tenantId,
+            projectId,
+            clientEventId,
+            originalUrl: uploadResult.originalUrl,
+            compressedUrl: uploadResult.compressedUrl,
+            fileName: file.originalname,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            width: originalMetadata.width,
+            height: originalMetadata.height,
+            uploadStatus: 'completed',
+            eventDeliveryStatusId,
+            uploadedBy: userId,
+            uploadedAt: new Date(),
+          });
+
+          console.log(`✓ Uploaded: ${file.originalname}`);
+
+          return {
+            success: true,
+            imageId: image.imageId,
+            fileName: file.originalname,
+            originalUrl: uploadResult.originalUrl,
+            compressedUrl: uploadResult.compressedUrl,
+          };
+        } catch (error) {
+          console.error(`✗ Failed: ${file.originalname}`, error);
+          
+          // Create database record for failed upload
+          try {
+            const imageId = `image_${nanoid()}`;
+            await Image.create({
+              imageId,
+              tenantId,
+              projectId,
+              clientEventId,
+              originalUrl: '', // Empty since upload failed
+              fileName: file.originalname,
+              fileSize: file.size,
+              mimeType: file.mimetype,
+              uploadStatus: 'failed',
+              eventDeliveryStatusId,
+              uploadedBy: userId,
+              uploadedAt: new Date(),
+            });
+          } catch (dbError) {
+            console.error(`Failed to save error record for ${file.originalname}:`, dbError);
+          }
+          
+          return {
+            success: false,
+            fileName: file.originalname,
+            error: error instanceof Error ? error.message : 'Upload failed',
+          };
+        }
+      },
+      { concurrency: 15 } // Process 15 images at a time
+    );
+
+    const successful = results.filter((r) => r.success);
+    const failed = results.filter((r) => !r.success);
+
+    console.log(`Batch upload completed: ${successful.length} successful, ${failed.length} failed`);
+
+    res.status(200).json({
+      message: `Uploaded ${successful.length} of ${files.length} images`,
+      successful,
+      failed,
+      stats: {
+        total: files.length,
+        successful: successful.length,
+        failed: failed.length,
+      },
+    });
+  } catch (error) {
+    console.error('Batch upload error:', error);
+    res.status(500).json({ 
+      message: 'Failed to upload images', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
 export default {
   createImage,
   bulkCreateImages,
@@ -339,5 +512,6 @@ export default {
   updateImage,
   bulkUpdateImages,
   deleteImage,
-  bulkDeleteImages
+  bulkDeleteImages,
+  uploadBatchImages
 };
