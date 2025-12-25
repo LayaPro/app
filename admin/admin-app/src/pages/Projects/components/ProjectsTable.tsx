@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { projectApi } from '../../../services/api';
+import { projectApi, eventDeliveryStatusApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { DatePicker } from '../../../components/ui/DatePicker';
@@ -41,7 +41,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const totalStatuses = 13; // Total number of statuses per event
+  const [totalStatuses, setTotalStatuses] = useState(13); // Will be fetched from DB
   const dropdownRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const dateRangeRef = useRef<HTMLDivElement>(null);
@@ -49,7 +49,19 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
 
   useEffect(() => {
     fetchProjects();
+    fetchStatuses();
   }, []);
+
+  const fetchStatuses = async () => {
+    try {
+      const response = await eventDeliveryStatusApi.getAll();
+      const statuses = response?.statuses || [];
+      setTotalStatuses(statuses.length);
+    } catch (error) {
+      console.error('Error fetching statuses:', error);
+      setTotalStatuses(13); // Fallback to default
+    }
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
