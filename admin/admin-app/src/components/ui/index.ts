@@ -8,6 +8,8 @@ export { DataTable } from './DataTable.js';
 export { Modal } from './Modal.js';
 export { Breadcrumb } from './Breadcrumb.js';
 export { Select } from './Select.js';
+export { SearchableSelect } from './SearchableSelect.js';
+export { DatePicker } from './DatePicker.js';
 export { Toast } from './Toast.js';
 export { ToastContainer } from './ToastContainer.js';
 export { CollapsibleCard } from './CollapsibleCard.js';

@@ -6,7 +6,7 @@ import { PaymentStep } from './components/PaymentStep';
 import { ReviewStep } from './components/ReviewStep';
 import { projectApi, eventApi, teamApi } from '../../services/api';
 import { useAppSelector } from '../../store/index.js';
-import type { ClientEvent, ProjectFinance } from 'laya-shared';
+import type { ClientEvent } from 'laya-shared';
 import styles from './ProjectWizard.module.css';
 import pageStyles from '../Page.module.css';
 

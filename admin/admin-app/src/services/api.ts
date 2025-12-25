@@ -448,3 +448,71 @@ export const projectApi = {
     return handleResponse(response);
   },
 };
+
+// Client Event API (Calendar Events)
+export const clientEventApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-client-events`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (clientEventId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-client-event/${clientEventId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getByProject: async (projectId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-client-events-by-project/${projectId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/create-client-event`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (clientEventId: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}/update-client-event/${clientEventId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (clientEventId: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-client-event/${clientEventId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
