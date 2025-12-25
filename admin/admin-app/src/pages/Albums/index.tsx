@@ -42,8 +42,6 @@ const Albums = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [uploadProgress, setUploadProgress] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
@@ -248,7 +246,6 @@ const Albums = () => {
     }
 
     setIsUploading(true);
-    setUploadProgress(0);
 
     try {
       const formData = new FormData();
@@ -306,7 +303,6 @@ const Albums = () => {
       alert('Failed to upload images. Please try again.');
     } finally {
       setIsUploading(false);
-      setUploadProgress(0);
     }
   };
 
