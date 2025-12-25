@@ -3,6 +3,7 @@
 /* View Transition Container */
 .viewContainer {
   position: relative;
+  isolation: isolate;
 }
 
 .viewEntering {
@@ -16,11 +17,9 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: scale(0.98);
   }
   to {
     opacity: 1;
-    transform: scale(1);
   }
 }
 
@@ -383,13 +382,15 @@
 }
 
 .actionsDropdownMenu {
-  position: fixed;
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   min-width: 180px;
-  z-index: 9999;
+  z-index: 1000;
   overflow: hidden;
   animation: slideDown 0.2s ease-out;
   transform-origin: top;

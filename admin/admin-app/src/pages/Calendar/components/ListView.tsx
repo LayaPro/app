@@ -360,22 +360,10 @@ export const ListView: React.FC<ListViewProps> = ({
       header: 'Actions',
       render: (event) => {
         const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-          const button = e.currentTarget;
-          const rect = button.getBoundingClientRect();
+          e.stopPropagation();
           setOpenActionDropdown(
             openActionDropdown === event.clientEventId ? null : event.clientEventId
           );
-          
-          // Position dropdown
-          if (openActionDropdown !== event.clientEventId) {
-            setTimeout(() => {
-              const dropdown = button.nextElementSibling as HTMLElement;
-              if (dropdown) {
-                dropdown.style.top = `${rect.bottom + 4}px`;
-                dropdown.style.right = `${window.innerWidth - rect.right}px`;
-              }
-            }, 0);
-          }
         };
 
         return (
