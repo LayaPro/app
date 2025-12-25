@@ -252,6 +252,19 @@
   min-width: 180px;
   z-index: 9999;
   overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+  transform-origin: top;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .actionsDropdownItem {
@@ -604,6 +617,19 @@
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   z-index: 100;
   min-width: 320px;
+  animation: slideDown 0.2s ease-out;
+  transform-origin: top;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .dateRangeContent {
@@ -708,6 +734,8 @@
   min-width: 180px;
   z-index: 9999;
   overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+  transform-origin: top;
 }
 
 .exportDropdownItem {

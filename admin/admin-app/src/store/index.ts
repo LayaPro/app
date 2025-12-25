@@ -5,6 +5,7 @@ import authReducer from './slices/authSlice.js';
 import themeReducer from './slices/themeSlice.js';
 import uiReducer from './slices/uiSlice.js';
 import eventsReducer from './slices/eventsSlice.js';
+import projectReducer from './slices/projectSlice.js';
 import { baseApi } from './api/baseApi.js';
 
 export const store = configureStore({
@@ -13,6 +14,7 @@ export const store = configureStore({
     theme: themeReducer,
     ui: uiReducer,
     events: eventsReducer,
+    project: projectReducer,
     [baseApi.reducerPath]: baseApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>

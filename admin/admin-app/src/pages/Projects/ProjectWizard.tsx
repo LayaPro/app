@@ -5,7 +5,8 @@ import { EventsStep } from './components/EventsStep';
 import { PaymentStep } from './components/PaymentStep';
 import { ReviewStep } from './components/ReviewStep';
 import { projectApi, eventApi, teamApi } from '../../services/api';
-import type { ClientEvent } from 'laya-shared';
+import { useAppSelector } from '../../store/index.js';
+import type { ClientEvent, ProjectFinance } from 'laya-shared';
 import styles from './ProjectWizard.module.css';
 import pageStyles from '../Page.module.css';
 
@@ -27,6 +28,8 @@ export interface ProjectFormData {
   address?: string;
   city?: string;
   referredBy?: string;
+  displayPic?: string;
+  coverPhoto?: string;
   
   // Additional contact fields
   contactPerson: string;
@@ -64,6 +67,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
   const [events, setEvents] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { editingProject, isEditing } = useAppSelector((state) => state.project);
   const [formData, setFormData] = useState<ProjectFormData>({
     projectName: '',
     brideFirstName: '',
@@ -76,6 +80,8 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
     address: '',
     city: '',
     referredBy: '',
+    displayPic: undefined,
+    coverPhoto: undefined,
     events: [],
     totalBudget: 0,
     receivedAmount: 0,
@@ -85,6 +91,62 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Pre-fill form data when editing
+  useEffect(() => {
+    if (isEditing && editingProject) {
+      console.log('Editing project data:', editingProject);
+      
+      // Extract contact person and email - might be stored in different fields
+      const contactPerson = editingProject.contactPerson || 
+                          editingProject.brideFirstName || 
+                          editingProject.groomFirstName || 
+                          '';
+      const email = editingProject.email || editingProject.contactEmail || '';
+      
+      setFormData({
+        projectName: editingProject.projectName || '',
+        brideFirstName: editingProject.brideFirstName || '',
+        brideLastName: editingProject.brideLastName || '',
+        groomFirstName: editingProject.groomFirstName || '',
+        groomLastName: editingProject.groomLastName || '',
+        contactPerson: contactPerson,
+        email: email,
+        phoneNumber: editingProject.phoneNumber || '',
+        address: editingProject.address || '',
+        city: editingProject.city || '',
+        referredBy: editingProject.referredBy || '',
+        displayPic: editingProject.displayPic || undefined,
+        coverPhoto: editingProject.coverPhoto || undefined,
+        events: editingProject.events?.map((e: any) => ({
+          clientEventId: e.clientEventId,
+          eventId: e.eventId,
+          eventName: e.eventTitle || e.eventName || e.eventCode,
+          fromDate: e.fromDatetime ? new Date(e.fromDatetime).toISOString().split('T')[0] : '',
+          toDate: e.toDatetime ? new Date(e.toDatetime).toISOString().split('T')[0] : '',
+          fromTime: e.fromDatetime ? new Date(e.fromDatetime).toTimeString().slice(0, 5) : '',
+          toTime: e.toDatetime ? new Date(e.toDatetime).toTimeString().slice(0, 5) : '',
+          venue: e.venue || '',
+          venueLocation: e.venue || '',
+          venueMapUrl: e.venueMapUrl || '',
+          city: e.city || '',
+          teamMembers: e.teamMembersAssigned || [],
+          notes: e.notes || '',
+        })) || [],
+        totalBudget: editingProject.finance?.totalBudget || editingProject.budget || 0,
+        receivedAmount: editingProject.finance?.receivedAmount || 0,
+        receivedDate: editingProject.finance?.receivedDate ? new Date(editingProject.finance.receivedDate).toISOString().split('T')[0] : undefined,
+        nextDueDate: editingProject.finance?.nextDueDate ? new Date(editingProject.finance.nextDueDate).toISOString().split('T')[0] : undefined,
+        paymentTerms: editingProject.finance?.paymentTerms || '',
+      });
+      
+      console.log('Form data after mapping:', {
+        brideFirstName: editingProject.brideFirstName,
+        contactPerson,
+        email,
+      });
+    }
+  }, [isEditing, editingProject]);
 
   // Fetch events and team members on mount
   useEffect(() => {
@@ -175,6 +237,8 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
         phoneNumber: formData.phoneNumber,
         address: formData.address,
         referredBy: formData.referredBy,
+        displayPic: formData.displayPic,
+        coverPhoto: formData.coverPhoto,
       };
 
       // Transform events data
@@ -204,18 +268,33 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
         nextDueDate: formData.nextDueDate ? new Date(formData.nextDueDate) : undefined,
       } : undefined;
 
-      // Call API
-      const response = await projectApi.create({
-        project: projectData,
-        events: eventsData,
-        finance: financeData,
-      });
+      let response;
+      
+      // Check if we're editing an existing project
+      if (isEditing && editingProject?.projectId) {
+        console.log('Calling updateWithDetails API for project:', editingProject.projectId);
+        
+        // Call comprehensive update endpoint that handles project, events, and finance
+        response = await projectApi.updateWithDetails(editingProject.projectId, {
+          project: projectData,
+          events: eventsData,
+          finance: financeData,
+        });
+      } else {
+        console.log('Calling create API for new project');
+        // Call create API with full details
+        response = await projectApi.create({
+          project: projectData,
+          events: eventsData,
+          finance: financeData,
+        });
+      }
 
       // Call parent callback with response
       onSubmit(response);
     } catch (error) {
-      console.error('Failed to create project:', error);
-      setErrors({ submit: (error as Error).message || 'Failed to create project' });
+      console.error('Failed to save project:', error);
+      setErrors({ submit: (error as Error).message || 'Failed to save project' });
     } finally {
       setIsSubmitting(false);
     }

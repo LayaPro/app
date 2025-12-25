@@ -421,6 +421,22 @@ export const projectApi = {
     return handleResponse(response);
   },
 
+  updateWithDetails: async (projectId: string, data: {
+    project: any;
+    events: any[];
+    finance?: any;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/update-project-with-details/${projectId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
   delete: async (projectId: string) => {
     const response = await fetch(`${API_BASE_URL}/delete-project/${projectId}`, {
       method: 'DELETE',

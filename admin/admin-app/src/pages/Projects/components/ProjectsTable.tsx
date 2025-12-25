@@ -3,6 +3,9 @@ import { projectApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { DatePicker } from '../../../components/ui/DatePicker';
+import { useAppDispatch } from '../../../store/index.js';
+import { setEditingProject } from '../../../store/slices/projectSlice.js';
+import { formatIndianAmount } from '../../../utils/formatAmount';
 import styles from './ProjectsTable.module.css';
 
 interface Project {
@@ -14,6 +17,8 @@ interface Project {
   groomLastName?: string;
   phoneNumber?: string;
   budget?: number;
+  displayPic?: string;
+  coverPhoto?: string;
   createdAt?: string;
   events?: any[];
   finance?: any;
@@ -36,8 +41,11 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const totalStatuses = 13; // Total number of statuses per event
   const dropdownRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
+  const dateRangeRef = useRef<HTMLDivElement>(null);
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     fetchProjects();
@@ -46,19 +54,33 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      // Don't close if clicking on a dropdown button or menu item
+      if (target.closest('button[class*="actionsDropdownButton"]') || 
+          target.closest('button[class*="actionsDropdownItem"]')) {
+        return;
+      }
+      
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setOpenActionDropdown(null);
       }
       if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
         setIsExportOpen(false);
       }
+      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target as Node)) {
+        setIsDateRangeOpen(false);
+      }
     };
 
-    if (openActionDropdown || isExportOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+    if (openActionDropdown || isExportOpen || isDateRangeOpen) {
+      // Use timeout to allow click events to fire first
+      setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+      return () => document.removeEventListener('click', handleClickOutside);
     }
-  }, [openActionDropdown, isExportOpen]);
+  }, [openActionDropdown, isExportOpen, isDateRangeOpen]);
 
   const fetchProjects = async () => {
     try {
@@ -164,12 +186,21 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       sortable: true,
       render: (project) => (
         <div className={styles.customerCell}>
-          <div 
-            className={styles.avatar}
-            style={{ background: getAvatarGradient(project.projectName) }}
-          >
-            {getInitials(project)}
-          </div>
+          {project.displayPic ? (
+            <img 
+              src={project.displayPic} 
+              alt="Profile"
+              className={styles.avatar}
+              style={{ objectFit: 'cover' }}
+            />
+          ) : (
+            <div 
+              className={styles.avatar}
+              style={{ background: getAvatarGradient(project.projectName) }}
+            >
+              {getInitials(project)}
+            </div>
+          )}
           <div>
             <div className={styles.customerName}>{getCustomerName(project)}</div>
             <div className={styles.customerSubtext}>{project.projectName}</div>
@@ -242,12 +273,15 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       key: 'tasks',
       header: 'Overall Tasks',
       render: (project) => {
-        const totalTasks = project.events?.length || 0;
-        // For now, mark events as completed if they're in the past
-        const completedTasks = project.events?.filter(e => {
-          if (!e.fromDatetime) return false;
-          return new Date(e.fromDatetime) < new Date();
-        }).length || 0;
+        const numEvents = project.events?.length || 0;
+        const totalTasks = numEvents * totalStatuses; // Each event has totalStatuses tasks
+        
+        // Calculate completed tasks: sum of step numbers of current status for each event
+        const completedTasks = project.events?.reduce((count, event: any) => {
+          // Use the step number of the current status
+          const step = event.statusStep || 0;
+          return count + step;
+        }, 0) || 0;
         
         return (
           <div className={styles.tasksCell}>
@@ -270,7 +304,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
         const budget = project.finance?.totalBudget || project.budget;
         return (
           <span className={styles.budgetText}>
-            {budget ? `₹${budget.toLocaleString()}` : '—'}
+            {budget ? `₹${formatIndianAmount(budget)}` : '—'}
           </span>
         );
       },
@@ -326,7 +360,15 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
               </button>
               {openActionDropdown === project.projectId && (
               <div className={styles.actionsDropdownMenu}>
-                <button className={styles.actionsDropdownItem}>
+                <button 
+                  className={styles.actionsDropdownItem}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    console.log('Edit clicked, project:', project);
+                    dispatch(setEditingProject(project));
+                    setOpenActionDropdown(null);
+                  }}
+                >
                   <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                   </svg>
@@ -573,7 +615,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       customFilters={
         <>
           {/* Date Range Filter */}
-          <div className={styles.dateRangeContainer}>
+          <div className={styles.dateRangeContainer} ref={dateRangeRef}>
             <button
               className={styles.dateRangeButton}
               onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}

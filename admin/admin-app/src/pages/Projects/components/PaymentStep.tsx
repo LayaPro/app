@@ -1,4 +1,5 @@
 import { Input } from '../../../components/ui/Input';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import type { ProjectFormData } from '../ProjectWizard';
 import styles from '../ProjectWizard.module.css';
 
@@ -36,22 +37,24 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, er
           </div>
 
           <div className={styles.formGroup}>
-            <Input
+            <DatePicker
               label="Advance Received Date"
-              type="date"
-              value={formData.receivedDate}
-              onChange={(e) => onChange('receivedDate', e.target.value)}
+              value={formData.receivedDate || ''}
+              onChange={(value) => onChange('receivedDate', value)}
+              placeholder="Select date"
+              includeTime={false}
             />
           </div>
         </div>
 
         <div className={styles.formRow3Col}>
           <div className={styles.formGroup}>
-            <Input
+            <DatePicker
               label="Next Payment Date"
-              type="date"
-              value={formData.nextDueDate}
-              onChange={(e) => onChange('nextDueDate', e.target.value)}
+              value={formData.nextDueDate || ''}
+              onChange={(value) => onChange('nextDueDate', value)}
+              placeholder="Select date"
+              includeTime={false}
             />
           </div>
 

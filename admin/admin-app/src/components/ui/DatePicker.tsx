@@ -73,9 +73,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const handleDateSelect = (day: number) => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    const date = new Date(year, month, day);
-    const isoString = date.toISOString().split('T')[0];
-    onChange(isoString);
+    // Create date and format as YYYY-MM-DD in local timezone to avoid timezone offset issues
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    onChange(dateStr);
     
     // Only close if time is not required - otherwise require Set button click
     if (!includeTime) {
@@ -100,11 +100,16 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   }
 
   for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year, month, day);
-    const isoString = date.toISOString().split('T')[0];
-    const isSelected = value === isoString;
-    const isToday = new Date().toISOString().split('T')[0] === isoString;
-    const isDisabled = !!(minDate && isoString < minDate);
+    // Format date as YYYY-MM-DD without timezone conversion
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const isSelected = value === dateStr;
+    
+    // Check if today
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+    const isToday = todayStr === dateStr;
+    
+    const isDisabled = !!(minDate && dateStr < minDate);
 
     days.push(
       <button

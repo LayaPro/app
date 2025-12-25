@@ -82,6 +82,44 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit }) => {
             <div className={styles.reviewValue}>{formData.address}</div>
           </div>
         )}
+        
+        {/* Images */}
+        {(formData.displayPic || formData.coverPhoto) && (
+          <div style={{ marginTop: '16px', display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            {formData.displayPic && (
+              <div>
+                <div className={styles.reviewLabel} style={{ marginBottom: '8px' }}>Profile Picture</div>
+                <img 
+                  src={formData.displayPic} 
+                  alt="Profile" 
+                  style={{ 
+                    width: '120px', 
+                    height: '120px', 
+                    objectFit: 'cover', 
+                    borderRadius: '8px',
+                    border: '2px solid var(--border-color)'
+                  }} 
+                />
+              </div>
+            )}
+            {formData.coverPhoto && (
+              <div>
+                <div className={styles.reviewLabel} style={{ marginBottom: '8px' }}>Cover Photo</div>
+                <img 
+                  src={formData.coverPhoto} 
+                  alt="Cover" 
+                  style={{ 
+                    width: '200px', 
+                    height: '120px', 
+                    objectFit: 'cover', 
+                    borderRadius: '8px',
+                    border: '2px solid var(--border-color)'
+                  }} 
+                />
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Events */}

@@ -26,7 +26,8 @@ import requireAdmin from './middleware/requireAdmin';
 dotenv.config();
 
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cors());
 
 // ---------- Miscellaneous routes ----------
@@ -104,6 +105,7 @@ app.post('/create-project', authenticate, requireAdmin, projectController.create
 app.get('/get-all-projects', authenticate, requireAdmin, projectController.getAllProjects);
 app.get('/get-project/:projectId', authenticate, requireAdmin, projectController.getProjectById);
 app.put('/update-project/:projectId', authenticate, requireAdmin, projectController.updateProject);
+app.put('/update-project-with-details/:projectId', authenticate, requireAdmin, projectController.updateProjectWithDetails);
 app.delete('/delete-project/:projectId', authenticate, requireAdmin, projectController.deleteProject);
 
 // ---------- Client Event routes ----------

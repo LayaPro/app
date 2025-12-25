@@ -233,6 +233,8 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       budget: finance?.totalBudget,
       address: projectData.address,
       referredBy: projectData.referredBy,
+      displayPic: projectData.displayPic,
+      coverPhoto: projectData.coverPhoto,
       s3BucketName,
     });
 
@@ -286,11 +288,92 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
   }
 };
 
+export const updateProjectWithDetails = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const { project: projectData, events, finance } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    // Find existing project
+    const existingProject = await Project.findOne({ projectId });
+    if (!existingProject) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Check authorization
+    if (existingProject.tenantId !== tenantId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Update project
+    const updatedProject = await Project.findOneAndUpdate(
+      { projectId },
+      { $set: projectData },
+      { new: true, runValidators: true }
+    );
+
+    // Delete existing events and create new ones
+    if (events) {
+      await ClientEvent.deleteMany({ projectId });
+      const createdEvents = [];
+      for (const eventData of events) {
+        const clientEventId = `clientevent_${nanoid()}`;
+        const clientEvent = await ClientEvent.create({
+          clientEventId,
+          tenantId,
+          projectId,
+          eventId: eventData.eventId,
+          fromDatetime: eventData.fromDatetime,
+          toDatetime: eventData.toDatetime,
+          venue: eventData.venue,
+          venueMapUrl: eventData.venueMapUrl,
+          city: eventData.city,
+          teamMembersAssigned: eventData.teamMembersAssigned || [],
+          updatedBy: userId,
+        });
+        createdEvents.push(clientEvent);
+      }
+    }
+
+    // Update or create finance
+    let projectFinance = null;
+    if (finance) {
+      projectFinance = await ProjectFinance.findOne({ projectId });
+      if (projectFinance) {
+        projectFinance = await ProjectFinance.findOneAndUpdate(
+          { projectId },
+          { $set: finance },
+          { new: true, runValidators: true }
+        );
+      } else {
+        const financeId = `finance_${nanoid()}`;
+        projectFinance = await ProjectFinance.create({
+          financeId,
+          tenantId,
+          projectId,
+          ...finance,
+          createdBy: userId,
+        });
+      }
+    }
+
+    return res.status(200).json({
+      message: 'Project updated successfully',
+      project: updatedProject,
+      finance: projectFinance,
+    });
+  } catch (err: any) {
+    console.error('Update project with details error:', err);
+    return res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+};
+
 export default {
   createProject,
   createProjectWithDetails,
   getAllProjects,
   getProjectById,
   updateProject,
-  deleteProject
+  updateProjectWithDetails,  deleteProject
 };

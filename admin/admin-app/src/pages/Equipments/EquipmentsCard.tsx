@@ -7,6 +7,7 @@ import styles from './EquipmentCard.module.css';
 import { equipmentApi } from '../../services/api';
 import { EquipmentForm } from './EquipmentForm.js';
 import type { EquipmentFormData } from './EquipmentForm.js';
+import { formatIndianAmount } from '../../utils/formatAmount';
 
 interface EquipmentsCardProps {
   equipments: any[];
@@ -134,7 +135,7 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
       key: 'price',
       header: 'Price',
       sortable: true,
-      render: (row) => row.price ? `₹${row.price.toLocaleString()}` : '-',
+      render: (row) => row.price ? `₹${formatIndianAmount(row.price)}` : '-',
     },
     {
       key: 'rent',

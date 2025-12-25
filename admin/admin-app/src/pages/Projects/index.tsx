@@ -1,23 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Breadcrumb } from '../../components/ui/index.js';
 import { ProjectWizard } from './ProjectWizard';
 import { ProjectsTable } from './components/ProjectsTable';
+import { useAppSelector, useAppDispatch } from '../../store/index.js';
+import { clearEditingProject } from '../../store/slices/projectSlice.js';
+import { formatIndianAmount } from '../../utils/formatAmount';
 import styles from '../Page.module.css';
 
 const Projects = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [stats, setStats] = useState({ active: 0, completed: 0, revenue: 0, dueSoon: 0 });
+  const dispatch = useAppDispatch();
+  const { isEditing, editingProject } = useAppSelector((state) => state.project);
+
+  // Open wizard when editing is triggered
+  useEffect(() => {
+    console.log('isEditing changed:', isEditing);
+    if (isEditing) {
+      setShowWizard(true);
+    }
+  }, [isEditing]);
 
   const handleCreateProject = (projectData: any) => {
     console.log('Project data:', projectData);
+    console.log('Is editing:', isEditing, 'Project ID:', editingProject?.projectId);
+    
+    if (isEditing && editingProject?.projectId) {
+      console.log('Updating existing project:', editingProject.projectId);
+      // TODO: Call API to update project
+    } else {
+      console.log('Creating new project');
+      // TODO: Call API to create project
+    }
+    
     setShowWizard(false);
-    // TODO: Call API to create project
+    dispatch(clearEditingProject());
+  };
+
+  const handleBack = () => {
+    setShowWizard(false);
+    dispatch(clearEditingProject());
   };
 
   if (showWizard) {
     return (
       <ProjectWizard
-        onBack={() => setShowWizard(false)}
+        onBack={handleBack}
         onSubmit={handleCreateProject}
       />
     );
@@ -124,7 +152,7 @@ const Projects = () => {
             </div>
             <div>
               <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>Total Revenue</p>
-              <p style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>₹{stats.revenue.toLocaleString()}</p>
+              <p style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>₹{formatIndianAmount(stats.revenue)}</p>
             </div>
           </div>
 
