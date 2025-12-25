@@ -18,6 +18,10 @@ interface DayViewProps {
 interface EventWithPosition extends ClientEvent {
   top: number;
   height: number;
+  column: number;
+  totalColumns: number;
+  startMinutes: number;
+  endMinutes: number;
 }
 
 export const DayView: React.FC<DayViewProps> = ({
@@ -30,37 +34,87 @@ export const DayView: React.FC<DayViewProps> = ({
   const HOUR_HEIGHT = 64; // pixels per hour
   const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-  // Get events for the current day
-  const dayEvents: EventWithPosition[] = events
-    .filter((event) => {
-      if (!event.fromDatetime) return false;
-      const eventDateStr = formatDateString(new Date(event.fromDatetime));
-      const currentDateStr = formatDateString(currentDate);
-      return eventDateStr === currentDateStr;
-    })
-    .map((event) => {
-      const fromDate = new Date(event.fromDatetime!);
-      const toDate = event.toDatetime ? new Date(event.toDatetime) : new Date(fromDate.getTime() + 60 * 60 * 1000);
+  // Get events for the current day with overlap detection
+  const getEventsWithPosition = (): EventWithPosition[] => {
+    const currentDateStr = formatDateString(currentDate);
 
-      // Calculate position
-      const startHour = fromDate.getHours();
-      const startMinute = fromDate.getMinutes();
-      const endHour = toDate.getHours();
-      const endMinute = toDate.getMinutes();
+    const dayEvents = events
+      .filter((event) => {
+        if (!event.fromDatetime) return false;
+        const eventDateStr = formatDateString(new Date(event.fromDatetime));
+        return eventDateStr === currentDateStr;
+      })
+      .map((event) => {
+        const fromDate = new Date(event.fromDatetime!);
+        const toDate = event.toDatetime ? new Date(event.toDatetime) : new Date(fromDate.getTime() + 60 * 60 * 1000);
 
-      const startMinutes = startHour * 60 + startMinute;
-      const endMinutes = endHour * 60 + endMinute;
-      const durationMinutes = endMinutes - startMinutes || 60; // Default 1 hour
+        // Calculate position
+        const startHour = fromDate.getHours();
+        const startMinute = fromDate.getMinutes();
+        const endHour = toDate.getHours();
+        const endMinute = toDate.getMinutes();
 
-      const top = (startMinutes / 60) * HOUR_HEIGHT;
-      const height = Math.max((durationMinutes / 60) * HOUR_HEIGHT, 32); // Minimum 32px
+        const startMinutes = startHour * 60 + startMinute;
+        const endMinutes = endHour * 60 + endMinute;
+        const durationMinutes = endMinutes - startMinutes || 60; // Default 1 hour if same time
 
-      return {
-        ...event,
-        top,
-        height,
-      };
-    });
+        const top = (startMinutes / 60) * HOUR_HEIGHT;
+        const height = Math.max((durationMinutes / 60) * HOUR_HEIGHT, 32); // Minimum 32px
+
+        return {
+          ...event,
+          top,
+          height,
+          startMinutes,
+          endMinutes,
+          column: 0,
+          totalColumns: 1,
+        };
+      })
+      .sort((a, b) => a.startMinutes - b.startMinutes);
+
+    // Calculate overlapping events and assign columns
+    const eventsWithColumns: EventWithPosition[] = [];
+    
+    for (let i = 0; i < dayEvents.length; i++) {
+      const currentEvent = dayEvents[i];
+      let column = 0;
+      let maxColumns = 1;
+
+      // Find overlapping events that came before this one
+      const overlappingEvents = eventsWithColumns.filter(
+        (e) => e.startMinutes < currentEvent.endMinutes && e.endMinutes > currentEvent.startMinutes
+      );
+
+      if (overlappingEvents.length > 0) {
+        // Find the first available column
+        const usedColumns = overlappingEvents.map((e) => e.column);
+        while (usedColumns.includes(column)) {
+          column++;
+        }
+        
+        // Calculate total columns needed
+        maxColumns = Math.max(...overlappingEvents.map((e) => e.totalColumns), column + 1);
+        
+        // Update totalColumns for all overlapping events
+        overlappingEvents.forEach((e) => {
+          e.totalColumns = maxColumns;
+        });
+      }
+
+      eventsWithColumns.push({
+        ...currentEvent,
+        column,
+        totalColumns: maxColumns,
+      });
+    }
+
+    return eventsWithColumns;
+  };
+
+  const dayEvents = getEventsWithPosition();
+  const maxColumns = Math.max(...dayEvents.map(e => e.totalColumns), 1);
+  const needsScroll = maxColumns > 1;
 
   // Format hour label
   const formatHour = (hour: number): string => {
@@ -98,64 +152,73 @@ export const DayView: React.FC<DayViewProps> = ({
 
         {/* Day column */}
         <div className={styles.dayGrid}>
-          {/* Hour slots */}
-          {HOURS.map((hour) => (
-            <div
-              key={hour}
-              className={styles.weekTimeSlot}
-              style={{ borderBottom: '1px solid #e5e7eb', height: `${HOUR_HEIGHT}px` }}
-            />
-          ))}
-
-          {/* Events */}
-          {dayEvents.map((event) => {
-            const eventType = eventTypes.get(event.eventId);
-            const project = projects.get(event.projectId);
-            const color = getEventColor(new Date(event.fromDatetime!));
-            const fromDate = new Date(event.fromDatetime!);
-            const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
-            
-            const formatTime = (d: Date) => d.toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true,
-            });
-            
-            const timeLabel = toDate ? `${formatTime(fromDate)} - ${formatTime(toDate)}` : formatTime(fromDate);
-            const displayText = project ? `${eventType?.eventDesc || 'Event'} - ${project.projectName}` : eventType?.eventDesc || 'Event';
-
-            return (
+          <div style={{ 
+            minWidth: needsScroll ? `${maxColumns * 200}px` : '100%',
+            position: 'relative'
+          }}>
+            {/* Hour slots */}
+            {HOURS.map((hour) => (
               <div
-                key={event.clientEventId}
-                className={`${styles.weekEventItem} ${styles[color]}`}
-                style={{
-                  position: 'absolute',
-                  top: `${event.top}px`,
-                  height: `${event.height}px`,
-                  left: '8px',
-                  right: '8px',
-                }}
-                onClick={() => onEventClick(event)}
-                title={`${timeLabel} - ${displayText}`}
-              >
-                <div className={styles.eventTime}>
-                  {timeLabel}
-                </div>
-                <div className={styles.eventTitle}>
-                  {displayText}
-                </div>
-                {event.venue && (
-                  <div className={styles.eventVenue}>
-                    <svg className={styles.venueIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                    </svg>
-                    {event.venue}
+                key={hour}
+                className={styles.weekTimeSlot}
+                style={{ height: `${HOUR_HEIGHT}px` }}
+              />
+            ))}
+
+            {/* Events */}
+            {dayEvents.map((event) => {
+              const eventType = eventTypes.get(event.eventId);
+              const project = projects.get(event.projectId);
+              const color = getEventColor(new Date(event.fromDatetime!));
+              const fromDate = new Date(event.fromDatetime!);
+              const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
+              
+              const formatTime = (d: Date) => d.toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              });
+              
+              const timeLabel = toDate ? `${formatTime(fromDate)} - ${formatTime(toDate)}` : formatTime(fromDate);
+              const displayText = project ? `${eventType?.eventDesc || 'Event'} - ${project.projectName}` : eventType?.eventDesc || 'Event';
+
+              const leftPosition = needsScroll ? `${event.column * 200}px` : `${(event.column / event.totalColumns) * 100}%`;
+              const widthStyle = needsScroll ? '198px' : `calc(${100 / event.totalColumns}% - 8px)`;
+
+              return (
+                <div
+                  key={event.clientEventId}
+                  className={`${styles.weekEventItem} ${styles[color]}`}
+                  style={{
+                    position: 'absolute',
+                    top: `${event.top}px`,
+                    height: `${event.height}px`,
+                    left: leftPosition,
+                    width: widthStyle,
+                    zIndex: 10,
+                  }}
+                  onClick={() => onEventClick(event)}
+                  title={`${timeLabel} - ${displayText}`}
+                >
+                  <div className={styles.eventTime}>
+                    {timeLabel}
                   </div>
-                )}
-              </div>
-            );
-          })}
+                  <div className={styles.eventTitle}>
+                    {displayText}
+                  </div>
+                  {event.venue && (
+                    <div className={styles.eventVenue}>
+                      <svg className={styles.venueIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      {event.venue}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
