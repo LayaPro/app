@@ -4,6 +4,7 @@ import {
   addDays,
   formatDateString,
   isToday,
+  getEventColor,
 } from '../../../utils/calendar';
 import styles from '../Calendar.module.css';
 
@@ -18,6 +19,10 @@ interface WeekViewProps {
 interface EventWithPosition extends ClientEvent {
   top: number;
   height: number;
+  column: number;
+  totalColumns: number;
+  startMinutes: number;
+  endMinutes: number;
 }
 
 export const WeekView: React.FC<WeekViewProps> = ({
@@ -30,12 +35,12 @@ export const WeekView: React.FC<WeekViewProps> = ({
   const HOUR_HEIGHT = 64; // pixels per hour
   const HOURS = Array.from({ length: 24 }, (_, i) => i);
 
-  // Get events for each day of the week
+  // Get events for each day of the week with column positioning for overlaps
   const getEventsForDay = (dayIndex: number): EventWithPosition[] => {
     const dayDate = addDays(weekStart, dayIndex);
     const dateStr = formatDateString(dayDate);
 
-    return events
+    const dayEvents = events
       .filter((event) => {
         if (!event.fromDatetime) return false;
         const eventDateStr = formatDateString(new Date(event.fromDatetime));
@@ -62,8 +67,51 @@ export const WeekView: React.FC<WeekViewProps> = ({
           ...event,
           top,
           height,
+          startMinutes,
+          endMinutes,
+          column: 0,
+          totalColumns: 1,
         };
+      })
+      .sort((a, b) => a.startMinutes - b.startMinutes);
+
+    // Calculate overlapping events and assign columns
+    const eventsWithColumns: EventWithPosition[] = [];
+    
+    for (let i = 0; i < dayEvents.length; i++) {
+      const currentEvent = dayEvents[i];
+      let column = 0;
+      let maxColumns = 1;
+
+      // Find overlapping events that came before this one
+      const overlappingEvents = eventsWithColumns.filter(
+        (e) => e.startMinutes < currentEvent.endMinutes && e.endMinutes > currentEvent.startMinutes
+      );
+
+      if (overlappingEvents.length > 0) {
+        // Find the first available column
+        const usedColumns = overlappingEvents.map((e) => e.column);
+        while (usedColumns.includes(column)) {
+          column++;
+        }
+        
+        // Calculate total columns needed
+        maxColumns = Math.max(...overlappingEvents.map((e) => e.totalColumns), column + 1);
+        
+        // Update totalColumns for all overlapping events
+        overlappingEvents.forEach((e) => {
+          e.totalColumns = maxColumns;
+        });
+      }
+
+      eventsWithColumns.push({
+        ...currentEvent,
+        column,
+        totalColumns: maxColumns,
       });
+    }
+
+    return eventsWithColumns;
   };
 
   // Format hour label
@@ -72,23 +120,6 @@ export const WeekView: React.FC<WeekViewProps> = ({
     if (hour < 12) return `${hour} AM`;
     if (hour === 12) return '12 PM';
     return `${hour - 12} PM`;
-  };
-
-  // Get background color for event
-  const getEventBgColor = (eventId: string): string => {
-    const colors = [
-      '#8b5cf6', // violet
-      '#3b82f6', // blue
-      '#10b981', // emerald
-      '#f97316', // orange
-      '#ec4899', // pink
-      '#14b8a6', // teal
-    ];
-    let hash = 0;
-    for (let i = 0; i < eventId.length; i++) {
-      hash = eventId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
   };
 
   return (
@@ -100,12 +131,18 @@ export const WeekView: React.FC<WeekViewProps> = ({
           {Array.from({ length: 7 }).map((_, dayIndex) => {
             const dayDate = addDays(weekStart, dayIndex);
             const isTodayCell = isToday(dayDate);
+            const dayEventCount = getEventsForDay(dayIndex).length;
             return (
               <div
                 key={dayIndex}
                 className={`${styles.weekDayHeader} ${isTodayCell ? styles.today : ''}`}
               >
-                <span className={styles.weekDayName}>{DAY_NAMES[dayDate.getDay()]}</span>
+                <span className={styles.weekDayName}>
+                  {DAY_NAMES[dayDate.getDay()]}
+                  {dayEventCount > 0 && (
+                    <span className={styles.eventCount}> ({dayEventCount})</span>
+                  )}
+                </span>
                 <span className={styles.weekDayNumber}>{dayDate.getDate()}</span>
               </div>
             );
@@ -128,47 +165,71 @@ export const WeekView: React.FC<WeekViewProps> = ({
         <div className={styles.weekGrid}>
           {Array.from({ length: 7 }).map((_, dayIndex) => {
             const dayEvents = getEventsForDay(dayIndex);
+            const maxColumns = Math.max(...dayEvents.map(e => e.totalColumns), 1);
+            const needsScroll = maxColumns > 1;
+
             return (
-              <div key={dayIndex} className={styles.weekDayColumn}>
-                {/* Hour slots */}
-                {HOURS.map((hour) => (
-                  <div key={hour} className={styles.weekTimeSlot} />
-                ))}
+              <div key={dayIndex} className={styles.weekDayColumn} style={{ 
+                overflowX: needsScroll ? 'auto' : 'visible',
+                overflowY: 'visible'
+              }}>
+                <div style={{ 
+                  minWidth: needsScroll ? `${maxColumns * 150}px` : '100%',
+                  position: 'relative'
+                }}>
+                  {/* Hour slots */}
+                  {HOURS.map((hour) => (
+                    <div key={hour} className={styles.weekTimeSlot} />
+                  ))}
 
-                {/* Events */}
-                {dayEvents.map((event) => {
-                  const eventType = eventTypes.get(event.eventId);
-                  const project = projects.get(event.projectId);
-                  const bgColor = getEventBgColor(event.eventId);
-                  const fromDate = new Date(event.fromDatetime!);
-                  const timeLabel = fromDate.toLocaleTimeString('en-US', {
-                    hour: 'numeric',
-                    minute: '2-digit',
-                    hour12: true,
-                  });
-                  const displayText = project ? `${eventType?.eventDesc || 'Event'} - ${project.projectName}` : eventType?.eventDesc || 'Event';
+                  {/* Events */}
+                  {dayEvents.map((event) => {
+                    const eventType = eventTypes.get(event.eventId);
+                    const project = projects.get(event.projectId);
+                    const color = getEventColor(new Date(event.fromDatetime!));
+                    const fromDate = new Date(event.fromDatetime!);
+                    const timeLabel = fromDate.toLocaleTimeString('en-US', {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                      hour12: true,
+                    });
+                    const displayText = project ? `${eventType?.eventDesc || 'Event'} - ${project.projectName}` : eventType?.eventDesc || 'Event';
 
-                  return (
-                    <div
-                      key={event.clientEventId}
-                      className={styles.weekEventItem}
-                      style={{
-                        top: `${event.top}px`,
-                        height: `${event.height}px`,
-                        background: bgColor,
-                      }}
-                      onClick={() => onEventClick(event)}
-                      title={`${timeLabel} - ${displayText}`}
-                    >
-                      <div style={{ fontWeight: 600, marginBottom: '2px' }}>
-                        {timeLabel}
+                    const leftPosition = needsScroll ? `${event.column * 150}px` : `${(event.column / event.totalColumns) * 100}%`;
+                    const widthStyle = needsScroll ? '148px' : `calc(${100 / event.totalColumns}% - 4px)`;
+
+                    return (
+                      <div
+                        key={event.clientEventId}
+                        className={`${styles.weekEventItem} ${styles[color]}`}
+                        style={{
+                          top: `${event.top}px`,
+                          height: `${event.height}px`,
+                          left: leftPosition,
+                          width: widthStyle,
+                        }}
+                        onClick={() => onEventClick(event)}
+                        title={`${timeLabel} - ${displayText}${event.venue ? ` @ ${event.venue}` : ''}`}
+                      >
+                        <div className={styles.eventTime}>
+                          {timeLabel}
+                        </div>
+                        <div className={styles.eventTitle}>
+                          {displayText}
+                        </div>
+                        {event.venue && event.height > 60 && (
+                          <div className={styles.eventVenue}>
+                            <svg className={styles.venueIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {event.venue}
+                          </div>
+                        )}
                       </div>
-                      <div style={{ fontSize: '0.7rem', opacity: 0.9 }}>
-                        {displayText}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
               </div>
             );
           })}

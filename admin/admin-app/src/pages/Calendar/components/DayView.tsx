@@ -1,5 +1,10 @@
 import type { ClientEvent } from 'laya-shared';
-import { formatDateString, DAY_NAMES, MONTH_NAMES } from '../../../utils/calendar';
+import {
+  formatDateString,
+  DAY_NAMES,
+  MONTH_NAMES,
+  getEventColor,
+} from '../../../utils/calendar';
 import styles from '../Calendar.module.css';
 
 interface DayViewProps {
@@ -65,23 +70,6 @@ export const DayView: React.FC<DayViewProps> = ({
     return `${hour - 12} PM`;
   };
 
-  // Get background color for event
-  const getEventBgColor = (eventId: string): string => {
-    const colors = [
-      '#8b5cf6', // violet
-      '#3b82f6', // blue
-      '#10b981', // emerald
-      '#f97316', // orange
-      '#ec4899', // pink
-      '#14b8a6', // teal
-    ];
-    let hash = 0;
-    for (let i = 0; i < eventId.length; i++) {
-      hash = eventId.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
-
   const dayOfWeek = DAY_NAMES[currentDate.getDay()];
 
   return (
@@ -123,7 +111,7 @@ export const DayView: React.FC<DayViewProps> = ({
           {dayEvents.map((event) => {
             const eventType = eventTypes.get(event.eventId);
             const project = projects.get(event.projectId);
-            const bgColor = getEventBgColor(event.eventId);
+            const color = getEventColor(new Date(event.fromDatetime!));
             const fromDate = new Date(event.fromDatetime!);
             const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
             
@@ -139,27 +127,30 @@ export const DayView: React.FC<DayViewProps> = ({
             return (
               <div
                 key={event.clientEventId}
-                className={styles.weekEventItem}
+                className={`${styles.weekEventItem} ${styles[color]}`}
                 style={{
                   position: 'absolute',
                   top: `${event.top}px`,
                   height: `${event.height}px`,
-                  background: bgColor,
                   left: '8px',
                   right: '8px',
                 }}
                 onClick={() => onEventClick(event)}
                 title={`${timeLabel} - ${displayText}`}
               >
-                <div style={{ fontWeight: 600, marginBottom: '4px' }}>
+                <div className={styles.eventTime}>
                   {timeLabel}
                 </div>
-                <div style={{ fontSize: '0.85rem', opacity: 0.95, marginBottom: '2px' }}>
+                <div className={styles.eventTitle}>
                   {displayText}
                 </div>
                 {event.venue && (
-                  <div style={{ fontSize: '0.75rem', opacity: 0.85 }}>
-                    📍 {event.venue}
+                  <div className={styles.eventVenue}>
+                    <svg className={styles.venueIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    {event.venue}
                   </div>
                 )}
               </div>
