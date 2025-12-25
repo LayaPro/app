@@ -118,8 +118,7 @@ export const MonthView: React.FC<MonthViewProps> = ({
           })}
           {dayEvents.length > 3 && (
             <div 
-              className={styles.eventItem} 
-              style={{ background: '#f3f4f6', borderColor: '#9ca3af', cursor: 'pointer' }}
+              className={`${styles.eventItem} ${styles.moreEventsItem}`}
               onClick={(e) => handleShowAllEvents(cellDate, dayEvents, e)}
             >
               +{dayEvents.length - 3} more

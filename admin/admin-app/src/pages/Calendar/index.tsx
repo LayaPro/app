@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Breadcrumb } from '../../components/ui/index.js';
 import { CalendarHeader } from './components/CalendarHeader';
 import { MonthView } from './components/MonthView';
@@ -18,6 +18,7 @@ import {
   getDateRangeString,
 } from '../../utils/calendar';
 import styles from '../Page.module.css';
+import calendarStyles from './Calendar.module.css';
 
 const Calendar = () => {
   // State
@@ -33,6 +34,8 @@ const Calendar = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ClientEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const previousViewRef = useRef<CalendarView>('month');
 
   // Fetch initial data
   useEffect(() => {
@@ -92,41 +95,79 @@ const Calendar = () => {
 
   // Navigation handlers
   const handlePrevious = () => {
-    if (currentView === 'month') {
-      setCurrentDate(addMonths(currentDate, -1));
-    } else if (currentView === 'week') {
-      setWeekStart(addDays(weekStart, -7));
-    } else if (currentView === 'day') {
-      setCurrentDate(addDays(currentDate, -1));
-    }
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      if (currentView === 'month') {
+        setCurrentDate(addMonths(currentDate, -1));
+      } else if (currentView === 'week') {
+        setWeekStart(addDays(weekStart, -7));
+      } else if (currentView === 'day') {
+        setCurrentDate(addDays(currentDate, -1));
+      }
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150);
   };
 
   const handleNext = () => {
-    if (currentView === 'month') {
-      setCurrentDate(addMonths(currentDate, 1));
-    } else if (currentView === 'week') {
-      setWeekStart(addDays(weekStart, 7));
-    } else if (currentView === 'day') {
-      setCurrentDate(addDays(currentDate, 1));
-    }
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      if (currentView === 'month') {
+        setCurrentDate(addMonths(currentDate, 1));
+      } else if (currentView === 'week') {
+        setWeekStart(addDays(weekStart, 7));
+      } else if (currentView === 'day') {
+        setCurrentDate(addDays(currentDate, 1));
+      }
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150);
   };
 
   const handleToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    setWeekStart(getWeekStart(today));
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      const today = new Date();
+      setCurrentDate(today);
+      setWeekStart(getWeekStart(today));
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150);
   };
 
   const handleMonthChange = (date: Date) => {
-    setCurrentDate(date);
-    setWeekStart(getWeekStart(date));
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      setCurrentDate(date);
+      setWeekStart(getWeekStart(date));
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150);
   };
 
   const handleViewChange = (view: CalendarView) => {
-    setCurrentView(view);
-    if (view === 'week') {
-      setWeekStart(getWeekStart(currentDate));
-    }
+    if (view === currentView) return;
+    
+    previousViewRef.current = currentView;
+    setIsTransitioning(true);
+    
+    setTimeout(() => {
+      setCurrentView(view);
+      if (view === 'week') {
+        setWeekStart(getWeekStart(currentDate));
+      }
+      setTimeout(() => {
+        setIsTransitioning(false);
+      }, 50);
+    }, 150);
   };
 
   // Get header title based on current view
@@ -218,47 +259,50 @@ const Calendar = () => {
         onNewEvent={handleNewEvent}
       />
 
-      {currentView === 'month' && (
-        <MonthView
-          currentDate={currentDate}
-          events={events}
-          eventTypes={eventTypes}
-          projects={projectsMap}
-          onEventClick={handleEventClick}
-          onDayClick={handleDayClick}
-        />
-      )}
+      <div className={`${calendarStyles.viewContainer} ${isTransitioning ? calendarStyles.viewExiting : calendarStyles.viewEntering}`}>
+        {currentView === 'month' && (
+          <MonthView
+            currentDate={currentDate}
+            events={events}
+            eventTypes={eventTypes}
+            projects={projectsMap}
+            onEventClick={handleEventClick}
+            onDayClick={handleDayClick}
+          />
+        )}
 
-      {currentView === 'week' && (
-        <WeekView
-          weekStart={weekStart}
-          events={events}
-          eventTypes={eventTypes}
-          projects={projectsMap}
-          onEventClick={handleEventClick}
-        />
-      )}
+        {currentView === 'week' && (
+          <WeekView
+            weekStart={weekStart}
+            events={events}
+            eventTypes={eventTypes}
+            projects={projectsMap}
+            onEventClick={handleEventClick}
+          />
+        )}
 
-      {currentView === 'day' && (
-        <DayView
-          currentDate={currentDate}
-          events={events}
-          eventTypes={eventTypes}
-          projects={projectsMap}
-          onEventClick={handleEventClick}
-        />
-      )}
+        {currentView === 'day' && (
+          <DayView
+            currentDate={currentDate}
+            events={events}
+            eventTypes={eventTypes}
+            projects={projectsMap}
+            onEventClick={handleEventClick}
+          />
+        )}
 
-      {currentView === 'list' && (
-        <ListView
-          events={events}
-          eventTypes={eventTypes}
-          projects={projectsMap}
-          teamMembers={teamMembers}
-          eventDeliveryStatuses={statuses}
-          onEventClick={handleEventClick}
-        />
-      )}
+        {currentView === 'list' && (
+          <ListView
+            events={events}
+            eventTypes={eventTypes}
+            projects={projectsMap}
+            teamMembers={teamMembers}
+            eventDeliveryStatuses={statuses}
+            onEventClick={handleEventClick}
+            onStatusChange={fetchData}
+          />
+        )}
+      </div>
 
       <EventModal
         isOpen={isModalOpen}

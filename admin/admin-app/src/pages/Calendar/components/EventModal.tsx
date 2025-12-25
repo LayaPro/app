@@ -132,7 +132,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         venue: formData.venue || undefined,
         venueMapUrl: formData.venueMapUrl || undefined,
         city: formData.city || undefined,
-        teamMembersAssigned: formData.teamMembersAssigned.length > 0 ? formData.teamMembersAssigned : undefined,
+        teamMembersAssigned: formData.teamMembersAssigned,
         notes: formData.notes || undefined,
       };
 

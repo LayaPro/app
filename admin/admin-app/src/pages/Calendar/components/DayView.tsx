@@ -135,7 +135,12 @@ export const DayView: React.FC<DayViewProps> = ({
           <div className={styles.dayViewDate}>
             {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getDate()}, {currentDate.getFullYear()}
           </div>
-          <div className={styles.dayViewDay}>{dayOfWeek}</div>
+          <div className={styles.dayViewDay}>
+            {dayOfWeek}
+            {dayEvents.length > 0 && (
+              <span className={styles.eventCount}> ({dayEvents.length})</span>
+            )}
+          </div>
         </div>
       </div>
 
