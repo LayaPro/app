@@ -5,6 +5,7 @@ import styles from './Breadcrumb.module.css';
 export interface BreadcrumbItem {
   label: string;
   path?: string;
+  onClick?: () => void;
 }
 
 interface BreadcrumbProps {
@@ -41,7 +42,9 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, autoGenerate = tr
     return breadcrumbs;
   };
 
-  const breadcrumbItems = items || (autoGenerate ? generateBreadcrumbs() : []);
+  const breadcrumbItems = items 
+    ? [{ label: 'Home', path: '/dashboard' }, ...items]
+    : (autoGenerate ? generateBreadcrumbs() : []);
 
   if (breadcrumbItems.length === 0) return null;
 
@@ -54,17 +57,29 @@ export const Breadcrumb: React.FC<BreadcrumbProps> = ({ items, autoGenerate = tr
           
           return (
             <li key={index} className={styles.breadcrumbItem}>
-              {!isLast && item.path ? (
+              {!isLast && (item.path || item.onClick) ? (
                 <>
-                  <Link to={item.path} className={styles.breadcrumbLink}>
-                    {isHome ? (
-                      <svg className={styles.homeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                      </svg>
-                    ) : (
-                      item.label
-                    )}
-                  </Link>
+                  {item.onClick ? (
+                    <button onClick={item.onClick} className={styles.breadcrumbLink}>
+                      {isHome ? (
+                        <svg className={styles.homeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                      ) : (
+                        item.label
+                      )}
+                    </button>
+                  ) : (
+                    <Link to={item.path!} className={styles.breadcrumbLink}>
+                      {isHome ? (
+                        <svg className={styles.homeIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                      ) : (
+                        item.label
+                      )}
+                    </Link>
+                  )}
                   <span className={styles.separator}>
                     <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

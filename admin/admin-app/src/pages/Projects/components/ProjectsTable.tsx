@@ -341,22 +341,10 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       header: 'Actions',
       render: (project) => {
         const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-          const button = e.currentTarget;
-          const rect = button.getBoundingClientRect();
+          e.stopPropagation();
           setOpenActionDropdown(
             openActionDropdown === project.projectId ? null : project.projectId
           );
-          
-          // Position dropdown
-          if (openActionDropdown !== project.projectId) {
-            setTimeout(() => {
-              const dropdown = button.nextElementSibling as HTMLElement;
-              if (dropdown) {
-                dropdown.style.top = `${rect.bottom + 4}px`;
-                dropdown.style.right = `${window.innerWidth - rect.right}px`;
-              }
-            }, 0);
-          }
         };
 
         return (

@@ -516,3 +516,36 @@ export const clientEventApi = {
     return handleResponse(response);
   },
 };
+
+// Image API
+export const imageApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-images`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getByProject: async (projectId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-images-by-project/${projectId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getByClientEvent: async (clientEventId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-images-by-client-event/${clientEventId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
