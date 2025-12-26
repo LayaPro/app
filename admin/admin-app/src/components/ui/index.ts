@@ -13,6 +13,7 @@ export { DatePicker } from './DatePicker.js';
 export { Toast } from './Toast.js';
 export { ToastContainer } from './ToastContainer.js';
 export { CollapsibleCard } from './CollapsibleCard.js';
+export { Loading } from './Loading.js';
 export type { Column } from './DataTable.js';
 export type { BreadcrumbItem } from './Breadcrumb.js';
 export type { SelectOption } from './Select.js';

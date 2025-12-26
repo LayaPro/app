@@ -502,6 +502,45 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const reorderImages = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clientEventId, imageIds } = req.body;
+    const tenantId = req.user?.tenantId;
+
+    if (!clientEventId || !imageIds || !Array.isArray(imageIds)) {
+      return res.status(400).json({ 
+        message: 'Client Event ID and imageIds array are required' 
+      });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Update sortOrder for each image
+    const updatePromises = imageIds.map((imageId, index) => 
+      Image.findOneAndUpdate(
+        { imageId, tenantId, clientEventId },
+        { sortOrder: index },
+        { new: true }
+      )
+    );
+
+    await Promise.all(updatePromises);
+
+    res.status(200).json({ 
+      message: 'Images reordered successfully',
+      imageIds 
+    });
+  } catch (error) {
+    console.error('Error reordering images:', error);
+    res.status(500).json({ 
+      message: 'Failed to reorder images', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
 export default {
   createImage,
   bulkCreateImages,
@@ -513,5 +552,6 @@ export default {
   bulkUpdateImages,
   deleteImage,
   bulkDeleteImages,
-  uploadBatchImages
+  uploadBatchImages,
+  reorderImages
 };

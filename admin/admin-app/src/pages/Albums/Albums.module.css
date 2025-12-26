@@ -497,11 +497,12 @@
 .uploadContent {
   padding: 2rem;
   padding-top: 0;
+  padding-bottom: 1rem;
   text-align: center;
 }
 
 .uploadContentInner {
-  max-width: 32rem;
+  max-width: 100%;
   margin: 0 auto;
 }
 
@@ -553,11 +554,56 @@
 
 .uploadPreview {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-  max-height: 300px;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0;
+  padding: 0.5rem;
+  max-height: calc(100vh - 400px);
   overflow-y: auto;
+}
+
+.uploadProgressContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 2rem;
+  gap: 1rem;
+}
+
+.uploadProgressBar {
+  width: 100%;
+  max-width: 400px;
+  height: 8px;
+  background: var(--border-color);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+
+.uploadProgressFill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #059669);
+  border-radius: 999px;
+  transition: width 0.3s ease;
+  animation: progressPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.uploadProgressText {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  margin: 0;
 }
 
 .uploadPreviewItem {
@@ -602,11 +648,75 @@
   transform: scale(1.1);
 }
 
+.successAlert {
+  margin-bottom: 1rem;
+}
+
+.failedImagesHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.failedImagesHeader svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.failedImagesList {
+  margin-top: 0.25rem;
+  font-weight: 400;
+  font-size: 0.8125rem;
+  opacity: 0.9;
+  word-break: break-word;
+}
+
+.failedImage {
+  border-color: #ef4444 !important;
+  border-width: 3px !important;
+}
+
+.failedBadge {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(239, 68, 68, 0.95);
+  color: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.failedBadge svg {
+  width: 14px;
+  height: 14px;
+}
+
+
 .uploadActions {
   display: flex;
   gap: 0.75rem;
   justify-content: center;
   flex-wrap: wrap;
+  margin-top: 0;
+  padding-top: 0.5rem;
 }
 
 .saveButton {
@@ -858,6 +968,76 @@
   color: var(--primary-700);
 }
 
+.refreshButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: var(--bg-tertiary);
+  border-color: var(--primary-500);
+  color: var(--primary-600);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.refreshButton svg {
+  width: 18px;
+  height: 18px;
+}
+
+.saveSortButton {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: white;
+  background: linear-gradient(to right, #6366f1, #8b5cf6);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+.saveSortButton:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+  transform: translateY(-1px);
+}
+
+.saveSortButton:disabled {
+  cursor: not-allowed;
+  background: var(--gray-300);
+  color: var(--gray-600);
+  box-shadow: none;
+  opacity: 0.7;
+}
+
+:global(.dark) .saveSortButton:disabled {
+  background: var(--gray-700);
+  color: var(--gray-400);
+}
+
+.saveSortButton svg {
+  width: 18px;
+  height: 18px;
+}
+
 /* Image Grid Updates */
 .imageItem {
   position: relative;
@@ -865,8 +1045,12 @@
   border-radius: 8px;
   overflow: hidden;
   background: var(--bg-secondary);
-  cursor: pointer;
+  cursor: grab;
   transition: transform 0.2s;
+}
+
+.imageItem:active {
+  cursor: grabbing;
 }
 
 .imageItem:hover {
@@ -878,6 +1062,13 @@
   top: 0.5rem;
   left: 0.5rem;
   z-index: 10;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.imageItem:hover .imageCheckbox,
+.selectedImage .imageCheckbox {
+  opacity: 1;
 }
 
 .imageCheckbox input[type="checkbox"] {
@@ -901,8 +1092,12 @@
   border-radius: 8px;
   overflow: hidden;
   background: var(--bg-secondary);
-  cursor: pointer;
+  cursor: grab;
   transition: transform 0.2s;
+}
+
+.imageItem:active {
+  cursor: grabbing;
 }
 
 .imageItem:hover {
@@ -914,6 +1109,73 @@
   height: 100%;
   object-fit: cover;
   display: block;
+  transition: border 0.2s;
+}
+
+.selectedImage {
+  border: 3px solid var(--primary-600);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+:global(.dark) .selectedImage {
+  border-color: var(--primary-500);
+}
+
+.imageItem.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
+}
+
+.imageItem.dragOver {
+  border: 2px dashed var(--primary-600);
+  background-color: rgba(99, 102, 241, 0.05);
+}
+
+:global(.dark) .imageItem.dragOver {
+  border-color: var(--primary-500);
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.imageDownloadButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+:global(.dark) .imageDownloadButton {
+  background: rgba(31, 41, 55, 0.95);
+}
+
+.imageItem:hover .imageDownloadButton {
+  opacity: 1;
+}
+
+.imageDownloadButton:hover {
+  transform: scale(1.1);
+}
+
+.imageDownloadButton svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--gray-800);
+}
+
+:global(.dark) .imageDownloadButton svg {
+  color: var(--gray-200);
 }
 
 .imageOverlay {
@@ -929,6 +1191,7 @@
   gap: 1rem;
   opacity: 0;
   transition: opacity 0.2s;
+  pointer-events: none;
 }
 
 .imageItem:hover .imageOverlay {
@@ -946,6 +1209,7 @@
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.2s;
+  pointer-events: auto;
 }
 
 .imageButton:hover {
@@ -956,6 +1220,38 @@
   width: 1.25rem;
   height: 1.25rem;
   color: var(--gray-800);
+}
+
+.galleryLoading,
+.emptyGallery {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 4rem 2rem;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.galleryLoading p,
+.emptyGallery p {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.emptyGallery svg {
+  width: 64px;
+  height: 64px;
+  opacity: 0.5;
+}
+
+.loadingProgress {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 /* Responsive adjustments for image grid */

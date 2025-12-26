@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Breadcrumb, Input } from '../../components/ui/index.js';
+import { Breadcrumb, Input, Loading } from '../../components/ui/index.js';
+import { useToast } from '../../context/ToastContext';
 import { projectApi, clientEventApi, eventApi, imageApi } from '../../services/api';
+import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
 
 interface Project {
@@ -22,6 +24,7 @@ interface ClientEvent {
 }
 
 const Albums = () => {
+  const { showToast } = useToast();
   const [projects, setProjects] = useState<Project[]>([]);
   const [events, setEvents] = useState<ClientEvent[]>([]);
   const [allEvents, setAllEvents] = useState<ClientEvent[]>([]);
@@ -42,6 +45,18 @@ const Albums = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadedCount, setUploadedCount] = useState(0);
+  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [isLoadingGallery, setIsLoadingGallery] = useState(false);
+  const [loadedGalleryImages, setLoadedGalleryImages] = useState<Set<string>>(new Set());
+  const [isLoadingGalleryPreviews, setIsLoadingGalleryPreviews] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [hasUnsavedOrder, setHasUnsavedOrder] = useState(false);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
@@ -177,10 +192,13 @@ const Albums = () => {
     setSelectedEvent(event);
     setIsUploadExpanded(false);
     setUploadedImages([]);
+    setGalleryImages([]);
+    fetchGalleryImages(event.clientEventId);
     console.log('Selected event set to:', event);
   };
 
   const handleCloseAlbum = () => {
+    console.log('handleCloseAlbum called');
     setSelectedEvent(null);
     setUploadedImages([]);
     setIsUploadExpanded(false);
@@ -194,12 +212,6 @@ const Albums = () => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
         alert('Please select valid image files');
-        return null;
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        alert(`File ${file.name} is too large. Maximum size is 5MB.`);
         return null;
       }
 
@@ -227,6 +239,139 @@ const Albums = () => {
     });
   };
 
+  const fetchGalleryImages = async (clientEventId: string) => {
+    try {
+      setIsLoadingGallery(true);
+      setLoadedGalleryImages(new Set());
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      
+      const response = await fetch(`http://localhost:4000/get-images-by-client-event/${clientEventId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setGalleryImages(data.images || []);
+        if (data.images && data.images.length > 0) {
+          setIsLoadingGalleryPreviews(true);
+        }
+      } else {
+        console.error('Failed to fetch gallery images');
+        setGalleryImages([]);
+      }
+    } catch (error) {
+      console.error('Error fetching gallery images:', error);
+      setGalleryImages([]);
+    } finally {
+      setIsLoadingGallery(false);
+    }
+  };
+
+  const handleGalleryImageLoad = (imageId: string) => {
+    setLoadedGalleryImages((prev) => {
+      const newSet = new Set(prev).add(imageId);
+      // Check if all images are loaded
+      if (newSet.size === galleryImages.length) {
+        setIsLoadingGalleryPreviews(false);
+      }
+      return newSet;
+    });
+  };
+
+  const handleOpenViewer = (index: number) => {
+    console.log('handleOpenViewer called with index:', index);
+    setCurrentImageIndex(index);
+    setViewerOpen(true);
+  };
+
+  const handleCloseViewer = () => {
+    console.log('handleCloseViewer called');
+    setViewerOpen(false);
+  };
+
+  const handleNavigateViewer = (newIndex: number) => {
+    setCurrentImageIndex(newIndex);
+  };
+
+  const handleDragStart = (e: React.DragEvent, index: number) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Reorder the images array
+    const newImages = [...galleryImages];
+    const [draggedImage] = newImages.splice(draggedIndex, 1);
+    newImages.splice(dropIndex, 0, draggedImage);
+
+    // Update state immediately for smooth UX
+    setGalleryImages(newImages);
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    setHasUnsavedOrder(true);
+  };
+
+  const handleSaveSortOrder = async () => {
+    if (!selectedEvent || !hasUnsavedOrder) return;
+
+    setIsSavingOrder(true);
+    try {
+      const imageIds = galleryImages.map(img => img.imageId);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/reorder-images`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          clientEventId: selectedEvent.clientEventId,
+          imageIds
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update image order');
+      }
+
+      setHasUnsavedOrder(false);
+      showToast('success', 'Image order saved successfully');
+    } catch (error) {
+      console.error('Error updating image order:', error);
+      showToast('error', 'Failed to save image order');
+      // Revert on error
+      if (selectedEvent) {
+        fetchGalleryImages(selectedEvent.clientEventId);
+      }
+    } finally {
+      setIsSavingOrder(false);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  };
+
   const toggleUploadSection = () => {
     setIsUploadExpanded(!isUploadExpanded);
   };
@@ -246,63 +391,91 @@ const Albums = () => {
     }
 
     setIsUploading(true);
+    setUploadedCount(0);
+    setFailedImages(new Set());
+    const failedImageIds = new Set<string>();
 
     try {
-      const formData = new FormData();
-      formData.append('projectId', selectedProject.projectId);
-      formData.append('clientEventId', selectedEvent.clientEventId);
-
-      // Add all files
-      uploadedImages.forEach((img) => {
-        if (img.file) {
-          formData.append('images', img.file);
-        }
-      });
-
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       console.log('[Upload] Token exists:', !!token);
-      console.log('[Upload] Token preview:', token?.substring(0, 20));
       
       if (!token) {
         alert('You are not logged in. Please login again.');
+        setIsUploading(false);
         return;
       }
 
-      const response = await fetch('http://localhost:4000/upload-batch-images', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+      let successCount = 0;
 
-      const result = await response.json();
-      console.log('[Upload] Response:', response.status, result);
-
-      if (response.ok) {
-        alert(`Successfully uploaded ${result.stats.successful} of ${result.stats.total} images!`);
+      // Upload images one at a time for accurate progress tracking
+      for (let i = 0; i < uploadedImages.length; i++) {
+        const img = uploadedImages[i];
         
-        // Clean up blob URLs
+        if (!img.file) continue;
+
+        const formData = new FormData();
+        formData.append('projectId', selectedProject.projectId);
+        formData.append('clientEventId', selectedEvent.clientEventId);
+        formData.append('images', img.file);
+
+        try {
+          const response = await fetch('http://localhost:4000/upload-batch-images', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`
+            },
+            body: formData
+          });
+
+          const result = await response.json();
+          
+          if (response.ok && result.stats.successful > 0) {
+            successCount++;
+            setUploadedCount(successCount);
+          } else {
+            failedImageIds.add(img.id);
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          failedImageIds.add(img.id);
+        }
+      }
+
+      // Update failed images state
+      setFailedImages(failedImageIds);
+
+      if (successCount > 0) {
+        // Show success toast
+        showToast('success', `Successfully uploaded ${successCount} image${successCount !== 1 ? 's' : ''}!${failedImageIds.size > 0 ? ` (${failedImageIds.size} failed - see below)` : ''}`);
+        
+        // Clean up blob URLs for successful uploads
         uploadedImages.forEach((img) => {
-          if (img.url.startsWith('blob:')) {
+          if (!failedImageIds.has(img.id) && img.url.startsWith('blob:')) {
             URL.revokeObjectURL(img.url);
           }
         });
         
-        // Clear uploaded images
-        setUploadedImages([]);
-        setIsUploadExpanded(false);
+        // Remove successful images, keep failed ones
+        setUploadedImages(prev => prev.filter(img => failedImageIds.has(img.id)));
         
-        // Optionally refresh the images list
-        // fetchAllImages();
+        // Collapse upload section if all succeeded
+        if (failedImageIds.size === 0) {
+          setIsUploadExpanded(false);
+        }
+
+        // Refresh gallery images
+        if (selectedEvent) {
+          fetchGalleryImages(selectedEvent.clientEventId);
+        }
       } else {
-        alert(`Upload failed: ${result.message}`);
+        alert('All uploads failed. Please try again.');
       }
     } catch (error) {
       console.error('Upload error:', error);
       alert('Failed to upload images. Please try again.');
     } finally {
       setIsUploading(false);
+      setUploadedCount(0);
     }
   };
 
@@ -317,7 +490,7 @@ const Albums = () => {
   };
 
   const selectAllImages = () => {
-    const eventImages = getPlaceholderImages();
+    const eventImages = galleryImages;
     if (selectedImages.size === eventImages.length) {
       setSelectedImages(new Set());
     } else {
@@ -412,15 +585,6 @@ const Albums = () => {
     return `${Math.floor(diffDays / 365)} years ago`;
   };
 
-  // Generate random placeholder images
-  const getPlaceholderImages = (count: number = 24) => {
-    return Array.from({ length: count }, (_, i) => ({
-      imageId: `placeholder-${i}`,
-      url: `https://picsum.photos/seed/${i}/800/600`,
-      thumbnailUrl: `https://picsum.photos/seed/${i}/400/300`,
-    }));
-  };
-
   if (isLoading) {
     return (
       <div className={styles.albumsContainer}>
@@ -445,7 +609,7 @@ const Albums = () => {
   // Album Detail View
   if (selectedEvent && selectedProject) {
     console.log('Rendering album detail view', { selectedEvent, selectedProject });
-    const eventImages = getPlaceholderImages();
+    const eventImages = galleryImages;
     const eventName = eventTypes.get(selectedEvent.eventId)?.eventDesc || 'Event';
 
     return (
@@ -569,28 +733,69 @@ const Albums = () => {
                         <span>Choose Files</span>
                       </button>
                       <p className={styles.uploadHint}>
-                        Supports: JPG, PNG, HEIC, RAW files up to 50MB each
+                        Supports: JPG, PNG, HEIC, RAW files
                       </p>
                     </div>
                   )}
 
-                  {/* Preview Grid */}
+                  {/* Preview Grid or Upload Progress */}
                   {uploadedImages.length > 0 && (
                     <>
-                      <div className={styles.uploadPreview}>
-                        {uploadedImages.map((image) => (
-                          <div key={image.id} className={styles.uploadPreviewItem}>
-                            <img src={image.url} alt="Upload preview" />
-                            <button
-                              className={styles.removeImageButton}
-                              onClick={() => handleRemoveImage(image.id)}
-                              title="Remove image"
-                            >
-                              ×
-                            </button>
+                      {!isUploading ? (
+                        <>
+                          {failedImages.size > 0 && (
+                            <div className={styles.failedImagesHeader}>
+                              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <div>
+                                <strong>Failed uploads ({failedImages.size}):</strong>
+                                <div className={styles.failedImagesList}>
+                                  {uploadedImages
+                                    .filter(img => failedImages.has(img.id))
+                                    .map(img => img.file?.name)
+                                    .filter(Boolean)
+                                    .join(', ')}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          <div className={styles.uploadPreview}>
+                            {uploadedImages.map((image) => (
+                              <div key={image.id} className={`${styles.uploadPreviewItem} ${failedImages.has(image.id) ? styles.failedImage : ''}`}>
+                                {failedImages.has(image.id) && (
+                                  <div className={styles.failedBadge}>
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                    Failed
+                                  </div>
+                                )}
+                                <img src={image.url} alt="Upload preview" />
+                                <button
+                                className={styles.removeImageButton}
+                                onClick={() => handleRemoveImage(image.id)}
+                                title="Remove image"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                        </>
+                      ) : (
+                        <div className={styles.uploadProgressContainer}>
+                          <div className={styles.uploadProgressBar}>
+                            <div 
+                              className={styles.uploadProgressFill}
+                              style={{ width: `${(uploadedCount / uploadedImages.length) * 100}%` }}
+                            />
                           </div>
-                        ))}
-                      </div>
+                          <p className={styles.uploadProgressText}>
+                            Uploaded {uploadedCount} of {uploadedImages.length} {uploadedImages.length === 1 ? 'image' : 'images'}
+                          </p>
+                        </div>
+                      )}
 
                       <div className={styles.uploadActions}>
                         <button 
@@ -612,6 +817,7 @@ const Albums = () => {
                               }
                             });
                             setUploadedImages([]);
+                            setFailedImages(new Set());
                           }}
                         >
                           Cancel
@@ -721,14 +927,40 @@ const Albums = () => {
               )}
             </div>
 
+            {/* Save Sort Order Button */}
+            <button 
+              className={styles.saveSortButton} 
+              onClick={handleSaveSortOrder}
+              disabled={!hasUnsavedOrder || isSavingOrder}
+              title={hasUnsavedOrder ? "Save custom image order" : "No changes to save"}
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              {isSavingOrder ? 'Saving...' : 'Save Sort Order'}
+            </button>
+
+            {/* Refresh Button */}
+            <button 
+              className={styles.refreshButton} 
+              onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
+              disabled={isLoadingGallery}
+              title="Refresh gallery"
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {isLoadingGallery ? 'Loading...' : 'Refresh'}
+            </button>
+
             {/* Selection Counter */}
             <div className={styles.selectionCounter}>
-              <span>{selectedImages.size}</span> / <span>{getPlaceholderImages().length}</span> selected
+              <span>{selectedImages.size}</span> / <span>{galleryImages.length}</span> selected
             </div>
 
             {/* Select All Button */}
             <button className={styles.selectAllButton} onClick={selectAllImages}>
-              {selectedImages.size === getPlaceholderImages().length ? 'Deselect All' : 'Select All'}
+              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
         </div>
@@ -738,33 +970,117 @@ const Albums = () => {
         </div>
 
         <div className={styles.imageGrid}>
-          {eventImages.map((image) => (
-            <div key={image.imageId} className={styles.imageItem}>
-              <div className={styles.imageCheckbox}>
-                <input
-                  type="checkbox"
-                  checked={selectedImages.has(image.imageId)}
-                  onChange={() => handleSelectImage(image.imageId)}
-                  onClick={(e) => e.stopPropagation()}
-                />
+          {isLoadingGallery ? (
+            <div className={styles.galleryLoading}>
+              <Loading />
+              <p>Loading images...</p>
+            </div>
+          ) : eventImages.length === 0 ? (
+            <div className={styles.emptyGallery}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <p>No images uploaded yet. Use the upload section above to add images.</p>
+            </div>
+          ) : isLoadingGalleryPreviews ? (
+            <>
+              <div className={styles.galleryLoading}>
+                <Loading />
+                <div className={styles.loadingProgress}>
+                  <div className={styles.uploadProgressBar}>
+                    <div 
+                      className={styles.uploadProgressFill}
+                      style={{ width: `${(loadedGalleryImages.size / eventImages.length) * 100}%` }}
+                    />
+                  </div>
+                  <p>Loading previews: {loadedGalleryImages.size} of {eventImages.length} images</p>
+                </div>
               </div>
-              <img src={image.thumbnailUrl} alt="Photo" />
-              <div className={styles.imageOverlay}>
-                <button className={styles.imageButton}>
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </button>
-                <button className={styles.imageButton}>
+              <div style={{ display: 'none' }}>
+                {eventImages.map((image) => (
+                  <img 
+                    key={image.imageId}
+                    src={image.compressedUrl || image.originalUrl}
+                    alt=""
+                    onLoad={() => handleGalleryImageLoad(image.imageId)}
+                    onError={() => handleGalleryImageLoad(image.imageId)}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            eventImages.map((image, index) => (
+              <div 
+                key={image.imageId} 
+                className={`${styles.imageItem} ${selectedImages.has(image.imageId) ? styles.selectedImage : ''} ${dragOverIndex === index ? styles.dragOver : ''} ${draggedIndex === index ? styles.dragging : ''}`}
+                draggable
+                onDragStart={(e) => handleDragStart(e, index)}
+                onDragOver={(e) => handleDragOver(e, index)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, index)}
+                onDragEnd={handleDragEnd}
+              >
+                <div className={styles.imageCheckbox}>
+                  <input
+                    type="checkbox"
+                    checked={selectedImages.has(image.imageId)}
+                    onChange={() => handleSelectImage(image.imageId)}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </div>
+                <button 
+                  className={styles.imageDownloadButton}
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    try {
+                      const response = await fetch(image.originalUrl);
+                      const blob = await response.blob();
+                      const url = window.URL.createObjectURL(blob);
+                      const link = document.createElement('a');
+                      link.href = url;
+                      link.download = image.fileName || 'image.jpg';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                      window.URL.revokeObjectURL(url);
+                    } catch (error) {
+                      console.error('Download failed:', error);
+                    }
+                  }}
+                  aria-label="Download image"
+                >
                   <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 </button>
+                <img 
+                  src={image.compressedUrl || image.originalUrl} 
+                  alt={image.fileName || 'Photo'} 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleOpenViewer(index);
+                  }}
+                  style={{ cursor: 'pointer' }}
+                />
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
+
+        {/* Image Viewer Modal */}
+        {viewerOpen && galleryImages.length > 0 && (
+          <ImageViewer
+            images={galleryImages.map(img => ({
+              url: img.compressedUrl || img.originalUrl,
+              originalUrl: img.originalUrl,
+              filename: img.fileName || 'Image'
+            }))}
+            currentIndex={currentImageIndex}
+            isOpen={viewerOpen}
+            onClose={handleCloseViewer}
+            onNavigate={handleNavigateViewer}
+          />
+        )}
       </div>
     );
   }
@@ -1152,6 +1468,21 @@ const Albums = () => {
             </select>
           </div>
         </div>
+      )}
+
+      {/* Image Viewer Modal */}
+      {viewerOpen && galleryImages.length > 0 && (
+        <ImageViewer
+          images={galleryImages.map(img => ({
+            url: img.compressedUrl || img.originalUrl,
+            originalUrl: img.originalUrl,
+            filename: img.fileName || 'Image'
+          }))}
+          currentIndex={currentImageIndex}
+          isOpen={viewerOpen}
+          onClose={handleCloseViewer}
+          onNavigate={handleNavigateViewer}
+        />
       )}
     </div>
   );

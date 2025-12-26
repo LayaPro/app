@@ -1,4 +1,11 @@
-import { S3Client, CreateBucketCommand, PutBucketCorsCommand, HeadBucketCommand } from '@aws-sdk/client-s3';
+import { 
+  S3Client, 
+  CreateBucketCommand, 
+  PutBucketCorsCommand, 
+  HeadBucketCommand, 
+  PutBucketPolicyCommand,
+  PutPublicAccessBlockCommand 
+} from '@aws-sdk/client-s3';
 
 let s3Client: S3Client | null = null;
 
@@ -101,6 +108,50 @@ export const createS3Bucket = async (bucketName: string): Promise<string> => {
     console.log('[S3] Configuring CORS...');
     await getS3Client().send(new PutBucketCorsCommand(corsParams));
     console.log('[S3] CORS configured successfully');
+
+    // Disable public access block to allow public bucket policy
+    try {
+      console.log('[S3] Disabling public access block...');
+      await getS3Client().send(new PutPublicAccessBlockCommand({
+        Bucket: bucketName,
+        PublicAccessBlockConfiguration: {
+          BlockPublicAcls: false,
+          IgnorePublicAcls: false,
+          BlockPublicPolicy: false,
+          RestrictPublicBuckets: false
+        }
+      }));
+      console.log('[S3] Public access block disabled successfully');
+
+      // Wait a bit for AWS to process the access block change
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Set bucket policy for public read access
+      const bucketPolicy = {
+        Version: '2012-10-17',
+        Statement: [
+          {
+            Sid: 'PublicReadGetObject',
+            Effect: 'Allow',
+            Principal: '*',
+            Action: 's3:GetObject',
+            Resource: `arn:aws:s3:::${bucketName}/*`
+          }
+        ]
+      };
+
+      const policyParams = {
+        Bucket: bucketName,
+        Policy: JSON.stringify(bucketPolicy)
+      };
+
+      console.log('[S3] Setting public read policy...');
+      await getS3Client().send(new PutBucketPolicyCommand(policyParams));
+      console.log('[S3] Public read policy set successfully');
+    } catch (policyError) {
+      console.warn('[S3] Warning: Could not set public policy:', policyError instanceof Error ? policyError.message : 'Unknown error');
+      console.warn('[S3] Bucket created but you may need to set public access manually in AWS Console');
+    }
 
     console.log(`✓ Created S3 bucket: ${bucketName}`);
     return bucketName;
