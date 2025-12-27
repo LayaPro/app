@@ -15,6 +15,8 @@ export interface Image {
   mimeType: string;
   width?: number;
   height?: number;
+  capturedAt?: Date; // Original capture date from EXIF DateTimeOriginal
+  editedAt?: Date; // Last modified date from EXIF DateTime
   
   // Status tracking
   uploadStatus: 'uploading' | 'completed' | 'failed';

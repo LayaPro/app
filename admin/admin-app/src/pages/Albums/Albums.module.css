@@ -1137,22 +1137,60 @@
   animation: cardAppear 0.4s ease-out backwards;
 }
 
-/* Stagger delays for gallery images */
-.imageItem:nth-child(1) { animation-delay: 0.05s; }
-.imageItem:nth-child(2) { animation-delay: 0.1s; }
-.imageItem:nth-child(3) { animation-delay: 0.15s; }
-.imageItem:nth-child(4) { animation-delay: 0.2s; }
-.imageItem:nth-child(5) { animation-delay: 0.25s; }
-.imageItem:nth-child(6) { animation-delay: 0.3s; }
-.imageItem:nth-child(7) { animation-delay: 0.35s; }
-.imageItem:nth-child(8) { animation-delay: 0.4s; }
-.imageItem:nth-child(9) { animation-delay: 0.45s; }
-.imageItem:nth-child(10) { animation-delay: 0.5s; }
-.imageItem:nth-child(11) { animation-delay: 0.55s; }
-.imageItem:nth-child(12) { animation-delay: 0.6s; }
-.imageItem:nth-child(13) { animation-delay: 0.65s; }
-.imageItem:nth-child(14) { animation-delay: 0.7s; }
-.imageItem:nth-child(15) { animation-delay: 0.75s; }
+/* Stagger delays for gallery images - using calculation for smooth top-to-bottom loading */
+.imageItem:nth-child(n) { 
+  animation-delay: calc(0.03s * var(--item-index, 0)); 
+}
+.imageItem:nth-child(1) { --item-index: 1; }
+.imageItem:nth-child(2) { --item-index: 2; }
+.imageItem:nth-child(3) { --item-index: 3; }
+.imageItem:nth-child(4) { --item-index: 4; }
+.imageItem:nth-child(5) { --item-index: 5; }
+.imageItem:nth-child(6) { --item-index: 6; }
+.imageItem:nth-child(7) { --item-index: 7; }
+.imageItem:nth-child(8) { --item-index: 8; }
+.imageItem:nth-child(9) { --item-index: 9; }
+.imageItem:nth-child(10) { --item-index: 10; }
+.imageItem:nth-child(11) { --item-index: 11; }
+.imageItem:nth-child(12) { --item-index: 12; }
+.imageItem:nth-child(13) { --item-index: 13; }
+.imageItem:nth-child(14) { --item-index: 14; }
+.imageItem:nth-child(15) { --item-index: 15; }
+.imageItem:nth-child(16) { --item-index: 16; }
+.imageItem:nth-child(17) { --item-index: 17; }
+.imageItem:nth-child(18) { --item-index: 18; }
+.imageItem:nth-child(19) { --item-index: 19; }
+.imageItem:nth-child(20) { --item-index: 20; }
+.imageItem:nth-child(21) { --item-index: 21; }
+.imageItem:nth-child(22) { --item-index: 22; }
+.imageItem:nth-child(23) { --item-index: 23; }
+.imageItem:nth-child(24) { --item-index: 24; }
+.imageItem:nth-child(25) { --item-index: 25; }
+.imageItem:nth-child(26) { --item-index: 26; }
+.imageItem:nth-child(27) { --item-index: 27; }
+.imageItem:nth-child(28) { --item-index: 28; }
+.imageItem:nth-child(29) { --item-index: 29; }
+.imageItem:nth-child(30) { --item-index: 30; }
+.imageItem:nth-child(31) { --item-index: 31; }
+.imageItem:nth-child(32) { --item-index: 32; }
+.imageItem:nth-child(33) { --item-index: 33; }
+.imageItem:nth-child(34) { --item-index: 34; }
+.imageItem:nth-child(35) { --item-index: 35; }
+.imageItem:nth-child(36) { --item-index: 36; }
+.imageItem:nth-child(37) { --item-index: 37; }
+.imageItem:nth-child(38) { --item-index: 38; }
+.imageItem:nth-child(39) { --item-index: 39; }
+.imageItem:nth-child(40) { --item-index: 40; }
+.imageItem:nth-child(41) { --item-index: 41; }
+.imageItem:nth-child(42) { --item-index: 42; }
+.imageItem:nth-child(43) { --item-index: 43; }
+.imageItem:nth-child(44) { --item-index: 44; }
+.imageItem:nth-child(45) { --item-index: 45; }
+.imageItem:nth-child(46) { --item-index: 46; }
+.imageItem:nth-child(47) { --item-index: 47; }
+.imageItem:nth-child(48) { --item-index: 48; }
+.imageItem:nth-child(49) { --item-index: 49; }
+.imageItem:nth-child(50) { --item-index: 50; }
 
 .imageItem:active {
   cursor: grabbing;
@@ -1160,27 +1198,6 @@
 
 .imageItem:hover {
   transform: translateY(-4px);
-}
-
-.imageCheckbox {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
-  z-index: 10;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.imageItem:hover .imageCheckbox,
-.selectedImage .imageCheckbox {
-  opacity: 1;
-}
-
-.imageCheckbox input[type="checkbox"] {
-  width: 1.25rem;
-  height: 1.25rem;
-  accent-color: var(--primary-600);
-  cursor: pointer;
 }
 
 /* Image Grid */
@@ -1222,13 +1239,12 @@
 }
 
 .selectedImage {
-  border: 3px solid var(--primary-600);
-  border-radius: 0.5rem;
-  overflow: hidden;
+  box-shadow: 0 0 0 5px #3b82f6, 0 8px 20px rgba(59, 130, 246, 0.4);
+  transform: scale(0.98);
 }
 
 :global(.dark) .selectedImage {
-  border-color: var(--primary-500);
+  box-shadow: 0 0 0 5px #60a5fa, 0 8px 20px rgba(96, 165, 250, 0.5);
 }
 
 .imageItem.dragging {
@@ -1249,7 +1265,7 @@
 .imageDownloadButton {
   position: absolute;
   top: 0.5rem;
-  right: 0.5rem;
+  left: 0.5rem;
   z-index: 10;
   display: flex;
   align-items: center;
@@ -1284,6 +1300,47 @@
 }
 
 :global(.dark) .imageDownloadButton svg {
+  color: var(--gray-200);
+}
+
+.imagePropertiesButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+:global(.dark) .imagePropertiesButton {
+  background: rgba(31, 41, 55, 0.95);
+}
+
+.imageItem:hover .imagePropertiesButton {
+  opacity: 1;
+}
+
+.imagePropertiesButton:hover {
+  transform: scale(1.1);
+}
+
+.imagePropertiesButton svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--gray-800);
+}
+
+:global(.dark) .imagePropertiesButton svg {
   color: var(--gray-200);
 }
 
@@ -1547,4 +1604,171 @@
   to {
     transform: rotate(360deg);
   }
+}
+/* Image Properties Button */
+.imagePropertiesButton {
+  position: absolute;
+  top: 0.5rem;
+  right: 3rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(255, 255, 255, 0.95);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  opacity: 0;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+:global(.dark) .imagePropertiesButton {
+  background: rgba(31, 41, 55, 0.95);
+}
+
+.imageItem:hover .imagePropertiesButton {
+  opacity: 1;
+}
+
+.imagePropertiesButton:hover {
+  transform: scale(1.1);
+}
+
+.imagePropertiesButton svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--gray-800);
+}
+
+:global(.dark) .imagePropertiesButton svg {
+  color: var(--gray-200);
+}
+
+/* Properties Modal */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.propertiesModal {
+  background: var(--bg-primary);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.propertiesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.propertiesHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.closeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: transparent;
+  border: none;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.closeButton:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+.closeButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.propertiesContent {
+  padding: 1.5rem;
+  max-height: calc(80vh - 5rem);
+  overflow-y: auto;
+}
+
+.propertiesGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.propertyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  gap: 1rem;
+}
+
+.propertyLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 100px;
+}
+
+.propertyValue {
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  text-align: right;
+  word-break: break-word;
+  flex: 1;
+}
+
+:global(.dark) .propertiesModal {
+  border: 1px solid var(--border-color);
 }

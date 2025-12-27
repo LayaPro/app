@@ -6,8 +6,9 @@ import ClientEvent from '../models/clientEvent';
 import Event from '../models/event';
 import { AuthRequest } from '../middleware/auth';
 import { compressImage } from '../utils/imageProcessor';
-import { uploadToS3, uploadBothVersions } from '../utils/s3';
+import { uploadToS3, uploadBothVersions, bulkDeleteFromS3 } from '../utils/s3';
 import pMap from 'p-map';
+import exifr from 'exifr';
 
 export const createImage = async (req: AuthRequest, res: Response) => {
   try {
@@ -147,7 +148,10 @@ export const getImagesByClientEvent = async (req: AuthRequest, res: Response) =>
       query.markedAsFavorite = markedAsFavorite === 'true';
     }
 
-    const images = await Image.find(query).sort({ sortOrder: 1, uploadedAt: 1 }).lean();
+    // Sort by sortOrder (manual reordering), then uploadedAt as fallback
+    const images = await Image.find(query)
+      .sort({ sortOrder: 1, uploadedAt: 1 })
+      .lean();
 
     return res.status(200).json({
       message: 'Images retrieved successfully',
@@ -204,6 +208,46 @@ export const getImageById = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const getImageProperties = async (req: AuthRequest, res: Response) => {
+  try {
+    const { imageId } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    const image = await Image.findOne({ imageId });
+
+    if (!image) {
+      return res.status(404).json({ message: 'Image not found' });
+    }
+
+    // Check authorization
+    if (image.tenantId !== tenantId) {
+      return res.status(403).json({ message: 'Access denied. You can only view your own tenant images.' });
+    }
+
+    // Return image properties
+    const properties = {
+      imageId: image.imageId,
+      fileName: image.fileName,
+      fileSize: image.fileSize,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      status: 'Active', // Can be computed based on image state
+      capturedAt: image.capturedAt,
+      editedAt: image.editedAt,
+      uploadedAt: image.uploadedAt,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt,
+    };
+
+    return res.status(200).json({ image: properties });
+  } catch (err: any) {
+    console.error('Get image properties error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 
 export const updateImage = async (req: AuthRequest, res: Response) => {
   try {
@@ -320,6 +364,30 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Image IDs array is required' });
     }
 
+    // Fetch images to get S3 URLs before deleting
+    const images = await Image.find({
+      imageId: { $in: imageIds },
+      tenantId
+    }).lean();
+
+    if (images.length === 0) {
+      return res.status(404).json({ message: 'No images found to delete' });
+    }
+
+    // Collect all S3 URLs (both original and compressed)
+    const s3Urls: string[] = [];
+    for (const image of images) {
+      if (image.originalUrl) s3Urls.push(image.originalUrl);
+      if (image.compressedUrl) s3Urls.push(image.compressedUrl);
+      if (image.thumbnailUrl) s3Urls.push(image.thumbnailUrl);
+    }
+
+    // Delete from S3 (both standard and Glacier)
+    if (s3Urls.length > 0) {
+      await bulkDeleteFromS3(s3Urls);
+    }
+
+    // Delete from database
     const result = await Image.deleteMany({
       imageId: { $in: imageIds },
       tenantId
@@ -327,7 +395,8 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
 
     return res.status(200).json({
       message: 'Images deleted successfully',
-      deletedCount: result.deletedCount
+      deletedCount: result.deletedCount,
+      s3FilesDeleted: s3Urls.length
     });
   } catch (err: any) {
     console.error('Bulk delete images error:', err);
@@ -389,14 +458,51 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
 
     console.log(`Starting batch upload of ${files.length} images to bucket: ${s3BucketName}, folder: ${eventFolderName}...`);
 
+    // Get the current maximum sortOrder for this clientEventId
+    const maxSortOrderImage = await Image.findOne({ clientEventId, tenantId })
+      .sort({ sortOrder: -1 })
+      .select('sortOrder')
+      .lean();
+    
+    let nextSortOrder = (maxSortOrderImage?.sortOrder ?? -1) + 1;
+
     // Process images in batches of 15 for optimal performance
     const results = await pMap(
       files,
       async (file) => {
+        const currentSortOrder = nextSortOrder++;
         try {
           // Get original buffer
           const originalBuffer = file.buffer;
           const originalMetadata = await require('sharp')(originalBuffer).metadata();
+
+          // Extract dates from EXIF data using exifr
+          let capturedAt: Date | undefined;
+          let editedAt: Date | undefined;
+          try {
+            const exifData = await exifr.parse(originalBuffer, {
+              pick: ['DateTimeOriginal', 'DateTime', 'CreateDate', 'ModifyDate']
+            });
+            
+            if (exifData) {
+              // DateTimeOriginal or CreateDate - when photo was taken
+              capturedAt = exifData.DateTimeOriginal || exifData.CreateDate;
+              
+              // DateTime or ModifyDate - last modified date
+              editedAt = exifData.DateTime || exifData.ModifyDate;
+              
+              console.log(`EXIF dates for ${file.originalname}:`, {
+                DateTimeOriginal: exifData.DateTimeOriginal,
+                CreateDate: exifData.CreateDate,
+                DateTime: exifData.DateTime,
+                ModifyDate: exifData.ModifyDate,
+                capturedAt,
+                editedAt
+              });
+            }
+          } catch (exifError) {
+            console.log(`Could not parse EXIF dates for ${file.originalname}:`, exifError);
+          }
 
           // Compress image
           const compressed = await compressImage(originalBuffer, {
@@ -429,8 +535,11 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
             mimeType: file.mimetype,
             width: originalMetadata.width,
             height: originalMetadata.height,
+            capturedAt: capturedAt,
+            editedAt: editedAt,
             uploadStatus: 'completed',
             eventDeliveryStatusId,
+            sortOrder: currentSortOrder,
             uploadedBy: userId,
             uploadedAt: new Date(),
           });
@@ -548,6 +657,7 @@ export default {
   getImagesByClientEvent,
   getImagesByProject,
   getImageById,
+  getImageProperties,
   updateImage,
   bulkUpdateImages,
   deleteImage,

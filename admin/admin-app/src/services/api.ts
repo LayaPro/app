@@ -571,4 +571,26 @@ export const imageApi = {
     });
     return handleResponse(response);
   },
+
+  bulkDelete: async (imageIds: string[]) => {
+    const response = await fetch(`${API_BASE_URL}/bulk-delete-images`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageIds }),
+    });
+    return handleResponse(response);
+  },
+
+  getProperties: async (imageId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-image-properties/${imageId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
 };

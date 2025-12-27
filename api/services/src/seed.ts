@@ -9,6 +9,7 @@ import Profile from './models/profile';
 import Event from './models/event';
 import EventDeliveryStatus from './models/eventDeliveryStatus';
 import ProjectDeliveryStatus from './models/projectDeliveryStatus';
+import ImageStatus from './models/imageStatus';
 
 dotenv.config();
 
@@ -261,6 +262,48 @@ async function seedDatabase() {
     }
     if (existingProjectStatusCount > 0) {
       console.log(`✓ ${existingProjectStatusCount} project status(es) already exist`);
+    }
+
+    // 8. Create default image statuses for LayaPro tenant
+    const defaultImageStatuses = [
+      { statusCode: 'UPLOADED', statusDescription: 'Uploaded', step: 1 },
+      { statusCode: 'REVIEW_PENDING', statusDescription: 'Review pending', step: 2 },
+      { statusCode: 'CHANGES_SUGGESTED', statusDescription: 'Changes suggested', step: 3 },
+      { statusCode: 'DISCARDED', statusDescription: 'Discarded', step: 4 },
+      { statusCode: 'REVIEWED', statusDescription: 'Reviewed', step: 5 }
+    ];
+
+    console.log('\n✓ Creating default image statuses...');
+    let createdImageStatusCount = 0;
+    let existingImageStatusCount = 0;
+
+    for (const statusData of defaultImageStatuses) {
+      const existing = await ImageStatus.findOne({ 
+        statusCode: statusData.statusCode, 
+        tenantId: layaproTenant.tenantId 
+      });
+
+      if (!existing) {
+        const statusId = `imgstatus_${nanoid()}`;
+        await ImageStatus.create({
+          statusId,
+          tenantId: layaproTenant.tenantId,
+          statusCode: statusData.statusCode,
+          statusDescription: statusData.statusDescription,
+          step: statusData.step
+        });
+        createdImageStatusCount++;
+        console.log(`  ✓ Created image status: ${statusData.statusCode} - ${statusData.statusDescription} (Step ${statusData.step})`);
+      } else {
+        existingImageStatusCount++;
+      }
+    }
+
+    if (createdImageStatusCount > 0) {
+      console.log(`✓ Created ${createdImageStatusCount} new image status(es)`);
+    }
+    if (existingImageStatusCount > 0) {
+      console.log(`✓ ${existingImageStatusCount} image status(es) already exist`);
     }
 
     console.log('\n✅ Database seeding completed successfully!');

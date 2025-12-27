@@ -21,6 +21,8 @@ const ImageSchema = new Schema<IImage>(
     mimeType: { type: String, required: true },
     width: { type: Number },
     height: { type: Number },
+    capturedAt: { type: Date }, // Original capture date from EXIF DateTimeOriginal
+    editedAt: { type: Date }, // Last modified date from EXIF DateTime
     
     // Status tracking
     uploadStatus: { 
@@ -49,6 +51,8 @@ ImageSchema.index({ tenantId: 1, uploadStatus: 1 });
 ImageSchema.index({ clientEventId: 1, selectedByClient: 1 });
 ImageSchema.index({ clientEventId: 1, markedAsFavorite: 1 });
 ImageSchema.index({ clientEventId: 1, sortOrder: 1 });
+ImageSchema.index({ clientEventId: 1, capturedAt: 1 });
+ImageSchema.index({ clientEventId: 1, editedAt: 1 });
 
 export const Image = model<IImage>('Image', ImageSchema);
 export default Image;

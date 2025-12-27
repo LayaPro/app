@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
 import { nanoid } from 'nanoid';
 
 let s3Client: S3Client | null = null;
@@ -95,4 +95,72 @@ export const uploadBothVersions = async (
   ]);
 
   return { originalUrl, compressedUrl };
+};
+
+export const deleteFromS3 = async (url: string): Promise<void> => {
+  try {
+    // Extract bucket and key from URL
+    // Format: https://bucket.s3.region.amazonaws.com/key
+    const urlPattern = /https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/;
+    const match = url.match(urlPattern);
+    
+    if (!match) {
+      console.error('Invalid S3 URL format:', url);
+      return;
+    }
+
+    const [, bucket, , key] = match;
+    const decodedKey = decodeURIComponent(key);
+
+    const command = new DeleteObjectCommand({
+      Bucket: bucket,
+      Key: decodedKey,
+    });
+
+    await getS3Client().send(command);
+    console.log(`✓ Deleted from S3: ${decodedKey}`);
+  } catch (error) {
+    console.error(`✗ Failed to delete from S3: ${url}`, error);
+    // Don't throw - allow deletion to continue even if S3 delete fails
+  }
+};
+
+export const bulkDeleteFromS3 = async (urls: string[]): Promise<void> => {
+  // Group URLs by bucket
+  const urlsByBucket = new Map<string, string[]>();
+  
+  for (const url of urls) {
+    const urlPattern = /https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/;
+    const match = url.match(urlPattern);
+    
+    if (match) {
+      const [, bucket, , key] = match;
+      if (!urlsByBucket.has(bucket)) {
+        urlsByBucket.set(bucket, []);
+      }
+      urlsByBucket.get(bucket)!.push(decodeURIComponent(key));
+    }
+  }
+
+  // Delete from each bucket
+  for (const [bucket, keys] of urlsByBucket.entries()) {
+    try {
+      const command = new DeleteObjectsCommand({
+        Bucket: bucket,
+        Delete: {
+          Objects: keys.map(Key => ({ Key })),
+          Quiet: false,
+        },
+      });
+
+      const result = await getS3Client().send(command);
+      console.log(`✓ Deleted ${keys.length} objects from S3 bucket: ${bucket}`);
+      
+      if (result.Errors && result.Errors.length > 0) {
+        console.error(`Errors deleting some objects:`, result.Errors);
+      }
+    } catch (error) {
+      console.error(`✗ Failed to delete from S3 bucket ${bucket}:`, error);
+    }
+  }
 };

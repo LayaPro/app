@@ -11,6 +11,7 @@ import teamController from './controllers/teamController';
 import eventController from './controllers/eventController';
 import eventDeliveryStatusController from './controllers/eventDeliveryStatusController';
 import projectDeliveryStatusController from './controllers/projectDeliveryStatusController';
+import imageStatusController from './controllers/imageStatusController';
 import equipmentController from './controllers/equipmentController';
 import projectController from './controllers/projectController';
 import clientEventController from './controllers/clientEventController';
@@ -86,6 +87,9 @@ app.put('/update-event-delivery-status/:statusId', authenticate, requireAdmin, e
 app.put('/bulk-update-event-delivery-status-steps', authenticate, requireAdmin, eventDeliveryStatusController.bulkUpdateSteps);
 app.delete('/delete-event-delivery-status/:statusId', authenticate, requireAdmin, eventDeliveryStatusController.deleteEventDeliveryStatus);
 
+// ---------- Image Status routes ----------
+app.get('/get-all-image-statuses', authenticate, imageStatusController.getAllImageStatuses);
+
 // ---------- Project Delivery Status routes ----------
 app.post('/create-project-delivery-status', authenticate, requireAdmin, projectDeliveryStatusController.createProjectDeliveryStatus);
 app.get('/get-all-project-delivery-statuses', authenticate, requireAdmin, projectDeliveryStatusController.getAllProjectDeliveryStatuses);
@@ -142,6 +146,7 @@ app.get('/get-all-images', authenticate, imageController.getAllImages);
 app.get('/get-images-by-client-event/:clientEventId', authenticate, imageController.getImagesByClientEvent);
 app.get('/get-images-by-project/:projectId', authenticate, imageController.getImagesByProject);
 app.get('/get-image/:imageId', authenticate, imageController.getImageById);
+app.get('/get-image-properties/:imageId', authenticate, imageController.getImageProperties);
 app.put('/update-image/:imageId', authenticate, imageController.updateImage);
 app.put('/bulk-update-images', authenticate, imageController.bulkUpdateImages);
 app.delete('/delete-image/:imageId', authenticate, requireAdmin, imageController.deleteImage);

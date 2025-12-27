@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Breadcrumb, Input, Loading } from '../../components/ui/index.js';
+import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
 import { useToast } from '../../context/ToastContext';
 import { projectApi, clientEventApi, eventApi, imageApi } from '../../services/api';
 import ImageViewer from '../../components/ImageViewer';
@@ -58,6 +59,11 @@ const Albums = () => {
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasUnsavedOrder, setHasUnsavedOrder] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [showPropertiesModal, setShowPropertiesModal] = useState(false);
+  const [propertiesData, setPropertiesData] = useState<any>(null);
+  const [loadingProperties, setLoadingProperties] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
@@ -368,6 +374,54 @@ const Albums = () => {
 
   const toggleSortDropdown = () => {
     setShowSortDropdown(!showSortDropdown);
+  };
+
+  const handleBulkDelete = () => {
+    if (selectedImages.size === 0) return;
+    console.log('Opening delete modal for', selectedImages.size, 'images');
+    setShowDeleteModal(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const imageIds = Array.from(selectedImages);
+      await imageApi.bulkDelete(imageIds);
+      
+      showToast('success', `Successfully deleted ${imageIds.length} image${imageIds.length !== 1 ? 's' : ''}`);
+      
+      // Clear selection
+      setSelectedImages(new Set());
+      setShowBulkActions(false);
+      setShowDeleteModal(false);
+      
+      // Refresh gallery
+      if (selectedEvent) {
+        fetchGalleryImages(selectedEvent.clientEventId);
+      }
+    } catch (error) {
+      console.error('Error deleting images:', error);
+      showToast('error', 'Failed to delete images');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleShowProperties = async (imageId: string) => {
+    setLoadingProperties(true);
+    setShowPropertiesModal(true);
+    setPropertiesData(null);
+    
+    try {
+      const response = await imageApi.getProperties(imageId);
+      setPropertiesData(response.image);
+    } catch (error) {
+      console.error('Error fetching image properties:', error);
+      showToast('error', 'Failed to load image properties');
+      setShowPropertiesModal(false);
+    } finally {
+      setLoadingProperties(false);
+    }
   };
 
   const handleUploadImages = async () => {
@@ -868,7 +922,13 @@ const Albums = () => {
                     <span>Comment</span>
                   </button>
                   <div className={styles.dropdownDivider}></div>
-                  <button className={`${styles.dropdownItem} ${styles.delete}`}>
+                  <button 
+                    className={`${styles.dropdownItem} ${styles.delete}`} 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleBulkDelete();
+                    }}
+                  >
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
@@ -993,15 +1053,9 @@ const Albums = () => {
                 onDragLeave={handleDragLeave}
                 onDrop={(e) => handleDrop(e, index)}
                 onDragEnd={handleDragEnd}
+                onClick={() => handleSelectImage(image.imageId)}
+                onDoubleClick={() => handleOpenViewer(index)}
               >
-                <div className={styles.imageCheckbox}>
-                  <input
-                    type="checkbox"
-                    checked={selectedImages.has(image.imageId)}
-                    onChange={() => handleSelectImage(image.imageId)}
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </div>
                 <button 
                   className={styles.imageDownloadButton}
                   onClick={async (e) => {
@@ -1027,14 +1081,22 @@ const Albums = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                   </svg>
                 </button>
+                <button 
+                  className={styles.imagePropertiesButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleShowProperties(image.imageId);
+                  }}
+                  aria-label="View properties"
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </button>
                 <img 
                   src={image.compressedUrl || image.originalUrl} 
                   alt={image.fileName || 'Photo'} 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleOpenViewer(index);
-                  }}
-                  style={{ cursor: 'pointer' }}
+                  style={{ cursor: 'pointer', pointerEvents: 'none' }}
                 />
               </div>
             ))
@@ -1054,6 +1116,81 @@ const Albums = () => {
             onClose={handleCloseViewer}
             onNavigate={handleNavigateViewer}
           />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        <ConfirmationModal
+          isOpen={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={confirmBulkDelete}
+          title="Delete Images"
+          message={`Are you sure you want to delete ${selectedImages.size} image${selectedImages.size !== 1 ? 's' : ''}? This action cannot be undone and will permanently remove images from both S3 and Glacier storage.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          isLoading={isDeleting}
+          variant="danger"
+        />
+
+        {/* Properties Modal */}
+        {showPropertiesModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowPropertiesModal(false)}>
+            <div className={styles.propertiesModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.propertiesHeader}>
+                <h3>Image Properties</h3>
+                <button 
+                  className={styles.closeButton}
+                  onClick={() => setShowPropertiesModal(false)}
+                  aria-label="Close"
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className={styles.propertiesContent}>
+                {loadingProperties ? (
+                  <Loading />
+                ) : propertiesData ? (
+                  <div className={styles.propertiesGrid}>
+                    <div className={styles.propertyRow}>
+                      <span className={styles.propertyLabel}>Name:</span>
+                      <span className={styles.propertyValue}>{propertiesData.fileName || 'N/A'}</span>
+                    </div>
+                    <div className={styles.propertyRow}>
+                      <span className={styles.propertyLabel}>Status:</span>
+                      <span className={styles.propertyValue}>{propertiesData.status || 'Active'}</span>
+                    </div>
+                    <div className={styles.propertyRow}>
+                      <span className={styles.propertyLabel}>Size:</span>
+                      <span className={styles.propertyValue}>
+                        {propertiesData.fileSize 
+                          ? `${(propertiesData.fileSize / 1024 / 1024).toFixed(2)} MB` 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className={styles.propertyRow}>
+                      <span className={styles.propertyLabel}>Captured At:</span>
+                      <span className={styles.propertyValue}>
+                        {propertiesData.capturedAt 
+                          ? new Date(propertiesData.capturedAt).toLocaleString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className={styles.propertyRow}>
+                      <span className={styles.propertyLabel}>Edited At:</span>
+                      <span className={styles.propertyValue}>
+                        {propertiesData.editedAt 
+                          ? new Date(propertiesData.editedAt).toLocaleString() 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p>Failed to load properties</p>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     );
@@ -1463,6 +1600,81 @@ const Albums = () => {
           onClose={handleCloseViewer}
           onNavigate={handleNavigateViewer}
         />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={confirmBulkDelete}
+        title="Delete Images"
+        message={`Are you sure you want to delete ${selectedImages.size} image${selectedImages.size !== 1 ? 's' : ''}? This action cannot be undone and will permanently remove images from both S3 and Glacier storage.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={isDeleting}
+        variant="danger"
+      />
+
+      {/* Properties Modal */}
+      {showPropertiesModal && (
+        <div className={styles.modalOverlay} onClick={() => setShowPropertiesModal(false)}>
+          <div className={styles.propertiesModal} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.propertiesHeader}>
+              <h3>Image Properties</h3>
+              <button 
+                className={styles.closeButton}
+                onClick={() => setShowPropertiesModal(false)}
+                aria-label="Close"
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            <div className={styles.propertiesContent}>
+              {loadingProperties ? (
+                <Loading />
+              ) : propertiesData ? (
+                <div className={styles.propertiesGrid}>
+                  <div className={styles.propertyRow}>
+                    <span className={styles.propertyLabel}>Name:</span>
+                    <span className={styles.propertyValue}>{propertiesData.fileName || 'N/A'}</span>
+                  </div>
+                  <div className={styles.propertyRow}>
+                    <span className={styles.propertyLabel}>Status:</span>
+                    <span className={styles.propertyValue}>{propertiesData.status || 'Active'}</span>
+                  </div>
+                  <div className={styles.propertyRow}>
+                    <span className={styles.propertyLabel}>Size:</span>
+                    <span className={styles.propertyValue}>
+                      {propertiesData.fileSize 
+                        ? `${(propertiesData.fileSize / 1024 / 1024).toFixed(2)} MB` 
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div className={styles.propertyRow}>
+                    <span className={styles.propertyLabel}>Captured At:</span>
+                    <span className={styles.propertyValue}>
+                      {propertiesData.capturedAt 
+                        ? new Date(propertiesData.capturedAt).toLocaleString() 
+                        : 'N/A'}
+                    </span>
+                  </div>
+                  <div className={styles.propertyRow}>
+                    <span className={styles.propertyLabel}>Edited At:</span>
+                    <span className={styles.propertyValue}>
+                      {propertiesData.editedAt 
+                        ? new Date(propertiesData.editedAt).toLocaleString() 
+                        : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <p>Failed to load properties</p>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
