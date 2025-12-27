@@ -4,6 +4,9 @@ import Image from '../models/image';
 import Project from '../models/project';
 import ClientEvent from '../models/clientEvent';
 import Event from '../models/event';
+import User from '../models/user';
+import Role from '../models/role';
+import ImageStatus from '../models/imageStatus';
 import { AuthRequest } from '../middleware/auth';
 import { compressImage } from '../utils/imageProcessor';
 import { uploadToS3, uploadBothVersions, bulkDeleteFromS3 } from '../utils/s3';
@@ -214,7 +217,7 @@ export const getImageProperties = async (req: AuthRequest, res: Response) => {
     const { imageId } = req.params;
     const tenantId = req.user?.tenantId;
 
-    const image = await Image.findOne({ imageId });
+    const image = await Image.findOne({ imageId }).lean();
 
     if (!image) {
       return res.status(404).json({ message: 'Image not found' });
@@ -225,6 +228,15 @@ export const getImageProperties = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'Access denied. You can only view your own tenant images.' });
     }
 
+    // Get status description by looking up ImageStatus
+    let statusDescription = 'Unknown';
+    if (image.imageStatusId) {
+      const imageStatus = await ImageStatus.findOne({ statusId: image.imageStatusId }).lean();
+      if (imageStatus) {
+        statusDescription = imageStatus.statusDescription;
+      }
+    }
+
     // Return image properties
     const properties = {
       imageId: image.imageId,
@@ -233,7 +245,7 @@ export const getImageProperties = async (req: AuthRequest, res: Response) => {
       mimeType: image.mimeType,
       width: image.width,
       height: image.height,
-      status: 'Active', // Can be computed based on image state
+      status: statusDescription,
       capturedAt: image.capturedAt,
       editedAt: image.editedAt,
       uploadedAt: image.uploadedAt,
@@ -456,6 +468,21 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
       .replace(/--+/g, '-')
       .replace(/^-|-$/g, '');
 
+    // Determine image status based on user role
+    const user = await User.findOne({ userId, tenantId });
+    let imageStatusId: string | undefined;
+    
+    if (user) {
+      const role = await Role.findOne({ roleId: user.roleId });
+      if (role) {
+        const statusCode = role.name === 'admin' ? 'UPLOADED' : 'REVIEW_PENDING';
+        const imageStatus = await ImageStatus.findOne({ statusCode, tenantId });
+        if (imageStatus) {
+          imageStatusId = imageStatus.statusId;
+        }
+      }
+    }
+
     console.log(`Starting batch upload of ${files.length} images to bucket: ${s3BucketName}, folder: ${eventFolderName}...`);
 
     // Get the current maximum sortOrder for this clientEventId
@@ -539,6 +566,7 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
             editedAt: editedAt,
             uploadStatus: 'completed',
             eventDeliveryStatusId,
+            imageStatusId,
             sortOrder: currentSortOrder,
             uploadedBy: userId,
             uploadedAt: new Date(),

@@ -914,8 +914,24 @@
   flex-wrap: wrap;
 }
 
+.actionsRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.galleryControls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
 .bulkActionsContainer,
-.sortContainer {
+.sortContainer,
+.statusContainer {
   position: relative;
 }
 
@@ -950,7 +966,8 @@
   height: 1rem;
 }
 
-.sortButton {
+.sortButton,
+.statusButton {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -963,15 +980,19 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
-.sortButton:hover {
+.sortButton:hover,
+.statusButton:hover {
   border-color: var(--primary-600);
 }
 
-.sortButton svg {
+.sortButton svg,
+.statusButton svg {
   width: 1rem;
   height: 1rem;
+  flex-shrink: 0;
 }
 
 .dropdown {
@@ -985,6 +1006,11 @@
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   z-index: 100;
   padding: 0.5rem 0;
+}
+
+.sortContainer .dropdown {
+  left: auto;
+  right: 0;
 }
 
 .dropdownItem {
@@ -1004,6 +1030,12 @@
 
 .dropdownItem:hover {
   background: var(--bg-secondary);
+}
+
+.dropdownItem.active {
+  background: var(--primary-50);
+  color: var(--primary-600);
+  font-weight: 600;
 }
 
 .dropdownItem svg {

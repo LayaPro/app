@@ -21,7 +21,7 @@ import imageController from './controllers/imageController';
 import dashboardController from './controllers/dashboardController';
 import searchController from './controllers/searchController';
 import userController from './controllers/userController';
-import { authenticate, requireSuperAdmin } from './middleware/auth';
+import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload } from './middleware/upload';
 
@@ -51,12 +51,12 @@ app.put('/update-role/:roleId', authenticate, requireAdmin, roleController.updat
 app.delete('/delete-role/:roleId', authenticate, requireAdmin, roleController.deleteRole);
 
 // ---------- Tenants routes ----------
-app.post('/create-tenant', authenticate, requireSuperAdmin, tenantController.createTenant);
-app.get('/get-all-tenants', authenticate, requireSuperAdmin, tenantController.getAllTenants);
+app.post('/create-tenant', authenticate, requireAdmin, tenantController.createTenant);
+app.get('/get-all-tenants', authenticate, requireAdmin, tenantController.getAllTenants);
 app.get('/get-tenant/:tenantId', authenticate, tenantController.getTenantById);
-app.put('/update-tenant/:tenantId', authenticate, requireSuperAdmin, tenantController.updateTenant);
-app.delete('/delete-tenant/:tenantId', authenticate, requireSuperAdmin, tenantController.deleteTenant);
-app.patch('/toggle-tenant-status/:tenantId', authenticate, requireSuperAdmin, tenantController.toggleTenantStatus);
+app.put('/update-tenant/:tenantId', authenticate, requireAdmin, tenantController.updateTenant);
+app.delete('/delete-tenant/:tenantId', authenticate, requireAdmin, tenantController.deleteTenant);
+app.patch('/toggle-tenant-status/:tenantId', authenticate, requireAdmin, tenantController.toggleTenantStatus);
 
 // ---------- Profile routes ----------
 app.post('/create-profile', authenticate, requireAdmin, profileController.createProfile);

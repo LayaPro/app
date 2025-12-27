@@ -32,6 +32,7 @@ const ImageSchema = new Schema<IImage>(
       required: true 
     },
     eventDeliveryStatusId: { type: String, index: true }, // Reference to EventDeliveryStatus
+    imageStatusId: { type: String, index: true }, // Reference to ImageStatus
     
     // Features
     selectedByClient: { type: Boolean, default: false },

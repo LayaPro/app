@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Breadcrumb, Input, Loading } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
 import { useToast } from '../../context/ToastContext';
-import { projectApi, clientEventApi, eventApi, imageApi } from '../../services/api';
+import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi } from '../../services/api';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
 
@@ -36,7 +36,7 @@ const Albums = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortBy, setSortBy] = useState('recent');
+  const [sortBy, setSortBy] = useState('default');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -64,16 +64,21 @@ const Albums = () => {
   const [showPropertiesModal, setShowPropertiesModal] = useState(false);
   const [propertiesData, setPropertiesData] = useState<any>(null);
   const [loadingProperties, setLoadingProperties] = useState(false);
+  const [imageStatuses, setImageStatuses] = useState<any[]>([]);
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
+  const statusDropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetchProjects();
     fetchEventTypes();
     fetchAllEvents();
     fetchAllImages();
+    fetchImageStatuses();
   }, []);
 
   useEffect(() => {
@@ -94,9 +99,14 @@ const Albums = () => {
       if (sortDropdownRef.current && !sortDropdownRef.current.contains(target)) {
         setShowSortDropdown(false);
       }
+      
+      // Close status dropdown
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
+        setShowStatusDropdown(false);
+      }
     };
 
-    if (openMenuId || showBulkActions || showSortDropdown) {
+    if (openMenuId || showBulkActions || showSortDropdown || showStatusDropdown) {
       setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside);
       }, 0);
@@ -105,7 +115,7 @@ const Albums = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [openMenuId, showBulkActions, showSortDropdown]);
+  }, [openMenuId, showBulkActions, showSortDropdown, showStatusDropdown]);
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -150,6 +160,15 @@ const Albums = () => {
       setAllImages(response.images || []);
     } catch (error) {
       console.error('Error fetching all images:', error);
+    }
+  };
+
+  const fetchImageStatuses = async () => {
+    try {
+      const response = await imageStatusApi.getAll();
+      setImageStatuses(response.imageStatuses || []);
+    } catch (error) {
+      console.error('Error fetching image statuses:', error);
     }
   };
 
@@ -374,6 +393,40 @@ const Albums = () => {
 
   const toggleSortDropdown = () => {
     setShowSortDropdown(!showSortDropdown);
+  };
+
+  const handleSortChange = (sortOption: string) => {
+    setSortBy(sortOption);
+    setShowSortDropdown(false);
+  };
+
+  const getSortedImages = (images: any[]) => {
+    const sorted = [...images];
+    
+    if (sortBy === 'default') {
+      // Use the sortOrder field from database
+      sorted.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    } else if (sortBy === 'name') {
+      sorted.sort((a, b) => {
+        const nameA = (a.fileName || '').toLowerCase();
+        const nameB = (b.fileName || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+    } else if (sortBy === 'date-latest') {
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.editedAt || a.capturedAt || a.uploadedAt || 0).getTime();
+        const dateB = new Date(b.editedAt || b.capturedAt || b.uploadedAt || 0).getTime();
+        return dateB - dateA; // Latest first (descending)
+      });
+    } else if (sortBy === 'date-oldest') {
+      sorted.sort((a, b) => {
+        const dateA = new Date(a.editedAt || a.capturedAt || a.uploadedAt || 0).getTime();
+        const dateB = new Date(b.editedAt || b.capturedAt || b.uploadedAt || 0).getTime();
+        return dateA - dateB; // Oldest first (ascending)
+      });
+    }
+    
+    return sorted;
   };
 
   const handleBulkDelete = () => {
@@ -938,25 +991,40 @@ const Albums = () => {
               )}
             </div>
 
-            {/* Sort Dropdown */}
-            <div className={styles.sortContainer} ref={sortDropdownRef}>
-              <button className={styles.sortButton} onClick={toggleSortDropdown}>
-                <span>Sort by</span>
+            {/* Status Filter Dropdown */}
+            <div className={styles.statusContainer} ref={statusDropdownRef}>
+              <button className={styles.statusButton} onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span>{selectedStatus === 'all' ? 'All Images' : imageStatuses.find(s => s.statusId === selectedStatus)?.statusDescription || 'Status'}</span>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              {showSortDropdown && (
+              {showStatusDropdown && (
                 <div className={styles.dropdown}>
-                  <button className={styles.dropdownItem}>
-                    <span>Name</span>
+                  <button 
+                    className={`${styles.dropdownItem} ${selectedStatus === 'all' ? styles.active : ''}`}
+                    onClick={() => {
+                      setSelectedStatus('all');
+                      setShowStatusDropdown(false);
+                    }}
+                  >
+                    <span>All Images</span>
                   </button>
-                  <button className={styles.dropdownItem}>
-                    <span>Date</span>
-                  </button>
-                  <button className={styles.dropdownItem}>
-                    <span>Size</span>
-                  </button>
+                  {imageStatuses.map((status) => (
+                    <button 
+                      key={status.statusId}
+                      className={`${styles.dropdownItem} ${selectedStatus === status.statusId ? styles.active : ''}`}
+                      onClick={() => {
+                        setSelectedStatus(status.statusId);
+                        setShowStatusDropdown(false);
+                      }}
+                    >
+                      <span>{status.statusDescription}</span>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -973,7 +1041,9 @@ const Albums = () => {
               </svg>
               {isSavingOrder ? 'Saving...' : 'Save Sort Order'}
             </button>
+          </div>
 
+          <div className={styles.actionsRight}>
             {/* Refresh Button */}
             <button 
               className={styles.refreshButton} 
@@ -987,20 +1057,62 @@ const Albums = () => {
               {isLoadingGallery ? 'Loading...' : 'Refresh'}
             </button>
 
-            {/* Selection Counter */}
-            <div className={styles.selectionCounter}>
-              <span>{selectedImages.size}</span> / <span>{galleryImages.length}</span> selected
+            {/* Sort Dropdown */}
+            <div className={styles.sortContainer} ref={sortDropdownRef}>
+              <button className={styles.sortButton} onClick={toggleSortDropdown}>
+                <span>
+                  {sortBy === 'default' ? 'Default' : sortBy === 'name' ? 'Name' : sortBy === 'date-latest' ? 'Date - Latest first' : 'Date - Oldest first'}
+                </span>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              {showSortDropdown && (
+                <div className={styles.dropdown}>
+                  <button 
+                    className={`${styles.dropdownItem} ${sortBy === 'default' ? styles.active : ''}`}
+                    onClick={() => handleSortChange('default')}
+                  >
+                    <span>Default</span>
+                  </button>
+                  <button 
+                    className={`${styles.dropdownItem} ${sortBy === 'name' ? styles.active : ''}`}
+                    onClick={() => handleSortChange('name')}
+                  >
+                    <span>Name</span>
+                  </button>
+                  <button 
+                    className={`${styles.dropdownItem} ${sortBy === 'date-latest' ? styles.active : ''}`}
+                    onClick={() => handleSortChange('date-latest')}
+                  >
+                    <span>Date - Latest first</span>
+                  </button>
+                  <button 
+                    className={`${styles.dropdownItem} ${sortBy === 'date-oldest' ? styles.active : ''}`}
+                    onClick={() => handleSortChange('date-oldest')}
+                  >
+                    <span>Date - Oldest first</span>
+                  </button>
+                </div>
+              )}
             </div>
-
-            {/* Select All Button */}
-            <button className={styles.selectAllButton} onClick={selectAllImages}>
-              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'}
-            </button>
           </div>
         </div>
 
+        <div className={styles.galleryControls}>
+          {/* Selection Counter */}
+          <div className={styles.selectionCounter}>
+            <span>{selectedImages.size}</span> / <span>{galleryImages.length}</span> selected
+          </div>
+
+          {/* Select All Button */}
+          <button className={styles.selectAllButton} onClick={selectAllImages}>
+            {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'}
+          </button>
+        </div>
+
         <div className={styles.imagesHeader}>
-          <h2 className={styles.imagesTitle}>{eventName} ({eventImages.length})</h2>
+          <h2 className={styles.imagesTitle}>{eventName} ({eventImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus).length})</h2>
         </div>
 
         <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
@@ -1043,7 +1155,7 @@ const Albums = () => {
               </div>
             </>
           ) : showContent && (
-            eventImages.map((image, index) => (
+            getSortedImages(eventImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus)).map((image, index) => (
               <div 
                 key={image.imageId} 
                 className={`${styles.imageItem} ${selectedImages.has(image.imageId) ? styles.selectedImage : ''} ${dragOverIndex === index ? styles.dragOver : ''} ${draggedIndex === index ? styles.dragging : ''}`}
@@ -1158,7 +1270,7 @@ const Albums = () => {
                     </div>
                     <div className={styles.propertyRow}>
                       <span className={styles.propertyLabel}>Status:</span>
-                      <span className={styles.propertyValue}>{propertiesData.status || 'Active'}</span>
+                      <span className={styles.propertyValue}>{propertiesData.status || 'N/A'}</span>
                     </div>
                     <div className={styles.propertyRow}>
                       <span className={styles.propertyLabel}>Size:</span>
@@ -1642,7 +1754,7 @@ const Albums = () => {
                   </div>
                   <div className={styles.propertyRow}>
                     <span className={styles.propertyLabel}>Status:</span>
-                    <span className={styles.propertyValue}>{propertiesData.status || 'Active'}</span>
+                    <span className={styles.propertyValue}>{propertiesData.status || 'N/A'}</span>
                   </div>
                   <div className={styles.propertyRow}>
                     <span className={styles.propertyLabel}>Size:</span>

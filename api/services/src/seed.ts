@@ -20,22 +20,37 @@ async function seedDatabase() {
     await mongoose.connect(MONGO_URI, { dbName: 'flomingo_db' });
     console.log('Connected to DB');
 
-    // 1. Create superadmin role if it doesn't exist
-    let superadminRole = await Role.findOne({ name: 'superadmin', tenantId: '-1' });
-    if (!superadminRole) {
+    // 1. Create admin role if it doesn't exist
+    let adminRole = await Role.findOne({ name: 'admin', tenantId: '-1' });
+    if (!adminRole) {
       const roleId = `role_${nanoid()}`;
-      superadminRole = await Role.create({
+      adminRole = await Role.create({
         roleId,
         tenantId: '-1', // Global role
-        name: 'superadmin',
-        description: 'Super administrator with full system access'
+        name: 'admin',
+        description: 'Administrator with full tenant access'
       });
-      console.log('✓ Created superadmin role:', roleId);
+      console.log('✓ Created admin role:', roleId);
     } else {
-      console.log('✓ Superadmin role already exists');
+      console.log('✓ Admin role already exists');
     }
 
-    // 2. Create LayaPro tenant if it doesn't exist
+    // 2. Create user role if it doesn't exist
+    let userRole = await Role.findOne({ name: 'user', tenantId: '-1' });
+    if (!userRole) {
+      const roleId = `role_${nanoid()}`;
+      userRole = await Role.create({
+        roleId,
+        tenantId: '-1', // Global role
+        name: 'user',
+        description: 'Regular user with limited access'
+      });
+      console.log('✓ Created user role:', roleId);
+    } else {
+      console.log('✓ User role already exists');
+    }
+
+    // 3. Create LayaPro tenant if it doesn't exist
     let layaproTenant = await Tenant.findOne({ tenantUsername: 'LayaPro' });
     if (!layaproTenant) {
       const tenantId = `tenant_${nanoid()}`;
@@ -55,31 +70,31 @@ async function seedDatabase() {
       console.log('✓ LayaPro tenant already exists');
     }
 
-    // 3. Create superadmin user if it doesn't exist
-    let superadminUser = await User.findOne({ email: 'productionslaya@gmail.com' });
-    if (!superadminUser) {
+    // 4. Create admin user if it doesn't exist
+    let adminUser = await User.findOne({ email: 'productionslaya@gmail.com' });
+    if (!adminUser) {
       const userId = `user_${nanoid()}`;
       const passwordHash = await bcrypt.hash('LayaPro@2025', 10); // Change this password!
       
-      superadminUser = await User.create({
+      adminUser = await User.create({
         userId,
         tenantId: layaproTenant.tenantId,
         email: 'productionslaya@gmail.com',
         passwordHash,
         firstName: 'Laya',
         lastName: 'Productions',
-        roleId: superadminRole.roleId,
+        roleId: adminRole.roleId,
         isActive: true,
         createdAt: new Date(),
         updatedAt: new Date()
       });
-      console.log('✓ Created superadmin user:', userId);
+      console.log('✓ Created admin user:', userId);
       console.log('  Email: productionslaya@gmail.com');
       console.log('  Password: LayaPro@2025 (CHANGE THIS!)');
     } else {
-      console.log('✓ Superadmin user already exists');
+      console.log('✓ Admin user already exists');
     }
-// 4. Create default profiles for LayaPro tenant
+// 5. Create default profiles for LayaPro tenant
     const defaultProfiles = [
       { name: 'Candid Photographer', description: 'Captures candid moments and natural expressions' },
       { name: 'Cinematographer', description: 'Creates cinematic video content' },

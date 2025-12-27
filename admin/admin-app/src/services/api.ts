@@ -594,3 +594,15 @@ export const imageApi = {
     return handleResponse(response);
   },
 };
+
+export const imageStatusApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-image-statuses`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};

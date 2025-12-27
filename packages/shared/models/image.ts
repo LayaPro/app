@@ -21,6 +21,7 @@ export interface Image {
   // Status tracking
   uploadStatus: 'uploading' | 'completed' | 'failed';
   eventDeliveryStatusId?: string; // Reference to EventDeliveryStatus (same as event status)
+  imageStatusId?: string; // Reference to ImageStatus
   
   // Features
   selectedByClient?: boolean; // Client selection
