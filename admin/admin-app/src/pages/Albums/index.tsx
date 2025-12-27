@@ -33,6 +33,7 @@ const Albums = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ClientEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showContent, setShowContent] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('recent');
   const [currentPage, setCurrentPage] = useState(1);
@@ -102,9 +103,12 @@ const Albums = () => {
 
   const fetchProjects = async () => {
     setIsLoading(true);
+    setShowContent(false);
     try {
       const response = await projectApi.getAll();
       setProjects(response.projects || []);
+      // Delay showing content to ensure smooth animation
+      setTimeout(() => setShowContent(true), 150);
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -145,12 +149,15 @@ const Albums = () => {
 
   const fetchProjectEvents = async (projectId: string) => {
     setIsLoading(true);
+    setShowContent(false);
     try {
       const response = await clientEventApi.getAll();
       const projectEvents = (response.clientEvents || []).filter(
         (event: ClientEvent) => event.projectId === projectId
       );
       setEvents(projectEvents);
+      // Delay showing content to ensure smooth animation
+      setTimeout(() => setShowContent(true), 150);
     } catch (error) {
       console.error('Error fetching events:', error);
     } finally {
@@ -241,6 +248,7 @@ const Albums = () => {
   const fetchGalleryImages = async (clientEventId: string) => {
     try {
       setIsLoadingGallery(true);
+      setShowContent(false);
       setLoadedGalleryImages(new Set());
       
       const data = await imageApi.getByClientEvent(clientEventId);
@@ -248,6 +256,8 @@ const Albums = () => {
       if (data.images && data.images.length > 0) {
         setIsLoadingGalleryPreviews(true);
       }
+      // Delay showing content to ensure smooth animation
+      setTimeout(() => setShowContent(true), 150);
     } catch (error) {
       console.error('Error fetching gallery images:', error);
       setGalleryImages([]);
@@ -933,7 +943,7 @@ const Albums = () => {
           <h2 className={styles.imagesTitle}>{eventName} ({eventImages.length})</h2>
         </div>
 
-        <div className={styles.imageGrid}>
+        <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
           {isLoadingGallery ? (
             <div className={styles.galleryLoading}>
               <Loading />
@@ -972,7 +982,7 @@ const Albums = () => {
                 ))}
               </div>
             </>
-          ) : (
+          ) : showContent && (
             eventImages.map((image, index) => (
               <div 
                 key={image.imageId} 
@@ -1145,18 +1155,20 @@ const Albums = () => {
               <h3>No projects found</h3>
               <p>Start by creating your first project</p>
             </div>
-          ) : (
-            <div className={styles.projectsGrid}>
-              {paginatedItems.map((project: any) => (
-                <div key={project.projectId} className={styles.card}>
-                  <div className={styles.cardImage} onClick={() => handleProjectClick(project)}>
-                    <img
-                      src={project.coverPhoto || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
-                      alt={project.projectName}
-                    />
-                  </div>
+          ) : showContent ? (
+            <div className={styles.contentWrapper}>
+              <div className={styles.projectsGrid}>
+                {paginatedItems.map((project: any) => (
+                  <div key={project.projectId} className={styles.card}>
+                    <div className={styles.cardImage} onClick={() => handleProjectClick(project)}>
+                      <img
+                        src={project.coverPhoto || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
+                        alt={project.projectName}
+                        onLoad={(e) => e.currentTarget.classList.add('loaded')}
+                      />
+                    </div>
 
-                  <div className={styles.cardContent}>
+                    <div className={styles.cardContent}>
                     <div className={styles.cardMenu} ref={openMenuId === project.projectId ? menuRef : null}>
                       <button
                         className={styles.menuButton}
@@ -1254,7 +1266,8 @@ const Albums = () => {
                 </div>
               ))}
             </div>
-          )}
+          </div>
+          ) : null}
         </div>
       )}
 
@@ -1274,26 +1287,28 @@ const Albums = () => {
               <h3>No events found</h3>
               <p>This project doesn't have any events yet</p>
             </div>
-          ) : (
-            <div className={styles.eventsGrid}>
-              {paginatedItems.map((event: any) => (
-                <div 
-                  key={event.clientEventId} 
-                  className={styles.card}
-                  onClick={() => {
-                    console.log('Card clicked!', event);
-                    handleEventClick(event);
-                  }}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className={styles.cardImage}>
-                    <img
-                      src={event.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
-                      alt={eventTypes.get(event.eventId)?.eventDesc || 'Event'}
-                    />
-                  </div>
+          ) : showContent ? (
+            <div className={styles.contentWrapper}>
+              <div className={styles.eventsGrid}>
+                {paginatedItems.map((event: any) => (
+                  <div 
+                    key={event.clientEventId} 
+                    className={styles.card}
+                    onClick={() => {
+                      console.log('Card clicked!', event);
+                      handleEventClick(event);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <div className={styles.cardImage}>
+                      <img
+                        src={event.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
+                        alt={eventTypes.get(event.eventId)?.eventDesc || 'Event'}
+                        onLoad={(e) => e.currentTarget.classList.add('loaded')}
+                      />
+                    </div>
 
-                  <div className={styles.cardContent}>
+                    <div className={styles.cardContent}>
                     <div className={styles.cardMenu} ref={openMenuId === event.clientEventId ? menuRef : null}>
                       <button
                         className={styles.menuButton}
@@ -1382,12 +1397,13 @@ const Albums = () => {
                 </div>
               ))}
             </div>
-          )}
+          </div>
+          ) : null}
         </div>
       )}
 
       {/* Pagination */}
-      {filteredItems.length > 0 && (
+      {showContent && filteredItems.length > 0 && (
         <div className={styles.pagination}>
           <div className={styles.paginationInfo}>
             Showing <span>{startIndex + 1}-{Math.min(endIndex, filteredItems.length)}</span> of{' '}
