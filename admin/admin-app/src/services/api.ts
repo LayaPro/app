@@ -548,4 +548,27 @@ export const imageApi = {
     });
     return handleResponse(response);
   },
+
+  uploadBatch: async (formData: FormData) => {
+    const response = await fetch(`${API_BASE_URL}/upload-batch-images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  },
+
+  reorderImages: async (data: { clientEventId: string; imageIds: string[] }) => {
+    const response = await fetch(`${API_BASE_URL}/reorder-images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
 };

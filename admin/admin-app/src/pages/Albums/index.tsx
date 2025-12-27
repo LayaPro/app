@@ -243,23 +243,11 @@ const Albums = () => {
     try {
       setIsLoadingGallery(true);
       setLoadedGalleryImages(new Set());
-      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       
-      const response = await fetch(`http://localhost:4000/get-images-by-client-event/${clientEventId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setGalleryImages(data.images || []);
-        if (data.images && data.images.length > 0) {
-          setIsLoadingGalleryPreviews(true);
-        }
-      } else {
-        console.error('Failed to fetch gallery images');
-        setGalleryImages([]);
+      const data = await imageApi.getByClientEvent(clientEventId);
+      setGalleryImages(data.images || []);
+      if (data.images && data.images.length > 0) {
+        setIsLoadingGalleryPreviews(true);
       }
     } catch (error) {
       console.error('Error fetching gallery images:', error);
@@ -337,21 +325,10 @@ const Albums = () => {
     setIsSavingOrder(true);
     try {
       const imageIds = galleryImages.map(img => img.imageId);
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/reorder-images`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token') || sessionStorage.getItem('token')}`
-        },
-        body: JSON.stringify({
-          clientEventId: selectedEvent.clientEventId,
-          imageIds
-        })
+      await imageApi.reorderImages({
+        clientEventId: selectedEvent.clientEventId,
+        imageIds
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to update image order');
-      }
 
       setHasUnsavedOrder(false);
       showToast('success', 'Image order saved successfully');
@@ -419,17 +396,9 @@ const Albums = () => {
         formData.append('images', img.file);
 
         try {
-          const response = await fetch('http://localhost:4000/upload-batch-images', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            body: formData
-          });
-
-          const result = await response.json();
+          const result = await imageApi.uploadBatch(formData);
           
-          if (response.ok && result.stats.successful > 0) {
+          if (result.stats.successful > 0) {
             successCount++;
             setUploadedCount(successCount);
           } else {
