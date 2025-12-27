@@ -211,7 +211,6 @@ const Albums = () => {
     const newImages = Array.from(files).map((file) => {
       // Validate file type
       if (!file.type.startsWith('image/')) {
-        alert('Please select valid image files');
         return null;
       }
 
@@ -363,7 +362,6 @@ const Albums = () => {
 
   const handleUploadImages = async () => {
     if (uploadedImages.length === 0 || !selectedProject || !selectedEvent) {
-      alert('No images to upload');
       return;
     }
 
@@ -377,7 +375,7 @@ const Albums = () => {
       console.log('[Upload] Token exists:', !!token);
       
       if (!token) {
-        alert('You are not logged in. Please login again.');
+        showToast('error', 'You are not logged in. Please login again.');
         setIsUploading(false);
         return;
       }
@@ -436,12 +434,9 @@ const Albums = () => {
         if (selectedEvent) {
           fetchGalleryImages(selectedEvent.clientEventId);
         }
-      } else {
-        alert('All uploads failed. Please try again.');
       }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload images. Please try again.');
     } finally {
       setIsUploading(false);
       setUploadedCount(0);
