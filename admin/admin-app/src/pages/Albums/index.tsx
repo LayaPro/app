@@ -55,7 +55,7 @@ const Albums = () => {
   const [isLoadingGalleryPreviews, setIsLoadingGalleryPreviews] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const [hasUnsavedOrder, setHasUnsavedOrder] = useState(false);
   const [isSavingOrder, setIsSavingOrder] = useState(false);
@@ -317,8 +317,8 @@ const Albums = () => {
     setCurrentImageIndex(newIndex);
   };
 
-  const handleDragStart = (e: React.DragEvent, index: number) => {
-    setDraggedIndex(index);
+  const handleDragStart = (e: React.DragEvent, imageId: string) => {
+    setDraggedImageId(imageId);
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -332,11 +332,21 @@ const Albums = () => {
     setDragOverIndex(null);
   };
 
-  const handleDrop = async (e: React.DragEvent, dropIndex: number) => {
+  const handleDrop = async (e: React.DragEvent, targetImageId: string) => {
     e.preventDefault();
     
-    if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null);
+    if (!draggedImageId || draggedImageId === targetImageId) {
+      setDraggedImageId(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Find indices in the actual galleryImages array
+    const draggedIndex = galleryImages.findIndex(img => img.imageId === draggedImageId);
+    const targetIndex = galleryImages.findIndex(img => img.imageId === targetImageId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedImageId(null);
       setDragOverIndex(null);
       return;
     }
@@ -344,11 +354,11 @@ const Albums = () => {
     // Reorder the images array
     const newImages = [...galleryImages];
     const [draggedImage] = newImages.splice(draggedIndex, 1);
-    newImages.splice(dropIndex, 0, draggedImage);
+    newImages.splice(targetIndex, 0, draggedImage);
 
     // Update state immediately for smooth UX
     setGalleryImages(newImages);
-    setDraggedIndex(null);
+    setDraggedImageId(null);
     setDragOverIndex(null);
     setHasUnsavedOrder(true);
   };
@@ -364,6 +374,12 @@ const Albums = () => {
         imageIds
       });
 
+      // Update the sortOrder in galleryImages to match the new order
+      const updatedImages = galleryImages.map((img, index) => ({
+        ...img,
+        sortOrder: index
+      }));
+      setGalleryImages(updatedImages);
       setHasUnsavedOrder(false);
       showToast('success', 'Image order saved successfully');
     } catch (error) {
@@ -379,7 +395,7 @@ const Albums = () => {
   };
 
   const handleDragEnd = () => {
-    setDraggedIndex(null);
+    setDraggedImageId(null);
     setDragOverIndex(null);
   };
 
@@ -404,8 +420,11 @@ const Albums = () => {
     const sorted = [...images];
     
     if (sortBy === 'default') {
-      // Use the sortOrder field from database
-      sorted.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      // If there are unsaved changes, use the current array order
+      // Otherwise, use the sortOrder field from database
+      if (!hasUnsavedOrder) {
+        sorted.sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      }
     } else if (sortBy === 'name') {
       sorted.sort((a, b) => {
         const nameA = (a.fileName || '').toLowerCase();
@@ -1158,12 +1177,12 @@ const Albums = () => {
             getSortedImages(eventImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus)).map((image, index) => (
               <div 
                 key={image.imageId} 
-                className={`${styles.imageItem} ${selectedImages.has(image.imageId) ? styles.selectedImage : ''} ${dragOverIndex === index ? styles.dragOver : ''} ${draggedIndex === index ? styles.dragging : ''}`}
-                draggable
-                onDragStart={(e) => handleDragStart(e, index)}
+                className={`${styles.imageItem} ${selectedImages.has(image.imageId) ? styles.selectedImage : ''} ${dragOverIndex === index ? styles.dragOver : ''} ${draggedImageId === image.imageId ? styles.dragging : ''}`}
+                draggable={sortBy === 'default'}
+                onDragStart={(e) => handleDragStart(e, image.imageId)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
+                onDrop={(e) => handleDrop(e, image.imageId)}
                 onDragEnd={handleDragEnd}
                 onClick={() => handleSelectImage(image.imageId)}
                 onDoubleClick={() => handleOpenViewer(index)}
@@ -1210,6 +1229,9 @@ const Albums = () => {
                   alt={image.fileName || 'Photo'} 
                   style={{ cursor: 'pointer', pointerEvents: 'none' }}
                 />
+                <div className={styles.imageName}>
+                  {image.fileName || 'Untitled'}
+                </div>
               </div>
             ))
           )}

@@ -1160,13 +1160,15 @@
 /* Image Grid Updates */
 .imageItem {
   position: relative;
-  aspect-ratio: 4/3;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   background: var(--bg-secondary);
   cursor: grab;
   transition: transform 0.2s;
   animation: cardAppear 0.4s ease-out backwards;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 /* Stagger delays for gallery images - using calculation for smooth top-to-bottom loading */
@@ -1248,10 +1250,12 @@
   position: relative;
   aspect-ratio: 4/3;
   border-radius: 8px;
-  overflow: hidden;
+  overflow: visible;
   background: var(--bg-secondary);
   cursor: grab;
   transition: transform 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 
 .imageItem:active {
@@ -1265,9 +1269,26 @@
 .imageItem img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
   transition: border 0.2s;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+:global(.dark) .imageItem img {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.imageName {
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .selectedImage {
