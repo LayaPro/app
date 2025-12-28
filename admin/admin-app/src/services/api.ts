@@ -584,6 +584,39 @@ export const imageApi = {
     return handleResponse(response);
   },
 
+  bulkUpdate: async (imageIds: string[], updates: any) => {
+    const response = await fetch(`${API_BASE_URL}/bulk-update-images`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageIds, updates }),
+    });
+    return handleResponse(response);
+  },
+
+  reupload: async (imageIds: string[], files: File[]) => {
+    const formData = new FormData();
+    
+    // Add imageIds as JSON
+    formData.append('imageIds', JSON.stringify(imageIds));
+    
+    // Add all files
+    files.forEach((file) => {
+      formData.append('images', file);
+    });
+
+    const response = await fetch(`${API_BASE_URL}/reupload-images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  },
+
   getProperties: async (imageId: string) => {
     const response = await fetch(`${API_BASE_URL}/get-image-properties/${imageId}`, {
       headers: {

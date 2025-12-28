@@ -74,8 +74,8 @@ app.delete('/delete-team-member/:memberId', authenticate, requireAdmin, teamCont
 
 // ---------- Event routes ----------
 app.post('/create-event', authenticate, requireAdmin, eventController.createEvent);
-app.get('/get-all-events', authenticate, requireAdmin, eventController.getAllEvents);
-app.get('/get-event/:eventId', authenticate, requireAdmin, eventController.getEventById);
+app.get('/get-all-events', authenticate, eventController.getAllEvents);
+app.get('/get-event/:eventId', authenticate, eventController.getEventById);
 app.put('/update-event/:eventId', authenticate, requireAdmin, eventController.updateEvent);
 app.delete('/delete-event/:eventId', authenticate, requireAdmin, eventController.deleteEvent);
 
@@ -107,8 +107,8 @@ app.delete('/delete-equipment/:equipmentId', authenticate, requireAdmin, equipme
 // ---------- Project routes ----------
 app.post('/projects', authenticate, requireAdmin, projectController.createProjectWithDetails);
 app.post('/create-project', authenticate, requireAdmin, projectController.createProject);
-app.get('/get-all-projects', authenticate, requireAdmin, projectController.getAllProjects);
-app.get('/get-project/:projectId', authenticate, requireAdmin, projectController.getProjectById);
+app.get('/get-all-projects', authenticate, projectController.getAllProjects);
+app.get('/get-project/:projectId', authenticate, projectController.getProjectById);
 app.put('/update-project/:projectId', authenticate, requireAdmin, projectController.updateProject);
 app.put('/update-project-with-details/:projectId', authenticate, requireAdmin, projectController.updateProjectWithDetails);
 app.delete('/delete-project/:projectId', authenticate, requireAdmin, projectController.deleteProject);
@@ -141,6 +141,7 @@ app.delete('/delete-project-finance/:financeId', authenticate, requireAdmin, pro
 app.post('/create-image', authenticate, requireAdmin, imageController.createImage);
 app.post('/bulk-create-images', authenticate, requireAdmin, imageController.bulkCreateImages);
 app.post('/upload-batch-images', authenticate, upload.array('images', 500), imageController.uploadBatchImages);
+app.post('/reupload-images', authenticate, upload.array('images', 500), imageController.reuploadImages);
 app.post('/reorder-images', authenticate, imageController.reorderImages);
 app.get('/get-all-images', authenticate, imageController.getAllImages);
 app.get('/get-images-by-client-event/:clientEventId', authenticate, imageController.getImagesByClientEvent);

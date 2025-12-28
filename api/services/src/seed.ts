@@ -281,11 +281,11 @@ async function seedDatabase() {
 
     // 8. Create default image statuses for LayaPro tenant
     const defaultImageStatuses = [
-      { statusCode: 'UPLOADED', statusDescription: 'Uploaded', step: 1 },
-      { statusCode: 'REVIEW_PENDING', statusDescription: 'Review pending', step: 2 },
-      { statusCode: 'CHANGES_SUGGESTED', statusDescription: 'Changes suggested', step: 3 },
+      { statusCode: 'REVIEW_PENDING', statusDescription: 'Review pending', step: 1 },
+      { statusCode: 'CHANGES_SUGGESTED', statusDescription: 'Re-edit requested', step: 2 },
+      { statusCode: 'CHANGES_DONE', statusDescription: 'Re-edit done', step: 3 },
       { statusCode: 'DISCARDED', statusDescription: 'Discarded', step: 4 },
-      { statusCode: 'REVIEWED', statusDescription: 'Reviewed', step: 5 }
+      { statusCode: 'REVIEWED', statusDescription: 'Approved', step: 5 }
     ];
 
     console.log('\n✓ Creating default image statuses...');

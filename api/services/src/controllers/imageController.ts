@@ -7,6 +7,7 @@ import Event from '../models/event';
 import User from '../models/user';
 import Role from '../models/role';
 import ImageStatus from '../models/imageStatus';
+import Team from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { compressImage } from '../utils/imageProcessor';
 import { uploadToS3, uploadBothVersions, bulkDeleteFromS3 } from '../utils/s3';
@@ -135,10 +136,27 @@ export const getImagesByClientEvent = async (req: AuthRequest, res: Response) =>
   try {
     const { clientEventId } = req.params;
     const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+    const roleName = req.user?.roleName;
     const { selectedByClient, markedAsFavorite } = req.query;
 
     if (!tenantId) {
       return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Check if user has access to this event
+    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+    if (!clientEvent) {
+      return res.status(404).json({ message: 'Client event not found' });
+    }
+
+    // Non-admin users can only access events they're assigned to
+    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    if (!isAdmin) {
+      const teamMember = await Team.findOne({ userId, tenantId }).lean();
+      if (!teamMember || !clientEvent.teamMembersAssigned?.includes(teamMember.memberId)) {
+        return res.status(403).json({ message: 'Access denied. You can only view images for events you are assigned to.' });
+      }
     }
 
     const query: any = { clientEventId, tenantId };
@@ -171,11 +189,48 @@ export const getImagesByProject = async (req: AuthRequest, res: Response) => {
   try {
     const { projectId } = req.params;
     const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+    const roleName = req.user?.roleName;
 
     if (!tenantId) {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
+    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+
+    // For non-admin users, check if they have access to any events in this project
+    if (!isAdmin) {
+      const teamMember = await Team.findOne({ userId, tenantId }).lean();
+      if (!teamMember) {
+        return res.status(403).json({ message: 'Access denied. You are not a team member.' });
+      }
+
+      const assignedEvents = await ClientEvent.find({ 
+        projectId, 
+        tenantId,
+        teamMembersAssigned: teamMember.memberId 
+      }).lean();
+
+      if (assignedEvents.length === 0) {
+        return res.status(403).json({ message: 'Access denied. You have no assigned events in this project.' });
+      }
+
+      // Get images only from assigned events
+      const assignedEventIds = assignedEvents.map(e => e.clientEventId);
+      const images = await Image.find({ 
+        projectId, 
+        tenantId,
+        clientEventId: { $in: assignedEventIds }
+      }).sort({ uploadedAt: -1 }).lean();
+
+      return res.status(200).json({
+        message: 'Images retrieved successfully',
+        count: images.length,
+        images
+      });
+    }
+
+    // Admin sees all images in the project
     const images = await Image.find({ projectId, tenantId }).sort({ uploadedAt: -1 }).lean();
 
     return res.status(200).json({
@@ -475,7 +530,8 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
     if (user) {
       const role = await Role.findOne({ roleId: user.roleId });
       if (role) {
-        const statusCode = role.name === 'admin' ? 'UPLOADED' : 'REVIEW_PENDING';
+        // All uploads go to REVIEW_PENDING status
+        const statusCode = 'REVIEW_PENDING';
         const imageStatus = await ImageStatus.findOne({ statusCode, tenantId });
         if (imageStatus) {
           imageStatusId = imageStatus.statusId;
@@ -678,6 +734,202 @@ export const reorderImages = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Reupload edited images - updates existing records
+export const reuploadImages = async (req: AuthRequest, res: Response) => {
+  try {
+    // Parse imageIds from FormData (sent as JSON string)
+    let imageIds: string[] = [];
+    if (req.body.imageIds) {
+      try {
+        imageIds = typeof req.body.imageIds === 'string' 
+          ? JSON.parse(req.body.imageIds) 
+          : req.body.imageIds;
+      } catch (e) {
+        return res.status(400).json({ 
+          message: 'Invalid image selection data' 
+        });
+      }
+    }
+
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+      return res.status(400).json({ 
+        message: 'Please select images to re-upload' 
+      });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Unable to verify your account. Please log in again.' });
+    }
+
+    const files = req.files as Express.Multer.File[];
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'Please select files to upload' });
+    }
+
+    // Fetch existing images
+    const existingImages = await Image.find({ 
+      imageId: { $in: imageIds },
+      tenantId 
+    }).lean();
+
+    if (existingImages.length === 0) {
+      return res.status(404).json({ message: 'Selected images not found. Please refresh and try again.' });
+    }
+
+    // Get project info for S3 bucket
+    const firstImage = existingImages[0];
+    const project = await Project.findOne({ projectId: firstImage.projectId, tenantId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found. Please contact support.' });
+    }
+
+    const s3BucketName = project.s3BucketName;
+    if (!s3BucketName) {
+      return res.status(400).json({ message: 'Project does not have an S3 bucket configured' });
+    }
+
+    // Get event info for folder name
+    const clientEvent = await ClientEvent.findOne({ clientEventId: firstImage.clientEventId, tenantId });
+    if (!clientEvent) {
+      return res.status(404).json({ message: 'Client event not found' });
+    }
+
+    const event = await Event.findOne({ eventId: clientEvent.eventId });
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const eventFolderName = event.eventDesc
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/--+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    // Get "Re-edit done" status
+    const reEditDoneStatus = await ImageStatus.findOne({ 
+      statusCode: 'CHANGES_DONE',
+      tenantId 
+    });
+
+    console.log(`Processing ${files.length} files for reupload...`);
+
+    // Create a map of filename -> existing image for matching
+    const imagesByFilename = new Map<string, any>();
+    existingImages.forEach(img => {
+      imagesByFilename.set(img.fileName, img);
+    });
+
+    // Process each uploaded file
+    const results = await pMap(
+      files,
+      async (file) => {
+        try {
+          // Find matching image by filename
+          const existingImage = imagesByFilename.get(file.originalname);
+          
+          if (!existingImage) {
+            console.log(`⚠ No matching image found for: ${file.originalname}`);
+            return {
+              success: false,
+              fileName: file.originalname,
+              message: 'No matching image found'
+            };
+          }
+
+          // Get original buffer and metadata
+          const originalBuffer = file.buffer;
+          const originalMetadata = await require('sharp')(originalBuffer).metadata();
+
+          // Extract EXIF dates
+          let capturedAt: Date | undefined;
+          let editedAt: Date | undefined;
+          try {
+            const exifData = await exifr.parse(originalBuffer, {
+              pick: ['DateTimeOriginal', 'DateTime', 'CreateDate', 'ModifyDate']
+            });
+            
+            if (exifData) {
+              capturedAt = exifData.DateTimeOriginal || exifData.CreateDate;
+              editedAt = exifData.DateTime || exifData.ModifyDate;
+            }
+          } catch (exifError) {
+            console.log(`Could not parse EXIF dates for ${file.originalname}`);
+          }
+
+          // Compress image
+          const compressed = await compressImage(originalBuffer, {
+            maxWidth: 1920,
+            quality: 80,
+            format: 'jpeg',
+          });
+
+          // Upload and overwrite in S3
+          const uploadResult = await uploadBothVersions(
+            originalBuffer,
+            compressed.buffer,
+            file.originalname,
+            file.mimetype,
+            s3BucketName,
+            eventFolderName
+          );
+
+          // Update existing image record
+          await Image.findOneAndUpdate(
+            { imageId: existingImage.imageId, tenantId },
+            {
+              originalUrl: uploadResult.originalUrl,
+              compressedUrl: uploadResult.compressedUrl,
+              fileSize: file.size,
+              width: originalMetadata.width,
+              height: originalMetadata.height,
+              capturedAt: capturedAt || existingImage.capturedAt,
+              editedAt: editedAt || new Date(),
+              uploadStatus: 'completed',
+              imageStatusId: reEditDoneStatus?.statusId || existingImage.imageStatusId,
+              uploadedBy: userId,
+              uploadedAt: new Date(),
+            }
+          );
+
+          console.log(`✓ Re-uploaded: ${file.originalname}`);
+
+          return {
+            success: true,
+            imageId: existingImage.imageId,
+            fileName: file.originalname,
+            originalUrl: uploadResult.originalUrl,
+            compressedUrl: uploadResult.compressedUrl,
+          };
+        } catch (error) {
+          console.error(`✗ Failed to reupload: ${file.originalname}`, error);
+          return {
+            success: false,
+            fileName: file.originalname,
+            error: error instanceof Error ? error.message : 'Upload failed'
+          };
+        }
+      },
+      { concurrency: 15 }
+    );
+
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+
+    return res.status(200).json({
+      message: 'Reupload completed',
+      successful: successful.length,
+      failed: failed.length,
+      results,
+    });
+  } catch (err: any) {
+    console.error('Reupload images error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export default {
   createImage,
   bulkCreateImages,
@@ -691,5 +943,6 @@ export default {
   deleteImage,
   bulkDeleteImages,
   uploadBatchImages,
-  reorderImages
+  reorderImages,
+  reuploadImages
 };

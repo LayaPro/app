@@ -28,6 +28,7 @@ export interface Image {
   markedAsFavorite?: boolean; // Marked favorite
   sortOrder?: number; // Custom sorting
   tags?: string[]; // Searchable tags
+  comment?: string; // Comment for re-edit requests or feedback
   
   uploadedBy?: string;
   uploadedAt?: Date;

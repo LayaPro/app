@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/index.js';
 import { toggleSidebar } from '../../store/slices/uiSlice.js';
+import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../utils/constants.js';
 import styles from './Sidebar.module.css';
 
@@ -143,8 +144,28 @@ export const Sidebar: React.FC = () => {
   const location = useLocation();
   const dispatch = useAppDispatch();
   const { sidebarCollapsed } = useAppSelector((state: any) => state.ui);
+  const { isAdmin } = useAuth();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+
+  // Filter menu items based on user role
+  const visibleMainMenuItems = useMemo(() => {
+    if (isAdmin) {
+      return mainMenuItems; // Admin sees all items
+    }
+    // User only sees Dashboard, Albums, Calendar
+    return mainMenuItems.filter(item => 
+      ['dashboard', 'albums', 'calendar'].includes(item.id)
+    );
+  }, [isAdmin]);
+
+  const visibleSecondaryMenuItems = useMemo(() => {
+    if (isAdmin) {
+      return secondaryMenuItems; // Admin sees all items
+    }
+    // User only sees Settings
+    return secondaryMenuItems.filter(item => item.id === 'settings');
+  }, [isAdmin]);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev =>
@@ -273,7 +294,7 @@ export const Sidebar: React.FC = () => {
         {/* Main Menu */}
         <div className={styles.menuSection}>
           <ul className={styles.menuList}>
-            {mainMenuItems.map(renderMenuItem)}
+            {visibleMainMenuItems.map(renderMenuItem)}
           </ul>
         </div>
 
@@ -287,7 +308,7 @@ export const Sidebar: React.FC = () => {
         {/* Secondary Menu */}
         <div className={styles.menuSection}>
           <ul className={styles.menuList}>
-            {secondaryMenuItems.map(renderMenuItem)}
+            {visibleSecondaryMenuItems.map(renderMenuItem)}
           </ul>
         </div>
       </nav>

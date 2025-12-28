@@ -1028,8 +1028,18 @@
   transition: background-color 0.2s;
 }
 
-.dropdownItem:hover {
+.dropdownItem:hover:not(:disabled) {
   background: var(--bg-secondary);
+}
+
+.dropdownItem:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--text-secondary);
+}
+
+.dropdownItem:disabled svg {
+  color: var(--text-secondary);
 }
 
 .dropdownItem.active {
@@ -1045,6 +1055,18 @@
 }
 
 /* Delete option styling */
+.dropdownItem.approve {
+  color: #16a34a;
+}
+
+.dropdownItem.approve:hover {
+  background: rgba(22, 163, 74, 0.1);
+}
+
+.dropdownItem.approve svg {
+  color: #16a34a;
+}
+
 .dropdownItem.delete {
   color: #dc2626;
 }
@@ -1395,6 +1417,60 @@
 
 :global(.dark) .imagePropertiesButton svg {
   color: var(--gray-200);
+}
+
+/* Comment indicator for re-edit requested images */
+.imageCommentIndicator {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 0.5rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  background: rgba(251, 191, 36, 0.95);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  animation: pulse 2s infinite;
+}
+
+:global(.dark) .imageCommentIndicator {
+  background: rgba(245, 158, 11, 0.95);
+}
+
+.imageCommentIndicator:hover {
+  transform: scale(1.15);
+  background: rgba(251, 191, 36, 1);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+:global(.dark) .imageCommentIndicator:hover {
+  background: rgba(245, 158, 11, 1);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.imageCommentIndicator svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  color: var(--gray-900);
+}
+
+:global(.dark) .imageCommentIndicator svg {
+  color: var(--gray-900);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 0 rgba(251, 191, 36, 0.7);
+  }
+  50% {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 0 0 8px rgba(251, 191, 36, 0);
+  }
 }
 
 .imageOverlay {
@@ -1824,4 +1900,100 @@
 
 :global(.dark) .propertiesModal {
   border: 1px solid var(--border-color);
+}
+
+/* Comment View Modal */
+.commentViewModal {
+  background: var(--bg-primary);
+  border-radius: 0.75rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow: hidden;
+  animation: slideUp 0.3s ease-out;
+}
+
+:global(.dark) .commentViewModal {
+  border: 1px solid var(--border-color);
+}
+
+.commentViewHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(to right, rgba(251, 191, 36, 0.1), rgba(245, 158, 11, 0.05));
+}
+
+.commentViewHeader h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.commentViewBody {
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.commentIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.2));
+  border-radius: 50%;
+}
+
+.commentIcon svg {
+  width: 2rem;
+  height: 2rem;
+  color: rgb(245, 158, 11);
+}
+
+.commentText {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: var(--text-primary);
+  text-align: center;
+  margin: 0;
+  padding: 1.5rem;
+  background: var(--bg-secondary);
+  border-radius: 0.5rem;
+  border-left: 4px solid rgb(251, 191, 36);
+  width: 100%;
+}
+
+.commentViewFooter {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.closeCommentButton {
+  padding: 0.625rem 1.5rem;
+  background: linear-gradient(135deg, rgb(251, 191, 36), rgb(245, 158, 11));
+  color: var(--gray-900);
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.closeCommentButton:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
 }

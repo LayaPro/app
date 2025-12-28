@@ -4,6 +4,7 @@ import Project from '../models/project';
 import ClientEvent from '../models/clientEvent';
 import ProjectFinance from '../models/projectFinance';
 import Event from '../models/event';
+import Team from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { generateBucketName, createS3Bucket, bucketExists } from '../utils/s3Bucket';
 
@@ -93,18 +94,66 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 export const getAllProjects = async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+    const roleName = req.user?.roleName;
+
+    console.log('getAllProjects - User Info:', { userId, roleName, tenantId });
 
     if (!tenantId) {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
+    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    console.log('getAllProjects - isAdmin:', isAdmin);
+
+    // For non-admin users, find their team member ID
+    let memberId: string | undefined;
+    if (!isAdmin) {
+      const teamMember = await Team.findOne({ userId, tenantId }).lean();
+      if (teamMember) {
+        memberId = teamMember.memberId;
+        console.log('getAllProjects - Team Member ID:', memberId);
+      } else {
+        console.log('getAllProjects - No team member found for user');
+        // User is not a team member, return empty projects
+        return res.status(200).json({
+          message: 'Projects retrieved successfully',
+          count: 0,
+          projects: []
+        });
+      }
+    }
+
     // Get all projects for the tenant
     const projects = await Project.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    console.log('getAllProjects - Total projects:', projects.length);
 
     // Fetch related events and finance for each project
     const projectsWithDetails = await Promise.all(
       projects.map(async (project) => {
-        const clientEvents = await ClientEvent.find({ projectId: project.projectId }).lean();
+        let clientEvents;
+        
+        if (isAdmin) {
+          // Admin sees all events for the project
+          clientEvents = await ClientEvent.find({ projectId: project.projectId }).lean();
+        } else {
+          // Non-admin users only see events where they are assigned as team members
+          clientEvents = await ClientEvent.find({ 
+            projectId: project.projectId,
+            teamMembersAssigned: memberId 
+          }).lean();
+          
+          // Debug: Check all events for this project
+          const allProjectEvents = await ClientEvent.find({ projectId: project.projectId }).lean();
+          if (allProjectEvents.length > 0) {
+            console.log(`Project ${project.projectName}:`);
+            allProjectEvents.forEach(event => {
+              console.log(`  Event: ${event.clientEventId}, teamMembersAssigned:`, event.teamMembersAssigned);
+            });
+            console.log(`  Member ${memberId} is assigned to ${clientEvents.length} events`);
+          }
+        }
+
         const finance = await ProjectFinance.findOne({ projectId: project.projectId }).lean();
         
         // Populate event descriptions
@@ -127,10 +176,17 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       })
     );
 
+    // For non-admin users, filter out projects with no assigned events
+    const filteredProjects = isAdmin 
+      ? projectsWithDetails 
+      : projectsWithDetails.filter(project => project.events.length > 0);
+
+    console.log('getAllProjects - Filtered projects count:', filteredProjects.length);
+
     return res.status(200).json({
       message: 'Projects retrieved successfully',
-      count: projectsWithDetails.length,
-      projects: projectsWithDetails
+      count: filteredProjects.length,
+      projects: filteredProjects
     });
   } catch (err: any) {
     console.error('Get all projects error:', err);

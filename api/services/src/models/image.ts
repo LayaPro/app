@@ -39,6 +39,7 @@ const ImageSchema = new Schema<IImage>(
     markedAsFavorite: { type: Boolean, default: false },
     sortOrder: { type: Number },
     tags: [{ type: String }],
+    comment: { type: String }, // Comment for re-edit requests or feedback
     
     uploadedBy: { type: String },
     uploadedAt: { type: Date }

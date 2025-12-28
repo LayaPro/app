@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import ClientEvent from '../models/clientEvent';
+import Team from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 
 export const createClientEvent = async (req: AuthRequest, res: Response) => {
@@ -64,13 +65,37 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
 export const getAllClientEvents = async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+    const roleName = req.user?.roleName;
 
     if (!tenantId) {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    // All users see their own tenant's client events
-    const clientEvents = await ClientEvent.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+
+    let clientEvents;
+    if (isAdmin) {
+      // Admin sees all events in their tenant
+      clientEvents = await ClientEvent.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    } else {
+      // Find the user's team member ID
+      const teamMember = await Team.findOne({ userId, tenantId }).lean();
+      if (!teamMember) {
+        // User is not a team member
+        return res.status(200).json({
+          message: 'Client events retrieved successfully',
+          count: 0,
+          clientEvents: []
+        });
+      }
+
+      // Non-admin users only see events where they are assigned as team members
+      clientEvents = await ClientEvent.find({ 
+        tenantId,
+        teamMembersAssigned: teamMember.memberId 
+      }).sort({ createdAt: -1 }).lean();
+    }
 
     return res.status(200).json({
       message: 'Client events retrieved successfully',
@@ -87,6 +112,8 @@ export const getClientEventById = async (req: AuthRequest, res: Response) => {
   try {
     const { clientEventId } = req.params;
     const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+    const roleName = req.user?.roleName;
 
     const clientEvent = await ClientEvent.findOne({ clientEventId });
 
@@ -97,6 +124,15 @@ export const getClientEventById = async (req: AuthRequest, res: Response) => {
     // Check authorization: all users can only access their own tenant's events
     if (clientEvent.tenantId !== tenantId) {
       return res.status(403).json({ message: 'Access denied. You can only view your own tenant client events.' });
+    }
+
+    // Non-admin users can only access events they're assigned to
+    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    if (!isAdmin) {
+      const teamMember = await Team.findOne({ userId, tenantId }).lean();
+      if (!teamMember || !clientEvent.teamMembersAssigned?.includes(teamMember.memberId)) {
+        return res.status(403).json({ message: 'Access denied. You can only view events you are assigned to.' });
+      }
     }
 
     return res.status(200).json({ clientEvent });
@@ -196,13 +232,38 @@ export const getClientEventsByProject = async (req: AuthRequest, res: Response) 
   try {
     const { projectId } = req.params;
     const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+    const roleName = req.user?.roleName;
 
     if (!tenantId) {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    // Get all client events for a specific project
-    const clientEvents = await ClientEvent.find({ projectId, tenantId }).sort({ fromDatetime: 1 }).lean();
+    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+
+    let clientEvents;
+    if (isAdmin) {
+      // Admin sees all events for the project
+      clientEvents = await ClientEvent.find({ projectId, tenantId }).sort({ fromDatetime: 1 }).lean();
+    } else {
+      // Find the user's team member ID
+      const teamMember = await Team.findOne({ userId, tenantId }).lean();
+      if (!teamMember) {
+        // User is not a team member
+        return res.status(200).json({
+          message: 'Client events retrieved successfully',
+          count: 0,
+          clientEvents: []
+        });
+      }
+
+      // Non-admin users only see events where they are assigned as team members
+      clientEvents = await ClientEvent.find({ 
+        projectId, 
+        tenantId,
+        teamMembersAssigned: teamMember.memberId 
+      }).sort({ fromDatetime: 1 }).lean();
+    }
 
     return res.status(200).json({
       message: 'Client events retrieved successfully',

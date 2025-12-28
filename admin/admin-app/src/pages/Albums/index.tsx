@@ -1,7 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { Breadcrumb, Input, Loading } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
+import { CommentModal } from '../../components/ui/CommentModal.js';
+import ReuploadModal from '../../components/ui/ReuploadModal';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../hooks/useAuth.js';
 import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi } from '../../services/api';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
@@ -26,6 +29,7 @@ interface ClientEvent {
 
 const Albums = () => {
   const { showToast } = useToast();
+  const { isAdmin } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [events, setEvents] = useState<ClientEvent[]>([]);
   const [allEvents, setAllEvents] = useState<ClientEvent[]>([]);
@@ -67,6 +71,13 @@ const Albums = () => {
   const [imageStatuses, setImageStatuses] = useState<any[]>([]);
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [showCommentModal, setShowCommentModal] = useState(false);
+  const [isRequestingReEdit, setIsRequestingReEdit] = useState(false);
+  const [showReuploadModal, setShowReuploadModal] = useState(false);
+  const [isReuploadingImages, setIsReuploadingImages] = useState(false);
+  const [reuploadErrors, setReuploadErrors] = useState<Array<{ fileName: string; message: string }>>([]);
+  const [showCommentViewModal, setShowCommentViewModal] = useState(false);
+  const [viewingComment, setViewingComment] = useState<string>('');
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
@@ -454,6 +465,127 @@ const Albums = () => {
     setShowDeleteModal(true);
   };
 
+  const handleRequestReEdit = () => {
+    if (selectedImages.size === 0) return;
+    setShowCommentModal(true);
+    setShowBulkActions(false);
+  };
+
+  const confirmRequestReEdit = async (comment: string) => {
+    setIsRequestingReEdit(true);
+    try {
+      const imageIds = Array.from(selectedImages);
+      
+      // Find the CHANGES_SUGGESTED status
+      const reEditStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_SUGGESTED');
+      if (!reEditStatus) {
+        throw new Error('Re-edit status not found');
+      }
+
+      await imageApi.bulkUpdate(imageIds, {
+        imageStatusId: reEditStatus.statusId,
+        comment: comment
+      });
+      
+      showToast('success', `Re-edit requested for ${imageIds.length} image${imageIds.length !== 1 ? 's' : ''}`);
+      
+      // Clear selection and close modal
+      setSelectedImages(new Set());
+      setShowCommentModal(false);
+      
+      // Refresh gallery
+      if (selectedEvent) {
+        fetchGalleryImages(selectedEvent.clientEventId);
+      }
+    } catch (error) {
+      console.error('Error requesting re-edit:', error);
+      showToast('error', 'Failed to request re-edit');
+    } finally {
+      setIsRequestingReEdit(false);
+    }
+  };
+
+  const handleReuploadEdited = () => {
+    if (selectedImages.size === 0) return;
+    setReuploadErrors([]); // Clear previous errors
+    setShowReuploadModal(true);
+    setShowBulkActions(false);
+  };
+
+  const handleViewComment = (comment: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setViewingComment(comment || 'No comment provided');
+    setShowCommentViewModal(true);
+  };
+
+  const confirmReupload = async (files: File[]) => {
+    setIsReuploadingImages(true);
+    setReuploadErrors([]); // Clear errors before upload
+    
+    try {
+      const imageIds = Array.from(selectedImages);
+      
+      const result = await imageApi.reupload(imageIds, files);
+      
+      const successCount = result.successful || 0;
+      const failedCount = result.failed || 0;
+      
+      // Extract error details from failed uploads
+      const errors = (result.results || [])
+        .filter((r: any) => !r.success)
+        .map((r: any) => ({
+          fileName: r.fileName,
+          message: r.message || r.error || 'Upload failed'
+        }));
+      
+      if (errors.length > 0) {
+        setReuploadErrors(errors);
+        // Don't close modal if there are errors
+        showToast('error', `${failedCount} file${failedCount !== 1 ? 's' : ''} failed to upload. Check details in the modal.`);
+      } else if (successCount > 0) {
+        // Only close modal and clear selection if all successful
+        showToast('success', `Successfully re-uploaded ${successCount} image${successCount !== 1 ? 's' : ''}`);
+        setSelectedImages(new Set());
+        setShowReuploadModal(false);
+        
+        // Refresh gallery
+        if (selectedEvent) {
+          fetchGalleryImages(selectedEvent.clientEventId);
+        }
+      }
+      
+      // Show partial success message if some succeeded
+      if (successCount > 0 && failedCount > 0) {
+        showToast('warning', `${successCount} uploaded, ${failedCount} failed`);
+        
+        // Refresh gallery even with partial success
+        if (selectedEvent) {
+          fetchGalleryImages(selectedEvent.clientEventId);
+        }
+      }
+      
+    } catch (error: any) {
+      console.error('Error re-uploading images:', error);
+      
+      // Extract user-friendly error message
+      let errorMessage = 'Failed to re-upload images. Please try again.';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      showToast('error', errorMessage);
+      setReuploadErrors([{
+        fileName: 'Upload Error',
+        message: errorMessage
+      }]);
+    } finally {
+      setIsReuploadingImages(false);
+    }
+  };
+
   const confirmBulkDelete = async () => {
     setIsDeleting(true);
     try {
@@ -684,6 +816,22 @@ const Albums = () => {
     if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
     return `${Math.floor(diffDays / 365)} years ago`;
   };
+
+  // Check if all selected images are in "Re-edit requested" status
+  const canReuploadSelected = useMemo(() => {
+    if (selectedImages.size === 0) return false;
+    
+    const reEditStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_SUGGESTED');
+    if (!reEditStatus) return false;
+    
+    // Check if all selected images have CHANGES_SUGGESTED status
+    const allInReEditStatus = Array.from(selectedImages).every(imageId => {
+      const image = galleryImages.find(img => img.imageId === imageId);
+      return image?.imageStatusId === reEditStatus.statusId;
+    });
+    
+    return allInReEditStatus;
+  }, [selectedImages, galleryImages, imageStatuses]);
 
   if (isLoading) {
     return (
@@ -969,43 +1117,66 @@ const Albums = () => {
                     </svg>
                     <span>Download Selected</span>
                   </button>
-                  <button className={styles.dropdownItem}>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                    </svg>
-                    <span>Mark as Favorites</span>
-                  </button>
-                  <button className={styles.dropdownItem}>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Send for Review</span>
-                  </button>
-                  <button className={styles.dropdownItem}>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span>Approve for Album</span>
-                  </button>
-                  <button className={styles.dropdownItem}>
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                    </svg>
-                    <span>Comment</span>
-                  </button>
-                  <div className={styles.dropdownDivider}></div>
+                  
+                  {isAdmin && (
+                    <button 
+                      className={styles.dropdownItem}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleRequestReEdit();
+                      }}
+                    >
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                      </svg>
+                      <span>Request Re-edit</span>
+                    </button>
+                  )}
+                  
                   <button 
-                    className={`${styles.dropdownItem} ${styles.delete}`} 
+                    className={styles.dropdownItem}
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleBulkDelete();
+                      handleReuploadEdited();
                     }}
+                    disabled={!canReuploadSelected}
+                    title={!canReuploadSelected ? 'All selected images must be in "Re-edit requested" status' : 'Re-upload edited versions of selected images'}
                   >
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                     </svg>
-                    <span>Delete Selected</span>
+                    <span>Re-upload Edited</span>
                   </button>
+                  
+                  {isAdmin && (
+                    <>
+                      <button className={`${styles.dropdownItem} ${styles.approve}`}>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>Approve</span>
+                      </button>
+                      <div className={styles.dropdownDivider}></div>
+                      <button className={`${styles.dropdownItem} ${styles.delete}`}>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                        <span>Discard</span>
+                      </button>
+                      <button 
+                        className={`${styles.dropdownItem} ${styles.delete}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleBulkDelete();
+                        }}
+                      >
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        <span>Delete Selected</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>
@@ -1224,6 +1395,24 @@ const Albums = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </button>
+                
+                {/* Comment indicator for re-edit requested images */}
+                {(() => {
+                  const reEditStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_SUGGESTED');
+                  return reEditStatus && image.imageStatusId === reEditStatus.statusId && image.comment && (
+                    <button 
+                      className={styles.imageCommentIndicator}
+                      onClick={(e) => handleViewComment(image.comment, e)}
+                      aria-label="View re-edit comment"
+                      title="Click to view re-edit comment"
+                    >
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                    </button>
+                  );
+                })()}
+                
                 <img 
                   src={image.compressedUrl || image.originalUrl} 
                   alt={image.fileName || 'Photo'} 
@@ -1264,6 +1453,63 @@ const Albums = () => {
           isLoading={isDeleting}
           variant="danger"
         />
+
+        {/* Request Re-edit Comment Modal */}
+        <CommentModal
+          isOpen={showCommentModal}
+          onClose={() => setShowCommentModal(false)}
+          onSubmit={confirmRequestReEdit}
+          title="Request Re-edit"
+          placeholder="Describe what changes are needed..."
+          submitText="Request Re-edit"
+          isLoading={isRequestingReEdit}
+        />
+
+        {/* Reupload Edited Images Modal */}
+        <ReuploadModal
+          isOpen={showReuploadModal}
+          onClose={() => {
+            setShowReuploadModal(false);
+            setReuploadErrors([]); // Clear errors when closing
+          }}
+          onSubmit={confirmReupload}
+          isLoading={isReuploadingImages}
+          selectedCount={selectedImages.size}
+          errors={reuploadErrors}
+        />
+
+        {/* Comment View Modal */}
+        {showCommentViewModal && (
+          <div className={styles.modalOverlay} onClick={() => setShowCommentViewModal(false)}>
+            <div className={styles.commentViewModal} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.commentViewHeader}>
+                <h3>Re-edit Comment</h3>
+                <button 
+                  className={styles.closeButton}
+                  onClick={() => setShowCommentViewModal(false)}
+                >
+                  ×
+                </button>
+              </div>
+              <div className={styles.commentViewBody}>
+                <div className={styles.commentIcon}>
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                  </svg>
+                </div>
+                <p className={styles.commentText}>{viewingComment}</p>
+              </div>
+              <div className={styles.commentViewFooter}>
+                <button 
+                  className={styles.closeCommentButton}
+                  onClick={() => setShowCommentViewModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Properties Modal */}
         {showPropertiesModal && (
