@@ -23,8 +23,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
   openMenuId,
   onToggleMenu,
   menuRef,
-  eventDeliveryStatuses,
-  onSetEventStatus
+  eventDeliveryStatuses
 }) => {
   if (events.length === 0) {
     return (
