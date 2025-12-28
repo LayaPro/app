@@ -145,6 +145,11 @@ export const deleteEventDeliveryStatus = async (req: AuthRequest, res: Response)
       return res.status(403).json({ message: 'Access denied. You can only delete your own tenant event delivery statuses.' });
     }
 
+    // Prevent deletion of system-required statuses
+    if (eventDeliveryStatus.isSystemRequired) {
+      return res.status(400).json({ message: 'Cannot delete system-required workflow step. This step is essential for the system to function properly.' });
+    }
+
     await EventDeliveryStatus.deleteOne({ statusId });
 
     return res.status(200).json({

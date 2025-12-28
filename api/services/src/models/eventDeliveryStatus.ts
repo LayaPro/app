@@ -11,6 +11,7 @@ const EventDeliveryStatusSchema = new Schema<IEventDeliveryStatus>(
     statusDescription: { type: String, required: true, trim: true },
     step: { type: Number, required: true },
     isHidden: { type: Boolean, default: false },
+    isSystemRequired: { type: Boolean, default: false },
     lastUpdatedDate: { type: Date },
     updatedBy: { type: String }
   },

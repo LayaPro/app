@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Breadcrumb, Input, Loading } from '../../components/ui/index.js';
+import { Breadcrumb, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
 import { CommentModal } from '../../components/ui/CommentModal.js';
 import ReuploadModal from '../../components/ui/ReuploadModal';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth.js';
-import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi } from '../../services/api';
+import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDeliveryStatusApi } from '../../services/api';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
 
@@ -22,6 +22,7 @@ interface ClientEvent {
   clientEventId: string;
   eventId: string;
   projectId: string;
+  eventDeliveryStatusId?: string;
   fromDatetime?: string;
   createdAt?: string;
   coverImage?: string;
@@ -79,6 +80,18 @@ const Albums = () => {
   const [showCommentViewModal, setShowCommentViewModal] = useState(false);
   const [viewingComment, setViewingComment] = useState<string>('');
   const [isApprovingImages, setIsApprovingImages] = useState(false);
+  const [eventDeliveryStatuses, setEventDeliveryStatuses] = useState<Map<string, any>>(new Map());
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [selectedEventForStatus, setSelectedEventForStatus] = useState<ClientEvent | null>(null);
+  const [newStatusId, setNewStatusId] = useState('');
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [statusError, setStatusError] = useState('');
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [selectedEventForPublish, setSelectedEventForPublish] = useState<ClientEvent | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishConfirmed, setPublishConfirmed] = useState(true);
+  const [publishError, setPublishError] = useState('');
+  const [approvedPhotosCount, setApprovedPhotosCount] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
@@ -88,6 +101,7 @@ const Albums = () => {
   useEffect(() => {
     fetchProjects();
     fetchEventTypes();
+    fetchEventDeliveryStatuses();
     fetchAllEvents();
     fetchAllImages();
     fetchImageStatuses();
@@ -181,6 +195,19 @@ const Albums = () => {
       setImageStatuses(response.imageStatuses || []);
     } catch (error) {
       console.error('Error fetching image statuses:', error);
+    }
+  };
+
+  const fetchEventDeliveryStatuses = async () => {
+    try {
+      const response = await eventDeliveryStatusApi.getAll();
+      const statusesMap = new Map();
+      (response.eventDeliveryStatuses || []).forEach((status: any) => {
+        statusesMap.set(status.statusId, status);
+      });
+      setEventDeliveryStatuses(statusesMap);
+    } catch (error) {
+      console.error('Error fetching event delivery statuses:', error);
     }
   };
 
@@ -477,8 +504,8 @@ const Albums = () => {
     try {
       const imageIds = Array.from(selectedImages);
       
-      // Find the CHANGES_SUGGESTED status
-      const reEditStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_SUGGESTED');
+      // Find the RE_EDIT_SUGGESTED status
+      const reEditStatus = imageStatuses.find(s => s.statusCode === 'RE_EDIT_SUGGESTED');
       if (!reEditStatus) {
         throw new Error('Re-edit status not found');
       }
@@ -620,6 +647,147 @@ const Albums = () => {
       showToast('error', errorMessage);
     } finally {
       setIsApprovingImages(false);
+    }
+  };
+
+  const getNextAvailableStatus = (currentStatusId: string | undefined) => {
+    if (!currentStatusId) return null;
+    const currentStatus = eventDeliveryStatuses.get(currentStatusId);
+    if (!currentStatus) return null;
+
+    const nextStep = currentStatus.step + 1;
+    const nextStatus = Array.from(eventDeliveryStatuses.entries()).find(
+      ([_, status]) => status.step === nextStep
+    );
+
+    return nextStatus ? { id: nextStatus[0], ...nextStatus[1] } : null;
+  };
+
+  const handleSetEventStatus = (event: ClientEvent) => {
+    setSelectedEventForStatus(event);
+    setNewStatusId('');
+    setStatusError('');
+    setShowStatusModal(true);
+    setOpenMenuId(null);
+  };
+
+  const handlePublishToCustomer = (event: ClientEvent) => {
+    // Check for approved photos
+    const reviewedStatus = imageStatuses.find(s => s.statusCode === 'APPROVED');
+    const eventImages = allImages.filter(img => img.clientEventId === event.clientEventId);
+    const approvedImages = reviewedStatus 
+      ? eventImages.filter(img => img.imageStatusId === reviewedStatus.statusId)
+      : [];
+    
+    setApprovedPhotosCount(approvedImages.length);
+    setSelectedEventForPublish(event);
+    setPublishConfirmed(true);
+    setPublishError(approvedImages.length === 0 ? 'No approved photos found in this album. Please approve some photos before publishing.' : '');
+    setShowPublishModal(true);
+    setOpenMenuId(null);
+  };
+
+  const handleConfirmPublish = async () => {
+    if (!selectedEventForPublish) return;
+    
+    if (approvedPhotosCount === 0) {
+      setPublishError('No approved photos found in this album. Please approve some photos before publishing.');
+      return;
+    }
+    
+    if (!publishConfirmed) {
+      showToast('error', 'Please confirm to proceed with publishing');
+      return;
+    }
+
+    // Find the PUBLISHED status
+    const publishedStatus = Array.from(eventDeliveryStatuses.entries()).find(
+      ([_, status]) => status.statusCode === 'PUBLISHED'
+    );
+
+    if (!publishedStatus) {
+      showToast('error', 'Published status not found in system');
+      return;
+    }
+
+    setIsPublishing(true);
+    try {
+      // Update status to PUBLISHED
+      await clientEventApi.update(selectedEventForPublish.clientEventId, {
+        eventDeliveryStatusId: publishedStatus[0],
+      });
+      
+      // TODO: Implement publish API call
+      // await eventApi.publish(selectedEventForPublish.clientEventId);
+      
+      showToast('success', 'Album published to customer successfully');
+      setShowPublishModal(false);
+      setSelectedEventForPublish(null);
+      setPublishConfirmed(true);
+      setPublishError('');
+      setApprovedPhotosCount(0);
+      
+      // Refresh events
+      if (selectedProject) {
+        fetchProjectEvents(selectedProject.projectId);
+      }
+    } catch (error) {
+      console.error('Error publishing album:', error);
+      showToast('error', 'Failed to publish album. Please try again.');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleUpdateEventStatus = async () => {
+    if (!selectedEventForStatus || !newStatusId) {
+      setStatusError('Please select a status');
+      return;
+    }
+
+    const currentStatus = eventDeliveryStatuses.get(selectedEventForStatus.eventDeliveryStatusId || '');
+    const newStatus = eventDeliveryStatuses.get(newStatusId);
+
+    if (!newStatus) {
+      setStatusError('Invalid status selection');
+      return;
+    }
+
+    // If event has no current status, allow setting to step 1
+    if (!currentStatus) {
+      if (newStatus.step !== 1) {
+        setStatusError('Please set the initial status (Step 1) first');
+        return;
+      }
+    } else {
+      // If event has a status, validate sequential progression
+      if (newStatus.step !== currentStatus.step + 1) {
+        setStatusError(`Status must be the next in sequence: "${getNextAvailableStatus(selectedEventForStatus.eventDeliveryStatusId)?.statusDescription || 'N/A'}"`);
+        return;
+      }
+    }
+
+    setIsUpdatingStatus(true);
+    try {
+      await clientEventApi.update(selectedEventForStatus.clientEventId, {
+        eventDeliveryStatusId: newStatusId,
+      });
+      
+      showToast('success', 'Event status updated successfully');
+      setShowStatusModal(false);
+      setSelectedEventForStatus(null);
+      setNewStatusId('');
+      setStatusError('');
+      
+      // Refresh events
+      if (selectedProject) {
+        fetchProjectEvents(selectedProject.projectId);
+      }
+    } catch (error) {
+      console.error('Error updating event status:', error);
+      setStatusError('Failed to update event status. Please try again.');
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -858,10 +1026,10 @@ const Albums = () => {
   const canReuploadSelected = useMemo(() => {
     if (selectedImages.size === 0) return false;
     
-    const reEditStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_SUGGESTED');
+    const reEditStatus = imageStatuses.find(s => s.statusCode === 'RE_EDIT_SUGGESTED');
     if (!reEditStatus) return false;
     
-    // Check if all selected images have CHANGES_SUGGESTED status
+    // Check if all selected images have RE_EDIT_SUGGESTED status
     const allInReEditStatus = Array.from(selectedImages).every(imageId => {
       const image = galleryImages.find(img => img.imageId === imageId);
       return image?.imageStatusId === reEditStatus.statusId;
@@ -1125,11 +1293,10 @@ const Albums = () => {
           </div>
         </div>
 
-        {/* Existing Images */}
-        <div className={styles.divider}></div>
-
-        {/* Bulk Actions and Filters */}
-        <div className={styles.actionsSection}>
+        {/* Gallery Card */}
+        <div className={styles.galleryCard}>
+          {/* Bulk Actions and Filters */}
+          <div className={styles.actionsSection}>
           <div className={styles.actionsLeft}>
             {/* Bulk Actions Dropdown */}
             <div className={styles.bulkActionsContainer} ref={bulkActionsRef}>
@@ -1238,18 +1405,19 @@ const Albums = () => {
                       {currentStatus?.statusCode === 'REVIEW_PENDING' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </span>
                       )}
-                      {currentStatus?.statusCode === 'CHANGES_SUGGESTED' && (
+                      {currentStatus?.statusCode === 'RE_EDIT_SUGGESTED' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                           </svg>
                         </span>
                       )}
-                      {currentStatus?.statusCode === 'CHANGES_DONE' && (
+                      {currentStatus?.statusCode === 'RE_EDIT_DONE' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -1263,10 +1431,17 @@ const Albums = () => {
                           </svg>
                         </span>
                       )}
-                      {currentStatus?.statusCode === 'REVIEWED' && (
+                      {currentStatus?.statusCode === 'APPROVED' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
                           <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          </svg>
+                        </span>
+                      )}
+                      {currentStatus?.statusCode === 'CLIENT_SELECTED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                          <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z" />
                           </svg>
                         </span>
                       )}
@@ -1301,18 +1476,19 @@ const Albums = () => {
                       {status.statusCode === 'REVIEW_PENDING' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </span>
                       )}
-                      {status.statusCode === 'CHANGES_SUGGESTED' && (
+                      {status.statusCode === 'RE_EDIT_SUGGESTED' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                           </svg>
                         </span>
                       )}
-                      {status.statusCode === 'CHANGES_DONE' && (
+                      {status.statusCode === 'RE_EDIT_DONE' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
@@ -1326,10 +1502,17 @@ const Albums = () => {
                           </svg>
                         </span>
                       )}
-                      {status.statusCode === 'REVIEWED' && (
+                      {status.statusCode === 'APPROVED' && (
                         <span className={styles.statusIconBadge} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
                           <svg fill="currentColor" viewBox="0 0 24 24">
                             <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          </svg>
+                        </span>
+                      )}
+                      {status.statusCode === 'CLIENT_SELECTED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                          <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z" />
                           </svg>
                         </span>
                       )}
@@ -1424,6 +1607,60 @@ const Albums = () => {
 
         <div className={styles.imagesHeader}>
           <h2 className={styles.imagesTitle}>{eventName} ({eventImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus).length})</h2>
+          
+          {/* Icon Legend */}
+          <div className={styles.iconLegend}>
+            <span className={styles.legendTitle}>Status Icons:</span>
+            <div className={styles.legendItem}>
+              <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </span>
+              <span className={styles.legendLabel}>Review Pending</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendIcon} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+              </span>
+              <span className={styles.legendLabel}>Re-edit Requested</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendIcon} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+              </span>
+              <span className={styles.legendLabel}>Re-edit Done</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendIcon} style={{ background: 'rgba(239, 68, 68, 0.95)' }}>
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </span>
+              <span className={styles.legendLabel}>Discarded</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendIcon} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
+                <svg fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                </svg>
+              </span>
+              <span className={styles.legendLabel}>Approved</span>
+            </div>
+            <div className={styles.legendItem}>
+              <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                <svg fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z" />
+                </svg>
+              </span>
+              <span className={styles.legendLabel}>Client Selected</span>
+            </div>
+          </div>
         </div>
 
         <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
@@ -1520,14 +1757,15 @@ const Albums = () => {
                 {/* Status indicators */}
                 {(() => {
                   const reviewPendingStatus = imageStatuses.find(s => s.statusCode === 'REVIEW_PENDING');
-                  const reEditStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_SUGGESTED');
-                  const changesDoneStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_DONE');
+                  const reEditStatus = imageStatuses.find(s => s.statusCode === 'RE_EDIT_SUGGESTED');
+                  const changesDoneStatus = imageStatuses.find(s => s.statusCode === 'RE_EDIT_DONE');
                   const discardedStatus = imageStatuses.find(s => s.statusCode === 'DISCARDED');
-                  const reviewedStatus = imageStatuses.find(s => s.statusCode === 'REVIEWED');
+                  const reviewedStatus = imageStatuses.find(s => s.statusCode === 'APPROVED');
+                  const clientSelectedStatus = imageStatuses.find(s => s.statusCode === 'CLIENT_SELECTED');
                   
                   return (
                     <>
-                      {/* Review Pending - Blue clock */}
+                      {/* Review Pending - Blue eye */}
                       {reviewPendingStatus && image.imageStatusId === reviewPendingStatus.statusId && (
                         <div 
                           className={styles.imageStatusIndicator}
@@ -1535,7 +1773,8 @@ const Albums = () => {
                           title="Review pending"
                         >
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
                         </div>
                       )}
@@ -1592,6 +1831,19 @@ const Albums = () => {
                           </svg>
                         </div>
                       )}
+                      
+                      {/* Client Selected - Blue double checkmark */}
+                      {clientSelectedStatus && image.imageStatusId === clientSelectedStatus.statusId && (
+                        <div 
+                          className={styles.imageStatusIndicator}
+                          style={{ background: 'rgba(59, 130, 246, 0.95)' }}
+                          title="Client selected"
+                        >
+                          <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z" />
+                          </svg>
+                        </div>
+                      )}
                     </>
                   );
                 })()}
@@ -1608,6 +1860,8 @@ const Albums = () => {
             ))
           )}
         </div>
+        </div>
+        {/* End Gallery Card */}
 
         {/* Image Viewer Modal */}
         {viewerOpen && galleryImages.length > 0 && (
@@ -2047,12 +2301,65 @@ const Albums = () => {
                             </svg>
                             Upload Photos
                           </button>
+                          <button 
+                            className={styles.menuItem}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSetEventStatus(event);
+                            }}
+                          >
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              />
+                            </svg>
+                            Set Status
+                          </button>
+                          <button 
+                            className={styles.menuItem}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePublishToCustomer(event);
+                            }}
+                          >
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                              />
+                            </svg>
+                            Publish to Customer
+                          </button>
                         </div>
                       )}
                     </div>
 
                     <div className={styles.cardTitle}>
                       {eventTypes.get(event.eventId)?.eventDesc || 'Untitled Event'}
+                      {/* Status badge - Show event delivery status */}
+                      {event.eventDeliveryStatusId && (() => {
+                        const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId);
+                        if (!status) return null;
+                        
+                        return (
+                          <div className={styles.eventStatusBadge}>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                              />
+                            </svg>
+                            <span>{status.statusDescription}</span>
+                          </div>
+                        );
+                      })()}
                     </div>
                     <div className={styles.cardSubtitle}>
                       {event.fromDatetime
@@ -2238,6 +2545,258 @@ const Albums = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Publish to Customer Modal */}
+      {showPublishModal && selectedEventForPublish && (
+        <Modal
+          isOpen={showPublishModal}
+          onClose={() => {
+            setShowPublishModal(false);
+            setSelectedEventForPublish(null);
+          }}
+          title="Publish to Customer"
+          size="small"
+        >
+          <div style={{ padding: '1rem' }}>
+            {publishError && (
+              <div style={{
+                padding: '0.75rem',
+                marginBottom: '1rem',
+                background: 'rgba(239, 68, 68, 0.1)',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+                borderRadius: '0.375rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <svg 
+                  style={{ width: '1.25rem', height: '1.25rem', flexShrink: 0 }}
+                  fill="none" 
+                  stroke="#ef4444" 
+                  viewBox="0 0 24 24"
+                >
+                  <path 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    strokeWidth={2} 
+                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" 
+                  />
+                </svg>
+                <span style={{ fontSize: '0.875rem', color: '#dc2626' }}>{publishError}</span>
+              </div>
+            )}
+
+            <p style={{ marginBottom: '0.75rem', lineHeight: '1.6', color: 'var(--text-color)' }}>
+              You are about to publish this album to the customer. All approved images will be picked up for publishing to the customer.
+            </p>
+            <p style={{ marginBottom: '0.5rem', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
+              You can approve more images in this album anytime to publish more.
+            </p>
+            <p style={{ marginBottom: '0.5rem', lineHeight: '1.6', fontSize: '0.875rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+              Once published, the customer will be able to select their favorite photos for the final album.
+            </p>
+            <p style={{ marginBottom: '1rem', lineHeight: '1.6', fontSize: '0.875rem', fontWeight: 600, color: approvedPhotosCount > 0 ? '#10b981' : '#ef4444' }}>
+              Approved photos: {approvedPhotosCount}
+            </p>
+            
+            <div style={{ 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '0.5rem', 
+              marginBottom: '1rem',
+              padding: '0.5rem',
+              background: 'var(--bg-secondary)',
+              borderRadius: '0.375rem'
+            }}>
+              <input
+                type="checkbox"
+                id="publishConfirm"
+                checked={publishConfirmed}
+                onChange={(e) => setPublishConfirmed(e.target.checked)}
+                style={{
+                  width: '1rem',
+                  height: '1rem',
+                  cursor: 'pointer',
+                  accentColor: '#3b82f6'
+                }}
+              />
+              <label 
+                htmlFor="publishConfirm" 
+                style={{ 
+                  fontSize: '0.875rem', 
+                  color: 'var(--text-color)',
+                  cursor: 'pointer',
+                  userSelect: 'none'
+                }}
+              >
+                Publish this album to customer
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => {
+                  setShowPublishModal(false);
+                  setSelectedEventForPublish(null);
+                }}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '0.375rem',
+                  background: 'transparent',
+                  color: 'var(--text-color)',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500'
+                }}
+                disabled={isPublishing}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmPublish}
+                style={{
+                  padding: '0.5rem 1rem',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  background: '#3b82f6',
+                  color: 'white',
+                  cursor: (isPublishing || !publishConfirmed || approvedPhotosCount === 0) ? 'not-allowed' : 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  opacity: (isPublishing || !publishConfirmed || approvedPhotosCount === 0) ? 0.6 : 1
+                }}
+                disabled={isPublishing || !publishConfirmed || approvedPhotosCount === 0}
+              >
+                {isPublishing ? 'Publishing...' : 'Publish'}
+              </button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* Set Event Status Modal */}
+      {selectedEventForStatus && (
+        <Modal
+          isOpen={showStatusModal}
+          onClose={() => setShowStatusModal(false)}
+          title="Set Event Status"
+          size="small"
+        >
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Event
+              </label>
+              <div style={{ padding: '0.75rem', background: 'var(--bg-secondary)', borderRadius: '0.5rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {eventTypes.get(selectedEventForStatus.eventId)?.eventDesc || 'Untitled Event'}
+              </div>
+            </div>
+            
+            <div>
+              <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                Current Status
+              </label>
+              <div style={{ padding: '0.75rem', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '0.5rem', fontWeight: 600, color: '#6366f1' }}>
+                {selectedEventForStatus.eventDeliveryStatusId 
+                  ? eventDeliveryStatuses.get(selectedEventForStatus.eventDeliveryStatusId)?.statusDescription || 'No Status'
+                  : 'No Status'}
+                {selectedEventForStatus.eventDeliveryStatusId && (
+                  <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                    Step {eventDeliveryStatuses.get(selectedEventForStatus.eventDeliveryStatusId)?.step || 0}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <SearchableSelect
+                label="New Status"
+                value={newStatusId}
+                onChange={(value) => {
+                  setNewStatusId(value);
+                  setStatusError('');
+                }}
+                options={[
+                  { value: '', label: 'Select new status' },
+                  ...Array.from(eventDeliveryStatuses.entries())
+                    .sort((a, b) => a[1].step - b[1].step)
+                    .map(([statusId, status]) => ({
+                      value: statusId,
+                      label: `${status.statusDescription} (Step ${status.step})`
+                    }))
+                ]}
+                placeholder="Select a status"
+                required
+              />
+              {statusError && (
+                <div style={{ 
+                  marginTop: '0.5rem', 
+                  fontSize: '0.875rem', 
+                  color: '#ef4444',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <svg style={{ width: '16px', height: '16px', flexShrink: 0 }} fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                  {statusError}
+                </div>
+              )}
+            </div>
+
+            {getNextAvailableStatus(selectedEventForStatus.eventDeliveryStatusId) && (
+              <div style={{ 
+                padding: '0.75rem', 
+                backgroundColor: 'rgba(99, 102, 241, 0.05)', 
+                borderRadius: '0.5rem',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                fontSize: '0.875rem',
+                color: 'var(--text-secondary)'
+              }}>
+                <strong style={{ color: 'var(--text-primary)' }}>Next Status:</strong> {getNextAvailableStatus(selectedEventForStatus.eventDeliveryStatusId)?.statusDescription}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button
+                style={{ 
+                  padding: '0.625rem 1.25rem', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: '0.5rem', 
+                  background: 'transparent', 
+                  color: 'var(--text-primary)', 
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  fontWeight: 600
+                }}
+                onClick={() => setShowStatusModal(false)}
+                disabled={isUpdatingStatus}
+              >
+                Cancel
+              </button>
+              <button
+                style={{ 
+                  padding: '0.625rem 1.25rem', 
+                  border: 'none', 
+                  borderRadius: '0.5rem', 
+                  background: '#6366f1', 
+                  color: 'white', 
+                  cursor: newStatusId ? 'pointer' : 'not-allowed',
+                  fontSize: '0.875rem',
+                  fontWeight: 600,
+                  opacity: newStatusId ? 1 : 0.5
+                }}
+                onClick={handleUpdateEventStatus}
+                disabled={isUpdatingStatus || !newStatusId}
+              >
+                {isUpdatingStatus ? 'Updating...' : 'Update Status'}
+              </button>
+            </div>
+          </div>
+        </Modal>
       )}
     </div>
   );

@@ -10,6 +10,8 @@ interface EventsViewProps {
   openMenuId: string | null;
   onToggleMenu: (eventId: string, e: React.MouseEvent) => void;
   menuRef: React.RefObject<HTMLDivElement>;
+  eventDeliveryStatuses: Map<string, any>;
+  onSetEventStatus: (event: ClientEvent) => void;
 }
 
 export const EventsView: React.FC<EventsViewProps> = ({
@@ -20,7 +22,9 @@ export const EventsView: React.FC<EventsViewProps> = ({
   getTimeAgo,
   openMenuId,
   onToggleMenu,
-  menuRef
+  menuRef,
+  eventDeliveryStatuses,
+  onSetEventStatus
 }) => {
   if (events.length === 0) {
     return (
@@ -74,6 +78,25 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
             <h3 className={styles.cardTitle}>
               {eventTypes.get(event.eventId)?.eventDesc || 'Event'}
+              {/* Status badge - Show event delivery status */}
+              {event.eventDeliveryStatusId && (() => {
+                const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId);
+                if (!status) return null;
+                
+                return (
+                  <div className={styles.eventStatusBadge}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                      />
+                    </svg>
+                    <span>{status.statusDescription}</span>
+                  </div>
+                );
+              })()}
             </h3>
             <div className={styles.cardSubtitle}>
               {event.fromDatetime

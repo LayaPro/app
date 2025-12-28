@@ -183,21 +183,18 @@ async function seedDatabase() {
 
     // 6. Create default event delivery statuses for LayaPro tenant
     const defaultEventStatuses = [
-      { statusCode: 'SHOOT_SCHEDULED', statusDescription: 'Scheduled', step: 1, isHidden: false },
-      { statusCode: 'SHOOT_IN_PROGRESS', statusDescription: 'Shoot ongoing', step: 2, isHidden: false },
-      { statusCode: 'SHOOT_COMPLETED', statusDescription: 'Shoot completed', step: 3, isHidden: false },
-      { statusCode: 'AWAITING_EDITS', statusDescription: 'Awaiting editing', step: 4, isHidden: false },
-      { statusCode: 'EDITING_IN_PROGRESS', statusDescription: 'Editing ongoing', step: 5, isHidden: false },
-      { statusCode: 'UPLOADED_FOR_REVIEW', statusDescription: 'Admin review pending', step: 6, isHidden: false },
-      { statusCode: 'CHANGES_REQUESTED', statusDescription: 'Admin changes suggested', step: 7, isHidden: true },
-      { statusCode: 'CONTENT_REJECTED', statusDescription: 'Rejected by admin', step: 8, isHidden: true },
-      { statusCode: 'PUBLISHED', statusDescription: 'Published', step: 9, isHidden: false },
-      { statusCode: 'CLIENT_SELECTION_PENDING', statusDescription: 'Client selection pending', step: 10, isHidden: false },
-      { statusCode: 'ALBUM_DESIGN_PENDING', statusDescription: 'Album design pending', step: 11, isHidden: false },
-      { statusCode: 'ALBUM_DESIGNING', statusDescription: 'Album design ongoing', step: 12, isHidden: false },
-      { statusCode: 'ALBUM_UPLOADED', statusDescription: 'Album client review pending', step: 13, isHidden: false },
-      { statusCode: 'ALBUM_PRINT_READY', statusDescription: 'Album approved by client', step: 14, isHidden: false },
-      { statusCode: 'COMPLETED', statusDescription: 'Delivered', step: 15, isHidden: false }
+      { statusCode: 'SHOOT_SCHEDULED', statusDescription: 'Scheduled', step: 1, isHidden: false, isSystemRequired: true },
+      { statusCode: 'SHOOT_IN_PROGRESS', statusDescription: 'Shoot ongoing', step: 2, isHidden: false, isSystemRequired: false },
+      { statusCode: 'SHOOT_COMPLETED', statusDescription: 'Shoot completed', step: 3, isHidden: false, isSystemRequired: false },
+      { statusCode: 'AWAITING_EDITS', statusDescription: 'Awaiting editing', step: 4, isHidden: false, isSystemRequired: false },
+      { statusCode: 'EDITING_IN_PROGRESS', statusDescription: 'Editing ongoing', step: 5, isHidden: false, isSystemRequired: false },
+      { statusCode: 'UPLOADED_FOR_REVIEW', statusDescription: 'Admin review pending', step: 6, isHidden: false, isSystemRequired: false },
+      { statusCode: 'PUBLISHED', statusDescription: 'Published', step: 7, isHidden: false, isSystemRequired: true },
+      { statusCode: 'CLIENT_SELECTION_DONE', statusDescription: 'Client selection done', step: 8, isHidden: false, isSystemRequired: true },
+      { statusCode: 'ALBUM_DESIGNED', statusDescription: 'Album designed', step: 9, isHidden: false, isSystemRequired: false },
+      { statusCode: 'ALBUM_CLIENT_APPROVED', statusDescription: 'Album client approved', step: 10, isHidden: false, isSystemRequired: false },
+      { statusCode: 'ALBUM_PRINTING', statusDescription: 'Album printing', step: 11, isHidden: false, isSystemRequired: false },
+      { statusCode: 'DELIVERED', statusDescription: 'Delivered', step: 12, isHidden: false, isSystemRequired: true }
     ];
 
     console.log('\n✓ Creating default event delivery statuses...');
@@ -218,7 +215,8 @@ async function seedDatabase() {
           statusCode: statusData.statusCode,
           statusDescription: statusData.statusDescription,
           step: statusData.step,
-          isHidden: statusData.isHidden || false
+          isHidden: statusData.isHidden || false,
+          isSystemRequired: statusData.isSystemRequired || false
         });
         createdEventStatusCount++;
         const hiddenText = statusData.isHidden ? ' (Hidden)' : '';
@@ -282,10 +280,12 @@ async function seedDatabase() {
     // 8. Create default image statuses for LayaPro tenant
     const defaultImageStatuses = [
       { statusCode: 'REVIEW_PENDING', statusDescription: 'Review pending', step: 1 },
-      { statusCode: 'CHANGES_SUGGESTED', statusDescription: 'Re-edit requested', step: 2 },
-      { statusCode: 'CHANGES_DONE', statusDescription: 'Re-edit done', step: 3 },
+      { statusCode: 'RE_EDIT_SUGGESTED', statusDescription: 'Re-edit requested', step: 2 },
+      { statusCode: 'RE_EDIT_DONE', statusDescription: 'Re-edit done', step: 3 },
       { statusCode: 'DISCARDED', statusDescription: 'Discarded', step: 4 },
-      { statusCode: 'REVIEWED', statusDescription: 'Approved', step: 5 }
+      { statusCode: 'APPROVED', statusDescription: 'Approved', step: 5 },
+      { statusCode: 'CLIENT_SELECTED', statusDescription: 'Client selected', step: 6 }
+
     ];
 
     console.log('\n✓ Creating default image statuses...');

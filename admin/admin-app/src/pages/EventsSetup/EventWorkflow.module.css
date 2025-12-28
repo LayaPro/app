@@ -228,6 +228,38 @@
   font-size: 12px;
   box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
   transition: all 0.2s;
+  position: relative;
+}
+
+.lockIcon {
+  width: 12px;
+  height: 12px;
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #fbbf24;
+  color: white;
+  border-radius: 50%;
+  padding: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.systemBadge {
+  display: inline-block;
+  font-size: 9px;
+  font-weight: 600;
+  color: #d97706;
+  background: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 4px;
+  border: 1px solid #fbbf24;
+}
+
+:global(.dark) .systemBadge {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
 .stepCard:hover .stepBadge {

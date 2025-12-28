@@ -810,9 +810,15 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
 
     // Get "Re-edit done" status
     const reEditDoneStatus = await ImageStatus.findOne({ 
-      statusCode: 'CHANGES_DONE',
+      statusCode: 'RE_EDIT_DONE',
       tenantId 
     });
+
+    if (!reEditDoneStatus) {
+      console.warn('⚠ RE_EDIT_DONE status not found. Status will not be updated.');
+    } else {
+      console.log(`✓ Found RE_EDIT_DONE status: ${reEditDoneStatus.statusId}`);
+    }
 
     console.log(`Processing ${files.length} files for reupload...`);
 
@@ -877,21 +883,27 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
           );
 
           // Update existing image record
+          const updateData: any = {
+            originalUrl: uploadResult.originalUrl,
+            compressedUrl: uploadResult.compressedUrl,
+            fileSize: file.size,
+            width: originalMetadata.width,
+            height: originalMetadata.height,
+            capturedAt: capturedAt || existingImage.capturedAt,
+            editedAt: editedAt || new Date(),
+            uploadStatus: 'completed',
+            uploadedBy: userId,
+            uploadedAt: new Date(),
+          };
+
+          // Always update to RE_EDIT_DONE status if available
+          if (reEditDoneStatus) {
+            updateData.imageStatusId = reEditDoneStatus.statusId;
+          }
+
           await Image.findOneAndUpdate(
             { imageId: existingImage.imageId, tenantId },
-            {
-              originalUrl: uploadResult.originalUrl,
-              compressedUrl: uploadResult.compressedUrl,
-              fileSize: file.size,
-              width: originalMetadata.width,
-              height: originalMetadata.height,
-              capturedAt: capturedAt || existingImage.capturedAt,
-              editedAt: editedAt || new Date(),
-              uploadStatus: 'completed',
-              imageStatusId: reEditDoneStatus?.statusId || existingImage.imageStatusId,
-              uploadedBy: userId,
-              uploadedAt: new Date(),
-            }
+            updateData
           );
 
           console.log(`✓ Re-uploaded: ${file.originalname}`);
@@ -941,9 +953,9 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Please select images to approve' });
     }
 
-    // Find the REVIEWED status (which represents approved images)
+    // Find the APPROVED status (which represents approved images)
     const approvedStatus = await ImageStatus.findOne({ 
-      statusCode: 'REVIEWED', 
+      statusCode: 'APPROVED', 
       tenantId 
     });
 

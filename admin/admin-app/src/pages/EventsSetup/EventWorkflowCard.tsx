@@ -85,7 +85,16 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
   const handleDrop = (e: React.DragEvent, dropIndex: number) => {
     e.preventDefault();
     if (draggedIndex !== null && draggedIndex !== dropIndex) {
-      dispatch(reorderWorkflowStatuses({ fromIndex: draggedIndex, toIndex: dropIndex }));
+      // Convert display indices to actual redux indices (accounting for hidden statuses)
+      const draggedStatusId = displayStatuses[draggedIndex].statusId;
+      const targetStatusId = displayStatuses[dropIndex].statusId;
+      
+      const actualFromIndex = reduxEventStatuses.findIndex(s => s.statusId === draggedStatusId);
+      const actualToIndex = reduxEventStatuses.findIndex(s => s.statusId === targetStatusId);
+      
+      if (actualFromIndex !== -1 && actualToIndex !== -1) {
+        dispatch(reorderWorkflowStatuses({ fromIndex: actualFromIndex, toIndex: actualToIndex }));
+      }
     }
     setDraggedIndex(null);
     setDragOverIndex(null);
@@ -93,10 +102,10 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
 
   const handleSave = async () => {
     try {
-      // Prepare data for API call
-      const statuses = reduxEventStatuses.map((s, idx) => ({
+      // Prepare data for API call - use displayStatuses (visible ones) for step assignment
+      const statuses = displayStatuses.map((s, idx) => ({
         statusId: s.statusId,
-        step: idx // Use array index as the new step value
+        step: idx + 1 // Use array index + 1 as the new step value (steps start from 1)
       }));
 
       console.log('Saving workflow order:', statuses);
@@ -213,11 +222,21 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
     
     if (Math.abs(delta) > threshold) {
       const direction = delta > 0 ? 1 : -1;
-      const newIndex = draggedIndex + direction;
+      const newDisplayIndex = draggedIndex + direction;
       
-      if (newIndex >= 0 && newIndex < displayStatuses.length) {
-        dispatch(reorderWorkflowStatuses({ fromIndex: draggedIndex, toIndex: newIndex }));
-        setDraggedIndex(newIndex);
+      if (newDisplayIndex >= 0 && newDisplayIndex < displayStatuses.length) {
+        // Convert display indices to actual redux indices
+        const draggedStatusId = displayStatuses[draggedIndex].statusId;
+        const targetStatusId = displayStatuses[newDisplayIndex].statusId;
+        
+        const actualFromIndex = reduxEventStatuses.findIndex(s => s.statusId === draggedStatusId);
+        const actualToIndex = reduxEventStatuses.findIndex(s => s.statusId === targetStatusId);
+        
+        if (actualFromIndex !== -1 && actualToIndex !== -1) {
+          dispatch(reorderWorkflowStatuses({ fromIndex: actualFromIndex, toIndex: actualToIndex }));
+        }
+        
+        setDraggedIndex(newDisplayIndex);
         // Reset to current position to prevent multiple rapid swaps
         setTouchStartY(touch.clientY);
       }
@@ -317,19 +336,35 @@ export const EventWorkflowCard: React.FC<EventWorkflowCardProps> = ({
                       <div className={workflowStyles.stepHeader}>
                         <div className={workflowStyles.stepBadge}>
                           <span>{status.step}</span>
+                          {status.isSystemRequired && (
+                            <svg 
+                              className={workflowStyles.lockIcon} 
+                              fill="none" 
+                              viewBox="0 0 24 24" 
+                              stroke="currentColor"
+                            >
+                              <title>System required - cannot be deleted</title>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                          )}
                         </div>
-                        <button 
-                          className={workflowStyles.deleteButton} 
-                          title="Delete"
-                          onClick={() => handleDeleteClick(status.statusId, status.statusDescription)}
-                        >
-                          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
+                        {!status.isSystemRequired && (
+                          <button 
+                            className={workflowStyles.deleteButton} 
+                            title="Delete"
+                            onClick={() => handleDeleteClick(status.statusId, status.statusDescription)}
+                          >
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        )}
                       </div>
                       <div className={workflowStyles.stepContent}>
                         <h4 className={workflowStyles.statusCode}>{status.statusDescription}</h4>
+                        {status.isSystemRequired && (
+                          <span className={workflowStyles.systemBadge}>System Required</span>
+                        )}
                       </div>
                     </div>
                     {index < displayStatuses.length - 1 && (

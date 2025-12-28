@@ -412,6 +412,9 @@
 }
 
 .cardTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-size: 1.125rem;
   font-weight: 700;
   color: var(--text-primary);
@@ -882,6 +885,11 @@
 /* Images Header */
 .imagesHeader {
   margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  flex-wrap: wrap;
 }
 
 .imagesTitle {
@@ -889,6 +897,58 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+}
+
+.iconLegend {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+}
+
+.legendTitle {
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-right: 0.5rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.legendIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legendIcon svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  color: white;
+  stroke: white;
+  fill: white;
+}
+
+.legendLabel {
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* Gallery Card */
+.galleryCard {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
 }
 
 /* Divider */
@@ -1312,7 +1372,7 @@
   aspect-ratio: 4/3;
   border-radius: 8px;
   overflow: visible;
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   cursor: grab;
   transition: transform 0.2s;
   display: flex;
@@ -1570,6 +1630,84 @@
   height: 1rem;
   color: white;
   stroke: white;
+}
+
+/* Card Header with badge and menu */
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+/* Event Status Badge on Event Cards */
+.eventStatusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.eventStatusBadge svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  stroke: #6b7280;
+  flex-shrink: 0;
+}
+
+.eventStatusBadge span {
+  white-space: nowrap;
+}
+
+/* Dark mode for event status badge */
+:global(.dark) .eventStatusBadge {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+:global(.dark) .eventStatusBadge svg {
+  stroke: #d1d5db;
+}
+
+/* Event Status Badge - Scheduled (no photos) */
+.eventStatusBadgeScheduled {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #f3f4f6;
+  border-radius: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.eventStatusBadgeScheduled svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  stroke: #6b7280;
+  flex-shrink: 0;
+}
+
+.eventStatusBadgeScheduled span {
+  white-space: nowrap;
+}
+
+/* Dark mode for scheduled badge */
+:global(.dark) .eventStatusBadgeScheduled {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+:global(.dark) .eventStatusBadgeScheduled svg {
+  stroke: #d1d5db;
 }
 
 .imageOverlay {

@@ -33,6 +33,11 @@
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
+:global(.dark) .modalContent {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(20px);
@@ -52,11 +57,19 @@
   border-bottom: 1px solid #e5e7eb;
 }
 
+:global(.dark) .modalHeader {
+  border-bottom-color: var(--border-color);
+}
+
 .modalHeader h2 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
   color: #111827;
+}
+
+:global(.dark) .modalHeader h2 {
+  color: var(--text-primary);
 }
 
 .closeButton {
@@ -75,9 +88,18 @@
   transition: all 0.2s;
 }
 
+:global(.dark) .closeButton {
+  color: var(--text-secondary);
+}
+
 .closeButton:hover:not(:disabled) {
   background-color: #f3f4f6;
   color: #111827;
+}
+
+:global(.dark) .closeButton:hover:not(:disabled) {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
 .closeButton:disabled {
@@ -98,6 +120,10 @@
   line-height: 1.5;
 }
 
+:global(.dark) .info {
+  color: var(--text-secondary);
+}
+
 .uploadArea {
   border: 2px dashed #d1d5db;
   border-radius: 8px;
@@ -108,9 +134,19 @@
   position: relative;
 }
 
+:global(.dark) .uploadArea {
+  border-color: var(--border-color);
+  background-color: var(--bg-secondary);
+}
+
 .uploadArea:hover {
   border-color: #9ca3af;
   background-color: #f3f4f6;
+}
+
+:global(.dark) .uploadArea:hover {
+  border-color: var(--text-secondary);
+  background-color: rgba(255, 255, 255, 0.05);
 }
 
 .fileInput {
@@ -140,6 +176,10 @@
   font-size: 14px;
 }
 
+:global(.dark) .uploadText {
+  color: var(--text-secondary);
+}
+
 .browseButton,
 .changeButton {
   background: none;
@@ -151,6 +191,11 @@
   padding: 0;
   pointer-events: all;
   font-size: 14px;
+}
+
+:global(.dark) .browseButton,
+:global(.dark) .changeButton {
+  color: var(--primary-500);
 }
 
 .browseButton:hover,
@@ -182,11 +227,20 @@
   font-size: 14px;
 }
 
+:global(.dark) .fileItem {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
 .fileItem svg {
   width: 20px;
   height: 20px;
   color: #6b7280;
   flex-shrink: 0;
+}
+
+:global(.dark) .fileItem svg {
+  color: var(--text-secondary);
 }
 
 .fileItem span:first-of-type {
@@ -197,10 +251,18 @@
   white-space: nowrap;
 }
 
+:global(.dark) .fileItem span:first-of-type {
+  color: var(--text-primary);
+}
+
 .fileSize {
   color: #9ca3af;
   font-size: 13px;
   flex-shrink: 0;
+}
+
+:global(.dark) .fileSize {
+  color: var(--text-secondary);
 }
 
 .helpText {
@@ -214,6 +276,12 @@
   line-height: 1.5;
 }
 
+:global(.dark) .helpText {
+  background-color: rgba(59, 130, 246, 0.1);
+  color: var(--primary-400);
+  border-left-color: var(--primary-500);
+}
+
 .helpText strong {
   font-weight: 600;
 }
@@ -224,6 +292,11 @@
   background-color: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: 8px;
+}
+
+:global(.dark) .errorSection {
+  background-color: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
 }
 
 .errorHeader {
@@ -240,11 +313,19 @@
   color: #991b1b;
 }
 
+:global(.dark) .errorHeader h4 {
+  color: #fca5a5;
+}
+
 .errorIcon {
   width: 20px;
   height: 20px;
   color: #dc2626;
   flex-shrink: 0;
+}
+
+:global(.dark) .errorIcon {
+  color: #ef4444;
 }
 
 .errorList {
@@ -265,12 +346,21 @@
   border: 1px solid #fecaca;
 }
 
+:global(.dark) .errorItem {
+  background-color: var(--bg-secondary);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
 .errorItemIcon {
   width: 16px;
   height: 16px;
   color: #dc2626;
   flex-shrink: 0;
   margin-top: 2px;
+}
+
+:global(.dark) .errorItemIcon {
+  color: #ef4444;
 }
 
 .errorContent {
@@ -288,10 +378,18 @@
   word-break: break-all;
 }
 
+:global(.dark) .errorFileName {
+  color: #fca5a5;
+}
+
 .errorMessage {
   color: #dc2626;
   font-size: 12px;
   line-height: 1.4;
+}
+
+:global(.dark) .errorMessage {
+  color: #f87171;
 }
 
 .modalFooter {
@@ -300,6 +398,10 @@
   gap: 12px;
   padding: 20px 24px;
   border-top: 1px solid #e5e7eb;
+}
+
+:global(.dark) .modalFooter {
+  border-top-color: var(--border-color);
 }
 
 .cancelButton,
@@ -319,9 +421,20 @@
   border: 1px solid #d1d5db;
 }
 
+:global(.dark) .cancelButton {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
 .cancelButton:hover:not(:disabled) {
   background-color: #f9fafb;
   border-color: #9ca3af;
+}
+
+:global(.dark) .cancelButton:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--text-secondary);
 }
 
 .submitButton {
@@ -329,8 +442,16 @@
   color: white;
 }
 
+:global(.dark) .submitButton {
+  background-color: var(--primary-600);
+}
+
 .submitButton:hover:not(:disabled) {
   background-color: #1d4ed8;
+}
+
+:global(.dark) .submitButton:hover:not(:disabled) {
+  background-color: var(--primary-700);
 }
 
 .submitButton:disabled,

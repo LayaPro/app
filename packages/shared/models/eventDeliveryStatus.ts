@@ -5,6 +5,7 @@ export interface EventDeliveryStatus {
   statusDescription: string; // Human-readable description
   step: number; // Sequential order of status
   isHidden?: boolean; // Hidden statuses only shown when triggered
+  isSystemRequired?: boolean; // System-critical statuses that cannot be deleted
   lastUpdatedDate?: Date;
   updatedBy?: string;
   createdAt?: Date;
