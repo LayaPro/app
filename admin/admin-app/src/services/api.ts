@@ -617,6 +617,18 @@ export const imageApi = {
     return handleResponse(response);
   },
 
+  approve: async (imageIds: string[]) => {
+    const response = await fetch(`${API_BASE_URL}/approve-images`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageIds }),
+    });
+    return handleResponse(response);
+  },
+
   getProperties: async (imageId: string) => {
     const response = await fetch(`${API_BASE_URL}/get-image-properties/${imageId}`, {
       headers: {

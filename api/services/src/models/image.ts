@@ -42,7 +42,9 @@ const ImageSchema = new Schema<IImage>(
     comment: { type: String }, // Comment for re-edit requests or feedback
     
     uploadedBy: { type: String },
-    uploadedAt: { type: Date }
+    uploadedAt: { type: Date },
+    approvedBy: { type: String },
+    approvedAt: { type: Date }
   },
   { timestamps: true }
 );

@@ -78,6 +78,7 @@ const Albums = () => {
   const [reuploadErrors, setReuploadErrors] = useState<Array<{ fileName: string; message: string }>>([]);
   const [showCommentViewModal, setShowCommentViewModal] = useState(false);
   const [viewingComment, setViewingComment] = useState<string>('');
+  const [isApprovingImages, setIsApprovingImages] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const bulkActionsRef = useRef<HTMLDivElement>(null);
@@ -583,6 +584,42 @@ const Albums = () => {
       }]);
     } finally {
       setIsReuploadingImages(false);
+    }
+  };
+
+  const handleApproveImages = async () => {
+    if (selectedImages.size === 0) return;
+    
+    setIsApprovingImages(true);
+    setShowBulkActions(false);
+    
+    try {
+      const imageIds = Array.from(selectedImages);
+      const result = await imageApi.approve(imageIds);
+      
+      showToast('success', `Successfully approved ${result.approvedCount} image${result.approvedCount !== 1 ? 's' : ''}`);
+      
+      // Clear selection
+      setSelectedImages(new Set());
+      
+      // Refresh gallery
+      if (selectedEvent) {
+        fetchGalleryImages(selectedEvent.clientEventId);
+      }
+    } catch (error: any) {
+      console.error('Error approving images:', error);
+      
+      let errorMessage = 'Failed to approve images. Please try again.';
+      
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      showToast('error', errorMessage);
+    } finally {
+      setIsApprovingImages(false);
     }
   };
 
@@ -1150,11 +1187,18 @@ const Albums = () => {
                   
                   {isAdmin && (
                     <>
-                      <button className={`${styles.dropdownItem} ${styles.approve}`}>
+                      <button 
+                        className={`${styles.dropdownItem} ${styles.approve}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApproveImages();
+                        }}
+                        disabled={isApprovingImages || selectedImages.size === 0}
+                      >
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                        <span>Approve</span>
+                        <span>{isApprovingImages ? 'Approving...' : 'Approve'}</span>
                       </button>
                       <div className={styles.dropdownDivider}></div>
                       <button className={`${styles.dropdownItem} ${styles.delete}`}>
@@ -1187,7 +1231,49 @@ const Albums = () => {
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                <span>{selectedStatus === 'all' ? 'All Images' : imageStatuses.find(s => s.statusId === selectedStatus)?.statusDescription || 'Status'}</span>
+                {(() => {
+                  const currentStatus = imageStatuses.find(s => s.statusId === selectedStatus);
+                  return (
+                    <>
+                      {currentStatus?.statusCode === 'REVIEW_PENDING' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </span>
+                      )}
+                      {currentStatus?.statusCode === 'CHANGES_SUGGESTED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                          </svg>
+                        </span>
+                      )}
+                      {currentStatus?.statusCode === 'CHANGES_DONE' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                          </svg>
+                        </span>
+                      )}
+                      {currentStatus?.statusCode === 'DISCARDED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(239, 68, 68, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </span>
+                      )}
+                      {currentStatus?.statusCode === 'REVIEWED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
+                          <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          </svg>
+                        </span>
+                      )}
+                      <span>{selectedStatus === 'all' ? 'All Images' : currentStatus?.statusDescription || 'Status'}</span>
+                    </>
+                  );
+                })()}
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
@@ -1212,6 +1298,41 @@ const Albums = () => {
                         setShowStatusDropdown(false);
                       }}
                     >
+                      {status.statusCode === 'REVIEW_PENDING' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </span>
+                      )}
+                      {status.statusCode === 'CHANGES_SUGGESTED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                          </svg>
+                        </span>
+                      )}
+                      {status.statusCode === 'CHANGES_DONE' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                          </svg>
+                        </span>
+                      )}
+                      {status.statusCode === 'DISCARDED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(239, 68, 68, 0.95)' }}>
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </span>
+                      )}
+                      {status.statusCode === 'REVIEWED' && (
+                        <span className={styles.statusIconBadge} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
+                          <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          </svg>
+                        </span>
+                      )}
                       <span>{status.statusDescription}</span>
                     </button>
                   ))}
@@ -1396,20 +1517,82 @@ const Albums = () => {
                   </svg>
                 </button>
                 
-                {/* Comment indicator for re-edit requested images */}
+                {/* Status indicators */}
                 {(() => {
+                  const reviewPendingStatus = imageStatuses.find(s => s.statusCode === 'REVIEW_PENDING');
                   const reEditStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_SUGGESTED');
-                  return reEditStatus && image.imageStatusId === reEditStatus.statusId && image.comment && (
-                    <button 
-                      className={styles.imageCommentIndicator}
-                      onClick={(e) => handleViewComment(image.comment, e)}
-                      aria-label="View re-edit comment"
-                      title="Click to view re-edit comment"
-                    >
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
-                    </button>
+                  const changesDoneStatus = imageStatuses.find(s => s.statusCode === 'CHANGES_DONE');
+                  const discardedStatus = imageStatuses.find(s => s.statusCode === 'DISCARDED');
+                  const reviewedStatus = imageStatuses.find(s => s.statusCode === 'REVIEWED');
+                  
+                  return (
+                    <>
+                      {/* Review Pending - Blue clock */}
+                      {reviewPendingStatus && image.imageStatusId === reviewPendingStatus.statusId && (
+                        <div 
+                          className={styles.imageStatusIndicator}
+                          style={{ background: 'rgba(59, 130, 246, 0.95)' }}
+                          title="Review pending"
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                      )}
+                      
+                      {/* Re-edit Requested - Yellow comment (clickable) */}
+                      {reEditStatus && image.imageStatusId === reEditStatus.statusId && image.comment && (
+                        <button 
+                          className={styles.imageStatusIndicator}
+                          style={{ background: 'rgba(251, 191, 36, 0.95)' }}
+                          onClick={(e) => handleViewComment(image.comment, e)}
+                          title="Click to view re-edit comment"
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                          </svg>
+                        </button>
+                      )}
+                      
+                      {/* Re-edit Done - Purple comment */}
+                      {changesDoneStatus && image.imageStatusId === changesDoneStatus.statusId && (
+                        <div 
+                          className={styles.imageStatusIndicator}
+                          style={{ background: 'rgba(147, 51, 234, 0.95)' }}
+                          title="Re-edit done"
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                          </svg>
+                        </div>
+                      )}
+                      
+                      {/* Discarded - Red X */}
+                      {discardedStatus && image.imageStatusId === discardedStatus.statusId && (
+                        <div 
+                          className={styles.imageStatusIndicator}
+                          style={{ background: 'rgba(239, 68, 68, 0.95)' }}
+                          title="Discarded"
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        </div>
+                      )}
+                      
+                      {/* Approved - Green checkmark */}
+                      {reviewedStatus && image.imageStatusId === reviewedStatus.statusId && (
+                        <div 
+                          className={styles.imageStatusIndicator}
+                          style={{ background: 'rgba(34, 197, 94, 0.95)' }}
+                          title="Approved"
+                        >
+                          <svg fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                          </svg>
+                        </div>
+                      )}
+                    </>
                   );
                 })()}
                 

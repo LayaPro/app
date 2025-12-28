@@ -32,6 +32,8 @@ export interface Image {
   
   uploadedBy?: string;
   uploadedAt?: Date;
+  approvedBy?: string;
+  approvedAt?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }

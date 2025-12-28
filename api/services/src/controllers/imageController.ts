@@ -930,6 +930,66 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
   }
 };
 
+// Approve images endpoint
+export const approveImages = async (req: AuthRequest, res: Response) => {
+  try {
+    const { imageIds } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      return res.status(400).json({ message: 'Please select images to approve' });
+    }
+
+    // Find the REVIEWED status (which represents approved images)
+    const approvedStatus = await ImageStatus.findOne({ 
+      statusCode: 'REVIEWED', 
+      tenantId 
+    });
+
+    if (!approvedStatus) {
+      return res.status(404).json({ message: 'Approved status not found in the system' });
+    }
+
+    // Verify all images belong to this tenant
+    const images = await Image.find({
+      imageId: { $in: imageIds },
+      tenantId
+    });
+
+    if (images.length !== imageIds.length) {
+      return res.status(404).json({ 
+        message: 'Some images not found. Please refresh and try again.' 
+      });
+    }
+
+    // Update all images to APPROVED status
+    const result = await Image.updateMany(
+      { 
+        imageId: { $in: imageIds }, 
+        tenantId 
+      },
+      { 
+        $set: { 
+          imageStatusId: approvedStatus.statusId,
+          approvedBy: userId,
+          approvedAt: new Date()
+        } 
+      }
+    );
+
+    return res.status(200).json({
+      message: 'Images approved successfully',
+      approvedCount: result.modifiedCount
+    });
+  } catch (err: any) {
+    console.error('Approve images error:', err);
+    return res.status(500).json({ 
+      message: 'An error occurred while approving images. Please try again.' 
+    });
+  }
+};
+
 export default {
   createImage,
   bulkCreateImages,
@@ -944,5 +1004,6 @@ export default {
   bulkDeleteImages,
   uploadBatchImages,
   reorderImages,
-  reuploadImages
+  reuploadImages,
+  approveImages
 };

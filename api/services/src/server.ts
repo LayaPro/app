@@ -143,6 +143,7 @@ app.post('/bulk-create-images', authenticate, requireAdmin, imageController.bulk
 app.post('/upload-batch-images', authenticate, upload.array('images', 500), imageController.uploadBatchImages);
 app.post('/reupload-images', authenticate, upload.array('images', 500), imageController.reuploadImages);
 app.post('/reorder-images', authenticate, imageController.reorderImages);
+app.put('/approve-images', authenticate, requireAdmin, imageController.approveImages);
 app.get('/get-all-images', authenticate, imageController.getAllImages);
 app.get('/get-images-by-client-event/:clientEventId', authenticate, imageController.getImagesByClientEvent);
 app.get('/get-images-by-project/:projectId', authenticate, imageController.getImagesByProject);
