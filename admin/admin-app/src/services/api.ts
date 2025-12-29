@@ -638,6 +638,39 @@ export const imageApi = {
     });
     return handleResponse(response);
   },
+
+  downloadSelectedZip: async (imageIds: string[]) => {
+    const response = await fetch(`${API_BASE_URL}/download-selected-images`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ imageIds }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to download selected images' }));
+      throw new Error(error.message || 'Failed to download selected images');
+    }
+
+    return response;
+  },
+
+  downloadEventZip: async (clientEventId: string) => {
+    const response = await fetch(`${API_BASE_URL}/download-event-images/${clientEventId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Failed to download event images' }));
+      throw new Error(error.message || 'Failed to download event images');
+    }
+
+    return response;
+  },
 };
 
 export const imageStatusApi = {

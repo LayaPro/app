@@ -263,7 +263,20 @@
   margin-left: 0.5rem;
 }
 
+.cardImage {
+  position: relative;
+  width: 100%;
+  padding-top: 65%;
+  overflow: hidden;
+  border-top-left-radius: 1rem;
+  border-top-right-radius: 1rem;
+  background: var(--bg-secondary);
+}
+
 .cardImage img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;

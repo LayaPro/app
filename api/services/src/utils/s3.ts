@@ -1,5 +1,5 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand } from '@aws-sdk/client-s3';
-import { nanoid } from 'nanoid';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, DeleteObjectsCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { Readable } from 'stream';
 
 let s3Client: S3Client | null = null;
 
@@ -65,6 +65,117 @@ export const uploadToS3 = async ({
   return `https://${bucket}.s3.${region}.amazonaws.com/${key}`;
 };
 
+interface ParsedS3Url {
+  bucket: string;
+  region: string;
+  key: string;
+}
+
+interface ReadableStreamLike {
+  getReader: () => {
+    read: () => Promise<{ done: boolean; value?: Uint8Array }>;
+    releaseLock?: () => void;
+  };
+}
+
+interface BlobLike {
+  arrayBuffer: () => Promise<ArrayBuffer>;
+  stream?: () => ReadableStreamLike;
+  type?: string;
+}
+
+const isNodeReadable = (stream: unknown): stream is Readable => {
+  return stream instanceof Readable || (
+    typeof stream === 'object' &&
+    stream !== null &&
+    typeof (stream as any).pipe === 'function' &&
+    typeof (stream as any).read === 'function'
+  );
+};
+
+const isReadableStreamLike = (stream: unknown): stream is ReadableStreamLike => {
+  return typeof stream === 'object' && stream !== null && typeof (stream as any).getReader === 'function';
+};
+
+const isBlobLike = (value: unknown): value is BlobLike => {
+  return typeof value === 'object' && value !== null && typeof (value as any).arrayBuffer === 'function';
+};
+
+export const parseS3Url = (url: string): ParsedS3Url | null => {
+  const urlPattern = /https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/;
+  const match = url.match(urlPattern);
+
+  if (!match) {
+    return null;
+  }
+
+  const [, bucket, region, key] = match;
+  return {
+    bucket,
+    region,
+    key: decodeURIComponent(key),
+  };
+};
+
+export const getS3ObjectStreamFromUrl = async (url: string): Promise<Readable> => {
+  const parsed = parseS3Url(url);
+  if (!parsed) {
+    throw new Error(`Invalid S3 URL: ${url}`);
+  }
+
+  const command = new GetObjectCommand({
+    Bucket: parsed.bucket,
+    Key: parsed.key,
+  });
+
+  const response = await getS3Client().send(command);
+  const body = response.Body;
+
+  if (!body) {
+    throw new Error(`Empty S3 response body for ${url}`);
+  }
+
+  if (isNodeReadable(body)) {
+    return body;
+  }
+
+  if (isReadableStreamLike(body)) {
+    if (typeof Readable.fromWeb === 'function') {
+      return Readable.fromWeb(body as any);
+    }
+
+    const reader = body.getReader();
+    const asyncIterable = {
+      async *[Symbol.asyncIterator]() {
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            if (value) {
+              yield Buffer.from(value);
+            }
+          }
+        } finally {
+          reader.releaseLock?.();
+        }
+      },
+    };
+
+    return Readable.from(asyncIterable as AsyncIterable<Buffer>);
+  }
+
+  if (isBlobLike(body)) {
+    if (typeof body.stream === 'function' && typeof Readable.fromWeb === 'function') {
+      return Readable.fromWeb(body.stream() as any);
+    }
+
+    const buffer = Buffer.from(await body.arrayBuffer());
+    return Readable.from(buffer);
+  }
+
+  throw new Error(`Unsupported S3 body type for ${url}`);
+};
+
 export const uploadBothVersions = async (
   originalBuffer: Buffer,
   compressedBuffer: Buffer,
@@ -99,26 +210,19 @@ export const uploadBothVersions = async (
 
 export const deleteFromS3 = async (url: string): Promise<void> => {
   try {
-    // Extract bucket and key from URL
-    // Format: https://bucket.s3.region.amazonaws.com/key
-    const urlPattern = /https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/;
-    const match = url.match(urlPattern);
-    
-    if (!match) {
+    const parsed = parseS3Url(url);
+    if (!parsed) {
       console.error('Invalid S3 URL format:', url);
       return;
     }
 
-    const [, bucket, , key] = match;
-    const decodedKey = decodeURIComponent(key);
-
     const command = new DeleteObjectCommand({
-      Bucket: bucket,
-      Key: decodedKey,
+      Bucket: parsed.bucket,
+      Key: parsed.key,
     });
 
     await getS3Client().send(command);
-    console.log(`✓ Deleted from S3: ${decodedKey}`);
+    console.log(`✓ Deleted from S3: ${parsed.key}`);
   } catch (error) {
     console.error(`✗ Failed to delete from S3: ${url}`, error);
     // Don't throw - allow deletion to continue even if S3 delete fails
@@ -130,15 +234,12 @@ export const bulkDeleteFromS3 = async (urls: string[]): Promise<void> => {
   const urlsByBucket = new Map<string, string[]>();
   
   for (const url of urls) {
-    const urlPattern = /https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)/;
-    const match = url.match(urlPattern);
-    
-    if (match) {
-      const [, bucket, , key] = match;
-      if (!urlsByBucket.has(bucket)) {
-        urlsByBucket.set(bucket, []);
+    const parsed = parseS3Url(url);
+    if (parsed) {
+      if (!urlsByBucket.has(parsed.bucket)) {
+        urlsByBucket.set(parsed.bucket, []);
       }
-      urlsByBucket.get(bucket)!.push(decodeURIComponent(key));
+      urlsByBucket.get(parsed.bucket)!.push(parsed.key);
     }
   }
 

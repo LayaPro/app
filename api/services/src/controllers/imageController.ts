@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import archiver from 'archiver';
 import { nanoid } from 'nanoid';
 import Image from '../models/image';
 import Project from '../models/project';
@@ -10,7 +11,7 @@ import ImageStatus from '../models/imageStatus';
 import Team from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { compressImage } from '../utils/imageProcessor';
-import { uploadToS3, uploadBothVersions, bulkDeleteFromS3 } from '../utils/s3';
+import { uploadToS3, uploadBothVersions, bulkDeleteFromS3, getS3ObjectStreamFromUrl } from '../utils/s3';
 import pMap from 'p-map';
 import exifr from 'exifr';
 
@@ -1002,6 +1003,135 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
   }
 };
 
+const sanitizeZipFileName = (value?: string | null, fallback = 'file') => {
+  const base = (value || fallback).toString().trim();
+  return base.length > 0 ? base.replace(/[^a-zA-Z0-9-_]+/g, '_') : fallback;
+};
+
+const streamImagesAsZip = async (res: Response, images: any[], zipBaseName: string) => {
+  const safeZipName = `${sanitizeZipFileName(zipBaseName, 'images')}.zip`;
+  res.setHeader('Content-Type', 'application/zip');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeZipName}"`);
+
+  const archive = archiver('zip', { zlib: { level: 9 } });
+
+  return new Promise<void>((resolve, reject) => {
+    archive.on('error', (error) => {
+      reject(error);
+    });
+
+    res.on('error', (error) => {
+      reject(error);
+    });
+
+    res.on('close', () => {
+      resolve();
+    });
+
+    archive.pipe(res);
+
+    (async () => {
+      for (const image of images) {
+        const sourceUrl = image.originalUrl || image.compressedUrl;
+        if (!sourceUrl) {
+          continue;
+        }
+
+        try {
+          const stream = await getS3ObjectStreamFromUrl(sourceUrl);
+          archive.append(stream, {
+            name: sanitizeZipFileName(image.fileName || `${image.imageId}.jpg`, `${image.imageId}.jpg`),
+          });
+        } catch (error) {
+          console.error(`Failed to append image ${image.imageId} to download archive`, error);
+        }
+      }
+
+      await archive.finalize();
+    })().catch(reject);
+  });
+};
+
+export const downloadSelectedImagesZip = async (req: AuthRequest, res: Response) => {
+  try {
+    const { imageIds } = req.body;
+    const tenantId = req.user?.tenantId;
+
+    if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      return res.status(400).json({ message: 'Image IDs array is required' });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    const images = await Image.find({
+      imageId: { $in: imageIds },
+      tenantId,
+    })
+      .sort({ sortOrder: 1, uploadedAt: 1 })
+      .lean();
+
+    const downloadableImages = images.filter((img) => img.originalUrl || img.compressedUrl);
+
+    if (downloadableImages.length === 0) {
+      return res.status(404).json({ message: 'No downloadable images found for the selected items' });
+    }
+
+    const zipName = `selected-${new Date().toISOString().split('T')[0]}`;
+    await streamImagesAsZip(res, downloadableImages, zipName);
+  } catch (error) {
+    console.error('Download selected images error:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: 'Failed to download selected images' });
+    }
+    res.end();
+  }
+};
+
+export const downloadEventImagesZip = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clientEventId } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId }).lean();
+    if (!clientEvent) {
+      return res.status(404).json({ message: 'Client event not found' });
+    }
+
+    const images = await Image.find({ clientEventId, tenantId })
+      .sort({ sortOrder: 1, uploadedAt: 1 })
+      .lean();
+    const downloadableImages = images.filter((img) => img.originalUrl || img.compressedUrl);
+
+    if (downloadableImages.length === 0) {
+      return res.status(404).json({ message: 'No downloadable images found for this event' });
+    }
+
+    const project = await Project.findOne({ projectId: clientEvent.projectId, tenantId }).lean();
+    const event = await Event.findOne({ eventId: clientEvent.eventId }).lean();
+
+    const zipNameParts = [
+      project?.projectName,
+      event?.eventDesc,
+      clientEvent.fromDatetime ? new Date(clientEvent.fromDatetime).toISOString().split('T')[0] : null,
+      'images',
+    ].filter(Boolean) as string[];
+
+    await streamImagesAsZip(res, downloadableImages, zipNameParts.join('-') || `event-${clientEventId}`);
+  } catch (error) {
+    console.error('Download event images error:', error);
+    if (!res.headersSent) {
+      return res.status(500).json({ message: 'Failed to download event images' });
+    }
+    res.end();
+  }
+};
+
 export default {
   createImage,
   bulkCreateImages,
@@ -1017,5 +1147,7 @@ export default {
   uploadBatchImages,
   reorderImages,
   reuploadImages,
-  approveImages
+  approveImages,
+  downloadSelectedImagesZip,
+  downloadEventImagesZip,
 };

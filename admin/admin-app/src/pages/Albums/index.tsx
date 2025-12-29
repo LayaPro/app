@@ -51,6 +51,8 @@ const Albums = () => {
   const [isUploadExpanded, setIsUploadExpanded] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
+  const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
+  const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedCount, setUploadedCount] = useState(0);
@@ -520,10 +522,134 @@ const Albums = () => {
     return sorted;
   };
 
+  const sanitizeFileName = (fileName?: string, fallback = 'image.jpg') => {
+    const baseName = fileName?.trim() || fallback;
+    return baseName.replace(/[\\/:*?"<>|]+/g, '_');
+  };
+
+  const downloadImageFile = async (url: string | undefined, fileName?: string) => {
+    if (!url) {
+      throw new Error('Image URL is missing');
+    }
+
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error('Failed to download image');
+    }
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = sanitizeFileName(fileName);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(objectUrl);
+  };
+
+  const extractFileNameFromContentDisposition = (contentDisposition: string | null) => {
+    if (!contentDisposition) return null;
+
+    const filenameStarMatch = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (filenameStarMatch?.[1]) {
+      try {
+        return decodeURIComponent(filenameStarMatch[1]);
+      } catch (error) {
+        console.warn('Failed to decode filename from content-disposition header', error);
+      }
+    }
+
+    const filenameMatch = contentDisposition.match(/filename="?([^";]+)"?/i);
+    if (filenameMatch?.[1]) {
+      return filenameMatch[1];
+    }
+
+    return null;
+  };
+
+  const downloadZipFromResponse = async (response: Response, fallbackFileName: string) => {
+    const blob = await response.blob();
+    const headerFileName = extractFileNameFromContentDisposition(response.headers.get('content-disposition'));
+    const sanitizedFileName = sanitizeFileName(headerFileName || fallbackFileName, fallbackFileName);
+    const normalizedFileName = sanitizedFileName.toLowerCase().endsWith('.zip')
+      ? sanitizedFileName
+      : `${sanitizedFileName}.zip`;
+
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = normalizedFileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  };
+
   const handleBulkDelete = () => {
     if (selectedImages.size === 0) return;
     console.log('Opening delete modal for', selectedImages.size, 'images');
     setShowDeleteModal(true);
+  };
+
+  const handleDownloadSelected = async () => {
+    if (selectedImages.size === 0 || isDownloadingSelected) return;
+    setShowBulkActions(false);
+    const imageIds = Array.from(selectedImages);
+    setIsDownloadingSelected(true);
+    showToast('info', 'Preparing ZIP download...');
+
+    try {
+      const projectName = selectedProject?.projectName;
+      const eventName = selectedEvent ? eventTypes.get(selectedEvent.eventId)?.eventDesc : undefined;
+      const baseZipName = [projectName, eventName, 'selected-images']
+        .filter(Boolean)
+        .join('-') || 'selected-images';
+
+      const response = await imageApi.downloadSelectedZip(imageIds);
+      await downloadZipFromResponse(response, `${baseZipName}.zip`);
+      showToast('success', 'Preparing ZIP download. It will start shortly.');
+    } catch (error) {
+      console.error('Unexpected error during bulk download:', error);
+      showToast('error', 'Failed to download the selected images. Please try again.');
+    } finally {
+      setIsDownloadingSelected(false);
+    }
+  };
+
+  const handleDownloadEventImages = async (event: ClientEvent) => {
+    if (downloadingEventId === event.clientEventId) return;
+
+    setOpenMenuId(null);
+    const eventImages = allImages.filter(img => img.clientEventId === event.clientEventId);
+
+    if (eventImages.length === 0) {
+      showToast('warning', 'No images available for this event yet.');
+      return;
+    }
+
+    setDownloadingEventId(event.clientEventId);
+    showToast('info', 'Preparing ZIP download...');
+
+    try {
+      const projectName =
+        (selectedProject && selectedProject.projectId === event.projectId)
+          ? selectedProject.projectName
+          : projects.find(project => project.projectId === event.projectId)?.projectName;
+      const eventName = eventTypes.get(event.eventId)?.eventDesc;
+      const baseZipName = [projectName, eventName, 'images']
+        .filter(Boolean)
+        .join('-') || 'event-images';
+
+      const response = await imageApi.downloadEventZip(event.clientEventId);
+      await downloadZipFromResponse(response, `${baseZipName}.zip`);
+      showToast('success', 'Preparing ZIP download. It will start shortly.');
+    } catch (error) {
+      console.error('Error downloading event images:', error);
+      showToast('error', 'Failed to download images for this event. Please try again.');
+    } finally {
+      setDownloadingEventId(null);
+    }
   };
 
   const handleRequestReEdit = () => {
@@ -1379,11 +1505,18 @@ const Albums = () => {
               </button>
               {showBulkActions && (
                 <div className={styles.dropdown}>
-                  <button className={styles.dropdownItem}>
+                  <button 
+                    className={styles.dropdownItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownloadSelected();
+                    }}
+                    disabled={isDownloadingSelected}
+                  >
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                     </svg>
-                    <span>Download Selected</span>
+                    <span>{isDownloadingSelected ? 'Downloading...' : 'Download Selected'}</span>
                   </button>
                   
                   {isAdmin && (
@@ -1765,18 +1898,10 @@ const Albums = () => {
                   onClick={async (e) => {
                     e.stopPropagation();
                     try {
-                      const response = await fetch(image.originalUrl);
-                      const blob = await response.blob();
-                      const url = window.URL.createObjectURL(blob);
-                      const link = document.createElement('a');
-                      link.href = url;
-                      link.download = image.fileName || 'image.jpg';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                      window.URL.revokeObjectURL(url);
+                      await downloadImageFile(image.originalUrl || image.compressedUrl, image.fileName);
                     } catch (error) {
                       console.error('Download failed:', error);
+                      showToast('error', 'Failed to download image. Please try again.');
                     }
                   }}
                   aria-label="Download image"
@@ -2322,29 +2447,29 @@ const Albums = () => {
           ) : showContent ? (
             <div className={styles.contentWrapper}>
               <div className={styles.eventsGrid}>
-                {paginatedItems.map((event: any) => (
+                {paginatedItems.map((eventItem: any) => (
                   <div 
-                    key={event.clientEventId} 
+                    key={eventItem.clientEventId} 
                     className={styles.card}
                     onClick={() => {
-                      console.log('Card clicked!', event);
-                      handleEventClick(event);
+                      console.log('Card clicked!', eventItem);
+                      handleEventClick(eventItem);
                     }}
                     style={{ cursor: 'pointer' }}
                   >
                     <div className={styles.cardImage}>
                       <img
-                        src={event.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
-                        alt={eventTypes.get(event.eventId)?.eventDesc || 'Event'}
+                        src={eventItem.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
+                        alt={eventTypes.get(eventItem.eventId)?.eventDesc || 'Event'}
                         onLoad={(e) => e.currentTarget.classList.add('loaded')}
                       />
                     </div>
 
                     <div className={styles.cardContent}>
-                    <div className={styles.cardMenu} ref={openMenuId === event.clientEventId ? menuRef : null}>
+                    <div className={styles.cardMenu} ref={openMenuId === eventItem.clientEventId ? menuRef : null}>
                       <button
                         className={styles.menuButton}
-                        onClick={(e) => handleToggleMenu(event.clientEventId, e)}
+                        onClick={(e) => handleToggleMenu(eventItem.clientEventId, e)}
                       >
                         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path
@@ -2355,9 +2480,17 @@ const Albums = () => {
                           />
                         </svg>
                       </button>
-                      {openMenuId === event.clientEventId && (
+                      {openMenuId === eventItem.clientEventId && (
                         <div className={styles.menuDropdown}>
-                          <button className={styles.menuItem}>
+                          <button
+                            className={styles.menuItem}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownloadEventImages(eventItem);
+                            }}
+                            disabled={downloadingEventId === eventItem.clientEventId}
+                            aria-disabled={downloadingEventId === eventItem.clientEventId}
+                          >
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path
                                 strokeLinecap="round"
@@ -2366,7 +2499,9 @@ const Albums = () => {
                                 d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
                               />
                             </svg>
-                            Download as ZIP
+                            <span>
+                              {downloadingEventId === eventItem.clientEventId ? 'Downloading...' : 'Download as ZIP'}
+                            </span>
                           </button>
                           <button className={styles.menuItem}>
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2383,7 +2518,7 @@ const Albums = () => {
                             className={styles.menuItem}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleSetEventStatus(event);
+                              handleSetEventStatus(eventItem);
                             }}
                           >
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2400,7 +2535,7 @@ const Albums = () => {
                             className={styles.menuItem}
                             onClick={(e) => {
                               e.stopPropagation();
-                              handlePublishToCustomer(event);
+                              handlePublishToCustomer(eventItem);
                             }}
                           >
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2418,10 +2553,10 @@ const Albums = () => {
                     </div>
 
                     <div className={styles.cardTitle}>
-                      {eventTypes.get(event.eventId)?.eventDesc || 'Untitled Event'}
+                      {eventTypes.get(eventItem.eventId)?.eventDesc || 'Untitled Event'}
                       {/* Status badge - Show event delivery status */}
-                      {event.eventDeliveryStatusId && (() => {
-                        const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId);
+                      {eventItem.eventDeliveryStatusId && (() => {
+                        const status = eventDeliveryStatuses.get(eventItem.eventDeliveryStatusId);
                         if (!status) return null;
                         return (
                           <StatusBadge
@@ -2433,8 +2568,8 @@ const Albums = () => {
                       })()}
                     </div>
                     <div className={styles.cardSubtitle}>
-                      {event.fromDatetime
-                        ? new Date(event.fromDatetime).toLocaleDateString('en-US', {
+                      {eventItem.fromDatetime
+                        ? new Date(eventItem.fromDatetime).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric',
@@ -2444,7 +2579,7 @@ const Albums = () => {
 
                     <div className={styles.cardStats}>
                       {(() => {
-                        const photoCount = getEventImageCount(event.clientEventId);
+                        const photoCount = getEventImageCount(eventItem.clientEventId);
                         return (
                           <div className={styles.statItem}>
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2468,7 +2603,7 @@ const Albums = () => {
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                           />
                         </svg>
-                        <span>{getTimeAgo(event.createdAt)}</span>
+                        <span>{getTimeAgo(eventItem.createdAt)}</span>
                       </div>
                     </div>
                   </div>
