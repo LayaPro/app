@@ -7,11 +7,12 @@ interface ConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: string;
+  message?: React.ReactNode;
   confirmText?: string;
   cancelText?: string;
   isLoading?: boolean;
   variant?: 'danger' | 'warning' | 'info';
+  children?: React.ReactNode;
 }
 
 export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
@@ -23,7 +24,8 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   confirmText = 'Confirm',
   cancelText = 'Cancel',
   isLoading = false,
-  variant = 'danger'
+  variant = 'danger',
+  children
 }) => {
   const handleConfirm = () => {
     onConfirm();
@@ -49,7 +51,14 @@ export const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
             </svg>
           )}
         </div>
-        <p className={styles.message}>{message}</p>
+        {message && (
+          <div className={styles.message}>
+            {message}
+          </div>
+        )}
+        {children && (
+          <div className={styles.extraContent}>{children}</div>
+        )}
       </div>
       <div className={styles.actions}>
         <button

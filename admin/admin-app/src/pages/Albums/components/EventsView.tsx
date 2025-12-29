@@ -1,5 +1,6 @@
 import type { ClientEvent } from '../types.ts';
 import styles from '../Albums.module.css';
+import { StatusBadge } from '../../../components/ui/StatusBadge.js';
 
 interface EventsViewProps {
   events: ClientEvent[];
@@ -44,13 +45,19 @@ export const EventsView: React.FC<EventsViewProps> = ({
 
   return (
     <div className={styles.eventsGrid}>
-      {events.map((event: any) => (
-        <div
-          key={event.clientEventId}
-          className={styles.card}
-          onClick={() => onEventClick(event)}
-          style={{ cursor: 'pointer' }}
-        >
+      {events.map((event: any) => {
+        const status = event.eventDeliveryStatusId
+          ? eventDeliveryStatuses.get(event.eventDeliveryStatusId)
+          : null;
+        const statusLabel = status?.statusDescription;
+
+        return (
+          <div
+            key={event.clientEventId}
+            className={styles.card}
+            onClick={() => onEventClick(event)}
+            style={{ cursor: 'pointer' }}
+          >
           <div className={styles.cardImage}>
             <img
               src={event.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
@@ -76,26 +83,14 @@ export const EventsView: React.FC<EventsViewProps> = ({
             </div>
 
             <h3 className={styles.cardTitle}>
-              {eventTypes.get(event.eventId)?.eventDesc || 'Event'}
-              {/* Status badge - Show event delivery status */}
-              {event.eventDeliveryStatusId && (() => {
-                const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId);
-                if (!status) return null;
-                
-                return (
-                  <div className={styles.eventStatusBadge}>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                      />
-                    </svg>
-                    <span>{status.statusDescription}</span>
-                  </div>
-                );
-              })()}
+              {statusLabel && (
+                <StatusBadge
+                  label={statusLabel}
+                  className={styles.badgeBeforeTitle}
+                  aria-label={`Status: ${statusLabel}`}
+                />
+              )}
+              <span>{eventTypes.get(event.eventId)?.eventDesc || 'Event'}</span>
             </h3>
             <div className={styles.cardSubtitle}>
               {event.fromDatetime
@@ -112,6 +107,14 @@ export const EventsView: React.FC<EventsViewProps> = ({
                 const photoCount = getEventImageCount(event.clientEventId);
                 return (
                   <div className={styles.statItem}>
+                    {statusLabel && (
+                      <StatusBadge
+                        label={statusLabel}
+                        size="compact"
+                        className={styles.badgeBeforeStat}
+                        aria-label={`Status: ${statusLabel}`}
+                      />
+                    )}
                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path
                         strokeLinecap="round"
@@ -138,7 +141,8 @@ export const EventsView: React.FC<EventsViewProps> = ({
             </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 };

@@ -247,72 +247,20 @@
   animation: cardAppear 0.4s ease-out backwards;
 }
 
-/* Stagger delays for cards */
-.card:nth-child(1) { animation-delay: 0.05s; }
-.card:nth-child(2) { animation-delay: 0.1s; }
-.card:nth-child(3) { animation-delay: 0.15s; }
-.card:nth-child(4) { animation-delay: 0.2s; }
-.card:nth-child(5) { animation-delay: 0.25s; }
-.card:nth-child(6) { animation-delay: 0.3s; }
-.card:nth-child(7) { animation-delay: 0.35s; }
-.card:nth-child(8) { animation-delay: 0.4s; }
-.card:nth-child(9) { animation-delay: 0.45s; }
-.card:nth-child(10) { animation-delay: 0.5s; }
-
-
-.cardImage {
-  position: relative;
-  aspect-ratio: 4/3;
-  overflow: hidden;
-  cursor: pointer;
-  border-radius: 1rem 1rem 0 0;
+.badgeBeforeTitle {
+  margin-right: 0.5rem;
 }
 
-/* Shimmer loading effect */
-.cardImage::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  animation: shimmer 1.5s infinite;
-  z-index: 1;
-  pointer-events: none;
-  opacity: 1;
-  transition: opacity 0.3s ease-out;
+.badgeBeforeStat {
+  margin-right: 0.35rem;
 }
 
-/* Stop shimmer when image is loaded */
-.cardImage:has(img:global(.loaded))::before {
-  opacity: 0;
+.badgeAfterTitle {
+  margin-left: 0.5rem;
 }
 
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-.cardImage img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.3s ease, opacity 0.3s ease-out;
-  opacity: 0;
-}
-
-.cardImage img:global(.loaded) {
-  opacity: 1;
+.badgeInlineCardTitle {
+  margin-left: 0.5rem;
 }
 
 .cardImage img {
@@ -897,6 +845,18 @@
   font-weight: 600;
   color: var(--text-primary);
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.imagesTitleCount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 1rem;
+  color: var(--text-secondary);
 }
 
 .iconLegend {
@@ -982,11 +942,12 @@
   margin-left: auto;
 }
 
-.galleryControls {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+.imagesToolbarDivider {
+  width: 100%;
+  height: 1px;
+  margin: 1rem 0 1.5rem;
+  background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.45), transparent);
+  border: none;
 }
 
 .bulkActionsContainer,
@@ -1211,13 +1172,14 @@
 .refreshButton {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 1rem;
-  font-size: 0.875rem;
+  justify-content: center;
+  padding: 0.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   color: var(--text-primary);
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 999px;
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
@@ -1640,74 +1602,20 @@
   margin-bottom: 0.5rem;
 }
 
-/* Event Status Badge on Event Cards */
-.eventStatusBadge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.5rem;
-  background-color: #f3f4f6;
-  border-radius: 0.25rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: #6b7280;
-  line-height: 1;
+.badgeBeforeTitle {
+  margin-right: 0.5rem;
 }
 
-.eventStatusBadge svg {
-  width: 0.75rem;
-  height: 0.75rem;
-  stroke: #6b7280;
-  flex-shrink: 0;
+.badgeBeforeStat {
+  margin-right: 0.35rem;
 }
 
-.eventStatusBadge span {
-  white-space: nowrap;
+.badgeAfterTitle {
+  margin-left: 0.5rem;
 }
 
-/* Dark mode for event status badge */
-:global(.dark) .eventStatusBadge {
-  background-color: #374151;
-  color: #d1d5db;
-}
-
-:global(.dark) .eventStatusBadge svg {
-  stroke: #d1d5db;
-}
-
-/* Event Status Badge - Scheduled (no photos) */
-.eventStatusBadgeScheduled {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.25rem 0.5rem;
-  background-color: #f3f4f6;
-  border-radius: 0.25rem;
-  font-size: 0.625rem;
-  font-weight: 600;
-  color: #6b7280;
-  line-height: 1;
-}
-
-.eventStatusBadgeScheduled svg {
-  width: 0.75rem;
-  height: 0.75rem;
-  stroke: #6b7280;
-  flex-shrink: 0;
-}
-
-.eventStatusBadgeScheduled span {
-  white-space: nowrap;
-}
-
-/* Dark mode for scheduled badge */
-:global(.dark) .eventStatusBadgeScheduled {
-  background-color: #374151;
-  color: #d1d5db;
-}
-
-:global(.dark) .eventStatusBadgeScheduled svg {
-  stroke: #d1d5db;
+.badgeInlineCardTitle {
+  margin-left: 0.5rem;
 }
 
 .imageOverlay {

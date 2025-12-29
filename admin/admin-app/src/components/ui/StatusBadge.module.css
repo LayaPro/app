@@ -1,0 +1,36 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #6b7280;
+  line-height: 1;
+}
+
+.compact {
+  padding: 0.2rem 0.45rem;
+  font-size: 0.58rem;
+}
+
+.icon svg {
+  width: 0.75rem;
+  height: 0.75rem;
+  stroke: currentColor;
+}
+
+.text {
+  white-space: nowrap;
+}
+
+:global(.dark) .badge {
+  background-color: #374151;
+  color: #d1d5db;
+}
+
+:global(.dark) .icon svg {
+  stroke: currentColor;
+}

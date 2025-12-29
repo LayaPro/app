@@ -282,9 +282,8 @@ async function seedDatabase() {
       { statusCode: 'REVIEW_PENDING', statusDescription: 'Review pending', step: 1 },
       { statusCode: 'RE_EDIT_SUGGESTED', statusDescription: 'Re-edit requested', step: 2 },
       { statusCode: 'RE_EDIT_DONE', statusDescription: 'Re-edit done', step: 3 },
-      { statusCode: 'DISCARDED', statusDescription: 'Discarded', step: 4 },
-      { statusCode: 'APPROVED', statusDescription: 'Approved', step: 5 },
-      { statusCode: 'CLIENT_SELECTED', statusDescription: 'Client selected', step: 6 }
+      { statusCode: 'APPROVED', statusDescription: 'Approved', step: 4 },
+      { statusCode: 'CLIENT_SELECTED', statusDescription: 'Client selected', step: 5 }
 
     ];
 
