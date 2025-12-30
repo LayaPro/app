@@ -9,6 +9,7 @@ import { useAuth } from '../../hooks/useAuth.js';
 import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDeliveryStatusApi } from '../../services/api';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
+import { EventMenuDropdown } from './components/EventMenuDropdown';
 
 interface Project {
   projectId: string;
@@ -53,6 +54,7 @@ const Albums = () => {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [isDownloadingSelected, setIsDownloadingSelected] = useState(false);
   const [downloadingEventId, setDownloadingEventId] = useState<string | null>(null);
+  const [downloadingDesignEventId, setDownloadingDesignEventId] = useState<string | null>(null);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadedCount, setUploadedCount] = useState(0);
@@ -347,7 +349,6 @@ const Albums = () => {
   const fetchGalleryImages = async (clientEventId: string) => {
     try {
       setIsLoadingGallery(true);
-      setShowContent(false);
       setLoadedGalleryImages(new Set());
       
       const data = await imageApi.getByClientEvent(clientEventId);
@@ -355,8 +356,6 @@ const Albums = () => {
       if (data.images && data.images.length > 0) {
         setIsLoadingGalleryPreviews(true);
       }
-      // Delay showing content to ensure smooth animation
-      setTimeout(() => setShowContent(true), 150);
     } catch (error) {
       console.error('Error fetching gallery images:', error);
       setGalleryImages([]);
@@ -649,6 +648,49 @@ const Albums = () => {
       showToast('error', 'Failed to download images for this event. Please try again.');
     } finally {
       setDownloadingEventId(null);
+    }
+  };
+
+  const handleDownloadAlbumDesignImages = async (event: ClientEvent) => {
+    if (downloadingDesignEventId === event.clientEventId) return;
+
+    setOpenMenuId(null);
+    const clientSelectedStatus = imageStatuses.find(status => status.statusCode === 'CLIENT_SELECTED');
+    if (!clientSelectedStatus) {
+      showToast('error', 'Client selected status not found.');
+      return;
+    }
+
+    const selectedImagesForEvent = allImages.filter(
+      img => img.clientEventId === event.clientEventId && img.imageStatusId === clientSelectedStatus.statusId
+    );
+
+    if (selectedImagesForEvent.length === 0) {
+      showToast('warning', 'No client-selected photos available for this event yet.');
+      return;
+    }
+
+    setDownloadingDesignEventId(event.clientEventId);
+    showToast('info', 'Preparing ZIP download...');
+
+    try {
+      const imageIds = selectedImagesForEvent.map(img => img.imageId);
+
+      const projectName =
+        (selectedProject && selectedProject.projectId === event.projectId)
+          ? selectedProject.projectName
+          : projects.find(project => project.projectId === event.projectId)?.projectName;
+      const eventName = eventTypes.get(event.eventId)?.eventDesc;
+      const baseZipName = [projectName, eventName, 'album-design'].filter(Boolean).join('-') || 'album-design-images';
+
+      const response = await imageApi.downloadSelectedZip(imageIds);
+      await downloadZipFromResponse(response, `${baseZipName}.zip`);
+      showToast('success', 'Preparing ZIP download. It will start shortly.');
+    } catch (error) {
+      console.error('Error downloading client-selected images:', error);
+      showToast('error', 'Failed to download client-selected images. Please try again.');
+    } finally {
+      setDownloadingDesignEventId(null);
     }
   };
 
@@ -2315,8 +2357,12 @@ const Albums = () => {
           ) : showContent ? (
             <div className={styles.contentWrapper}>
               <div className={styles.projectsGrid}>
-                {paginatedItems.map((project: any) => (
-                  <div key={project.projectId} className={styles.card}>
+                {paginatedItems.map((project: any, index: number) => (
+                  <div
+                    key={project.projectId}
+                    className={styles.card}
+                    style={{ '--card-index': index + 1 } as React.CSSProperties}
+                  >
                     <div className={styles.cardImage} onClick={() => handleProjectClick(project)}>
                       <img
                         src={project.coverPhoto || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
@@ -2447,15 +2493,15 @@ const Albums = () => {
           ) : showContent ? (
             <div className={styles.contentWrapper}>
               <div className={styles.eventsGrid}>
-                {paginatedItems.map((eventItem: any) => (
+                {paginatedItems.map((eventItem: any, index: number) => (
                   <div 
                     key={eventItem.clientEventId} 
                     className={styles.card}
+                    style={{ '--card-index': index + 1, cursor: 'pointer' } as React.CSSProperties}
                     onClick={() => {
                       console.log('Card clicked!', eventItem);
                       handleEventClick(eventItem);
                     }}
-                    style={{ cursor: 'pointer' }}
                   >
                     <div className={styles.cardImage}>
                       <img
@@ -2481,74 +2527,15 @@ const Albums = () => {
                         </svg>
                       </button>
                       {openMenuId === eventItem.clientEventId && (
-                        <div className={styles.menuDropdown}>
-                          <button
-                            className={styles.menuItem}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDownloadEventImages(eventItem);
-                            }}
-                            disabled={downloadingEventId === eventItem.clientEventId}
-                            aria-disabled={downloadingEventId === eventItem.clientEventId}
-                          >
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                              />
-                            </svg>
-                            <span>
-                              {downloadingEventId === eventItem.clientEventId ? 'Downloading...' : 'Download as ZIP'}
-                            </span>
-                          </button>
-                          <button className={styles.menuItem}>
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                            Upload Photos
-                          </button>
-                          <button 
-                            className={styles.menuItem}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSetEventStatus(eventItem);
-                            }}
-                          >
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                              />
-                            </svg>
-                            Set Status
-                          </button>
-                          <button 
-                            className={styles.menuItem}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePublishToCustomer(eventItem);
-                            }}
-                          >
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
-                              />
-                            </svg>
-                            Publish to Customer
-                          </button>
-                        </div>
+                        <EventMenuDropdown
+                          event={eventItem}
+                          isDownloadingAll={downloadingEventId === eventItem.clientEventId}
+                          isDownloadingAlbumDesign={downloadingDesignEventId === eventItem.clientEventId}
+                          onDownloadAll={handleDownloadEventImages}
+                          onDownloadAlbumDesign={handleDownloadAlbumDesignImages}
+                          onSetStatus={handleSetEventStatus}
+                          onPublish={handlePublishToCustomer}
+                        />
                       )}
                     </div>
 
@@ -2616,7 +2603,7 @@ const Albums = () => {
       )}
 
       {/* Pagination */}
-      {showContent && filteredItems.length > 0 && (
+      {showContent && filteredItems.length > 10 && (
         <div className={styles.pagination}>
           <div className={styles.paginationInfo}>
             Showing <span>{startIndex + 1}-{Math.min(endIndex, filteredItems.length)}</span> of{' '}
