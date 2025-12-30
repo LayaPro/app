@@ -2,7 +2,27 @@ import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import ClientEvent from '../models/clientEvent';
 import Team from '../models/team';
+import Project from '../models/project';
+import { uploadToS3 } from '../utils/s3';
 import { AuthRequest } from '../middleware/auth';
+
+const sanitizeSegment = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-');
+
+const trimDashes = (value: string) => value.replace(/--+/g, '-').replace(/^-|-$/g, '') || 'album';
+
+const buildCustomerFolder = (projectName?: string, fallback?: string) =>
+  `${trimDashes(sanitizeSegment(projectName || fallback || 'customer'))}-album`;
+
+const sanitizePdfName = (fileName: string) => {
+  const base = fileName.replace(/[^a-zA-Z0-9.-]+/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '');
+  if (!base.toLowerCase().endsWith('.pdf')) {
+    return `${base || 'album-proof'}.pdf`;
+  }
+  return base;
+};
 
 export const createClientEvent = async (req: AuthRequest, res: Response) => {
   try {
@@ -276,11 +296,84 @@ export const getClientEventsByProject = async (req: AuthRequest, res: Response) 
   }
 };
 
+export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId, clientEventId } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    if (!projectId || !clientEventId) {
+      return res.status(400).json({ message: 'Project ID and Client Event ID are required' });
+    }
+
+    const file = req.file;
+    if (!file) {
+      return res.status(400).json({ message: 'Album PDF file is required' });
+    }
+
+    if (file.mimetype !== 'application/pdf') {
+      return res.status(400).json({ message: 'Only PDF files are allowed for album uploads' });
+    }
+
+    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+    if (!clientEvent) {
+      return res.status(404).json({ message: 'Client event not found' });
+    }
+
+    if (clientEvent.projectId !== projectId) {
+      return res.status(400).json({ message: 'Client event does not belong to the specified project' });
+    }
+
+    const project = await Project.findOne({ projectId, tenantId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const bucketName = project.s3BucketName || process.env.AWS_S3_BUCKET;
+    if (!bucketName) {
+      return res.status(400).json({ message: 'No S3 bucket configured for this customer' });
+    }
+
+    const folder = buildCustomerFolder(project.projectName, project.projectId);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const safeFileName = sanitizePdfName(file.originalname || 'album-proof.pdf');
+    const finalFileName = `${timestamp}-${safeFileName}`;
+
+    const pdfUrl = await uploadToS3({
+      buffer: file.buffer,
+      fileName: finalFileName,
+      mimeType: file.mimetype,
+      folder,
+      bucketName,
+      storageClass: 'STANDARD',
+    });
+
+    clientEvent.albumPdfUrl = pdfUrl;
+    clientEvent.albumPdfFileName = file.originalname || safeFileName;
+    clientEvent.albumPdfUploadedAt = new Date();
+    clientEvent.albumPdfUploadedBy = userId;
+    await clientEvent.save();
+
+    return res.status(200).json({
+      message: 'Album PDF uploaded successfully',
+      clientEvent,
+    });
+  } catch (err) {
+    console.error('Upload album PDF error:', err);
+    return res.status(500).json({ message: 'Failed to upload album PDF' });
+  }
+};
+
 export default {
   createClientEvent,
   getAllClientEvents,
   getClientEventById,
   updateClientEvent,
   deleteClientEvent,
-  getClientEventsByProject
+  getClientEventsByProject,
+  uploadAlbumPdf
 };

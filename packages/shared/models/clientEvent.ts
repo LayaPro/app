@@ -16,6 +16,10 @@ export interface ClientEvent {
   notes?: string;
   createdBy?: string;
   updatedBy?: string;
+  albumPdfUrl?: string;
+  albumPdfFileName?: string;
+  albumPdfUploadedAt?: Date;
+  albumPdfUploadedBy?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

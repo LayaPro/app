@@ -1,41 +1,11 @@
 import { Response } from 'express';
-import { nanoid } from 'nanoid';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import { AuthRequest } from '../middleware/auth';
 
 export const createEventDeliveryStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { statusCode, statusDescription, step } = req.body;
-    const tenantId = req.user?.tenantId;
-
-    if (!statusCode || !statusDescription || step === undefined) {
-      return res.status(400).json({ message: 'Status code, description, and step are required' });
-    }
-
-    if (!tenantId) {
-      return res.status(400).json({ message: 'Tenant ID is required' });
-    }
-
-    // Check if status with same code exists for this tenant
-    const existing = await EventDeliveryStatus.findOne({ statusCode, tenantId });
-    if (existing) {
-      return res.status(409).json({ message: 'Event delivery status with this code already exists for your tenant' });
-    }
-
-    const statusId = `status_${nanoid()}`;
-    const eventDeliveryStatus = await EventDeliveryStatus.create({
-      statusId,
-      tenantId,
-      statusCode,
-      statusDescription,
-      step,
-      lastUpdatedDate: new Date(),
-      updatedBy: req.user?.userId
-    });
-
-    return res.status(201).json({
-      message: 'Event delivery status created successfully',
-      eventDeliveryStatus
+    return res.status(403).json({
+      message: 'Event workflow steps are managed by the system and cannot be created manually.'
     });
   } catch (err: any) {
     console.error('Create event delivery status error:', err);
@@ -131,30 +101,8 @@ export const updateEventDeliveryStatus = async (req: AuthRequest, res: Response)
 
 export const deleteEventDeliveryStatus = async (req: AuthRequest, res: Response) => {
   try {
-    const { statusId } = req.params;
-    const tenantId = req.user?.tenantId;
-
-    const eventDeliveryStatus = await EventDeliveryStatus.findOne({ statusId });
-
-    if (!eventDeliveryStatus) {
-      return res.status(404).json({ message: 'Event delivery status not found' });
-    }
-
-    // Check authorization: all users can only delete their own tenant's statuses
-    if (eventDeliveryStatus.tenantId !== tenantId) {
-      return res.status(403).json({ message: 'Access denied. You can only delete your own tenant event delivery statuses.' });
-    }
-
-    // Prevent deletion of system-required statuses
-    if (eventDeliveryStatus.isSystemRequired) {
-      return res.status(400).json({ message: 'Cannot delete system-required workflow step. This step is essential for the system to function properly.' });
-    }
-
-    await EventDeliveryStatus.deleteOne({ statusId });
-
-    return res.status(200).json({
-      message: 'Event delivery status deleted successfully',
-      statusId
+    return res.status(403).json({
+      message: 'Event workflow steps are system-managed and cannot be deleted.'
     });
   } catch (err: any) {
     console.error('Delete event delivery status error:', err);

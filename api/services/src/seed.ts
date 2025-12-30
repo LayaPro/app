@@ -183,18 +183,94 @@ async function seedDatabase() {
 
     // 6. Create default event delivery statuses for LayaPro tenant
     const defaultEventStatuses = [
-      { statusCode: 'SHOOT_SCHEDULED', statusDescription: 'Scheduled', step: 1, isHidden: false, isSystemRequired: true },
-      { statusCode: 'SHOOT_IN_PROGRESS', statusDescription: 'Shoot ongoing', step: 2, isHidden: false, isSystemRequired: false },
-      { statusCode: 'SHOOT_COMPLETED', statusDescription: 'Shoot completed', step: 3, isHidden: false, isSystemRequired: false },
-      { statusCode: 'AWAITING_EDITS', statusDescription: 'Awaiting editing', step: 4, isHidden: false, isSystemRequired: false },
-      { statusCode: 'EDITING_IN_PROGRESS', statusDescription: 'Editing ongoing', step: 5, isHidden: false, isSystemRequired: false },
-      { statusCode: 'UPLOADED_FOR_REVIEW', statusDescription: 'Admin review pending', step: 6, isHidden: false, isSystemRequired: false },
-      { statusCode: 'PUBLISHED', statusDescription: 'Published', step: 7, isHidden: false, isSystemRequired: true },
-      { statusCode: 'CLIENT_SELECTION_DONE', statusDescription: 'Client selection done', step: 8, isHidden: false, isSystemRequired: true },
-      { statusCode: 'ALBUM_DESIGNED', statusDescription: 'Album designed', step: 9, isHidden: false, isSystemRequired: false },
-      { statusCode: 'ALBUM_CLIENT_APPROVED', statusDescription: 'Album client approved', step: 10, isHidden: false, isSystemRequired: false },
-      { statusCode: 'ALBUM_PRINTING', statusDescription: 'Album printing', step: 11, isHidden: false, isSystemRequired: false },
-      { statusCode: 'DELIVERED', statusDescription: 'Delivered', step: 12, isHidden: false, isSystemRequired: true }
+      {
+        statusCode: 'SCHEDULED',
+        statusDescription: 'Scheduled',
+        statusExplaination: 'Event is created and upcoming. Shooting hasn\'t started because the scheduled date/time is in the future.',
+        statusCustomerNote: 'Your event is scheduled. Our crew will arrive at the planned start time.',
+        step: 1,
+        isHidden: false
+      },
+      {
+        statusCode: 'SHOOT_IN_PROGRESS',
+        statusDescription: 'Shoot in progress',
+        statusExplaination: 'The scheduled time has started and the crew is actively capturing the event.',
+        statusCustomerNote: 'We\'re currently covering your event on-site.',
+        step: 2,
+        isHidden: false
+      },
+      {
+        statusCode: 'AWAITING_EDITING',
+        statusDescription: 'Awaiting editing',
+        statusExplaination: 'Event dates are complete. Media is queued and ready for the editing team.',
+        statusCustomerNote: 'We\'ve wrapped shooting and will begin editing shortly.',
+        step: 3,
+        isHidden: false
+      },
+      {
+        statusCode: 'EDITING_ONGOING',
+        statusDescription: 'Editing ongoing',
+        statusExplaination: 'An editor has been assigned and is actively working on the deliverables.',
+        statusCustomerNote: 'Our editors are polishing your images and videos.',
+        step: 4,
+        isHidden: false
+      },
+      {
+        statusCode: 'REVIEW_ONGOING',
+        statusDescription: 'Review ongoing',
+        statusExplaination: 'Edited media is uploaded and internal QA/review is happening before publish.',
+        statusCustomerNote: 'We\'re reviewing the edited photos before releasing them to you.',
+        step: 5,
+        isHidden: false
+      },
+      {
+        statusCode: 'PUBLISHED',
+        statusDescription: 'Published',
+        statusExplaination: 'The album is published and visible to the customer portal.',
+        statusCustomerNote: 'Your album is live and ready for viewing.',
+        step: 6,
+        isHidden: false
+      },
+      {
+        statusCode: 'CLIENT_SELECTION_DONE',
+        statusDescription: 'Client selection done',
+        statusExplaination: 'The customer finished selecting favorites for the final album.',
+        statusCustomerNote: 'Selections are locked. We\'re getting started on the album design.',
+        step: 7,
+        isHidden: false
+      },
+      {
+        statusCode: 'ALBUM_DESIGN_ONGOING',
+        statusDescription: 'Album design ongoing',
+        statusExplaination: 'Album designer assigned and actively building layouts. This step should only start after selections are done.',
+        statusCustomerNote: 'Our designer is crafting your album layout.',
+        step: 8,
+        isHidden: false
+      },
+      {
+        statusCode: 'ALBUM_DESIGN_COMPLETE',
+        statusDescription: 'Album design complete',
+        statusExplaination: 'Album PDF/proof uploaded and awaiting the customer\'s approval.',
+        statusCustomerNote: 'Your album proof is ready for review and approval.',
+        step: 9,
+        isHidden: false
+      },
+      {
+        statusCode: 'ALBUM_PRINTING',
+        statusDescription: 'Album printing',
+        statusExplaination: 'Customer approved the album design and production/printing is underway.',
+        statusCustomerNote: 'Your approved album is now being printed.',
+        step: 10,
+        isHidden: false
+      },
+      {
+        statusCode: 'DELIVERY',
+        statusDescription: 'Delivery',
+        statusExplaination: 'Physical or digital deliverables are dispatched or handed over to the customer.',
+        statusCustomerNote: 'Your order is out for delivery or ready for pickup.',
+        step: 11,
+        isHidden: false
+      }
     ];
 
     console.log('\n✓ Creating default event delivery statuses...');
@@ -216,7 +292,8 @@ async function seedDatabase() {
           statusDescription: statusData.statusDescription,
           step: statusData.step,
           isHidden: statusData.isHidden || false,
-          isSystemRequired: statusData.isSystemRequired || false
+          statusExplaination: statusData.statusExplaination,
+          statusCustomerNote: statusData.statusCustomerNote
         });
         createdEventStatusCount++;
         const hiddenText = statusData.isHidden ? ' (Hidden)' : '';

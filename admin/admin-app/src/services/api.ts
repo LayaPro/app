@@ -515,6 +515,17 @@ export const clientEventApi = {
     });
     return handleResponse(response);
   },
+
+  uploadAlbumPdf: async (formData: FormData) => {
+    const response = await fetch(`${API_BASE_URL}/upload-album-pdf`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  },
 };
 
 // Image API

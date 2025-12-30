@@ -9,9 +9,10 @@ const EventDeliveryStatusSchema = new Schema<IEventDeliveryStatus>(
     tenantId: { type: String, required: true, index: true },
     statusCode: { type: String, required: true, trim: true },
     statusDescription: { type: String, required: true, trim: true },
+    statusExplaination: { type: String, trim: true },
+    statusCustomerNote: { type: String, trim: true },
     step: { type: Number, required: true },
     isHidden: { type: Boolean, default: false },
-    isSystemRequired: { type: Boolean, default: false },
     lastUpdatedDate: { type: Date },
     updatedBy: { type: String }
   },

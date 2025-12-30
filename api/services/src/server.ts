@@ -23,7 +23,7 @@ import searchController from './controllers/searchController';
 import userController from './controllers/userController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
-import { upload } from './middleware/upload';
+import { upload, uploadPdf } from './middleware/upload';
 
 dotenv.config();
 
@@ -120,6 +120,7 @@ app.get('/get-client-event/:clientEventId', authenticate, clientEventController.
 app.get('/get-client-events-by-project/:projectId', authenticate, clientEventController.getClientEventsByProject);
 app.put('/update-client-event/:clientEventId', authenticate, clientEventController.updateClientEvent);
 app.delete('/delete-client-event/:clientEventId', authenticate, requireAdmin, clientEventController.deleteClientEvent);
+app.post('/upload-album-pdf', authenticate, uploadPdf.single('albumPdf'), clientEventController.uploadAlbumPdf);
 
 // ---------- Event Expense routes ----------
 app.post('/create-event-expense', authenticate, requireAdmin, eventExpenseController.createEventExpense);

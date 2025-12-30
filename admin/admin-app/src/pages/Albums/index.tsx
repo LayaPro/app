@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Breadcrumb, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
+import { Breadcrumb, DocumentUploadModal, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
 import { StatusBadge } from '../../components/ui/StatusBadge.js';
 import { CommentModal } from '../../components/ui/CommentModal.js';
@@ -28,6 +28,10 @@ interface ClientEvent {
   fromDatetime?: string;
   createdAt?: string;
   coverImage?: string;
+  albumPdfUrl?: string;
+  albumPdfFileName?: string;
+  albumPdfUploadedAt?: string;
+  albumPdfUploadedBy?: string;
 }
 
 const Albums = () => {
@@ -99,6 +103,9 @@ const Albums = () => {
   const [publishConfirmed, setPublishConfirmed] = useState(true);
   const [publishError, setPublishError] = useState('');
   const [approvedPhotosCount, setApprovedPhotosCount] = useState(0);
+  const [showUploadAlbumPdfModal, setShowUploadAlbumPdfModal] = useState(false);
+  const [selectedEventForAlbumPdf, setSelectedEventForAlbumPdf] = useState<ClientEvent | null>(null);
+  const [isUploadingAlbumPdf, setIsUploadingAlbumPdf] = useState(false);
   const publishStateStepNumber = useMemo(() => {
     for (const status of eventDeliveryStatuses.values()) {
       if (status.statusCode === 'PUBLISHED') {
@@ -691,6 +698,59 @@ const Albums = () => {
       showToast('error', 'Failed to download client-selected images. Please try again.');
     } finally {
       setDownloadingDesignEventId(null);
+    }
+  };
+
+  const handleUploadAlbumPdf = (event: ClientEvent) => {
+    setOpenMenuId(null);
+    setSelectedEventForAlbumPdf(event);
+    setShowUploadAlbumPdfModal(true);
+  };
+
+  const closeUploadAlbumPdfModal = (force = false) => {
+    if (isUploadingAlbumPdf && !force) return;
+    setShowUploadAlbumPdfModal(false);
+    setSelectedEventForAlbumPdf(null);
+  };
+
+  const confirmUploadAlbumPdf = async (file: File) => {
+    if (!selectedEventForAlbumPdf) {
+      throw new Error('No event selected. Please try again.');
+    }
+
+    setIsUploadingAlbumPdf(true);
+    try {
+      const formData = new FormData();
+      formData.append('projectId', selectedEventForAlbumPdf.projectId);
+      formData.append('clientEventId', selectedEventForAlbumPdf.clientEventId);
+      formData.append('albumPdf', file);
+
+      const response = await clientEventApi.uploadAlbumPdf(formData);
+      const updatedEvent = response.clientEvent;
+
+      showToast('success', 'Album PDF uploaded successfully.');
+
+      setEvents((prev) =>
+        prev.map((evt) => (evt.clientEventId === updatedEvent.clientEventId ? { ...evt, ...updatedEvent } : evt))
+      );
+      setAllEvents((prev) =>
+        prev.map((evt) => (evt.clientEventId === updatedEvent.clientEventId ? { ...evt, ...updatedEvent } : evt))
+      );
+      if (selectedEvent && selectedEvent.clientEventId === updatedEvent.clientEventId) {
+        setSelectedEvent({ ...selectedEvent, ...updatedEvent });
+      }
+
+      closeUploadAlbumPdfModal(true);
+    } catch (error: any) {
+      console.error('Error uploading album PDF:', error);
+      const message =
+        error?.message ||
+        error?.response?.data?.message ||
+        'Failed to upload album PDF. Please try again.';
+      showToast('error', message);
+      throw new Error(message);
+    } finally {
+      setIsUploadingAlbumPdf(false);
     }
   };
 
@@ -2535,6 +2595,7 @@ const Albums = () => {
                           onDownloadAlbumDesign={handleDownloadAlbumDesignImages}
                           onSetStatus={handleSetEventStatus}
                           onPublish={handlePublishToCustomer}
+                          onUploadAlbumPdf={handleUploadAlbumPdf}
                         />
                       )}
                     </div>
@@ -2593,6 +2654,19 @@ const Albums = () => {
                         <span>{getTimeAgo(eventItem.createdAt)}</span>
                       </div>
                     </div>
+                    {eventItem.albumPdfUrl && (
+                      <div className={styles.albumPdfBadge}>
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 7v10a2 2 0 002 2h6a2 2 0 002-2V9l-4-4H9a2 2 0 00-2 2z"
+                          />
+                        </svg>
+                        <span>Album PDF uploaded</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -2990,6 +3064,24 @@ const Albums = () => {
             </div>
           </div>
         </Modal>
+      )}
+
+      {showUploadAlbumPdfModal && selectedEventForAlbumPdf && (
+        <DocumentUploadModal
+          isOpen={showUploadAlbumPdfModal}
+          onClose={closeUploadAlbumPdfModal}
+          title="Upload Album PDF"
+          description="Upload a finalized album proof as a PDF (max 200 MB). We'll keep it under the customer bucket."
+          contextLabel={eventTypes.get(selectedEventForAlbumPdf.eventId)?.eventDesc || 'Selected event'}
+          existingFileName={selectedEventForAlbumPdf.albumPdfFileName}
+          existingFileUrl={selectedEventForAlbumPdf.albumPdfUrl}
+          accept="application/pdf"
+          maxSizeMb={200}
+          submitLabel="Upload PDF"
+          cancelLabel="Cancel"
+          isSubmitting={isUploadingAlbumPdf}
+          onSubmit={confirmUploadAlbumPdf}
+        />
       )}
     </div>
   );

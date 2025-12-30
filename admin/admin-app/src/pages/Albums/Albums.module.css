@@ -1950,6 +1950,24 @@
   animation: fadeIn 0.2s ease-out;
 }
 
+.albumPdfBadge {
+  margin-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.35rem 0.6rem;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.12);
+  color: #15803d;
+}
+
+.albumPdfBadge svg {
+  width: 14px;
+  height: 14px;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
