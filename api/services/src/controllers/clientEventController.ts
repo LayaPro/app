@@ -298,7 +298,7 @@ export const getClientEventsByProject = async (req: AuthRequest, res: Response) 
 
 export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
   try {
-    const { projectId, clientEventId } = req.body;
+    const { projectId, clientEventId, clientEventIds } = req.body;
     const tenantId = req.user?.tenantId;
     const userId = req.user?.userId;
 
@@ -306,8 +306,35 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    if (!projectId || !clientEventId) {
-      return res.status(400).json({ message: 'Project ID and Client Event ID are required' });
+    if (!projectId) {
+      return res.status(400).json({ message: 'Project ID is required' });
+    }
+
+    let targetEventIds: string[] = [];
+
+    if (clientEventIds) {
+      if (Array.isArray(clientEventIds)) {
+        targetEventIds = clientEventIds;
+      } else if (typeof clientEventIds === 'string') {
+        try {
+          const parsed = JSON.parse(clientEventIds);
+          if (Array.isArray(parsed)) {
+            targetEventIds = parsed;
+          }
+        } catch (err) {
+          targetEventIds = clientEventIds.split(',');
+        }
+      }
+    }
+
+    if (!targetEventIds.length && clientEventId) {
+      targetEventIds = [clientEventId];
+    }
+
+    targetEventIds = Array.from(new Set(targetEventIds.filter((id) => typeof id === 'string' && id.trim() !== '')));
+
+    if (targetEventIds.length === 0) {
+      return res.status(400).json({ message: 'At least one client event ID is required' });
     }
 
     const file = req.file;
@@ -319,13 +346,16 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Only PDF files are allowed for album uploads' });
     }
 
-    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
-    if (!clientEvent) {
-      return res.status(404).json({ message: 'Client event not found' });
+    const clientEvents = await ClientEvent.find({ tenantId, clientEventId: { $in: targetEventIds } });
+    if (clientEvents.length !== targetEventIds.length) {
+      const foundIds = clientEvents.map((evt) => evt.clientEventId);
+      const missing = targetEventIds.filter((id) => !foundIds.includes(id));
+      return res.status(404).json({ message: `Client events not found: ${missing.join(', ')}` });
     }
 
-    if (clientEvent.projectId !== projectId) {
-      return res.status(400).json({ message: 'Client event does not belong to the specified project' });
+    const hasMismatchedProject = clientEvents.some((evt) => evt.projectId !== projectId);
+    if (hasMismatchedProject) {
+      return res.status(400).json({ message: 'One or more client events do not belong to the specified project' });
     }
 
     const project = await Project.findOne({ projectId, tenantId });
@@ -352,15 +382,28 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       storageClass: 'STANDARD',
     });
 
-    clientEvent.albumPdfUrl = pdfUrl;
-    clientEvent.albumPdfFileName = file.originalname || safeFileName;
-    clientEvent.albumPdfUploadedAt = new Date();
-    clientEvent.albumPdfUploadedBy = userId;
-    await clientEvent.save();
+    const updatePayload = {
+      albumPdfUrl: pdfUrl,
+      albumPdfFileName: file.originalname || safeFileName,
+      albumPdfUploadedAt: new Date(),
+      albumPdfUploadedBy: userId,
+    };
+
+    await ClientEvent.updateMany(
+      { tenantId, clientEventId: { $in: targetEventIds } },
+      { $set: updatePayload }
+    );
+
+    const updatedEvents = await ClientEvent.find({ clientEventId: { $in: targetEventIds } }).lean();
+    const orderedMap = new Map(updatedEvents.map((evt) => [evt.clientEventId, evt]));
+    const orderedEvents = targetEventIds
+      .map((id) => orderedMap.get(id))
+      .filter((evt): evt is typeof updatedEvents[number] => Boolean(evt));
 
     return res.status(200).json({
       message: 'Album PDF uploaded successfully',
-      clientEvent,
+      clientEvent: orderedEvents[0],
+      clientEvents: orderedEvents,
     });
   } catch (err) {
     console.error('Upload album PDF error:', err);

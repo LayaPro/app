@@ -1,4 +1,4 @@
-import type { ChangeEvent, DragEvent, FC } from 'react';
+import type { ChangeEvent, DragEvent, FC, ReactNode } from 'react';
 import { useEffect, useRef, useState } from 'react';
 import { Modal } from './Modal.js';
 import styles from './DocumentUploadModal.module.css';
@@ -17,6 +17,7 @@ interface DocumentUploadModalProps {
   isSubmitting?: boolean;
   onClose: () => void;
   onSubmit: (file: File) => Promise<void> | void;
+  extraContent?: ReactNode;
 }
 
 const DEFAULT_ACCEPT = 'application/pdf';
@@ -35,6 +36,7 @@ export const DocumentUploadModal: FC<DocumentUploadModalProps> = ({
   isSubmitting = false,
   onClose,
   onSubmit,
+  extraContent,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -166,6 +168,8 @@ export const DocumentUploadModal: FC<DocumentUploadModalProps> = ({
             )}
           </div>
         )}
+
+        {extraContent}
 
         <label
           className={`${styles.dropzone} ${isDragActive ? styles.dropzoneActive : ''}`}
