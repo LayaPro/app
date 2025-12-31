@@ -56,9 +56,9 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
       selectedProject,
       events,
       eventTypes,
-      setEvents,
-      setAllEvents,
-      setSelectedEvent,
+      setEvents: _setEvents,
+      setAllEvents: _setAllEvents,
+      setSelectedEvent: _setSelectedEvent,
       showBulkTrigger = true,
       onUploadSuccess,
     },
@@ -249,7 +249,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
               </div>
             </div>
 
-            <div style={{ marginTop: '1.5rem' }}>
+            <div style={{ marginTop: '1rem' }}>
               {pdfMappings.map((mapping, index) => {
                 const availableEvents = getAvailableEvents(mapping.id);
                 const eventOptions = availableEvents.map(evt => ({
@@ -259,14 +259,29 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
 
                 return (
                   <div key={mapping.id} style={{
-                    padding: '1rem',
-                    border: '1px solid var(--border-color)',
+                    padding: '0.875rem',
+                    border: '2px solid #e5e7eb',
                     borderRadius: '0.5rem',
-                    marginBottom: '1rem',
-                    background: 'var(--background-secondary)'
+                    marginBottom: '0.75rem',
+                    background: '#fafafa',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
+                      <div style={{ 
+                        fontWeight: 700, 
+                        fontSize: '0.875rem',
+                        color: '#1f2937',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.375rem'
+                      }}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366f1" strokeWidth="2">
+                          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                          <polyline points="14 2 14 8 20 8"></polyline>
+                          <line x1="12" y1="18" x2="12" y2="12"></line>
+                          <line x1="9" y1="15" x2="15" y2="15"></line>
+                        </svg>
                         PDF #{index + 1}
                       </div>
                       {pdfMappings.length > 1 && (
@@ -275,14 +290,26 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                           onClick={() => removeMapping(mapping.id)}
                           disabled={isUploading || isChecking}
                           style={{
-                            padding: '0.4rem 0.8rem',
-                            fontSize: '0.85rem',
-                            border: '1px solid #dc2626',
+                            padding: '0.375rem 0.75rem',
+                            fontSize: '0.8rem',
+                            border: '1.5px solid #ef4444',
                             borderRadius: '0.375rem',
-                            background: 'transparent',
-                            color: '#dc2626',
-                            cursor: 'pointer',
-                            fontWeight: 600
+                            background: 'white',
+                            color: '#ef4444',
+                            cursor: isUploading || isChecking ? 'not-allowed' : 'pointer',
+                            fontWeight: 600,
+                            transition: 'all 0.2s ease',
+                            opacity: isUploading || isChecking ? 0.5 : 1
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isUploading && !isChecking) {
+                              e.currentTarget.style.background = '#ef4444';
+                              e.currentTarget.style.color = 'white';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'white';
+                            e.currentTarget.style.color = '#ef4444';
                           }}
                         >
                           Remove
@@ -290,8 +317,14 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                       )}
                     </div>
 
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                    <div style={{ marginBottom: '0.875rem' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '0.4rem', 
+                        fontWeight: 600, 
+                        fontSize: '0.8rem',
+                        color: '#374151'
+                      }}>
                         Select Events
                       </label>
                       <MultiSelect
@@ -303,40 +336,110 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                     </div>
 
                     <div>
-                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                      <label style={{ 
+                        display: 'block', 
+                        marginBottom: '0.4rem', 
+                        fontWeight: 600, 
+                        fontSize: '0.8rem',
+                        color: '#374151'
+                      }}>
                         Upload PDF File
                       </label>
-                      <input
-                        type="file"
-                        accept={ACCEPT}
-                        onChange={(e) => handleFileSelect(mapping.id, e.target.files?.[0] || null)}
-                        disabled={isUploading || isChecking}
-                        style={{
-                          display: 'block',
-                          width: '100%',
-                          padding: '0.5rem',
-                          border: '1px solid var(--border-color)',
-                          borderRadius: '0.375rem',
-                          fontSize: '0.9rem'
-                        }}
-                      />
-                      {mapping.file && (
-                        <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-                          Selected: {mapping.file.name}
-                        </div>
-                      )}
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="file"
+                          accept={ACCEPT}
+                          onChange={(e) => handleFileSelect(mapping.id, e.target.files?.[0] || null)}
+                          disabled={isUploading || isChecking}
+                          id={`file-${mapping.id}`}
+                          style={{ display: 'none' }}
+                        />
+                        <label
+                          htmlFor={`file-${mapping.id}`}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            padding: '0.625rem',
+                            border: mapping.file ? '2px solid #10b981' : '2px dashed #d1d5db',
+                            borderRadius: '0.375rem',
+                            background: mapping.file ? '#f0fdf4' : 'white',
+                            cursor: isUploading || isChecking ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s ease',
+                            opacity: isUploading || isChecking ? 0.6 : 1
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isUploading && !isChecking && !mapping.file) {
+                              e.currentTarget.style.borderColor = '#6366f1';
+                              e.currentTarget.style.background = '#f5f3ff';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!mapping.file) {
+                              e.currentTarget.style.borderColor = '#d1d5db';
+                              e.currentTarget.style.background = 'white';
+                            }
+                          }}
+                        >
+                          {mapping.file ? (
+                            <>
+                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <path d="M9 15l2 2 4-4"></path>
+                              </svg>
+                              <div style={{ flex: 1, textAlign: 'left' }}>
+                                <div style={{ fontWeight: 600, color: '#047857', fontSize: '0.8rem' }}>
+                                  {mapping.file.name}
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.125rem' }}>
+                                  {(mapping.file.size / (1024 * 1024)).toFixed(2)} MB
+                                </div>
+                              </div>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                              </svg>
+                            </>
+                          ) : (
+                            <>
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                              </svg>
+                              <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.8rem' }}>
+                                  Click to browse or drag file here
+                                </div>
+                                <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.125rem' }}>
+                                  PDF files only, max {MAX_SIZE_MB}MB
+                                </div>
+                              </div>
+                            </>
+                          )}
+                        </label>
+                      </div>
                     </div>
 
                     {mapping.error && (
                       <div style={{
-                        marginTop: '0.75rem',
+                        marginTop: '0.625rem',
                         padding: '0.5rem',
-                        background: '#fee2e2',
-                        border: '1px solid #ef4444',
+                        background: '#fef2f2',
+                        border: '1.5px solid #fca5a5',
                         borderRadius: '0.375rem',
                         color: '#991b1b',
-                        fontSize: '0.875rem'
+                        fontSize: '0.8rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.375rem'
                       }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <line x1="12" y1="8" x2="12" y2="12"></line>
+                          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                        </svg>
                         {mapping.error}
                       </div>
                     )}
@@ -350,41 +453,69 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
               onClick={addNewMapping}
               disabled={isUploading || isChecking || pdfMappings.flatMap(m => m.eventIds).length >= events.length}
               style={{
-                padding: '0.6rem 1rem',
-                border: '1px dashed var(--border-color)',
+                padding: '0.625rem',
+                border: '2px dashed #6366f1',
                 borderRadius: '0.5rem',
-                background: 'transparent',
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
+                background: 'linear-gradient(to right, #f5f3ff, #faf5ff)',
+                color: '#6366f1',
+                cursor: (isUploading || isChecking || pdfMappings.flatMap(m => m.eventIds).length >= events.length) ? 'not-allowed' : 'pointer',
                 width: '100%',
-                fontWeight: 600,
-                fontSize: '0.9rem',
+                fontWeight: 700,
+                fontSize: '0.825rem',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '0.5rem',
-                marginBottom: '1.5rem'
+                marginBottom: '1rem',
+                transition: 'all 0.2s ease',
+                opacity: (isUploading || isChecking || pdfMappings.flatMap(m => m.eventIds).length >= events.length) ? 0.5 : 1
+              }}
+              onMouseEnter={(e) => {
+                if (!isUploading && !isChecking && pdfMappings.flatMap(m => m.eventIds).length < events.length) {
+                  e.currentTarget.style.background = 'linear-gradient(to right, #eef2ff, #f5f3ff)';
+                  e.currentTarget.style.borderColor = '#4f46e5';
+                  e.currentTarget.style.transform = 'translateY(-1px)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.15)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(to right, #f5f3ff, #faf5ff)';
+                e.currentTarget.style.borderColor = '#6366f1';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
               }}
             >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '18px', height: '18px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 4v16m8-8H4" />
               </svg>
               Add Another PDF
             </button>
 
-            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
               <button
                 onClick={closeModal}
                 disabled={isUploading || isChecking}
                 style={{
-                  padding: '0.6rem 1.2rem',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '0.5rem',
-                  background: 'transparent',
-                  color: 'var(--text-primary)',
+                  padding: '0.5rem 1rem',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '0.375rem',
+                  background: 'white',
+                  color: '#374151',
                   fontWeight: 600,
+                  fontSize: '0.825rem',
                   cursor: (isUploading || isChecking) ? 'not-allowed' : 'pointer',
                   opacity: (isUploading || isChecking) ? 0.6 : 1,
+                  transition: 'all 0.2s ease'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isUploading && !isChecking) {
+                    e.currentTarget.style.background = '#f9fafb';
+                    e.currentTarget.style.borderColor = '#9ca3af';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'white';
+                  e.currentTarget.style.borderColor = '#d1d5db';
                 }}
               >
                 Cancel
@@ -393,17 +524,57 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                 onClick={validateAndUpload}
                 disabled={isUploading || isChecking}
                 style={{
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '0.5rem',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '0.375rem',
                   border: 'none',
-                  background: '#6366f1',
+                  background: isUploading || isChecking ? '#9ca3af' : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
                   color: 'white',
-                  fontWeight: 600,
+                  fontWeight: 700,
+                  fontSize: '0.825rem',
                   cursor: (isUploading || isChecking) ? 'not-allowed' : 'pointer',
-                  opacity: (isUploading || isChecking) ? 0.7 : 1,
+                  transition: 'all 0.2s ease',
+                  boxShadow: isUploading || isChecking ? 'none' : '0 2px 8px rgba(99, 102, 241, 0.3)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.375rem'
+                }}
+                onMouseEnter={(e) => {
+                  if (!isUploading && !isChecking) {
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.4)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.3)';
                 }}
               >
-                {isChecking ? 'Checking...' : isUploading ? 'Uploading...' : 'Upload All PDFs'}
+                {isChecking ? (
+                  <>
+                    <svg style={{ animation: 'spin 1s linear infinite', width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"></circle>
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"></path>
+                    </svg>
+                    Checking...
+                  </>
+                ) : isUploading ? (
+                  <>
+                    <svg style={{ animation: 'spin 1s linear infinite', width: '14px', height: '14px' }} viewBox="0 0 24 24" fill="none">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" opacity="0.25"></circle>
+                      <path fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" opacity="0.75"></path>
+                    </svg>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                      <polyline points="7 10 12 15 17 10"></polyline>
+                      <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Upload All PDFs
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -417,9 +588,18 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
       <>
         {shouldShowTrigger && (
           <div className={styles.headerActions}>
-            <button type="button" className={styles.triggerButton} onClick={openModal} disabled={isUploading || isChecking}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            <button 
+              type="button" 
+              className={styles.triggerButton} 
+              onClick={openModal} 
+              disabled={isUploading || isChecking}
+              style={{
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                boxShadow: '0 4px 14px rgba(99, 102, 241, 0.3)'
+              }}
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
               <span>Upload PDF Album</span>
             </button>
