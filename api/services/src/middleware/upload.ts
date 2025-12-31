@@ -43,6 +43,6 @@ export const uploadPdf = multer({
   fileFilter: pdfFileFilter,
   limits: {
     fileSize: 200 * 1024 * 1024, // 200MB max PDF size
-    files: 1,
+    files: 20, // Allow up to 20 PDFs at once
   },
 });

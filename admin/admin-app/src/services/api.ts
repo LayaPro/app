@@ -526,6 +526,113 @@ export const clientEventApi = {
     });
     return handleResponse(response);
   },
+
+  uploadAlbumPdfBatch: async (formData: FormData) => {
+    const response = await fetch(`${API_BASE_URL}/upload-album-pdf-batch`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  },
+};
+
+// Album PDF API
+export const albumPdfApi = {
+  checkExisting: async (projectId: string) => {
+    const response = await fetch(`${API_BASE_URL}/check-existing-album-pdf`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ projectId }),
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: {
+    albumId: string;
+    projectId: string;
+    eventIds: string[];
+    albumPdfUrl: string;
+    albumPdfFileName: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/create-album-pdf`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-album-pdfs`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getByProject: async (projectId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-album-pdfs-by-project/${projectId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getByEventId: async (eventId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-album-pdfs-by-event/${eventId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (albumPdfId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-album-pdf/${albumPdfId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  updateStatus: async (albumPdfId: string, albumStatus: string) => {
+    const response = await fetch(`${API_BASE_URL}/update-album-pdf-status/${albumPdfId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ albumStatus }),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (albumPdfId: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-album-pdf/${albumPdfId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
 };
 
 // Image API

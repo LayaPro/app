@@ -7,6 +7,7 @@ import { CommentModal } from '../../components/ui/CommentModal.js';
 import ReuploadModal from '../../components/ui/ReuploadModal';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth.js';
+import { useAlbumPdfsByEvent } from '../../hooks/useAlbumPdfs';
 import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDeliveryStatusApi } from '../../services/api';
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
 import ImageViewer from '../../components/ImageViewer';
@@ -23,6 +24,11 @@ const Albums = () => {
   const [eventTypes, setEventTypes] = useState<Map<string, any>>(new Map());
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<ClientEvent | null>(null);
+  
+  // Fetch album PDFs for the selected event
+  const { albumPdfs, refetch: refetchAlbumPdfs } = useAlbumPdfsByEvent(selectedEvent?.clientEventId || null);
+  const currentAlbumPdf = albumPdfs.length > 0 ? albumPdfs[0] : null;
+  
   const [isLoading, setIsLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1755,8 +1761,8 @@ const Albums = () => {
 
           <div className={styles.actionsRight}>
             <AlbumPdfInfo
-              albumPdfUrl={selectedEvent?.albumPdfUrl}
-              albumPdfFileName={selectedEvent?.albumPdfFileName}
+              albumPdfUrl={currentAlbumPdf?.albumPdfUrl}
+              albumPdfFileName={currentAlbumPdf?.albumPdfFileName}
               className={styles.albumPdfToolbarTag}
             />
 
@@ -2365,6 +2371,7 @@ const Albums = () => {
         setAllEvents={setAllEvents}
         setSelectedEvent={setSelectedEvent}
         showBulkTrigger={false}
+        onUploadSuccess={refetchAlbumPdfs}
       />
 
       {/* Projects Grid */}

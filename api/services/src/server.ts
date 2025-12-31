@@ -21,6 +21,7 @@ import imageController from './controllers/imageController';
 import dashboardController from './controllers/dashboardController';
 import searchController from './controllers/searchController';
 import userController from './controllers/userController';
+import albumPdfController from './controllers/albumPdfController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload, uploadPdf } from './middleware/upload';
@@ -121,6 +122,7 @@ app.get('/get-client-events-by-project/:projectId', authenticate, clientEventCon
 app.put('/update-client-event/:clientEventId', authenticate, clientEventController.updateClientEvent);
 app.delete('/delete-client-event/:clientEventId', authenticate, requireAdmin, clientEventController.deleteClientEvent);
 app.post('/upload-album-pdf', authenticate, uploadPdf.single('albumPdf'), clientEventController.uploadAlbumPdf);
+app.post('/upload-album-pdf-batch', authenticate, uploadPdf.array('albumPdfs', 20), clientEventController.uploadAlbumPdfBatch);
 
 // ---------- Event Expense routes ----------
 app.post('/create-event-expense', authenticate, requireAdmin, eventExpenseController.createEventExpense);
@@ -156,6 +158,16 @@ app.put('/update-image/:imageId', authenticate, imageController.updateImage);
 app.put('/bulk-update-images', authenticate, imageController.bulkUpdateImages);
 app.delete('/delete-image/:imageId', authenticate, requireAdmin, imageController.deleteImage);
 app.delete('/bulk-delete-images', authenticate, requireAdmin, imageController.bulkDeleteImages);
+
+// ---------- Album PDF routes ----------
+app.post('/create-album-pdf', authenticate, albumPdfController.createAlbumPdf);
+app.post('/check-existing-album-pdf', authenticate, albumPdfController.checkExistingAlbumPdf);
+app.get('/get-all-album-pdfs', authenticate, albumPdfController.getAllAlbumPdfs);
+app.get('/get-album-pdfs-by-project/:projectId', authenticate, albumPdfController.getAlbumPdfsByProject);
+app.get('/get-album-pdfs-by-event/:clientEventId', authenticate, albumPdfController.getAlbumPdfsByEventId);
+app.get('/get-album-pdf/:albumId', authenticate, albumPdfController.getAlbumPdfById);
+app.patch('/update-album-pdf-status/:albumId', authenticate, albumPdfController.updateAlbumPdfStatus);
+app.delete('/delete-album-pdf/:albumId', authenticate, requireAdmin, albumPdfController.deleteAlbumPdf);
 
 // ---------- Dashboard routes ----------
 app.get('/dashboard/stats', authenticate, dashboardController.getStats);

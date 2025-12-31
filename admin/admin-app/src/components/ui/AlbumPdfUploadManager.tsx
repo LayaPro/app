@@ -1,11 +1,7 @@
 import {
   forwardRef,
   useImperativeHandle,
-  useMemo,
-  useRef,
   useState,
-  type ChangeEvent,
-  type DragEvent,
 } from 'react';
 import type { Dispatch, SetStateAction } from 'react';
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
@@ -27,14 +23,14 @@ interface AlbumPdfUploadManagerProps {
   setAllEvents: Dispatch<SetStateAction<ClientEvent[]>>;
   setSelectedEvent: Dispatch<SetStateAction<ClientEvent | null>>;
   showBulkTrigger?: boolean;
+  onUploadSuccess?: (albumPdf: any) => void;
 }
 
-type ModalMode = 'single' | 'bulk' | null;
-type BulkUploadMode = 'shared' | 'per-event';
+type ModalMode = 'upload-all' | null;
 
-interface PerEventEntry {
+interface PdfMapping {
   id: string;
-  eventId: string;
+  eventIds: string[];
   file: File | null;
   error?: string;
 }
@@ -64,549 +60,322 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
       setAllEvents,
       setSelectedEvent,
       showBulkTrigger = true,
+      onUploadSuccess,
     },
     ref
   ) => {
-    const { isUploading, uploadAlbumPdf } = useAlbumPdfUpload({ setEvents, setAllEvents, setSelectedEvent });
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [existingPdfsInfo, setExistingPdfsInfo] = useState<any[]>([]);
+
+    const handleExistingFound = async (checkResponse: any, _eventIds: string[]) => {
+      return new Promise<boolean>((resolve) => {
+        setExistingPdfsInfo(checkResponse.albumPdfs || []);
+        setShowConfirmModal(true);
+        
+        // Store resolve function for later use
+        (window as any).__albumPdfConfirmResolve = resolve;
+      });
+    };
+
+    const handleConfirmReplace = () => {
+      setShowConfirmModal(false);
+      if ((window as any).__albumPdfConfirmResolve) {
+        (window as any).__albumPdfConfirmResolve(true);
+        delete (window as any).__albumPdfConfirmResolve;
+      }
+    };
+
+    const handleCancelReplace = () => {
+      setShowConfirmModal(false);
+      setExistingPdfsInfo([]);
+      if ((window as any).__albumPdfConfirmResolve) {
+        (window as any).__albumPdfConfirmResolve(false);
+        delete (window as any).__albumPdfConfirmResolve;
+      }
+    };
+
+    const { isUploading, isChecking, uploadAlbumPdfBatch } = useAlbumPdfUpload({ 
+      onUploadSuccess,
+      onExistingFound: handleExistingFound,
+    });
 
     const [modalMode, setModalMode] = useState<ModalMode>(null);
-    const [focusedEvent, setFocusedEvent] = useState<ClientEvent | null>(null);
-    const [primaryFile, setPrimaryFile] = useState<File | null>(null);
-    const [primaryFileError, setPrimaryFileError] = useState('');
-    const [bulkSelection, setBulkSelection] = useState<string[]>([]);
-    const [bulkSelectionError, setBulkSelectionError] = useState('');
-    const [bulkUploadMode, setBulkUploadMode] = useState<BulkUploadMode>('shared');
-    const [perEventEntries, setPerEventEntries] = useState<PerEventEntry[]>([]);
-    const [isDragActive, setIsDragActive] = useState(false);
+    const [pdfMappings, setPdfMappings] = useState<PdfMapping[]>([]);
 
-    const createPerEventEntry = (): PerEventEntry => ({
-      id: `entry-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      eventId: '',
+    const createNewMapping = (): PdfMapping => ({
+      id: `mapping-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+      eventIds: [],
       file: null,
       error: '',
     });
 
-    const resetPrimaryFileState = () => {
-      setPrimaryFile(null);
-      setPrimaryFileError('');
-      setIsDragActive(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    };
-
-    const resetPerEventEntries = () => {
-      setPerEventEntries([]);
+    const resetState = () => {
+      setPdfMappings([createNewMapping()]);
     };
 
     const closeModal = () => {
-      if (isUploading) return;
+      if (isUploading || isChecking) return;
       setModalMode(null);
-      setFocusedEvent(null);
-      setBulkSelection([]);
-      setBulkSelectionError('');
-      setBulkUploadMode('shared');
-      resetPrimaryFileState();
-      resetPerEventEntries();
+      resetState();
     };
 
-    const openSingleModal = (event: ClientEvent) => {
-      setFocusedEvent(event);
-      setModalMode('single');
-      setBulkSelection([]);
-      setBulkSelectionError('');
-      setBulkUploadMode('shared');
-      resetPrimaryFileState();
-      resetPerEventEntries();
-    };
-
-    const openBulkModal = () => {
-      if (!selectedProject || events.length === 0) return;
-      setModalMode('bulk');
-      setFocusedEvent(null);
-      setBulkSelection(events.map((evt) => evt.clientEventId));
-      setBulkSelectionError('');
-      setBulkUploadMode('shared');
-      resetPrimaryFileState();
-      setPerEventEntries([createPerEventEntry()]);
+    const openModal = () => {
+      setModalMode('upload-all');
+      resetState();
     };
 
     useImperativeHandle(ref, () => ({
-      openForEvent: (event: ClientEvent) => {
-        openSingleModal(event);
-      },
-      openBulk: () => {
-        openBulkModal();
-      }
+      openForEvent: () => openModal(),
+      openBulk: () => openModal(),
     }));
 
-    const bulkOptions = useMemo(
-      () =>
-        events.map((evt) => ({
-          value: evt.clientEventId,
-          label: getEventLabel(evt, eventTypes),
-        })),
-      [events, eventTypes]
-    );
-
-    const getEventLabelById = (clientEventId: string) => {
-      const event = events.find((evt) => evt.clientEventId === clientEventId);
-      return event ? getEventLabel(event, eventTypes) : 'Selected event';
+    const addNewMapping = () => {
+      setPdfMappings([...pdfMappings, createNewMapping()]);
     };
 
-    const validateFile = (file: File) => {
-      if (file.type !== ACCEPT) {
-        return 'Only PDF files are allowed.';
+    const removeMapping = (id: string) => {
+      if (pdfMappings.length > 1) {
+        setPdfMappings(pdfMappings.filter(m => m.id !== id));
       }
-
-      if (MAX_SIZE_MB && file.size > MAX_SIZE_MB * 1024 * 1024) {
-        return `File must be smaller than ${MAX_SIZE_MB} MB.`;
-      }
-
-      return '';
     };
 
-    const handleFileSelection = (fileList: FileList | null) => {
-      if (!fileList || fileList.length === 0) {
-        setPrimaryFile(null);
+    const updateMappingEvents = (id: string, eventIds: string[]) => {
+      setPdfMappings(pdfMappings.map(m => 
+        m.id === id ? { ...m, eventIds, error: '' } : m
+      ));
+    };
+
+    const updateMappingFile = (id: string, file: File | null) => {
+      setPdfMappings(pdfMappings.map(m => 
+        m.id === id ? { ...m, file, error: '' } : m
+      ));
+    };
+
+    const handleFileSelect = (id: string, file: File | null) => {
+      if (!file) {
+        updateMappingFile(id, null);
         return;
       }
 
-      const file = fileList[0];
-      const validationMessage = validateFile(file);
-      if (validationMessage) {
-        setPrimaryFileError(validationMessage);
-        setPrimaryFile(null);
+      if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+        setPdfMappings(pdfMappings.map(m => 
+          m.id === id ? { ...m, error: `File exceeds ${MAX_SIZE_MB} MB limit` } : m
+        ));
         return;
       }
 
-      setPrimaryFile(file);
-      setPrimaryFileError('');
-    };
-
-    const handleFileInputChange = (event: ChangeEvent<HTMLInputElement>) => {
-      handleFileSelection(event.target.files);
-      if (event.target) {
-        event.target.value = '';
-      }
-    };
-
-    const handleDrop = (event: DragEvent<HTMLLabelElement>) => {
-      event.preventDefault();
-      setIsDragActive(false);
-      handleFileSelection(event.dataTransfer.files);
-    };
-
-    const handleBulkModeChange = (mode: BulkUploadMode) => {
-      if (mode === bulkUploadMode) return;
-      setBulkUploadMode(mode);
-      if (mode === 'per-event') {
-        resetPrimaryFileState();
-        setPerEventEntries((prev) => (prev.length ? prev : [createPerEventEntry()]));
-      } else {
-        resetPerEventEntries();
-      }
-    };
-
-    const updatePerEventEntry = (entryId: string, updater: (entry: PerEventEntry) => PerEventEntry) => {
-      setPerEventEntries((prev) => prev.map((entry) => (entry.id === entryId ? updater(entry) : entry)));
-    };
-
-    const handlePerEventEventChange = (entryId: string, eventId: string) => {
-      updatePerEventEntry(entryId, (entry) => ({
-        ...entry,
-        eventId,
-        error: entry.error && eventId ? '' : entry.error,
-      }));
-    };
-
-    const handlePerEventFileSelection = (entryId: string, fileList: FileList | null) => {
-      if (!fileList || fileList.length === 0) {
-        updatePerEventEntry(entryId, (entry) => ({ ...entry, file: null }));
+      if (file.type !== 'application/pdf') {
+        setPdfMappings(pdfMappings.map(m => 
+          m.id === id ? { ...m, error: 'Only PDF files are allowed' } : m
+        ));
         return;
       }
 
-      const file = fileList[0];
-      const validationMessage = validateFile(file);
-      if (validationMessage) {
-        updatePerEventEntry(entryId, (entry) => ({ ...entry, file: null, error: validationMessage }));
-        return;
-      }
-
-      updatePerEventEntry(entryId, (entry) => ({ ...entry, file, error: '' }));
+      updateMappingFile(id, file);
     };
 
-    const handleAddPerEventEntry = () => {
-      if (perEventEntries.length >= events.length) return;
-      setPerEventEntries((prev) => [...prev, createPerEventEntry()]);
-    };
-
-    const handleRemovePerEventEntry = (entryId: string) => {
-      setPerEventEntries((prev) => prev.filter((entry) => entry.id !== entryId));
-    };
-
-    const getAvailableOptionsForEntry = (entryId: string) => {
-      const takenEventIds = perEventEntries
-        .filter((entry) => entry.id !== entryId)
-        .map((entry) => entry.eventId)
-        .filter(Boolean);
-      return bulkOptions.filter((option) => !takenEventIds.includes(option.value));
-    };
-
-    const description =
-      "Upload a finalized album PDF (max 200 MB).";
-
-    const renderInfoBlock = () => {
-      if (modalMode === 'single' && focusedEvent) {
-        const eventName = eventTypes.get(focusedEvent.eventId)?.eventDesc || 'Selected event';
-        return (
-          <div className={styles.info}>
-            <span className={styles.contextLabel}>{eventName}</span>
-            <div>{description}</div>
-            <div style={{ marginTop: '0.35rem' }}>Max size: {MAX_SIZE_MB} MB</div>
-            {focusedEvent.albumPdfFileName && (
-              <div className={styles.currentFile}>
-                Current file: <strong>{focusedEvent.albumPdfFileName}</strong>
-              </div>
-            )}
-            {focusedEvent.albumPdfUrl && (
-              <a
-                href={focusedEvent.albumPdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={styles.currentLink}
-              >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '16px', height: '16px' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                View current PDF
-              </a>
-            )}
-          </div>
-        );
-      }
-
-      if (modalMode === 'bulk' && selectedProject) {
-        return (
-          <div className={styles.info}>
-            <span className={styles.contextLabel}>{selectedProject.projectName}</span>
-            <div>{description}</div>
-            <div style={{ marginTop: '0.35rem' }}>Max size: {MAX_SIZE_MB} MB</div>
-          </div>
-        );
-      }
-
-      return null;
-    };
-
-    const validatePerEventEntries = () => {
+    const validateAndUpload = async () => {
+      // Validate all mappings
       let hasError = false;
-      setPerEventEntries((prev) =>
-        prev.map((entry) => {
-          let error = '';
-          if (!entry.eventId) {
-            error = 'Select an event for this PDF.';
-          } else if (!entry.file) {
-            error = 'Attach a PDF file for this event.';
-          }
-          if (!error && entry.error) {
-            error = entry.error;
-          }
-          if (error) {
-            hasError = true;
-          }
-          return { ...entry, error };
-        })
-      );
-      return hasError;
-    };
+      const updatedMappings = pdfMappings.map(mapping => {
+        if (!mapping.file) {
+          hasError = true;
+          return { ...mapping, error: 'Please select a PDF file' };
+        }
+        if (mapping.eventIds.length === 0) {
+          hasError = true;
+          return { ...mapping, error: 'Please select at least one event' };
+        }
+        return mapping;
+      });
 
-    const handleSharedConfirm = async () => {
-      if (!primaryFile) {
-        setPrimaryFileError('Please choose a file to upload.');
+      if (hasError) {
+        setPdfMappings(updatedMappings);
         return;
       }
 
-      if (modalMode === 'bulk') {
-        if (!bulkSelection.length) {
-          setBulkSelectionError('Select at least one event to continue.');
-          return;
-        }
-        if (!selectedProject) {
-          setPrimaryFileError('Select a project before uploading.');
-          return;
-        }
-
-        await uploadAlbumPdf({
-          projectId: selectedProject.projectId,
-          eventIds: bulkSelection,
-          file: primaryFile,
-          successMessage: `Album PDF applied to ${bulkSelection.length} event${bulkSelection.length === 1 ? '' : 's'}.`,
-        });
-        closeModal();
+      // Check for duplicate events
+      const allEventIds = pdfMappings.flatMap(m => m.eventIds);
+      const duplicates = allEventIds.filter((id, index) => allEventIds.indexOf(id) !== index);
+      if (duplicates.length > 0) {
+        setPdfMappings(pdfMappings.map((m, index) => 
+          index === 0 ? { ...m, error: 'Some events are selected in multiple PDFs' } : m
+        ));
         return;
       }
 
-      if (modalMode === 'single') {
-        if (!focusedEvent) {
-          setPrimaryFileError('No event selected. Please try again.');
-          return;
-        }
+      // Upload all PDFs in one batch request
+      if (!selectedProject) return;
 
-        await uploadAlbumPdf({
-          projectId: focusedEvent.projectId,
-          eventIds: [focusedEvent.clientEventId],
-          file: primaryFile,
-          successMessage: 'Album PDF uploaded successfully.',
-        });
-        closeModal();
-      }
-    };
-
-    const handlePerEventConfirm = async () => {
-      if (!selectedProject) {
-        setPrimaryFileError('Select a project before uploading.');
-        return;
-      }
-
-      if (!perEventEntries.length) {
-        setPerEventEntries([createPerEventEntry()]);
-        return;
-      }
-
-      const hasErrors = validatePerEventEntries();
-      if (hasErrors) {
-        return;
-      }
-
-      for (const entry of perEventEntries) {
-        if (!entry.eventId || !entry.file) {
-          continue;
-        }
-        try {
-          await uploadAlbumPdf({
-            projectId: selectedProject.projectId,
-            eventIds: [entry.eventId],
-            file: entry.file,
-            successMessage: `Album PDF uploaded for ${getEventLabelById(entry.eventId)}.`,
-          });
-        } catch (error: any) {
-          const message = error?.message || 'Failed to upload album PDF.';
-          setPerEventEntries((prev) =>
-            prev.map((item) => (item.id === entry.id ? { ...item, error: message } : item))
-          );
-          throw error;
-        }
-      }
-
-      closeModal();
-    };
-
-    const handleConfirm = async () => {
       try {
-        if (modalMode === 'bulk' && bulkUploadMode === 'per-event') {
-          await handlePerEventConfirm();
-          return;
-        }
+        const mappings = pdfMappings
+          .filter(m => m.file && m.eventIds.length > 0)
+          .map(m => ({
+            eventIds: m.eventIds,
+            file: m.file!
+          }));
 
-        await handleSharedConfirm();
-      } catch (error: any) {
-        if (modalMode !== 'bulk' || bulkUploadMode !== 'per-event') {
-          setPrimaryFileError(error?.message || 'Failed to upload album PDF.');
-        }
+        await uploadAlbumPdfBatch({
+          projectId: selectedProject.projectId,
+          mappings,
+        });
+        
+        closeModal();
+      } catch (error) {
+        // Error already handled by the hook
       }
     };
 
-    const renderPerEventEntries = () => {
-      const canAddEntry = perEventEntries.length < events.length;
-
-      return (
-        <div className={styles.perEventSection}>
-          <div className={styles.perEventHeader}>
-            <div>
-              <strong>Upload individual PDFs</strong>
-              <div className={styles.bulkHelper}>Match each event with its corresponding PDF file.</div>
-            </div>
-            <button
-              type="button"
-              className={styles.addEntryButton}
-              onClick={handleAddPerEventEntry}
-              disabled={!canAddEntry || isUploading}
-            >
-              Add event PDF
-            </button>
-          </div>
-          <div className={styles.perEventList}>
-            {perEventEntries.map((entry) => {
-              const inputId = `${entry.id}-file`;
-              const availableOptions = getAvailableOptionsForEntry(entry.id);
-              return (
-                <div key={entry.id} className={styles.perEventRow}>
-                  <div className={styles.perEventControls}>
-                    <div className={styles.perEventField}>
-                      <label>Event</label>
-                      <select
-                        value={entry.eventId}
-                        onChange={(e) => handlePerEventEventChange(entry.id, e.target.value)}
-                        disabled={isUploading}
-                      >
-                        <option value="">Select event</option>
-                        {availableOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className={styles.perEventField}>
-                      <label>PDF File</label>
-                      <label htmlFor={inputId} className={styles.fileButton}>
-                        {entry.file ? 'Replace PDF' : 'Choose PDF'}
-                      </label>
-                      <input
-                        id={inputId}
-                        type="file"
-                        accept={ACCEPT}
-                        className={styles.hiddenFileInput}
-                        onChange={(e) => handlePerEventFileSelection(entry.id, e.target.files)}
-                        disabled={isUploading}
-                      />
-                      {entry.file && <span className={styles.fileName}>{entry.file.name}</span>}
-                    </div>
-                    {perEventEntries.length > 1 && (
-                      <button
-                        type="button"
-                        className={styles.removeEntryButton}
-                        onClick={() => handleRemovePerEventEntry(entry.id)}
-                        disabled={isUploading}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </div>
-                  {entry.error && <div className={styles.selectionError}>{entry.error}</div>}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
+    const getAvailableEvents = (currentMappingId: string) => {
+      const usedEventIds = pdfMappings
+        .filter(m => m.id !== currentMappingId)
+        .flatMap(m => m.eventIds);
+      return events.filter(e => !usedEventIds.includes(e.clientEventId));
     };
-
-    const shouldShowDropzone = modalMode === 'single' || (modalMode === 'bulk' && bulkUploadMode === 'shared');
-    const isBulk = modalMode === 'bulk';
-    const modalTitle = 'Upload Album PDF';
 
     const renderModal = () => {
-      if (!modalMode) return null;
+      if (modalMode !== 'upload-all') return null;
 
       return (
-        <Modal isOpen={true} onClose={closeModal} title={modalTitle} size="large">
+        <Modal isOpen={true} onClose={closeModal} title="Upload Album PDFs for All Events" size="large">
           <div className={styles.modalBody}>
-            {renderInfoBlock()}
+            <div className={styles.info}>
+              <span className={styles.contextLabel}>{selectedProject?.projectName || 'Project'}</span>
+              <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                Upload PDFs for all events at once. You can assign one PDF to multiple events or upload separate PDFs for each event.
+              </div>
+              <div style={{ marginTop: '0.35rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                Max size per file: {MAX_SIZE_MB} MB
+              </div>
+            </div>
 
-            {isBulk && (
-              <>
-                <div className={styles.bulkModeToggle}>
-                  <button
-                    type="button"
-                    className={`${styles.modeButton} ${bulkUploadMode === 'shared' ? styles.modeButtonActive : ''}`}
-                    onClick={() => handleBulkModeChange('shared')}
-                  >
-                    <span>Use same PDF for many events</span>
-                    <small>Choose multiple events and upload one PDF album</small>
-                  </button>
-                  <button
-                    type="button"
-                    className={`${styles.modeButton} ${bulkUploadMode === 'per-event' ? styles.modeButtonActive : ''}`}
-                    onClick={() => handleBulkModeChange('per-event')}
-                  >
-                    <span>Upload event-wise album PDFs</span>
-                    <small>Upload different files for each event</small>
-                  </button>
-                </div>
+            <div style={{ marginTop: '1.5rem' }}>
+              {pdfMappings.map((mapping, index) => {
+                const availableEvents = getAvailableEvents(mapping.id);
+                const eventOptions = availableEvents.map(evt => ({
+                  value: evt.clientEventId,
+                  label: getEventLabel(evt, eventTypes)
+                }));
 
-                {bulkUploadMode === 'shared' ? (
-                  <div className={styles.bulkSelector}>
-                    <div className={styles.bulkHeader}>
-                      <div>
-                        <strong>Apply to events</strong>
-                        <div className={styles.bulkHelper}>Select specific events or include all of them.</div>
+                return (
+                  <div key={mapping.id} style={{
+                    padding: '1rem',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '0.5rem',
+                    marginBottom: '1rem',
+                    background: 'var(--background-secondary)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                      <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                        PDF #{index + 1}
                       </div>
-                      <button
-                        type="button"
-                        className={styles.selectAll}
-                        onClick={() => {
-                          setBulkSelection(events.map((evt) => evt.clientEventId));
-                          setBulkSelectionError('');
-                        }}
-                        disabled={isUploading}
-                      >
-                        Select all
-                      </button>
+                      {pdfMappings.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeMapping(mapping.id)}
+                          disabled={isUploading || isChecking}
+                          style={{
+                            padding: '0.4rem 0.8rem',
+                            fontSize: '0.85rem',
+                            border: '1px solid #dc2626',
+                            borderRadius: '0.375rem',
+                            background: 'transparent',
+                            color: '#dc2626',
+                            cursor: 'pointer',
+                            fontWeight: 600
+                          }}
+                        >
+                          Remove
+                        </button>
+                      )}
                     </div>
-                    <MultiSelect
-                      value={bulkSelection}
-                      onChange={(value) => {
-                        setBulkSelection(value);
-                        if (value.length > 0) {
-                          setBulkSelectionError('');
-                        }
-                      }}
-                      options={bulkOptions}
-                      placeholder="Choose event(s)"
-                    />
-                    {bulkSelectionError && <div className={styles.selectionError}>{bulkSelectionError}</div>}
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                        Select Events
+                      </label>
+                      <MultiSelect
+                        value={mapping.eventIds}
+                        onChange={(eventIds) => updateMappingEvents(mapping.id, eventIds)}
+                        options={eventOptions}
+                        placeholder="Choose events for this PDF"
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 600, fontSize: '0.9rem' }}>
+                        Upload PDF File
+                      </label>
+                      <input
+                        type="file"
+                        accept={ACCEPT}
+                        onChange={(e) => handleFileSelect(mapping.id, e.target.files?.[0] || null)}
+                        disabled={isUploading || isChecking}
+                        style={{
+                          display: 'block',
+                          width: '100%',
+                          padding: '0.5rem',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '0.375rem',
+                          fontSize: '0.9rem'
+                        }}
+                      />
+                      {mapping.file && (
+                        <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                          Selected: {mapping.file.name}
+                        </div>
+                      )}
+                    </div>
+
+                    {mapping.error && (
+                      <div style={{
+                        marginTop: '0.75rem',
+                        padding: '0.5rem',
+                        background: '#fee2e2',
+                        border: '1px solid #ef4444',
+                        borderRadius: '0.375rem',
+                        color: '#991b1b',
+                        fontSize: '0.875rem'
+                      }}>
+                        {mapping.error}
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  renderPerEventEntries()
-                )}
-              </>
-            )}
+                );
+              })}
+            </div>
 
-            {shouldShowDropzone && (
-              <label
-                className={`${styles.dropzone} ${isDragActive ? styles.dropzoneActive : ''}`}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  event.dataTransfer.dropEffect = 'copy';
-                  setIsDragActive(true);
-                }}
-                onDragLeave={() => setIsDragActive(false)}
-                onDrop={handleDrop}
-              >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7v10a2 2 0 002 2h6a2 2 0 002-2V9l-4-4H9a2 2 0 00-2 2z" />
-                </svg>
-                <span>Choose a file to upload</span>
-                <small>Drag & drop or click to browse your computer</small>
-                <input ref={fileInputRef} type="file" accept={ACCEPT} onChange={handleFileInputChange} disabled={isUploading} />
-              </label>
-            )}
+            <button
+              type="button"
+              onClick={addNewMapping}
+              disabled={isUploading || isChecking || pdfMappings.flatMap(m => m.eventIds).length >= events.length}
+              style={{
+                padding: '0.6rem 1rem',
+                border: '1px dashed var(--border-color)',
+                borderRadius: '0.5rem',
+                background: 'transparent',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                width: '100%',
+                fontWeight: 600,
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                marginBottom: '1.5rem'
+              }}
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '20px', height: '20px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Another PDF
+            </button>
 
-            {primaryFile && shouldShowDropzone && (
-              <div className={styles.fileChip}>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v8m0 0l-3-3m3 3l3-3M5 9V5a2 2 0 012-2h10a2 2 0 012 2v4" />
-                </svg>
-                <span>{primaryFile.name}</span>
-              </div>
-            )}
-
-            {primaryFileError && shouldShowDropzone && (
-              <div className={styles.error}>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '18px', height: '18px' }}>
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>{primaryFileError}</span>
-              </div>
-            )}
-
-            <div className={styles.actions}>
+            <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
               <button
                 onClick={closeModal}
+                disabled={isUploading || isChecking}
                 style={{
                   padding: '0.6rem 1.2rem',
                   border: '1px solid var(--border-color)',
@@ -614,15 +383,15 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                   background: 'transparent',
                   color: 'var(--text-primary)',
                   fontWeight: 600,
-                  cursor: isUploading ? 'not-allowed' : 'pointer',
-                  opacity: isUploading ? 0.6 : 1,
+                  cursor: (isUploading || isChecking) ? 'not-allowed' : 'pointer',
+                  opacity: (isUploading || isChecking) ? 0.6 : 1,
                 }}
-                disabled={isUploading}
               >
                 Cancel
               </button>
               <button
-                onClick={handleConfirm}
+                onClick={validateAndUpload}
+                disabled={isUploading || isChecking}
                 style={{
                   padding: '0.6rem 1.2rem',
                   borderRadius: '0.5rem',
@@ -630,18 +399,11 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                   background: '#6366f1',
                   color: 'white',
                   fontWeight: 600,
-                  cursor: isUploading ? 'not-allowed' : 'pointer',
-                  opacity: isUploading ? 0.7 : 1,
+                  cursor: (isUploading || isChecking) ? 'not-allowed' : 'pointer',
+                  opacity: (isUploading || isChecking) ? 0.7 : 1,
                 }}
-                disabled={isUploading}
               >
-                {isUploading
-                  ? 'Uploading…'
-                  : modalMode === 'bulk'
-                    ? bulkUploadMode === 'per-event'
-                      ? 'Upload PDFs'
-                      : 'Apply to Events'
-                    : 'Upload PDF'}
+                {isChecking ? 'Checking...' : isUploading ? 'Uploading...' : 'Upload All PDFs'}
               </button>
             </div>
           </div>
@@ -655,7 +417,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
       <>
         {shouldShowTrigger && (
           <div className={styles.headerActions}>
-            <button type="button" className={styles.triggerButton} onClick={openBulkModal} disabled={isUploading}>
+            <button type="button" className={styles.triggerButton} onClick={openModal} disabled={isUploading || isChecking}>
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
               </svg>
@@ -664,6 +426,94 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
           </div>
         )}
         {renderModal()}
+        
+        {/* Confirmation Modal for Existing PDFs */}
+        {showConfirmModal && existingPdfsInfo.length > 0 && (
+          <Modal isOpen={showConfirmModal} onClose={handleCancelReplace} title="Album PDFs Already Exist">
+            <div style={{ padding: '1rem' }}>
+              <div style={{ 
+                marginBottom: '1rem',
+                padding: '0.75rem',
+                background: '#fef3c7',
+                border: '1px solid #fbbf24',
+                borderRadius: '0.5rem'
+              }}>
+                <div style={{ fontWeight: 600, color: '#92400e', marginBottom: '0.5rem' }}>
+                  ⚠️ Warning: All Existing PDFs Will Be Deleted
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#78350f' }}>
+                  {existingPdfsInfo.length} album PDF{existingPdfsInfo.length > 1 ? 's' : ''} currently exist for this project.
+                </div>
+              </div>
+
+              <p style={{ marginBottom: '1rem', color: 'var(--text-primary)', fontSize: '0.9rem' }}>
+                Uploading a new album PDF will <strong>delete all existing PDFs</strong> for this project. You'll need to upload fresh PDFs for all events you want to include.
+              </p>
+              
+              <div style={{ 
+                marginBottom: '1rem',
+                maxHeight: '200px',
+                overflowY: 'auto',
+                border: '1px solid var(--border-color)',
+                borderRadius: '0.5rem',
+                padding: '0.5rem'
+              }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
+                  Current PDFs to be deleted:
+                </div>
+                {existingPdfsInfo.map((pdf: any, index: number) => (
+                  <div key={pdf.albumId || index} style={{ 
+                    padding: '0.5rem',
+                    marginBottom: '0.5rem',
+                    background: 'var(--background-secondary)',
+                    borderRadius: '0.25rem',
+                    fontSize: '0.875rem'
+                  }}>
+                    <div style={{ fontWeight: 600 }}>{pdf.albumPdfFileName}</div>
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                      Events: {pdf.eventIds?.length || 0} • Uploaded: {new Date(pdf.uploadedDate).toLocaleDateString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              <p style={{ marginBottom: '1.5rem', color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+                Do you want to continue? This action cannot be undone.
+              </p>
+              
+              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={handleCancelReplace}
+                  style={{
+                    padding: '0.6rem 1.2rem',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '0.5rem',
+                    background: 'transparent',
+                    color: 'var(--text-primary)',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmReplace}
+                  style={{
+                    padding: '0.6rem 1.2rem',
+                    borderRadius: '0.5rem',
+                    border: 'none',
+                    background: '#dc2626',
+                    color: 'white',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Delete All & Upload New
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
       </>
     );
   }

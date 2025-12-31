@@ -3,7 +3,8 @@ import { nanoid } from 'nanoid';
 import ClientEvent from '../models/clientEvent';
 import Team from '../models/team';
 import Project from '../models/project';
-import { uploadToS3 } from '../utils/s3';
+import AlbumPdf from '../models/albumPdf';
+import { uploadToS3, deleteFromS3 } from '../utils/s3';
 import { AuthRequest } from '../middleware/auth';
 
 const sanitizeSegment = (value: string) =>
@@ -382,32 +383,190 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       storageClass: 'STANDARD',
     });
 
-    const updatePayload = {
+    const isMultipleEvents = targetEventIds.length > 1;
+
+    // Find ALL existing PDFs for this project and delete them
+    const existingPdfs = await AlbumPdf.find({
+      tenantId,
+      projectId
+    });
+
+    // Delete all existing PDFs from database and S3
+    let deletedCount = 0;
+    for (const existingPdf of existingPdfs) {
+      try {
+        await deleteFromS3(existingPdf.albumPdfUrl);
+        await AlbumPdf.deleteOne({ _id: existingPdf._id });
+        deletedCount++;
+      } catch (deleteError) {
+        console.error('Failed to delete existing PDF:', deleteError);
+        // Continue - we'll still create the new PDF
+      }
+    }
+
+    // Create new AlbumPdf record
+    const albumPdf = await AlbumPdf.create({
+      albumId: nanoid(10),
+      tenantId,
+      projectId,
+      eventIds: targetEventIds,
+      isMultipleEvents,
+      albumStatus: 'uploaded',
       albumPdfUrl: pdfUrl,
       albumPdfFileName: file.originalname || safeFileName,
-      albumPdfUploadedAt: new Date(),
-      albumPdfUploadedBy: userId,
-    };
-
-    await ClientEvent.updateMany(
-      { tenantId, clientEventId: { $in: targetEventIds } },
-      { $set: updatePayload }
-    );
-
-    const updatedEvents = await ClientEvent.find({ clientEventId: { $in: targetEventIds } }).lean();
-    const orderedMap = new Map(updatedEvents.map((evt) => [evt.clientEventId, evt]));
-    const orderedEvents = targetEventIds
-      .map((id) => orderedMap.get(id))
-      .filter((evt): evt is typeof updatedEvents[number] => Boolean(evt));
+      uploadedDate: new Date(),
+      uploadedBy: userId,
+    });
 
     return res.status(200).json({
-      message: 'Album PDF uploaded successfully',
-      clientEvent: orderedEvents[0],
-      clientEvents: orderedEvents,
+      message: deletedCount > 0 ? `Replaced ${deletedCount} existing PDF${deletedCount > 1 ? 's' : ''}` : 'Album PDF uploaded successfully',
+      albumPdf: albumPdf.toObject(),
+      deletedCount
     });
   } catch (err) {
     console.error('Upload album PDF error:', err);
     return res.status(500).json({ message: 'Failed to upload album PDF' });
+  }
+};
+
+export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId, mappings } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+    const files = req.files as Express.Multer.File[];
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    if (!projectId) {
+      return res.status(400).json({ message: 'Project ID is required' });
+    }
+
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'At least one PDF file is required' });
+    }
+
+    if (!mappings) {
+      return res.status(400).json({ message: 'Mappings are required' });
+    }
+
+    let parsedMappings;
+    try {
+      parsedMappings = JSON.parse(mappings);
+    } catch (err) {
+      return res.status(400).json({ message: 'Invalid mappings format' });
+    }
+
+    if (!Array.isArray(parsedMappings) || parsedMappings.length === 0) {
+      return res.status(400).json({ message: 'Mappings must be a non-empty array' });
+    }
+
+    if (files.length !== parsedMappings.length) {
+      return res.status(400).json({ message: 'Number of files must match number of mappings' });
+    }
+
+    // Validate all files are PDFs
+    for (const file of files) {
+      if (file.mimetype !== 'application/pdf') {
+        return res.status(400).json({ message: `File ${file.originalname} is not a PDF` });
+      }
+    }
+
+    // Validate all events exist
+    const allEventIds = parsedMappings.flatMap((m: any) => m.eventIds || []);
+    const uniqueEventIds = Array.from(new Set(allEventIds));
+    
+    const clientEvents = await ClientEvent.find({ 
+      tenantId, 
+      clientEventId: { $in: uniqueEventIds } 
+    });
+
+    if (clientEvents.length !== uniqueEventIds.length) {
+      const foundIds = clientEvents.map((evt) => evt.clientEventId);
+      const missing = uniqueEventIds.filter((id: string) => !foundIds.includes(id));
+      return res.status(404).json({ message: `Client events not found: ${missing.join(', ')}` });
+    }
+
+    const hasMismatchedProject = clientEvents.some((evt) => evt.projectId !== projectId);
+    if (hasMismatchedProject) {
+      return res.status(400).json({ message: 'One or more client events do not belong to the specified project' });
+    }
+
+    const project = await Project.findOne({ projectId, tenantId });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const bucketName = project.s3BucketName || process.env.AWS_S3_BUCKET;
+    if (!bucketName) {
+      return res.status(400).json({ message: 'No S3 bucket configured for this customer' });
+    }
+
+    // Delete ALL existing PDFs for this project
+    const existingPdfs = await AlbumPdf.find({ tenantId, projectId });
+    let deletedCount = 0;
+    for (const existingPdf of existingPdfs) {
+      try {
+        await deleteFromS3(existingPdf.albumPdfUrl);
+        await AlbumPdf.deleteOne({ _id: existingPdf._id });
+        deletedCount++;
+      } catch (deleteError) {
+        console.error('Failed to delete existing PDF:', deleteError);
+      }
+    }
+
+    // Upload all new PDFs
+    const folder = buildCustomerFolder(project.projectName, project.projectId);
+    const createdPdfs = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      const mapping = parsedMappings[i];
+      const eventIds = mapping.eventIds || [];
+
+      if (eventIds.length === 0) {
+        continue;
+      }
+
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const safeFileName = sanitizePdfName(file.originalname || 'album-proof.pdf');
+      const finalFileName = `${timestamp}-${safeFileName}`;
+
+      const pdfUrl = await uploadToS3({
+        buffer: file.buffer,
+        fileName: finalFileName,
+        mimeType: file.mimetype,
+        folder,
+        bucketName,
+        storageClass: 'STANDARD',
+      });
+
+      const albumPdf = await AlbumPdf.create({
+        albumId: nanoid(10),
+        tenantId,
+        projectId,
+        eventIds: eventIds,
+        isMultipleEvents: eventIds.length > 1,
+        albumStatus: 'uploaded',
+        albumPdfUrl: pdfUrl,
+        albumPdfFileName: file.originalname || safeFileName,
+        uploadedDate: new Date(),
+        uploadedBy: userId,
+      });
+
+      createdPdfs.push(albumPdf.toObject());
+    }
+
+    return res.status(200).json({
+      message: `Successfully uploaded ${createdPdfs.length} PDF${createdPdfs.length > 1 ? 's' : ''}`,
+      albumPdfs: createdPdfs,
+      deletedCount,
+    });
+  } catch (err) {
+    console.error('Batch upload album PDF error:', err);
+    return res.status(500).json({ message: 'Failed to upload album PDFs' });
   }
 };
 
@@ -418,5 +577,7 @@ export default {
   updateClientEvent,
   deleteClientEvent,
   getClientEventsByProject,
-  uploadAlbumPdf
+  uploadAlbumPdf,
+  uploadAlbumPdfBatch
 };
+

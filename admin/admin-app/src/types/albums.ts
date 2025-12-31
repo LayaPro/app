@@ -15,8 +15,4 @@ export interface ClientEventSummary {
   fromDatetime?: string;
   createdAt?: string;
   coverImage?: string;
-  albumPdfUrl?: string;
-  albumPdfFileName?: string;
-  albumPdfUploadedAt?: string;
-  albumPdfUploadedBy?: string;
 }

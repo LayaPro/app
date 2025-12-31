@@ -21,11 +21,7 @@ const ClientEventSchema = new Schema<IClientEvent>(
     coverPhoto: { type: String },
     notes: { type: String },
     createdBy: { type: String },
-    updatedBy: { type: String },
-    albumPdfUrl: { type: String },
-    albumPdfFileName: { type: String },
-    albumPdfUploadedAt: { type: Date },
-    albumPdfUploadedBy: { type: String }
+    updatedBy: { type: String }
   },
   { timestamps: true }
 );
