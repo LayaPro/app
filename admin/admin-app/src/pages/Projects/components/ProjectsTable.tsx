@@ -6,6 +6,8 @@ import { DatePicker } from '../../../components/ui/DatePicker';
 import { useAppDispatch } from '../../../store/index.js';
 import { setEditingProject } from '../../../store/slices/projectSlice.js';
 import { formatIndianAmount } from '../../../utils/formatAmount';
+import { AssignEditorModal, type AssignEditorModalHandle } from './AssignEditorModal';
+import { useToast } from '../../../context/ToastContext';
 import styles from './ProjectsTable.module.css';
 
 interface Project {
@@ -45,7 +47,9 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const dateRangeRef = useRef<HTMLDivElement>(null);
+  const assignEditorModalRef = useRef<AssignEditorModalHandle>(null);
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetchProjects();
@@ -398,6 +402,18 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                   </svg>
                   Visit albums
                 </button>
+                <button 
+                  className={styles.actionsDropdownItem}
+                  onClick={() => {
+                    setOpenActionDropdown(null);
+                    assignEditorModalRef.current?.open(project);
+                  }}
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  Assign Editor
+                </button>
                 <div className={styles.actionsDropdownDivider} />
                 <button className={`${styles.actionsDropdownItem} ${styles.actionsDropdownItemDanger}`}>
                   <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -605,9 +621,10 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   };
 
   return (
-    <DataTable
-      columns={columns}
-      data={filteredProjects}
+    <>
+      <DataTable
+        columns={columns}
+        data={filteredProjects}
       renderExpandedRow={renderExpandedRow}
       getRowKey={(project) => project.projectId}
       emptyMessage="No projects found"
@@ -739,6 +756,15 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
           </div>
         </>
       }
-    />
+      />
+      
+      <AssignEditorModal 
+        ref={assignEditorModalRef} 
+        onSuccess={() => {
+          showToast('success', 'Album editors assigned successfully!');
+          fetchProjects();
+        }}
+      />
+    </>
   );
 };

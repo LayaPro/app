@@ -14,6 +14,7 @@ export interface ClientEvent {
   expenseId?: string; // Reference to Expense (to be created later)
   coverPhoto?: string;
   notes?: string;
+  albumEditor?: string; // Team member ID assigned as album editor
   createdBy?: string;
   updatedBy?: string;
   createdAt?: Date;

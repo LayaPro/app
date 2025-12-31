@@ -15,6 +15,7 @@ interface SearchableSelectProps {
   placeholder?: string;
   error?: string;
   required?: boolean;
+  id?: string;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -25,6 +26,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   placeholder = 'Select...',
   error,
   required,
+  id,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
@@ -153,7 +155,15 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                     key={option.value}
                     type="button"
                     className={`${styles.option} ${option.value === value ? styles.selected : ''}`}
-                    onClick={() => handleSelect(option.value)}
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                    }}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSelect(option.value);
+                    }}
                   >
                     {option.label}
                     {option.value === value && (

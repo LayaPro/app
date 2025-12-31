@@ -20,6 +20,7 @@ const ClientEventSchema = new Schema<IClientEvent>(
     expenseId: { type: String }, // Reference to Expense
     coverPhoto: { type: String },
     notes: { type: String },
+    albumEditor: { type: String }, // Team member ID assigned as album editor
     createdBy: { type: String },
     updatedBy: { type: String }
   },

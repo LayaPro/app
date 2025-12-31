@@ -454,7 +454,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
               disabled={isUploading || isChecking || pdfMappings.flatMap(m => m.eventIds).length >= events.length}
               style={{
                 padding: '0.625rem',
-                border: '2px dashed #6366f1',
+                border: '2px solid #6366f1',
                 borderRadius: '0.5rem',
                 background: 'linear-gradient(to right, #f5f3ff, #faf5ff)',
                 color: '#6366f1',
