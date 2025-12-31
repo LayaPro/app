@@ -26,7 +26,6 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   placeholder = 'Select...',
   error,
   required,
-  id,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');

@@ -7,6 +7,7 @@ import { useAppDispatch } from '../../../store/index.js';
 import { setEditingProject } from '../../../store/slices/projectSlice.js';
 import { formatIndianAmount } from '../../../utils/formatAmount';
 import { AssignEditorModal, type AssignEditorModalHandle } from './AssignEditorModal';
+import { AssignDesignerModal, type AssignDesignerModalHandle } from './AssignDesignerModal';
 import { useToast } from '../../../context/ToastContext';
 import styles from './ProjectsTable.module.css';
 
@@ -48,6 +49,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const exportRef = useRef<HTMLDivElement>(null);
   const dateRangeRef = useRef<HTMLDivElement>(null);
   const assignEditorModalRef = useRef<AssignEditorModalHandle>(null);
+  const assignDesignerModalRef = useRef<AssignDesignerModalHandle>(null);
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
 
@@ -414,6 +416,18 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                   </svg>
                   Assign Editor
                 </button>
+                <button 
+                  className={styles.actionsDropdownItem}
+                  onClick={() => {
+                    setOpenActionDropdown(null);
+                    assignDesignerModalRef.current?.open(project);
+                  }}
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                  </svg>
+                  Assign Designer
+                </button>
                 <div className={styles.actionsDropdownDivider} />
                 <button className={`${styles.actionsDropdownItem} ${styles.actionsDropdownItemDanger}`}>
                   <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -762,6 +776,13 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
         ref={assignEditorModalRef} 
         onSuccess={() => {
           showToast('success', 'Album editors assigned successfully!');
+          fetchProjects();
+        }}
+      />
+      <AssignDesignerModal 
+        ref={assignDesignerModalRef} 
+        onSuccess={() => {
+          showToast('success', 'Album designers assigned successfully!');
           fetchProjects();
         }}
       />

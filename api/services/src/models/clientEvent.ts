@@ -21,6 +21,7 @@ const ClientEventSchema = new Schema<IClientEvent>(
     coverPhoto: { type: String },
     notes: { type: String },
     albumEditor: { type: String }, // Team member ID assigned as album editor
+    albumDesigner: { type: String }, // Team member ID assigned as album designer
     createdBy: { type: String },
     updatedBy: { type: String }
   },

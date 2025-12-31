@@ -15,6 +15,7 @@ export interface ClientEvent {
   coverPhoto?: string;
   notes?: string;
   albumEditor?: string; // Team member ID assigned as album editor
+  albumDesigner?: string; // Team member ID assigned as album designer
   createdBy?: string;
   updatedBy?: string;
   createdAt?: Date;
