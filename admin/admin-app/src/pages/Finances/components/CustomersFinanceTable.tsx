@@ -284,7 +284,7 @@ export const CustomersFinanceTable = () => {
                 right: 0,
                 top: '100%',
                 marginTop: '0.25rem',
-                background: 'white',
+                background: 'var(--bg-primary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '0.5rem',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
@@ -391,25 +391,25 @@ export const CustomersFinanceTable = () => {
     return (
       <div style={{ 
         padding: '0',
-        background: 'linear-gradient(to bottom, #f8fafc, #f1f5f9)',
+        background: 'var(--bg-secondary)',
       }}>
         <div style={{ 
           padding: '0.5rem 1.5rem',
-          borderBottom: '1px solid #e2e8f0'
+          borderBottom: '1px solid var(--border-color)'
         }}>
           <div style={{ 
             display: 'flex', 
             alignItems: 'center', 
             gap: '0.375rem'
           }}>
-            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: '#6366f1' }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: 'var(--color-primary)' }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <h3 style={{ 
               margin: 0, 
               fontSize: '0.75rem', 
               fontWeight: 600, 
-              color: '#475569',
+              color: 'var(--text-secondary)',
               textTransform: 'uppercase',
               letterSpacing: '0.05em'
             }}>
@@ -418,7 +418,7 @@ export const CustomersFinanceTable = () => {
             <span style={{
               marginLeft: 'auto',
               padding: '0.125rem 0.5rem',
-              background: '#6366f1',
+              background: 'var(--color-primary)',
               color: 'white',
               fontSize: '0.6875rem',
               fontWeight: 600,
@@ -433,7 +433,7 @@ export const CustomersFinanceTable = () => {
           <div style={{ 
             padding: '2rem 1.5rem', 
             textAlign: 'center',
-            color: '#94a3b8'
+            color: 'var(--text-tertiary)'
           }}>
             <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ margin: '0 auto 0.5rem', opacity: 0.5 }}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
@@ -443,10 +443,11 @@ export const CustomersFinanceTable = () => {
         ) : (
           <div style={{ padding: '0.5rem 1.5rem 0.75rem' }}>
             <div style={{ 
-              background: 'white',
+              background: 'var(--bg-primary)',
               borderRadius: '0.375rem',
               overflow: 'hidden',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              border: '1px solid var(--border-color)'
             }}>
               {transactions.map((transaction, index) => (
                 <div 
@@ -456,12 +457,12 @@ export const CustomersFinanceTable = () => {
                     gridTemplateColumns: '1.75fr 1.25fr 0.75fr 2fr',
                     gap: '0.5rem',
                     padding: '0.5rem 0.75rem',
-                    borderBottom: index < transactions.length - 1 ? '1px solid #f1f5f9' : 'none',
+                    borderBottom: index < transactions.length - 1 ? '1px solid var(--border-color)' : 'none',
                     transition: 'background 0.15s',
-                    background: 'white'
+                    background: 'var(--bg-primary)'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#fafbfc'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     <div style={{
@@ -485,14 +486,14 @@ export const CustomersFinanceTable = () => {
                       )}
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#1e293b', marginBottom: '0.0625rem' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.0625rem' }}>
                         {new Date(transaction.datetime).toLocaleDateString('en-IN', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric'
                         })}
                       </div>
-                      <div style={{ fontSize: '0.6875rem', color: '#64748b' }}>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)' }}>
                         {new Date(transaction.datetime).toLocaleTimeString('en-IN', {
                           hour: '2-digit',
                           minute: '2-digit'

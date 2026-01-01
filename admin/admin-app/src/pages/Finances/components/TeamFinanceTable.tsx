@@ -269,7 +269,7 @@ export const TeamFinanceTable = () => {
                 right: 0,
                 top: '100%',
                 marginTop: '0.25rem',
-                background: 'white',
+                background: 'var(--bg-primary)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '0.5rem',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
