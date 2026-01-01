@@ -8,13 +8,13 @@
 
 /* Expand/Collapse */
 .thExpand {
-  width: 40px;
-  padding: 12px 16px;
+  width: 24px;
+  padding: 12px 4px;
 }
 
 .tdExpand {
-  width: 40px;
-  padding: 16px;
+  width: 24px;
+  padding: 16px 4px;
 }
 
 .expandButton {
@@ -224,8 +224,8 @@
 }
 
 .thExpand {
-  width: 40px;
-  padding: 12px 16px;
+  width: 24px;
+  padding: 12px 4px;
 }
 
 .thContent {
@@ -294,9 +294,13 @@
   color: var(--text-secondary);
 }
 
+.td:first-of-type {
+  padding-left: 8px;
+}
+
 .tdExpand {
-  width: 40px;
-  padding: 16px;
+  width: 24px;
+  padding: 16px 4px;
 }
 
 /* Empty Cell for no data */

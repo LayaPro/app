@@ -17,8 +17,10 @@ import projectController from './controllers/projectController';
 import clientEventController from './controllers/clientEventController';
 import eventExpenseController from './controllers/eventExpenseController';
 import projectFinanceController from './controllers/projectFinanceController';
+import teamFinanceController from './controllers/teamFinanceController';
 import imageController from './controllers/imageController';
 import dashboardController from './controllers/dashboardController';
+import financeStatsController from './controllers/financeStatsController';
 import searchController from './controllers/searchController';
 import userController from './controllers/userController';
 import albumPdfController from './controllers/albumPdfController';
@@ -142,6 +144,15 @@ app.put('/update-project-finance/:financeId', authenticate, requireAdmin, projec
 app.delete('/delete-project-finance/:financeId', authenticate, requireAdmin, projectFinanceController.deleteProjectFinance);
 app.post('/add-project-finance-transaction/:projectId', authenticate, requireAdmin, projectFinanceController.addTransaction);
 
+// ---------- Team Finance routes ----------
+app.post('/create-team-finance', authenticate, requireAdmin, teamFinanceController.createTeamFinance);
+app.get('/get-all-team-finances', authenticate, teamFinanceController.getAllTeamFinances);
+app.get('/get-team-finance/:financeId', authenticate, teamFinanceController.getTeamFinanceById);
+app.get('/get-team-finance-by-member/:memberId', authenticate, teamFinanceController.getTeamFinanceByMember);
+app.put('/update-team-finance/:financeId', authenticate, requireAdmin, teamFinanceController.updateTeamFinance);
+app.delete('/delete-team-finance/:financeId', authenticate, requireAdmin, teamFinanceController.deleteTeamFinance);
+app.post('/add-team-salary-transaction/:memberId', authenticate, requireAdmin, teamFinanceController.addSalaryTransaction);
+
 // ---------- Image routes ----------
 app.post('/create-image', authenticate, requireAdmin, imageController.createImage);
 app.post('/bulk-create-images', authenticate, requireAdmin, imageController.bulkCreateImages);
@@ -177,6 +188,9 @@ app.get('/dashboard/stats', authenticate, dashboardController.getStats);
 app.get('/dashboard/revenue-summary', authenticate, requireAdmin, dashboardController.getRevenueSummary);
 app.get('/dashboard/project-status-counts', authenticate, dashboardController.getProjectStatusCounts);
 app.get('/dashboard/event-status-counts', authenticate, dashboardController.getEventStatusCounts);
+
+// ---------- Finance Stats routes ----------
+app.get('/finance-stats', authenticate, financeStatsController.getFinanceStats);
 
 // ---------- Search routes ----------
 app.get('/search', authenticate, searchController.globalSearch);

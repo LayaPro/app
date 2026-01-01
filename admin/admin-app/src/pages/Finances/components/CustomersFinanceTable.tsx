@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { projectApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
@@ -57,10 +57,22 @@ export const CustomersFinanceTable = () => {
     nature: 'received' as 'received' | 'paid'
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
     fetchProjectsWithFinances();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuId(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const fetchProjectsWithFinances = async () => {
@@ -91,12 +103,6 @@ export const CustomersFinanceTable = () => {
       return `${brideName} & ${groomName}`;
     }
     return brideName || groomName || project.projectName;
-  };
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '—';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
   };
 
   const formatAmount = (amount: number) => {
@@ -240,37 +246,140 @@ export const CustomersFinanceTable = () => {
       ),
     },
     {
-      key: 'finance',
-      header: 'Next Due Date',
-      sortable: true,
-      render: (row) => formatDate(row.finance?.nextDueDate ? row.finance.nextDueDate.toString() : undefined),
-    },
-    {
       key: 'projectId',
       header: 'Actions',
       render: (row) => (
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div style={{ position: 'relative' }}>
           <button
             style={{
-              padding: '0.5rem 1rem',
-              background: '#6366f1',
-              color: 'white',
+              padding: '0.5rem',
+              background: 'transparent',
+              color: 'var(--text-secondary)',
               border: 'none',
               borderRadius: '0.375rem',
               cursor: 'pointer',
-              fontSize: '0.875rem',
-              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
               transition: 'background 0.2s',
             }}
-            onClick={() => {
-              // TODO: Open add payment modal
-              handleAddPaymentClick(row);
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenMenuId(openMenuId === row.projectId ? null : row.projectId);
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#4f46e5'}
-            onMouseLeave={(e) => e.currentTarget.style.background = '#6366f1'}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            Add Payment
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+              <circle cx="10" cy="4" r="1.5" />
+              <circle cx="10" cy="10" r="1.5" />
+              <circle cx="10" cy="16" r="1.5" />
+            </svg>
           </button>
+          {openMenuId === row.projectId && (
+            <div
+              ref={menuRef}
+              style={{
+                position: 'absolute',
+                right: 0,
+                top: '100%',
+                marginTop: '0.25rem',
+                background: 'white',
+                border: '1px solid var(--border-color)',
+                borderRadius: '0.5rem',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+                zIndex: 1000,
+                minWidth: '160px',
+                overflow: 'hidden'
+              }}
+            >
+              <button
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  background: 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'background 0.2s'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleAddPaymentClick(row);
+                  setOpenMenuId(null);
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                </svg>
+                Add Payment
+              </button>
+              <button
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  background: 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'background 0.2s'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // TODO: View details functionality
+                  setOpenMenuId(null);
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Details
+              </button>
+              <button
+                style={{
+                  width: '100%',
+                  padding: '0.75rem 1rem',
+                  background: 'transparent',
+                  border: 'none',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  fontSize: '0.875rem',
+                  color: 'var(--text-primary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  transition: 'background 0.2s'
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // TODO: Edit budget functionality
+                  setOpenMenuId(null);
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+              >
+                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Budget
+              </button>
+            </div>
+          )}
         </div>
       ),
     },
@@ -462,7 +571,7 @@ export const CustomersFinanceTable = () => {
         emptyMessage="No customer finance records found"
         renderExpandedRow={renderExpandedRow}
         getRowKey={(row) => row.projectId}
-        itemsPerPage={10}
+        itemsPerPage={5}
       />
 
       <Modal

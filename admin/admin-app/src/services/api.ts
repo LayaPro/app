@@ -496,6 +496,78 @@ export const projectFinanceApi = {
   },
 };
 
+// Team Finance API
+export const teamFinanceApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-team-finances`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getByMemberId: async (memberId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-team-finance-by-member/${memberId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/create-team-finance`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (financeId: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}/update-team-finance/${financeId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  addTransaction: async (memberId: string, transaction: any) => {
+    const response = await fetch(`${API_BASE_URL}/add-team-salary-transaction/${memberId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(transaction),
+    });
+    return handleResponse(response);
+  },
+};
+
+// Finance Stats API
+export const financeStatsApi = {
+  getStats: async () => {
+    const response = await fetch(`${API_BASE_URL}/finance-stats`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
+
 // Client Event API (Calendar Events)
 export const clientEventApi = {
   getAll: async () => {

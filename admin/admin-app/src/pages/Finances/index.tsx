@@ -1,22 +1,22 @@
-import { useState } from 'react';
 import { Breadcrumb } from '../../components/ui/index.js';
 import { CustomersFinanceTable } from './components/CustomersFinanceTable.js';
+import { TeamFinanceTable } from './components/TeamFinanceTable.js';
+import { FinanceStats } from './components/FinanceStats.js';
 import styles from './Finances.module.css';
 
 const Finances = () => {
-  const [customersExpanded, setCustomersExpanded] = useState(true);
-  const [teamMembersExpanded, setTeamMembersExpanded] = useState(false);
-
   return (
     <>
       <Breadcrumb />
 
-      {/* Customers Section */}
-      <div className={styles.section}>
-        <button
-          className={styles.sectionHeader}
-          onClick={() => setCustomersExpanded(!customersExpanded)}
-        >
+      {/* Finance Stats */}
+      <FinanceStats />
+
+      {/* Side by Side Sections */}
+      <div className={styles.sectionsGrid}>
+        {/* Customers Section */}
+        <div className={styles.section}>
+        <div className={styles.sectionHeader}>
           <div className={styles.sectionHeaderContent}>
             <svg
               className={styles.sectionIcon}
@@ -38,23 +38,8 @@ const Finances = () => {
               </p>
             </div>
           </div>
-          <svg
-            className={`${styles.chevron} ${customersExpanded ? styles.chevronExpanded : ''}`}
-            width="20"
-            height="20"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-        <div className={`${styles.sectionContent} ${customersExpanded ? styles.sectionContentExpanded : ''}`}>
+        </div>
+        <div className={styles.sectionContent}>
           <div className={styles.contentInner}>
             <CustomersFinanceTable />
           </div>
@@ -63,10 +48,7 @@ const Finances = () => {
 
       {/* Team Members Section */}
       <div className={styles.section}>
-        <button
-          className={styles.sectionHeader}
-          onClick={() => setTeamMembersExpanded(!teamMembersExpanded)}
-        >
+        <div className={styles.sectionHeader}>
           <div className={styles.sectionHeaderContent}>
             <svg
               className={styles.sectionIcon}
@@ -88,27 +70,13 @@ const Finances = () => {
               </p>
             </div>
           </div>
-          <svg
-            className={`${styles.chevron} ${teamMembersExpanded ? styles.chevronExpanded : ''}`}
-            width="20"
-            height="20"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </button>
-        <div className={`${styles.sectionContent} ${teamMembersExpanded ? styles.sectionContentExpanded : ''}`}>
+        </div>
+        <div className={styles.sectionContent}>
           <div className={styles.contentInner}>
-            <p className={styles.comingSoon}>Coming soon...</p>
+            <TeamFinanceTable />
           </div>
         </div>
+      </div>
       </div>
     </>
   );
