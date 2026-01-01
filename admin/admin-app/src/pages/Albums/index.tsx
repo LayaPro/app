@@ -12,7 +12,7 @@ import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDe
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
-import { AlbumPdfInfo, EventMenuDropdown } from './components';
+import { AlbumPdfInfo, EventMenuDropdown, EventDateTime } from './components';
 
 const Albums = () => {
   const { showToast } = useToast();
@@ -2301,48 +2301,6 @@ const Albums = () => {
               }
               style={{ minWidth: '280px' }}
             />
-
-            {/* Sort */}
-            <div style={{ position: 'relative', minWidth: '180px' }}>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '8px 32px 8px 12px',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
-                  backgroundColor: 'var(--bg-primary)',
-                  color: 'var(--text-primary)',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  appearance: 'none',
-                  outline: 'none',
-                }}
-              >
-                <option value="recent">Sort: Recent</option>
-                <option value="nameAZ">Sort: Name A-Z</option>
-                <option value="nameZA">Sort: Name Z-A</option>
-                <option value="oldest">Sort: Date Oldest</option>
-              </select>
-              <svg
-                style={{
-                  position: 'absolute',
-                  right: '12px',
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  width: '16px',
-                  height: '16px',
-                  pointerEvents: 'none',
-                  color: 'var(--text-secondary)',
-                }}
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
           </div>
           <div className={styles.filtersRight}>
             {selectedProject && !selectedEvent && (
@@ -2591,15 +2549,8 @@ const Albums = () => {
                         );
                       })()}
                     </div>
-                    <div className={styles.cardSubtitle}>
-                      {eventItem.fromDatetime
-                        ? new Date(eventItem.fromDatetime).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })
-                        : 'No date'}
-                    </div>
+
+                    <EventDateTime fromDatetime={eventItem.fromDatetime} toDatetime={eventItem.toDatetime} />
 
                     <div className={styles.cardStats}>
                       {(() => {

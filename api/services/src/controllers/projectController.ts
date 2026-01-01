@@ -5,6 +5,7 @@ import ClientEvent from '../models/clientEvent';
 import ProjectFinance from '../models/projectFinance';
 import Event from '../models/event';
 import Team from '../models/team';
+import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import { AuthRequest } from '../middleware/auth';
 import { generateBucketName, createS3Bucket, bucketExists } from '../utils/s3Bucket';
 
@@ -348,6 +349,12 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       s3BucketName,
     });
 
+    // Get SCHEDULED status for new events
+    const scheduledStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'SCHEDULED'
+    });
+
     // Create events if provided
     const createdEvents = [];
     if (events && events.length > 0) {
@@ -358,6 +365,7 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
           tenantId,
           projectId,
           eventId: eventData.eventId,
+          eventDeliveryStatusId: scheduledStatus?.statusId,
           fromDatetime: eventData.fromDatetime,
           toDatetime: eventData.toDatetime,
           venue: eventData.venue,
@@ -423,6 +431,12 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
       { new: true, runValidators: true }
     );
 
+    // Get SCHEDULED status for new events
+    const scheduledStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'SCHEDULED'
+    });
+
     // Delete existing events and create new ones
     if (events) {
       await ClientEvent.deleteMany({ projectId });
@@ -434,6 +448,7 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
           tenantId,
           projectId,
           eventId: eventData.eventId,
+          eventDeliveryStatusId: scheduledStatus?.statusId,
           fromDatetime: eventData.fromDatetime,
           toDatetime: eventData.toDatetime,
           venue: eventData.venue,

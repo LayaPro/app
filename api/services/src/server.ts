@@ -25,6 +25,7 @@ import albumPdfController from './controllers/albumPdfController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload, uploadPdf } from './middleware/upload';
+import { startEventStatusUpdater } from './jobs/eventStatusUpdater';
 
 dotenv.config();
 
@@ -157,8 +158,9 @@ app.get('/get-image-properties/:imageId', authenticate, imageController.getImage
 app.put('/update-image/:imageId', authenticate, imageController.updateImage);
 app.put('/bulk-update-images', authenticate, imageController.bulkUpdateImages);
 app.delete('/delete-image/:imageId', authenticate, requireAdmin, imageController.deleteImage);
-app.delete('/bulk-delete-images', authenticate, requireAdmin, imageController.bulkDeleteImages);
-
+app.delete('/bulk-delete-images', authenticate, requireAdmin, imageController.bulkDeleteImages);app.post('/mark-images-client-selected', authenticate, imageController.markImagesAsClientSelected);
+app.post('/finalize-client-selection', authenticate, imageController.finalizeClientSelection);
+app.post('/approve-album-design', authenticate, clientEventController.approveAlbumDesign);
 // ---------- Album PDF routes ----------
 app.post('/create-album-pdf', authenticate, albumPdfController.createAlbumPdf);
 app.post('/check-existing-album-pdf', authenticate, albumPdfController.checkExistingAlbumPdf);
@@ -195,6 +197,10 @@ mongoose
   .connect(MONGO_URI, { dbName: 'flomingo_db' })
   .then(() => {
     console.log('Connected to DB:', mongoose.connection.name);
+    
+    // Start cron jobs
+    startEventStatusUpdater();
+    
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
   })
   .catch((err) => {

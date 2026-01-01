@@ -249,6 +249,43 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
           </button>
         </div>
 
+        {/* Status Update Notice */}
+        <div style={{
+          padding: '0.875rem 1rem',
+          backgroundColor: 'rgba(99, 102, 241, 0.1)',
+          border: '1px solid rgba(99, 102, 241, 0.3)',
+          borderRadius: '0.5rem',
+          display: 'flex',
+          gap: '0.75rem',
+          alignItems: 'flex-start',
+          marginBottom: '1rem'
+        }}>
+          <svg 
+            width="20" 
+            height="20" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="#6366f1" 
+            strokeWidth="2"
+            style={{ flexShrink: 0, marginTop: '0.125rem' }}
+          >
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <div style={{ flex: 1 }}>
+            <p style={{ 
+              margin: 0, 
+              fontSize: '0.875rem', 
+              color: '#4f46e5',
+              fontWeight: 500,
+              lineHeight: 1.5
+            }}>
+              Assigning a designer will automatically update the event status to "Album Design Ongoing"
+            </p>
+          </div>
+        </div>
+
         {mode === 'single' ? (
           <div className={styles.singleEditorSection}>
             <label className={styles.label}>Select Designer</label>

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import ClientEvent from '../models/clientEvent';
+import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Team from '../models/team';
 import Project from '../models/project';
 import AlbumPdf from '../models/albumPdf';
@@ -53,13 +54,23 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
+    // If no status provided, default to SCHEDULED
+    let finalStatusId = eventDeliveryStatusId;
+    if (!finalStatusId) {
+      const scheduledStatus = await EventDeliveryStatus.findOne({
+        tenantId,
+        statusCode: 'SCHEDULED'
+      });
+      finalStatusId = scheduledStatus?.statusId;
+    }
+
     const clientEventId = `clientevent_${nanoid()}`;
     const clientEvent = await ClientEvent.create({
       clientEventId,
       tenantId,
       eventId,
       projectId,
-      eventDeliveryStatusId,
+      eventDeliveryStatusId: finalStatusId,
       fromDatetime,
       toDatetime,
       venue,
@@ -204,6 +215,31 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
 
     // Add updatedBy field
     updates.updatedBy = userId;
+
+    // Automatically update status when editor or designer is assigned
+    const currentEvent = await ClientEvent.findOne({ clientEventId });
+    
+    // If albumEditor is being assigned (and not being removed), set status to EDITING_ONGOING
+    if (updates.albumEditor && updates.albumEditor !== currentEvent?.albumEditor) {
+      const editingStatus = await EventDeliveryStatus.findOne({
+        tenantId,
+        statusCode: 'EDITING_ONGOING'
+      });
+      if (editingStatus) {
+        updates.eventDeliveryStatusId = editingStatus.statusId;
+      }
+    }
+    
+    // If albumDesigner is being assigned (and not being removed), set status to ALBUM_DESIGN_ONGOING
+    if (updates.albumDesigner && updates.albumDesigner !== currentEvent?.albumDesigner) {
+      const designStatus = await EventDeliveryStatus.findOne({
+        tenantId,
+        statusCode: 'ALBUM_DESIGN_ONGOING'
+      });
+      if (designStatus) {
+        updates.eventDeliveryStatusId = designStatus.statusId;
+      }
+    }
 
     const updatedClientEvent = await ClientEvent.findOneAndUpdate(
       { clientEventId },
@@ -418,6 +454,24 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       uploadedBy: userId,
     });
 
+    // Update all target events to ALBUM_DESIGN_COMPLETE status
+    const albumDesignCompleteStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'ALBUM_DESIGN_COMPLETE'
+    });
+
+    if (albumDesignCompleteStatus) {
+      await ClientEvent.updateMany(
+        { clientEventId: { $in: targetEventIds }, tenantId },
+        {
+          $set: {
+            eventDeliveryStatusId: albumDesignCompleteStatus.statusId,
+            updatedBy: userId
+          }
+        }
+      );
+    }
+
     return res.status(200).json({
       message: deletedCount > 0 ? `Replaced ${deletedCount} existing PDF${deletedCount > 1 ? 's' : ''}` : 'Album PDF uploaded successfully',
       albumPdf: albumPdf.toObject(),
@@ -559,6 +613,27 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
       createdPdfs.push(albumPdf.toObject());
     }
 
+    // Update all target events to ALBUM_DESIGN_COMPLETE status
+    const batchAllEventIds = Array.from(new Set(parsedMappings.flatMap(m => m.eventIds || [])));
+    if (batchAllEventIds.length > 0) {
+      const albumDesignCompleteStatus = await EventDeliveryStatus.findOne({
+        tenantId,
+        statusCode: 'ALBUM_DESIGN_COMPLETE'
+      });
+
+      if (albumDesignCompleteStatus) {
+        await ClientEvent.updateMany(
+          { clientEventId: { $in: batchAllEventIds }, tenantId },
+          {
+            $set: {
+              eventDeliveryStatusId: albumDesignCompleteStatus.statusId,
+              updatedBy: userId
+            }
+          }
+        );
+      }
+    }
+
     return res.status(200).json({
       message: `Successfully uploaded ${createdPdfs.length} PDF${createdPdfs.length > 1 ? 's' : ''}`,
       albumPdfs: createdPdfs,
@@ -570,6 +645,52 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const approveAlbumDesign = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clientEventId } = req.body;
+    const userId = req.user?.userId;
+    const tenantId = req.user?.tenantId;
+
+    if (!clientEventId) {
+      return res.status(400).json({ error: 'Client Event ID is required' });
+    }
+
+    // Find ALBUM_PRINTING status
+    const albumPrintingStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'ALBUM_PRINTING'
+    });
+
+    if (!albumPrintingStatus) {
+      return res.status(404).json({ error: 'Album Printing status not found' });
+    }
+
+    // Update the event status
+    const updatedEvent = await ClientEvent.findOneAndUpdate(
+      { clientEventId, tenantId },
+      {
+        $set: { 
+          eventDeliveryStatusId: albumPrintingStatus.statusId,
+          updatedBy: userId
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedEvent) {
+      return res.status(404).json({ error: 'Client Event not found' });
+    }
+
+    res.status(200).json({ 
+      message: 'Album design approved successfully, printing in progress',
+      clientEvent: updatedEvent
+    });
+  } catch (error) {
+    console.error('Error approving album design:', error);
+    res.status(500).json({ error: 'Failed to approve album design' });
+  }
+};
+
 export default {
   createClientEvent,
   getAllClientEvents,
@@ -578,6 +699,7 @@ export default {
   deleteClientEvent,
   getClientEventsByProject,
   uploadAlbumPdf,
-  uploadAlbumPdfBatch
+  uploadAlbumPdfBatch,
+  approveAlbumDesign
 };
 

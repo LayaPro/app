@@ -8,6 +8,7 @@ import Event from '../models/event';
 import User from '../models/user';
 import Role from '../models/role';
 import ImageStatus from '../models/imageStatus';
+import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Team from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { compressImage } from '../utils/imageProcessor';
@@ -89,6 +90,9 @@ export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
+    // Get clientEventId from request - all images in bulk upload are for the same event
+    const clientEventId = images[0]?.clientEventId;
+
     // Prepare images with IDs and tenant info
     const imagesToCreate = images.map((img) => ({
       imageId: `image_${nanoid()}`,
@@ -100,6 +104,45 @@ export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
     }));
 
     const createdImages = await Image.insertMany(imagesToCreate);
+
+    // Check if we should update event status to REVIEW_ONGOING
+    if (clientEventId) {
+      const totalImagesForEvent = await Image.countDocuments({ clientEventId, tenantId });
+      console.log(`[BulkCreateImages] Event ${clientEventId} now has ${totalImagesForEvent} images`);
+      
+      // If event now has at least 10 images, set status to REVIEW_ONGOING
+      if (totalImagesForEvent >= 10) {
+        // Get current event to check its status
+        const currentEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+        const editingOngoingStatus = await EventDeliveryStatus.findOne({
+          tenantId,
+          statusCode: 'EDITING_ONGOING'
+        });
+        
+        // Only update if current status is EDITING_ONGOING
+        if (currentEvent && editingOngoingStatus && currentEvent.eventDeliveryStatusId === editingOngoingStatus.statusId) {
+          const reviewStatus = await EventDeliveryStatus.findOne({
+            tenantId,
+            statusCode: 'REVIEW_ONGOING'
+          });
+          
+          if (reviewStatus) {
+            await ClientEvent.findOneAndUpdate(
+              { clientEventId, tenantId },
+              { 
+                $set: { 
+                  eventDeliveryStatusId: reviewStatus.statusId,
+                  updatedBy: userId
+                }
+              }
+            );
+            console.log(`[BulkCreateImages] ✓ Event ${clientEventId} status updated to REVIEW_ONGOING`);
+          }
+        } else {
+          console.log(`[BulkCreateImages] Event ${clientEventId} not in EDITING_ONGOING status, skipping status update`);
+        }
+      }
+    }
 
     return res.status(201).json({
       message: `${createdImages.length} images created successfully`,
@@ -677,6 +720,56 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
 
     console.log(`Batch upload completed: ${successful.length} successful, ${failed.length} failed`);
 
+    // Check if we should update event status to REVIEW_ONGOING
+    if (clientEventId && successful.length > 0) {
+      const totalImagesForEvent = await Image.countDocuments({ clientEventId, tenantId });
+      console.log(`[UploadBatchImages] Event ${clientEventId} now has ${totalImagesForEvent} images`);
+      
+      // If event now has at least 10 images, set status to REVIEW_ONGOING
+      if (totalImagesForEvent >= 10) {
+        // Get current event to check its status
+        const currentEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+        const editingOngoingStatus = await EventDeliveryStatus.findOne({
+          tenantId,
+          statusCode: 'EDITING_ONGOING'
+        });
+        
+        console.log(`[UploadBatchImages] Current event status ID: ${currentEvent?.eventDeliveryStatusId}, EDITING_ONGOING status ID: ${editingOngoingStatus?.statusId}`);
+        
+        // Get the actual status name for debugging
+        if (currentEvent?.eventDeliveryStatusId) {
+          const actualStatus = await EventDeliveryStatus.findOne({
+            tenantId,
+            statusId: currentEvent.eventDeliveryStatusId
+          });
+          console.log(`[UploadBatchImages] Event is currently in status: ${actualStatus?.statusCode} (${actualStatus?.statusDescription})`);
+        }
+        
+        // Only update if current status is EDITING_ONGOING
+        if (currentEvent && editingOngoingStatus && currentEvent.eventDeliveryStatusId === editingOngoingStatus.statusId) {
+          const reviewStatus = await EventDeliveryStatus.findOne({
+            tenantId,
+            statusCode: 'REVIEW_ONGOING'
+          });
+          
+          if (reviewStatus) {
+            await ClientEvent.findOneAndUpdate(
+              { clientEventId, tenantId },
+              { 
+                $set: { 
+                  eventDeliveryStatusId: reviewStatus.statusId,
+                  updatedBy: userId
+                }
+              }
+            );
+            console.log(`[UploadBatchImages] ✓ Event ${clientEventId} status updated to REVIEW_ONGOING`);
+          }
+        } else {
+          console.log(`[UploadBatchImages] Event ${clientEventId} not in EDITING_ONGOING status, skipping status update`);
+        }
+      }
+    }
+
     res.status(200).json({
       message: `Uploaded ${successful.length} of ${files.length} images`,
       successful,
@@ -1132,6 +1225,98 @@ export const downloadEventImagesZip = async (req: AuthRequest, res: Response) =>
   }
 };
 
+// Mark images as selected by client (for customer portal)
+export const markImagesAsClientSelected = async (req: AuthRequest, res: Response) => {
+  try {
+    const { imageIds, selected = true } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      return res.status(400).json({ message: 'Image IDs array is required' });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Update images
+    const result = await Image.updateMany(
+      { imageId: { $in: imageIds }, tenantId },
+      { $set: { selectedByClient: selected } }
+    );
+
+    return res.status(200).json({
+      message: `${result.modifiedCount} image(s) ${selected ? 'selected' : 'deselected'} by client`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (err: any) {
+    console.error('Mark images as client selected error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Finalize client selection - sets event status to CLIENT_SELECTION_DONE
+export const finalizeClientSelection = async (req: AuthRequest, res: Response) => {
+  try {
+    const { clientEventId } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!clientEventId) {
+      return res.status(400).json({ message: 'Client Event ID is required' });
+    }
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Verify event exists
+    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+    if (!clientEvent) {
+      return res.status(404).json({ message: 'Client event not found' });
+    }
+
+    // Find CLIENT_SELECTION_DONE status
+    const selectionDoneStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'CLIENT_SELECTION_DONE'
+    });
+
+    if (!selectionDoneStatus) {
+      return res.status(404).json({ message: 'CLIENT_SELECTION_DONE status not found in system' });
+    }
+
+    // Update event status
+    await ClientEvent.findOneAndUpdate(
+      { clientEventId, tenantId },
+      {
+        $set: {
+          eventDeliveryStatusId: selectionDoneStatus.statusId,
+          updatedBy: userId
+        }
+      }
+    );
+
+    // Get count of selected images for confirmation
+    const selectedCount = await Image.countDocuments({
+      clientEventId,
+      tenantId,
+      selectedByClient: true
+    });
+
+    return res.status(200).json({
+      message: 'Client selection finalized successfully',
+      clientEventId,
+      selectedImagesCount: selectedCount,
+      statusId: selectionDoneStatus.statusId
+    });
+  } catch (err: any) {
+    console.error('Finalize client selection error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export default {
   createImage,
   bulkCreateImages,
@@ -1150,4 +1335,6 @@ export default {
   approveImages,
   downloadSelectedImagesZip,
   downloadEventImagesZip,
+  markImagesAsClientSelected,
+  finalizeClientSelection,
 };
