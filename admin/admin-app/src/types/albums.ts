@@ -5,6 +5,7 @@ export interface ProjectSummary {
   displayPic?: string;
   startDate?: string;
   createdAt?: string;
+  videoUrls?: string[];
 }
 
 export interface ClientEventSummary {

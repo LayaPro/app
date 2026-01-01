@@ -12,7 +12,7 @@ import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDe
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
-import { AlbumPdfInfo, EventMenuDropdown, EventDateTime } from './components';
+import { AlbumPdfInfo, EventMenuDropdown, EventDateTime, VideosCard, VideosView } from './components';
 
 const Albums = () => {
   const { showToast } = useToast();
@@ -78,6 +78,7 @@ const Albums = () => {
   const [publishAfterApprove, setPublishAfterApprove] = useState(false);
   const [eventDeliveryStatuses, setEventDeliveryStatuses] = useState<Map<string, any>>(new Map());
   const [showStatusModal, setShowStatusModal] = useState(false);
+  const [showVideosView, setShowVideosView] = useState(false);
   const [selectedEventForStatus, setSelectedEventForStatus] = useState<ClientEvent | null>(null);
   const [newStatusId, setNewStatusId] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -262,6 +263,7 @@ const Albums = () => {
     
     setTimeout(() => {
       setSelectedProject(project);
+      setShowVideosView(false);
       setSearchTerm('');
       setCurrentPage(1);
       fetchProjectEvents(project.projectId);
@@ -276,6 +278,7 @@ const Albums = () => {
     
     setTimeout(() => {
       setSelectedProject(null);
+      setShowVideosView(false);
       setEvents([]);
       setSearchTerm('');
       setCurrentPage(1);
@@ -2284,26 +2287,39 @@ const Albums = () => {
         <div className={styles.filterSection}>
           <div className={styles.filtersLeft}>
             {/* Search */}
-            <Input
-              type="text"
-              placeholder={selectedProject ? 'Search events...' : 'Search projects...'}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              icon={
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '18px', height: '18px' }}>
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
+            {!showVideosView && (
+              <Input
+                type="text"
+                placeholder={selectedProject ? 'Search events...' : 'Search projects...'}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                icon={
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '18px', height: '18px' }}>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                }
+                style={{ minWidth: '280px' }}
+              />
+            )}
+            {showVideosView && (
+              <button
+                className={styles.backButton}
+                onClick={() => setShowVideosView(false)}
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                 </svg>
-              }
-              style={{ minWidth: '280px' }}
-            />
+                <span>Back to Events</span>
+              </button>
+            )}
           </div>
           <div className={styles.filtersRight}>
-            {selectedProject && !selectedEvent && (
+            {selectedProject && !selectedEvent && !showVideosView && (
               <button
                 type="button"
                 className={styles.uploadAlbumButton}
@@ -2468,8 +2484,29 @@ const Albums = () => {
         </div>
       )}
 
+      {/* Videos View */}
+      {showVideosView && selectedProject && !selectedEvent && (
+        <div className={styles.videosViewContainer}>
+          <VideosView 
+            project={selectedProject}
+            onUpdate={async () => {
+              try {
+                const response = await projectApi.getById(selectedProject.projectId);
+                const updatedProject = response.project;
+                setProjects((prev) => 
+                  prev.map((p) => p.projectId === selectedProject.projectId ? updatedProject : p)
+                );
+                setSelectedProject(updatedProject);
+              } catch (error) {
+                console.error('Error refreshing project:', error);
+              }
+            }}
+          />
+        </div>
+      )}
+
       {/* Events Grid */}
-      {selectedProject && !selectedEvent && (
+      {selectedProject && !selectedEvent && !showVideosView && (
         <div className={`${styles.viewContainer} ${isTransitioning ? styles.viewExiting : styles.viewEntering}`}>
           {paginatedItems.length === 0 ? (
             <div className={styles.emptyState}>
@@ -2584,6 +2621,13 @@ const Albums = () => {
                   </div>
                 </div>
               ))}
+              
+              {/* Videos Card - Show at the end */}
+              <VideosCard 
+                projectId={selectedProject.projectId}
+                videoCount={selectedProject.videoUrls?.length || 0}
+                onClick={() => setShowVideosView(true)}
+              />
             </div>
           </div>
           ) : null}

@@ -52,6 +52,10 @@
   margin-bottom: 1.5rem;
 }
 
+.header:has(.backButton) {
+  margin-bottom: 0.5rem;
+}
+
 .filterSection {
   display: flex;
   align-items: center;
@@ -59,6 +63,10 @@
   margin-bottom: 2rem;
   flex-wrap: wrap;
   gap: 1rem;
+}
+
+.filterSection:has(.backButton) {
+  margin-bottom: 0.75rem;
 }
 
 .filtersLeft {
@@ -2085,6 +2093,32 @@
   height: 18px;
 }
 
+.backButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.backButton:hover {
+  background: var(--bg-secondary);
+  border-color: #6366f1;
+  color: #6366f1;
+  transform: translateX(-2px);
+}
+
+.backButton svg {
+  flex-shrink: 0;
+}
+
 .bulkAlbumEventSelector {
   display: flex;
   flex-direction: column;
@@ -2334,4 +2368,24 @@
 .closeCommentButton:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(251, 191, 36, 0.4);
+}
+
+/* Videos View */
+.videosViewContainer {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin-bottom: 2rem;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

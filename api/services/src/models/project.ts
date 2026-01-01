@@ -19,7 +19,8 @@ const ProjectSchema = new Schema<IProject>(
     projectDeliveryStatusId: { type: String, index: true }, // Reference to ProjectDeliveryStatus
     s3BucketName: { type: String, unique: true, sparse: true },
     displayPic: { type: String },
-    coverPhoto: { type: String }
+    coverPhoto: { type: String },
+    videoUrls: { type: [String], default: [] } // YouTube video URLs
   },
   { timestamps: true }
 );

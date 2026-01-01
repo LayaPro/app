@@ -5,3 +5,6 @@ export { GallerySection } from './GallerySection';
 export { EventMenuDropdown } from './EventMenuDropdown';
 export { AlbumPdfInfo } from './AlbumPdfInfo';
 export { EventDateTime } from './EventDateTime';
+export { VideosCard } from './VideosCard';
+export { VideosView } from './VideosView';
+export { VideoPlayerModal } from './VideoPlayerModal';
