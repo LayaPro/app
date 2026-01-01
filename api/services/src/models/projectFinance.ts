@@ -15,6 +15,14 @@ const ProjectFinanceSchema = new Schema<IProjectFinance>(
     nextDueAmount: { type: Number },
     expenseIds: [{ type: String }], // Array of expense IDs
     isClientClosed: { type: Boolean, default: false },
+    transactions: [{
+      transactionId: { type: String, required: true },
+      datetime: { type: Date, required: true },
+      amount: { type: Number, required: true },
+      comment: { type: String },
+      nature: { type: String, enum: ['received', 'paid'], required: true },
+      createdAt: { type: Date, default: Date.now }
+    }],
     createdBy: { type: String },
     updatedBy: { type: String }
   },

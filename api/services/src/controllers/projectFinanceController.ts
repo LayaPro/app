@@ -193,11 +193,68 @@ export const deleteProjectFinance = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const addTransaction = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId } = req.params;
+    const { amount, datetime, comment, nature } = req.body;
+    const tenantId = req.user?.tenantId;
+
+    if (!projectId) {
+      return res.status(400).json({ message: 'Project ID is required' });
+    }
+
+    if (!amount || !datetime || !nature) {
+      return res.status(400).json({ message: 'Amount, datetime, and nature are required' });
+    }
+
+    if (!['received', 'paid'].includes(nature)) {
+      return res.status(400).json({ message: 'Nature must be either "received" or "paid"' });
+    }
+
+    const projectFinance = await ProjectFinance.findOne({ projectId, tenantId });
+
+    if (!projectFinance) {
+      return res.status(404).json({ message: 'Project finance not found for this project' });
+    }
+
+    const transactionId = `txn_${nanoid()}`;
+    const newTransaction = {
+      transactionId,
+      datetime: new Date(datetime),
+      amount,
+      comment,
+      nature,
+      createdAt: new Date()
+    };
+
+    // Add transaction to array
+    projectFinance.transactions = projectFinance.transactions || [];
+    projectFinance.transactions.push(newTransaction);
+
+    // Update receivedAmount if nature is 'received'
+    if (nature === 'received') {
+      projectFinance.receivedAmount = (projectFinance.receivedAmount || 0) + amount;
+    }
+
+    await projectFinance.save();
+
+    return res.status(200).json({
+      message: 'Transaction added successfully',
+      transaction: newTransaction,
+      projectFinance
+    });
+  } catch (err: any) {
+    console.error('Add transaction error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export default {
   createProjectFinance,
   getAllProjectFinances,
   getProjectFinanceById,
   getProjectFinanceByProjectId,
   updateProjectFinance,
-  deleteProjectFinance
+  deleteProjectFinance,
+  addTransaction
 };

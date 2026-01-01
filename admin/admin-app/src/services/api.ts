@@ -449,6 +449,53 @@ export const projectApi = {
   },
 };
 
+// Project Finance API
+export const projectFinanceApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-all-project-finances`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getByProjectId: async (projectId: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-project-finance-by-project/${projectId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  update: async (projectId: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}/update-project-finance/${projectId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  addTransaction: async (projectId: string, transaction: any) => {
+    const response = await fetch(`${API_BASE_URL}/add-project-finance-transaction/${projectId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(transaction),
+    });
+    return handleResponse(response);
+  },
+};
+
 // Client Event API (Calendar Events)
 export const clientEventApi = {
   getAll: async () => {

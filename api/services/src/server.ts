@@ -140,6 +140,7 @@ app.get('/get-project-finance/:financeId', authenticate, projectFinanceControlle
 app.get('/get-project-finance-by-project/:projectId', authenticate, projectFinanceController.getProjectFinanceByProjectId);
 app.put('/update-project-finance/:financeId', authenticate, requireAdmin, projectFinanceController.updateProjectFinance);
 app.delete('/delete-project-finance/:financeId', authenticate, requireAdmin, projectFinanceController.deleteProjectFinance);
+app.post('/add-project-finance-transaction/:projectId', authenticate, requireAdmin, projectFinanceController.addTransaction);
 
 // ---------- Image routes ----------
 app.post('/create-image', authenticate, requireAdmin, imageController.createImage);

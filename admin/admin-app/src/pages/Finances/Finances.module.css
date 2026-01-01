@@ -1,0 +1,105 @@
+.cardsContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Section/Card Styles */
+.section {
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.sectionHeader {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  background-color: var(--bg-primary-neutral);
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.sectionHeader:hover {
+  background-color: var(--bg-hover);
+}
+
+.sectionHeaderContent {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex: 1;
+}
+
+.sectionIcon {
+  width: 24px;
+  height: 24px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 4px 0;
+  text-align: left;
+}
+
+.sectionSubtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  text-align: left;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.chevron {
+  width: 20px;
+  height: 20px;
+  color: var(--text-secondary);
+  transition: transform 0.3s ease;
+  flex-shrink: 0;
+}
+
+.chevronExpanded {
+  transform: rotate(180deg);
+}
+
+.sectionContent {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease;
+}
+
+.sectionContentExpanded {
+  max-height: 2000px;
+}
+
+.contentInner {
+  padding: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.contentInner :global(.tableContainer) {
+  border: none;
+  border-radius: 0;
+}
+
+.comingSoon {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  margin: 0;
+}
