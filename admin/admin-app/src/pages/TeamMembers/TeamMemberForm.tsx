@@ -7,6 +7,7 @@ import { FormError } from '../../components/ui/FormError';
 import { PhoneInput } from '../../components/ui/PhoneInput';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { InfoCard } from '../../components/ui/InfoCard';
+import { sanitizeName, sanitizeEmail, sanitizePhoneNumber, sanitizeAlphanumeric, sanitizeTextarea } from '../../utils/sanitize';
 import styles from './Form.module.css';
 
 export interface TeamMemberFormData {
@@ -57,13 +58,14 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
   useEffect(() => {
     if (member) {
       setFormData({
-        firstName: member.firstName || '',
-        lastName: member.lastName || '',
-        email: member.email || '',
-        phoneNumber: member.phoneNumber || '',
+        firstName: sanitizeName(member.firstName || ''),
+        lastName: sanitizeName(member.lastName || ''),
+        email: sanitizeEmail(member.email || ''),
+        phoneNumber: sanitizePhoneNumber(member.phoneNumber || ''),
+        govtIdNumber: sanitizeAlphanumeric(member.govtIdNumber || ''),
         roleId: member.roleId || '',
         profileId: member.profileId || '',
-        address: member.address || '',
+        address: sanitizeTextarea(member.address || ''),
         isFreelancer: member.isFreelancer || false,
       });
     } else {
@@ -72,6 +74,7 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
         lastName: '',
         email: '',
         phoneNumber: '',
+        govtIdNumber: '',
         roleId: '',
         profileId: '',
         address: '',
@@ -92,7 +95,44 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
   }, [formData.roleId, roles]);
 
   const handleChange = (field: keyof TeamMemberFormData, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
+    // Sanitize input based on field type
+    let sanitizedValue = value;
+    
+    if (typeof value === 'string') {
+      switch (field) {
+        case 'firstName':
+        case 'lastName':
+          sanitizedValue = sanitizeName(value);
+          break;
+        case 'email':
+          sanitizedValue = sanitizeEmail(value);
+          break;
+        case 'phoneNumber':
+          sanitizedValue = sanitizePhoneNumber(value);
+          break;
+        case 'govtIdNumber':
+          sanitizedValue = sanitizeAlphanumeric(value);
+          break;
+        case 'address':
+          sanitizedValue = sanitizeTextarea(value);
+          break;
+        default:
+          // For IDs and other fields, keep as-is (they come from dropdowns)
+          sanitizedValue = value;
+      }
+    }
+    
+    // If marking as freelancer, clear roleId since they don't need login access
+    if (field === 'isFreelancer' && value === true) {
+      setFormData((prev) => ({ ...prev, [field]: sanitizedValue, roleId: '' }));
+      // Also clear roleId error if it exists
+      if (errors.roleId) {
+        setErrors((prev) => ({ ...prev, roleId: '' }));
+      }
+    } else {
+      setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
+    }
+    
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: '' }));
     }
@@ -121,8 +161,9 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
       newErrors.phoneNumber = 'Invalid phone number';
     }
 
-    if (!formData.roleId || !formData.roleId.trim()) {
-      newErrors.roleId = 'Access role is required';
+    // Access role is only required for non-freelancers (who get login access)
+    if (!formData.isFreelancer && (!formData.roleId || !formData.roleId.trim())) {
+      newErrors.roleId = 'Access role is required for team members with login access';
     }
 
     if (!formData.profileId || !formData.profileId.trim()) {
@@ -206,6 +247,11 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
             showCharCount
             required
           />
+          {!member && formData.email && formData.email.includes('@') && (
+            <div style={{ marginTop: '0.75rem' }}>
+              <InfoCard message="An invitation email will be sent to this address with a secure link to set up their account and create their password." />
+            </div>
+          )}
         </div>
 
         <div className={styles.formGroup}>
@@ -233,6 +279,14 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
         </div>
 
         <div className={styles.formGroup}>
+          <Checkbox
+            label="This member is a freelancer"
+            checked={formData.isFreelancer}
+            onChange={(e) => handleChange('isFreelancer', e.target.checked)}
+          />
+        </div>
+
+        <div className={styles.formGroup}>
           <SearchableSelect
             label="Access Role"
             value={formData.roleId || ''}
@@ -244,9 +298,14 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
             placeholder="Search and select access role"
             error={errors.roleId}
             info="Define system access level and permissions for this team member"
-            required
+            required={!formData.isFreelancer}
+            disabled={formData.isFreelancer}
           />
-          <InfoCard message={selectedRoleDescription} />
+          {formData.isFreelancer ? (
+            <InfoCard message="Freelancers do not have login access to the system. Access role is not required." />
+          ) : (
+            <InfoCard message={selectedRoleDescription} />
+          )}
         </div>
 
         <div className={styles.formGroup}>
@@ -275,14 +334,6 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
             rows={3}
             maxLength={200}
             showCharCount
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <Checkbox
-            label="This member is a freelancer"
-            checked={formData.isFreelancer}
-            onChange={(e) => handleChange('isFreelancer', e.target.checked)}
           />
         </div>
 

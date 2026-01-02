@@ -14,6 +14,8 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       lastName,
       email,
       phoneNumber,
+      govtIdNumber,
+      roleId,
       profileId,
       address,
       isFreelancer
@@ -35,41 +37,59 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
     }
 
     // Check if user with same email exists
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
-    if (existingUser) {
-      return res.status(409).json({ message: 'User with this email already exists' });
+    // Check if user with same email exists (only if not a freelancer)
+    if (!isFreelancer) {
+      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      if (existingUser) {
+        return res.status(409).json({ message: 'User with this email already exists' });
+      }
     }
 
-    // Get or create default "user" role for team members
-    let userRole = await Role.findOne({ name: 'user', tenantId });
-    if (!userRole) {
-      const roleId = `role_${nanoid()}`;
-      userRole = await Role.create({
-        roleId,
-        tenantId,
-        name: 'user',
-        description: 'Default role for team members'
+    // Validate roleId (only required for non-freelancers who need login access)
+    if (!isFreelancer) {
+      if (!roleId) {
+        return res.status(400).json({ message: 'Access role is required for team members with login access' });
+      }
+
+      // Verify the role exists and user has access to it
+      const role = await Role.findOne({ 
+        roleId, 
+        $or: [
+          { tenantId: '-1' }, // Global roles
+          { tenantId } // Tenant-specific roles
+        ]
       });
+      
+      if (!role) {
+        return res.status(400).json({ message: 'Invalid role selected' });
+      }
     }
 
-    // Generate random password for the team member (12 characters)
-    const generatedPassword = nanoid(12);
-    const passwordHash = await bcrypt.hash(generatedPassword, 10);
+    let userId = undefined;
+    let generatedPassword = undefined;
 
-    // Create user entry for login
-    const userId = `user_${nanoid()}`;
-    const user = await User.create({
-      userId,
-      tenantId,
-      email: email.toLowerCase(),
-      passwordHash,
-      firstName,
-      lastName,
-      roleId: userRole.roleId,
-      isActive: true
-    });
+    // Only create user account if NOT a freelancer
+    if (!isFreelancer) {
+      // Generate random password for the team member (12 characters)
+      generatedPassword = nanoid(12);
+      const passwordHash = await bcrypt.hash(generatedPassword, 10);
 
-    // Create team member with linked userId
+      // Create user entry for login
+      const newUserId = `user_${nanoid()}`;
+      const user = await User.create({
+        userId: newUserId,
+        tenantId,
+        email: email.toLowerCase(),
+        passwordHash,
+        firstName,
+        lastName,
+        roleId,
+        isActive: true
+      });
+      userId = user.userId;
+    }
+
+    // Create team member with linked userId (null for freelancers)
     const memberId = `member_${nanoid()}`;
     const teamMember = await Team.create({
       memberId,
@@ -78,23 +98,29 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       lastName,
       email: email.toLowerCase(),
       phoneNumber,
+      govtIdNumber,
+      roleId: isFreelancer ? undefined : roleId,
       profileId,
-      userId: user.userId,
+      userId,
       address,
       isFreelancer: isFreelancer || false
     });
 
     return res.status(201).json({
-      message: 'Team member and user account created successfully',
+      message: isFreelancer 
+        ? 'Freelancer team member created successfully (no login access)' 
+        : 'Team member and user account created successfully',
       teamMember,
-      user: {
-        userId: user.userId,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        roleId: user.roleId,
-        tempPassword: generatedPassword // Send this via email later, remove from response in production
-      }
+      ...(userId && {
+        user: {
+          userId,
+          email: email.toLowerCase(),
+          firstName,
+          lastName,
+          roleId,
+          tempPassword: generatedPassword // Send this via email later, remove from response in production
+        }
+      })
     });
   } catch (err: any) {
     console.error('Create team member error:', err);

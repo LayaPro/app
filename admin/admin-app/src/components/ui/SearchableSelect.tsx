@@ -15,6 +15,7 @@ interface SearchableSelectProps {
   placeholder?: string;
   error?: string;
   required?: boolean;
+  disabled?: boolean;
   id?: string;
   info?: string;
 }
@@ -27,6 +28,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   placeholder = 'Select...',
   error,
   required,
+  disabled,
   info,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -199,13 +201,16 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
         <button
           ref={buttonRef}
           type="button"
-          className={`${styles.selectButton} ${error ? styles.error : ''} ${isOpen ? styles.open : ''}`}
+          className={`${styles.selectButton} ${error ? styles.error : ''} ${isOpen ? styles.open : ''} ${disabled ? styles.disabled : ''}`}
           onClick={() => {
-            if (!isOpen) {
+            if (!isOpen && !disabled) {
               updateDropdownPosition();
             }
-            setIsOpen(!isOpen);
+            if (!disabled) {
+              setIsOpen(!isOpen);
+            }
           }}
+          disabled={disabled}
         >
           <span className={displayValue ? styles.selectedText : styles.placeholder}>
             {displayValue || placeholder}

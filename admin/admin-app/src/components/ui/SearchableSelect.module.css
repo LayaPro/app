@@ -130,6 +130,16 @@
   border-color: #dc2626;
 }
 
+.selectButton.disabled {
+  background: var(--bg-secondary);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.selectButton.disabled:hover {
+  border-color: var(--border-color);
+}
+
 .selectedText {
   color: var(--text-primary);
   font-weight: 500;
