@@ -8,9 +8,9 @@ export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction
 
   const roleName = req.user.roleName;
 
-  // Allow both admin and superadmin
-  if (roleName !== 'admin' && roleName !== 'superadmin') {
-    return res.status(403).json({ message: 'Access denied. Admin or Superadmin role required.' });
+  // Allow only Admin
+  if (roleName !== 'Admin') {
+    return res.status(403).json({ message: 'Access denied. Admin role required.' });
   }
 
   next();

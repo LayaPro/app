@@ -104,7 +104,7 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
     console.log('getAllProjects - isAdmin:', isAdmin);
 
     // For non-admin users, find their team member ID

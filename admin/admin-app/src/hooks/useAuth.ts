@@ -8,7 +8,6 @@ export const useAuth = () => {
     token: auth.token,
     isAuthenticated: auth.isAuthenticated,
     loading: auth.loading,
-    isAdmin: auth.user?.roleName === 'admin' || auth.user?.roleName === 'superadmin',
-    isSuperAdmin: auth.user?.roleName === 'superadmin',
+    isAdmin: auth.user?.roleName === 'Admin',
   };
 };

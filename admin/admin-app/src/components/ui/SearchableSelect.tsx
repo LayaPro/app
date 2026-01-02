@@ -16,6 +16,7 @@ interface SearchableSelectProps {
   error?: string;
   required?: boolean;
   id?: string;
+  info?: string;
 }
 
 export const SearchableSelect: React.FC<SearchableSelectProps> = ({
@@ -26,13 +27,18 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
   placeholder = 'Select...',
   error,
   required,
+  info,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [showInfo, setShowInfo] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find(opt => opt.value === value);
   const displayValue = selectedOption?.label || '';
@@ -52,15 +58,30 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }
   };
 
+  // Close info tooltip on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
+        setShowInfo(false);
+      }
+    };
+
+    if (showInfo) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showInfo]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      const isClickInsideContainer = containerRef.current?.contains(target);
+      const isClickInsideButton = buttonRef.current?.contains(target);
       const isClickInsideDropdown = dropdownRef.current?.contains(target);
       
-      if (!isClickInsideContainer && !isClickInsideDropdown) {
+      if (!isClickInsideButton && !isClickInsideDropdown) {
         setIsOpen(false);
         setSearchTerm('');
+        setFocusedIndex(-1);
       }
     };
 
@@ -80,19 +101,98 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
     }
   }, [isOpen]);
 
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex(prev => 
+            prev < filteredOptions.length - 1 ? prev + 1 : prev
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex(prev => (prev > 0 ? prev - 1 : -1));
+          if (focusedIndex === 0) {
+            searchInputRef.current?.focus();
+          }
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (focusedIndex >= 0 && filteredOptions[focusedIndex]) {
+            handleSelect(filteredOptions[focusedIndex].value);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          setIsOpen(false);
+          setSearchTerm('');
+          setFocusedIndex(-1);
+          buttonRef.current?.focus();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, focusedIndex, filteredOptions]);
+
+  // Reset focused index when search term changes
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchTerm]);
+
+  // Scroll focused item into view
+  useEffect(() => {
+    if (isOpen && focusedIndex >= 0 && dropdownRef.current) {
+      const focusedElement = dropdownRef.current.querySelector(`[data-index="${focusedIndex}"]`);
+      if (focusedElement) {
+        focusedElement.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    }
+  }, [focusedIndex, isOpen]);
+
   const handleSelect = (optionValue: string) => {
     onChange(optionValue);
     setIsOpen(false);
     setSearchTerm('');
+    setFocusedIndex(-1);
+    buttonRef.current?.focus();
   };
 
   return (
     <div className={styles.container} ref={containerRef}>
       {label && (
-        <label className={styles.label}>
-          {label}
-          {required && <span className={styles.required}>*</span>}
-        </label>
+        <div className={styles.labelRow}>
+          <label className={styles.label}>
+            {label}
+            {required && <span className={styles.required}>*</span>}
+          </label>
+          {info && (
+            <div className={styles.infoWrapper} ref={infoRef}>
+              <button
+                type="button"
+                className={styles.infoButton}
+                onClick={() => setShowInfo(!showInfo)}
+                tabIndex={-1}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="12" cy="8" r="0.5" fill="currentColor" strokeWidth="1" />
+                </svg>
+              </button>
+              {showInfo && (
+                <div className={styles.infoTooltip}>
+                  {info}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
       
       <div className={styles.selectWrapper}>
@@ -138,6 +238,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
+                ref={searchInputRef}
                 type="text"
                 className={styles.searchInput}
                 placeholder="Search..."
@@ -149,11 +250,12 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
 
             <div className={styles.optionsList}>
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => (
+                filteredOptions.map((option, index) => (
                   <button
                     key={option.value}
                     type="button"
-                    className={`${styles.option} ${option.value === value ? styles.selected : ''}`}
+                    data-index={index}
+                    className={`${styles.option} ${option.value === value ? styles.selected : ''} ${index === focusedIndex ? styles.focused : ''}`}
                     onMouseDown={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
@@ -163,6 +265,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
                       e.stopPropagation();
                       handleSelect(option.value);
                     }}
+                    onMouseEnter={() => setFocusedIndex(index)}
+                    tabIndex={-1}
                   >
                     {option.label}
                     {option.value === value && (

@@ -195,7 +195,7 @@ export const getImagesByClientEvent = async (req: AuthRequest, res: Response) =>
     }
 
     // Non-admin users can only access events they're assigned to
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
     if (!isAdmin) {
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
       if (!teamMember || !clientEvent.teamMembersAssigned?.includes(teamMember.memberId)) {
@@ -240,7 +240,7 @@ export const getImagesByProject = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
 
     // For non-admin users, check if they have access to any events in this project
     if (!isAdmin) {

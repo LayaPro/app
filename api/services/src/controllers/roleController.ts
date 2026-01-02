@@ -34,12 +34,10 @@ export const getRoles = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
     
-    // Always exclude superadmin role
     // Include admin role (global) and tenant-specific roles only
     const query = {
-      name: { $ne: 'superadmin' }, // Never show superadmin
       $or: [
-        { tenantId: '-1' }, // Global roles (admin)
+        { tenantId: '-1' }, // Global roles (Admin, Editor, Designer)
         { tenantId } // User's own tenant roles
       ]
     };
@@ -68,8 +66,8 @@ export const updateRole = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Role not found' });
     }
 
-    // Prevent updating global roles (admin) or superadmin
-    if (role.tenantId === '-1' || role.name === 'superadmin') {
+    // Prevent updating global roles (Admin, Editor, Designer)
+    if (role.tenantId === '-1') {
       return res.status(403).json({ message: 'Cannot update system roles' });
     }
 
@@ -113,8 +111,8 @@ export const deleteRole = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Role not found' });
     }
 
-    // Prevent deleting global roles or superadmin
-    if (role.tenantId === '-1' || role.name === 'superadmin') {
+    // Prevent deleting global roles
+    if (role.tenantId === '-1') {
       return res.status(403).json({ message: 'Cannot delete system roles' });
     }
 

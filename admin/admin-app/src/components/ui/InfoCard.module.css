@@ -1,0 +1,45 @@
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.infoCard {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.8125rem;
+  color: #1e40af;
+  padding: 0.625rem 1rem;
+  background-color: #eff6ff;
+  border-radius: 6px;
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  line-height: 1.5;
+  margin-top: 0.375rem;
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.08);
+  animation: fadeSlideIn 0.25s ease-out;
+}
+
+.icon {
+  width: 16px;
+  height: 16px;
+  color: #3b82f6;
+  flex-shrink: 0;
+}
+
+/* Dark mode adjustments */
+:global(.dark) .infoCard {
+  color: #93c5fd;
+  background-color: rgba(30, 58, 138, 0.15);
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.15);
+}
+
+:global(.dark) .icon {
+  color: #60a5fa;
+}

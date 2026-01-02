@@ -160,10 +160,10 @@ export const getTeamMemberById = async (req: AuthRequest, res: Response) => {
     }
 
     // Check authorization based on role
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
     
     if (isAdmin) {
-      // Admin/superadmin can see any member in their tenant
+      // Admin can see any member in their tenant
       if (teamMember.tenantId !== tenantId) {
         return res.status(403).json({ message: 'Access denied. You can only view your own tenant team members.' });
       }
@@ -206,10 +206,10 @@ export const updateTeamMember = async (req: AuthRequest, res: Response) => {
     }
 
     // Check authorization based on role
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
     
     if (isAdmin) {
-      // Admin/superadmin can update any member in their tenant
+      // Admin can update any member in their tenant
       if (teamMember.tenantId !== tenantId) {
         return res.status(403).json({ message: 'Access denied. You can only update your own tenant team members.' });
       }

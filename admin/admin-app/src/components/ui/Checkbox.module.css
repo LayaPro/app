@@ -23,8 +23,8 @@
 }
 
 .checkbox:checked {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  border-color: transparent;
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
 }
 
 .checkbox:checked::after {

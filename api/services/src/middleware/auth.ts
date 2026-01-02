@@ -47,16 +47,4 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
   }
 };
 
-export const requireSuperAdmin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (!req.user) {
-    return res.status(401).json({ message: 'Authentication required' });
-  }
-
-  if (req.user.roleName !== 'superadmin') {
-    return res.status(403).json({ message: 'Access denied. Superadmin role required.' });
-  }
-
-  next();
-};
-
-export default { authenticate, requireSuperAdmin };
+export default { authenticate };

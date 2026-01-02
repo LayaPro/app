@@ -11,6 +11,7 @@ const TeamSchema = new Schema<ITeam>(
     lastName: { type: String, required: true, trim: true },
     email: { type: String, required: true, trim: true, lowercase: true },
     phoneNumber: { type: String, trim: true },
+    govtIdNumber: { type: String, trim: true },
     profileId: { type: String, index: true }, // Reference to Profile
     userId: { type: String, index: true }, // Reference to User for login
     address: { type: String },

@@ -20,37 +20,52 @@ async function seedDatabase() {
     await mongoose.connect(MONGO_URI, { dbName: 'flomingo_db' });
     console.log('Connected to DB');
 
-    // 1. Create admin role if it doesn't exist
-    let adminRole = await Role.findOne({ name: 'admin', tenantId: '-1' });
+    // 1. Create Admin role if it doesn't exist
+    let adminRole = await Role.findOne({ name: 'Admin', tenantId: '-1' });
     if (!adminRole) {
       const roleId = `role_${nanoid()}`;
       adminRole = await Role.create({
         roleId,
         tenantId: '-1', // Global role
-        name: 'admin',
-        description: 'Administrator with full tenant access'
+        name: 'Admin',
+        description: 'Administrator with full system access and control'
       });
-      console.log('✓ Created admin role:', roleId);
+      console.log('✓ Created Admin role:', roleId);
     } else {
       console.log('✓ Admin role already exists');
     }
 
-    // 2. Create user role if it doesn't exist
-    let userRole = await Role.findOne({ name: 'user', tenantId: '-1' });
-    if (!userRole) {
+    // 2. Create Editor role if it doesn't exist
+    let editorRole = await Role.findOne({ name: 'Editor', tenantId: '-1' });
+    if (!editorRole) {
       const roleId = `role_${nanoid()}`;
-      userRole = await Role.create({
+      editorRole = await Role.create({
         roleId,
         tenantId: '-1', // Global role
-        name: 'user',
-        description: 'Regular user with limited access'
+        name: 'Editor',
+        description: 'Editor with access to edit content and manage projects'
       });
-      console.log('✓ Created user role:', roleId);
+      console.log('✓ Created Editor role:', roleId);
     } else {
-      console.log('✓ User role already exists');
+      console.log('✓ Editor role already exists');
     }
 
-    // 3. Create LayaPro tenant if it doesn't exist
+    // 3. Create Designer role if it doesn't exist
+    let designerRole = await Role.findOne({ name: 'Designer', tenantId: '-1' });
+    if (!designerRole) {
+      const roleId = `role_${nanoid()}`;
+      designerRole = await Role.create({
+        roleId,
+        tenantId: '-1', // Global role
+        name: 'Designer',
+        description: 'Designer with access to design tools and album creation'
+      });
+      console.log('✓ Created Designer role:', roleId);
+    } else {
+      console.log('✓ Designer role already exists');
+    }
+
+    // 4. Create LayaPro tenant if it doesn't exist
     let layaproTenant = await Tenant.findOne({ tenantUsername: 'LayaPro' });
     if (!layaproTenant) {
       const tenantId = `tenant_${nanoid()}`;

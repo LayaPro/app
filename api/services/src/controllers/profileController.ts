@@ -48,7 +48,7 @@ export const getAllProfiles = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    // All users (including superadmin) only see their own tenant's profiles
+    // All users only see their own tenant's profiles
     const profiles = await Profile.find({ tenantId }).sort({ createdAt: -1 }).lean();
 
     return res.status(200).json({

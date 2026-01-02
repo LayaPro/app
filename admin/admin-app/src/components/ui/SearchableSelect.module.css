@@ -5,16 +5,88 @@
   position: relative;
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .label {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
 }
 
 .required {
   color: #dc2626;
   margin-left: 4px;
+}
+
+.infoWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.infoButton:hover {
+  color: var(--color-primary);
+  background: var(--bg-hover);
+}
+
+.infoButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.infoButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.infoTooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  min-width: 250px;
+  max-width: 350px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .selectWrapper {
@@ -24,25 +96,34 @@
 .selectButton {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-primary-neutral);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  transition: all var(--transition-base);
-  font-size: 14px;
+  transition: all 0.3s;
+  font-size: 15px;
   text-align: left;
+  font-family: inherit;
+  line-height: normal;
 }
 
 .selectButton:hover {
   border-color: var(--color-primary);
 }
 
-.selectButton.open {
+.selectButton:focus {
+  outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+.selectButton.open {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
 }
 
 .selectButton.error {
@@ -55,7 +136,8 @@
 }
 
 .placeholder {
-  color: var(--text-secondary);
+  color: var(--text-tertiary);
+  font-weight: 400;
 }
 
 .chevron {
@@ -69,7 +151,7 @@
 }
 
 .dropdown {
-  background: var(--bg-primary-neutral);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);
@@ -83,7 +165,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: var(--bg-primary-neutral);
+  background: var(--bg-primary);
   border-radius: 0;
   margin: 0;
 }
@@ -116,14 +198,14 @@
 
 .option {
   width: 100%;
-  padding: 8px 10px;
+  padding: 10px 12px;
   border: none;
   background: transparent;
   text-align: left;
   cursor: pointer;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-primary);
   display: flex;
   align-items: center;
@@ -132,7 +214,8 @@
   margin-bottom: 2px;
 }
 
-.option:hover {
+.option:hover,
+.option.focused {
   background: var(--bg-hover);
 }
 
@@ -140,6 +223,11 @@
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: white;
   font-weight: 600;
+}
+
+.option.selected.focused {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  opacity: 0.9;
 }
 
 .checkIcon {

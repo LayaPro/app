@@ -3,13 +3,14 @@ import styles from './TeamMembers.module.css';
 import { Breadcrumb } from '../../components/ui/index.js';
 import { TeamMembersCard } from './TeamMembersCard';
 import { WorkProfilesCard } from './WorkProfilesCard';
-import { teamApi, profileApi } from '../../services/api';
+import { teamApi, profileApi, roleApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
 const TeamMembers = () => {
   const [expandedCard, setExpandedCard] = useState<string | null>('teamMembers');
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
 
@@ -21,13 +22,15 @@ const TeamMembers = () => {
     try {
       setLoading(true);
       
-      const [teamResponse, profilesResponse] = await Promise.all([
+      const [teamResponse, profilesResponse, rolesData] = await Promise.all([
         teamApi.getAll(),
-        profileApi.getAll()
+        profileApi.getAll(),
+        roleApi.getAll()
       ]);
       
       setTeamMembers(teamResponse.teamMembers || []);
       setProfiles(profilesResponse.profiles || []);
+      setRoles(rolesData || []);
     } catch (err: any) {
       showToast('error', err.message || 'Failed to load data');
     } finally {
@@ -55,6 +58,7 @@ const TeamMembers = () => {
         <TeamMembersCard
           teamMembers={teamMembers}
           profiles={profiles}
+          roles={roles}
           loading={loading}
           isExpanded={expandedCard === 'teamMembers'}
           onToggle={() => toggleCard('teamMembers')}

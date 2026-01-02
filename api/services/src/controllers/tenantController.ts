@@ -134,8 +134,8 @@ export const getTenantById = async (req: AuthRequest, res: Response) => {
   try {
     const { tenantId } = req.params;
     
-    // Check authorization: superadmin can access any tenant, others can only access their own
-    if (req.user?.roleName !== 'superadmin' && req.user?.tenantId !== tenantId) {
+    // Check authorization: admin can access any tenant, others can only access their own
+    if (req.user?.roleName !== 'Admin' && req.user?.tenantId !== tenantId) {
       return res.status(403).json({ message: 'Access denied. You can only view your own tenant details.' });
     }
 

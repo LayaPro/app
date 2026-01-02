@@ -11,6 +11,7 @@ import type { TeamMemberFormData } from './TeamMemberForm.js';
 interface TeamMembersCardProps {
   teamMembers: any[];
   profiles: any[];
+  roles: any[];
   loading: boolean;
   isExpanded: boolean;
   onToggle: () => void;
@@ -22,6 +23,7 @@ interface TeamMembersCardProps {
 export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
   teamMembers,
   profiles,
+  roles,
   isExpanded,
   onToggle,
   onSuccess,
@@ -217,6 +219,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         onSubmit={handleFormSubmit}
         member={selectedMember}
         profiles={profiles}
+        roles={roles}
       />
 
       <ConfirmationModal

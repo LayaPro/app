@@ -104,7 +104,7 @@ export const getAllClientEvents = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
 
     let clientEvents;
     if (isAdmin) {
@@ -159,7 +159,7 @@ export const getClientEventById = async (req: AuthRequest, res: Response) => {
     }
 
     // Non-admin users can only access events they're assigned to
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
     if (!isAdmin) {
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
       if (!teamMember || !clientEvent.teamMembersAssigned?.includes(teamMember.memberId)) {
@@ -197,8 +197,8 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ message: 'Access denied. You can only update your own tenant client events.' });
     }
 
-    // Check if user is admin or superadmin
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    // Check if user is admin
+    const isAdmin = roleName === 'Admin';
 
     // If not admin, only allow updating eventDeliveryStatusId
     if (!isAdmin) {
@@ -296,7 +296,7 @@ export const getClientEventsByProject = async (req: AuthRequest, res: Response) 
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    const isAdmin = roleName === 'Admin';
 
     let clientEvents;
     if (isAdmin) {

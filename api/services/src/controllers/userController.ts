@@ -55,8 +55,8 @@ export const getUserById = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Check authorization: admin/superadmin can view all users in tenant, regular users can only view themselves
-    const isAdmin = roleName === 'admin' || roleName === 'superadmin';
+    // Check authorization: admin can view all users in tenant, regular users can only view themselves
+    const isAdmin = roleName === 'Admin';
     if (!isAdmin && user.userId !== currentUserId) {
       return res.status(403).json({ message: 'Access denied. You can only view your own profile.' });
     }
