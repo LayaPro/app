@@ -34,6 +34,11 @@ export const login = async (req: Request, res: Response) => {
       return res.status(403).json({ message: 'Account is deactivated' });
     }
 
+    // Check if password is set (account activated)
+    if (!user.passwordHash) {
+      return res.status(403).json({ message: 'Please activate your account first' });
+    }
+
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {

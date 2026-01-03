@@ -209,6 +209,11 @@ export const changePassword = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Check if password is set
+    if (!user.passwordHash) {
+      return res.status(400).json({ message: 'No password set. Please activate your account first' });
+    }
+
     // Verify current password
     const isPasswordValid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!isPasswordValid) {
