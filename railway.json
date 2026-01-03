@@ -1,0 +1,11 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "buildCommand": "cd packages/shared && npm ci && npm run build && cd ../../api/services && npm ci && npm run build"
+  },
+  "deploy": {
+    "startCommand": "node dist/server.js",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}
