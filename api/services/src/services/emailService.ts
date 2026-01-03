@@ -99,8 +99,8 @@ export const sendActivationEmail = async (email: string, name: string, token: st
           <h2>Hello ${name}! 👋</h2>
           <p>You've been added as a team member at Laya Studio. To get started, please set up your password by clicking the button below:</p>
           
-          <div style="text-align: center;color:white;">
-            <a href="${activationUrl}" class="button">Set Up Your Password</a>
+          <div style="text-align: center;">
+            <a href="${activationUrl}" class="button" style="color: white !important;">Set Up Your Password</a>
           </div>
           
           <div class="divider"></div>

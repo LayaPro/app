@@ -79,6 +79,7 @@ function App() {
       >
         <Routes>
           <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+          <Route path="/login" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
           <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
           <Route path={ROUTES.ALBUMS} element={<Albums />} />
           <Route path={ROUTES.PROJECTS} element={<Projects />} />
@@ -103,6 +104,9 @@ function App() {
           <Route path={ROUTES.PROJECTS_SETUP} element={<ProjectsSetup />} />
           
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
+          
+          {/* Catch-all: redirect to dashboard */}
+          <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
         </Routes>
       </main>
       </div>
