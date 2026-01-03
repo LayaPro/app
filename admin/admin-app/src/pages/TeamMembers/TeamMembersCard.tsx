@@ -26,8 +26,6 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
   teamMembers,
   profiles,
   roles,
-  isExpanded,
-  onToggle,
   onSuccess,
   onError,
   onRefresh,
@@ -149,12 +147,71 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
       key: 'email',
       header: 'Email',
       sortable: true,
+      render: (row) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>{row.email}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(row.email);
+              onSuccess('Email copied to clipboard');
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              color: 'var(--text-secondary)',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+            title="Copy email"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          </button>
+        </div>
+      ),
     },
     {
       key: 'phoneNumber',
       header: 'Phone',
       sortable: false,
-      render: (row) => row.phoneNumber || '-',
+      render: (row) => row.phoneNumber ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span>{row.phoneNumber}</span>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              navigator.clipboard.writeText(row.phoneNumber);
+              onSuccess('Phone number copied to clipboard');
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              color: 'var(--text-secondary)',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--color-primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-secondary)'}
+            title="Copy phone number"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+          </button>
+        </div>
+      ) : '-',
     },
     {
       key: 'profileId',
@@ -257,6 +314,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         member={viewMember}
         profile={viewMember ? profiles.find((p: any) => p.profileId === viewMember.profileId) : undefined}
         role={viewMember ? roles.find((r: any) => r.roleId === viewMember.roleId) : undefined}
+        onSuccess={onSuccess}
       />
 
       <ConfirmationModal

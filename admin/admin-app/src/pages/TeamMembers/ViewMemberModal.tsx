@@ -8,6 +8,7 @@ interface ViewMemberModalProps {
   member: any;
   profile?: any;
   role?: any;
+  onSuccess: (message: string) => void;
 }
 
 export const ViewMemberModal: React.FC<ViewMemberModalProps> = ({
@@ -17,6 +18,7 @@ export const ViewMemberModal: React.FC<ViewMemberModalProps> = ({
   member,
   profile,
   role,
+  onSuccess,
 }) => {
   if (!member) return null;
 
@@ -58,13 +60,43 @@ export const ViewMemberModal: React.FC<ViewMemberModalProps> = ({
         <div className={styles.details}>
           <div className={styles.field}>
             <label>Email</label>
-            <div className={styles.value}>{member.email}</div>
+            <div className={styles.valueWithCopy}>
+              <div className={styles.value}>{member.email}</div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(member.email);
+                  onSuccess('Email copied to clipboard');
+                }}
+                className={styles.copyButton}
+                title="Copy email"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                </svg>
+              </button>
+            </div>
           </div>
           
           {member.phoneNumber && (
             <div className={styles.field}>
               <label>Phone Number</label>
-              <div className={styles.value}>{member.phoneNumber}</div>
+              <div className={styles.valueWithCopy}>
+                <div className={styles.value}>{member.phoneNumber}</div>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(member.phoneNumber);
+                    onSuccess('Phone number copied to clipboard');
+                  }}
+                  className={styles.copyButton}
+                  title="Copy phone number"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 

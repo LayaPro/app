@@ -19,8 +19,6 @@ interface WorkProfilesCardProps {
 
 export const WorkProfilesCard: React.FC<WorkProfilesCardProps> = ({
   profiles,
-  isExpanded,
-  onToggle,
   onSuccess,
   onError,
   onRefresh,
