@@ -60,9 +60,14 @@ jobs:
 
       - name: Prepare deployment package
         run: |
+          # Configure git
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
           # Force add dist folders (even if in .gitignore)
           git add -f packages/shared/dist
           git add -f api/services/dist
+          # Commit the build artifacts
+          git commit -m "Add build artifacts for deployment" || true
 
       - name: Deploy API services
         env:
