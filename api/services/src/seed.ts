@@ -10,6 +10,8 @@ import Event from './models/event';
 import EventDeliveryStatus from './models/eventDeliveryStatus';
 import ProjectDeliveryStatus from './models/projectDeliveryStatus';
 import ImageStatus from './models/imageStatus';
+import Module from './models/module';
+import RolePermission from './models/rolePermission';
 
 dotenv.config();
 
@@ -28,44 +30,104 @@ async function seedDatabase() {
         roleId,
         tenantId: '-1', // Global role
         name: 'Admin',
-        description: 'Administrator with full system access and control'
+        description: 'Full control of entire system'
       });
       console.log('✓ Created Admin role:', roleId);
     } else {
       console.log('✓ Admin role already exists');
     }
 
-    // 2. Create Editor role if it doesn't exist
-    let editorRole = await Role.findOne({ name: 'Editor', tenantId: '-1' });
-    if (!editorRole) {
+    // 2. Create HR role if it doesn't exist
+    let hrRole = await Role.findOne({ name: 'HR', tenantId: '-1' });
+    if (!hrRole) {
       const roleId = `role_${nanoid()}`;
-      editorRole = await Role.create({
+      hrRole = await Role.create({
         roleId,
         tenantId: '-1', // Global role
-        name: 'Editor',
-        description: 'Editor with access to edit content and manage projects'
+        name: 'HR',
+        description: 'Access to finances, team members, salaries etc'
       });
-      console.log('✓ Created Editor role:', roleId);
+      console.log('✓ Created HR role:', roleId);
     } else {
-      console.log('✓ Editor role already exists');
+      console.log('✓ HR role already exists');
     }
 
-    // 3. Create Designer role if it doesn't exist
-    let designerRole = await Role.findOne({ name: 'Designer', tenantId: '-1' });
-    if (!designerRole) {
+    // 3. Create Co-ordinator role if it doesn't exist
+    let coordinatorRole = await Role.findOne({ name: 'Co-ordinator', tenantId: '-1' });
+    if (!coordinatorRole) {
       const roleId = `role_${nanoid()}`;
-      designerRole = await Role.create({
+      coordinatorRole = await Role.create({
         roleId,
         tenantId: '-1', // Global role
-        name: 'Designer',
-        description: 'Designer with access to design tools and album creation'
+        name: 'Co-ordinator',
+        description: 'Access to assigned projects, finances, events, teams'
       });
-      console.log('✓ Created Designer role:', roleId);
+      console.log('✓ Created Co-ordinator role:', roleId);
     } else {
-      console.log('✓ Designer role already exists');
+      console.log('✓ Co-ordinator role already exists');
     }
 
-    // 4. Create LayaPro tenant if it doesn't exist
+    // 4. Create Team Lead role if it doesn't exist
+    let teamLeadRole = await Role.findOne({ name: 'Team Lead', tenantId: '-1' });
+    if (!teamLeadRole) {
+      const roleId = `role_${nanoid()}`;
+      teamLeadRole = await Role.create({
+        roleId,
+        tenantId: '-1', // Global role
+        name: 'Team Lead',
+        description: 'Handles technical stuff and assigns editor, designer to events'
+      });
+      console.log('✓ Created Team Lead role:', roleId);
+    } else {
+      console.log('✓ Team Lead role already exists');
+    }
+
+    // 5. Create Photo Editor role if it doesn't exist
+    let photoEditorRole = await Role.findOne({ name: 'Photo Editor', tenantId: '-1' });
+    if (!photoEditorRole) {
+      const roleId = `role_${nanoid()}`;
+      photoEditorRole = await Role.create({
+        roleId,
+        tenantId: '-1', // Global role
+        name: 'Photo Editor',
+        description: 'Edits and uploads photos for assigned events'
+      });
+      console.log('✓ Created Photo Editor role:', roleId);
+    } else {
+      console.log('✓ Photo Editor role already exists');
+    }
+
+    // 6. Create Video Editor role if it doesn't exist
+    let videoEditorRole = await Role.findOne({ name: 'Video Editor', tenantId: '-1' });
+    if (!videoEditorRole) {
+      const roleId = `role_${nanoid()}`;
+      videoEditorRole = await Role.create({
+        roleId,
+        tenantId: '-1', // Global role
+        name: 'Video Editor',
+        description: 'Edits and uploads videos for assigned events'
+      });
+      console.log('✓ Created Video Editor role:', roleId);
+    } else {
+      console.log('✓ Video Editor role already exists');
+    }
+
+    // 7. Create Album Designer role if it doesn't exist
+    let albumDesignerRole = await Role.findOne({ name: 'Album Designer', tenantId: '-1' });
+    if (!albumDesignerRole) {
+      const roleId = `role_${nanoid()}`;
+      albumDesignerRole = await Role.create({
+        roleId,
+        tenantId: '-1', // Global role
+        name: 'Album Designer',
+        description: 'Designs and uploads pdf albums for events'
+      });
+      console.log('✓ Created Album Designer role:', roleId);
+    } else {
+      console.log('✓ Album Designer role already exists');
+    }
+
+    // 8. Create LayaPro tenant if it doesn't exist
     let layaproTenant = await Tenant.findOne({ tenantUsername: 'LayaPro' });
     if (!layaproTenant) {
       const tenantId = `tenant_${nanoid()}`;
@@ -85,7 +147,7 @@ async function seedDatabase() {
       console.log('✓ LayaPro tenant already exists');
     }
 
-    // 4. Create admin user if it doesn't exist
+    // 9. Create admin user if it doesn't exist
     let adminUser = await User.findOne({ email: 'productionslaya@gmail.com' });
     if (!adminUser) {
       const userId = `user_${nanoid()}`;
@@ -109,15 +171,116 @@ async function seedDatabase() {
     } else {
       console.log('✓ Admin user already exists');
     }
+
+    // 10. Create system modules
+    const modules = [
+      { name: 'Dashboard', description: 'Overview and analytics', path: '/dashboard', icon: 'dashboard', order: 1 },
+      { name: 'Albums', description: 'Manage photo and video albums', path: '/albums', icon: 'albums', order: 2 },
+      { name: 'Projects', description: 'Project management', path: '/projects', icon: 'projects', order: 3 },
+      { name: 'Finances', description: 'Financial management and reports', path: '/finances', icon: 'finances', order: 4 },
+      { name: 'Calendar', description: 'Event scheduling and calendar', path: '/calendar', icon: 'calendar', order: 5 },
+      { name: 'Events Setup', description: 'Event configuration and setup', path: '/workflow/events-setup', icon: 'events', order: 6 },
+      { name: 'Team Setup', description: 'Team member management', path: '/team/members', icon: 'team', order: 7 },
+      { name: 'Equipments', description: 'Equipment tracking and management', path: '/team/equipments', icon: 'equipments', order: 8 },
+      { name: 'Access Management', description: 'User roles and permissions', path: '/access-management', icon: 'access', order: 9 },
+    ];
+
+    console.log('\n✓ Creating system modules...');
+    const moduleMap: Record<string, any> = {};
+    let moduleCreatedCount = 0;
+    let moduleExistingCount = 0;
+
+    for (const moduleData of modules) {
+      let module = await Module.findOne({ name: moduleData.name });
+      if (!module) {
+        const moduleId = `module_${nanoid()}`;
+        module = await Module.create({
+          moduleId,
+          ...moduleData,
+          isActive: true
+        });
+        moduleCreatedCount++;
+        console.log(`  Created module: ${moduleData.name}`);
+      } else {
+        moduleExistingCount++;
+      }
+      moduleMap[moduleData.name] = module;
+    }
+
+    console.log(`✓ Modules: ${moduleCreatedCount} created, ${moduleExistingCount} already exist`);
+
+    // 11. Create role permissions
+    console.log('\n✓ Creating role permissions...');
+    
+    const rolePermissions = [
+      // Admin - Full access to everything
+      { roleName: 'Admin', modules: ['Dashboard', 'Albums', 'Projects', 'Finances', 'Calendar', 'Events Setup', 'Team Setup', 'Equipments', 'Access Management'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: true } },
+      
+      // HR - Access to finances, team members, salaries
+      { roleName: 'HR', modules: ['Dashboard', 'Finances', 'Team Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: true } },
+      
+      // Co-ordinator - Access to projects, finances, events, teams assigned to him
+      { roleName: 'Co-ordinator', modules: ['Dashboard', 'Projects', 'Finances', 'Calendar', 'Events Setup', 'Team Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
+      
+      // Team Lead - Technical stuff, assigns editors and designers
+      { roleName: 'Team Lead', modules: ['Dashboard', 'Projects', 'Calendar', 'Events Setup', 'Team Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
+      
+      // Photo Editor - Edits and uploads photos for assigned events
+      { roleName: 'Photo Editor', modules: ['Dashboard', 'Albums', 'Calendar', 'Events Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
+      
+      // Video Editor - Edits and uploads videos for assigned events
+      { roleName: 'Video Editor', modules: ['Dashboard', 'Albums', 'Calendar', 'Events Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
+      
+      // Album Designer - Designs and uploads PDF albums
+      { roleName: 'Album Designer', modules: ['Dashboard', 'Albums', 'Calendar', 'Events Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
+    ];
+
+    let permissionCreatedCount = 0;
+    let permissionExistingCount = 0;
+
+    for (const rolePermConfig of rolePermissions) {
+      const role = rolePermConfig.roleName === 'Admin' ? adminRole :
+                   rolePermConfig.roleName === 'HR' ? hrRole :
+                   rolePermConfig.roleName === 'Co-ordinator' ? coordinatorRole :
+                   rolePermConfig.roleName === 'Team Lead' ? teamLeadRole :
+                   rolePermConfig.roleName === 'Photo Editor' ? photoEditorRole :
+                   rolePermConfig.roleName === 'Video Editor' ? videoEditorRole :
+                   rolePermConfig.roleName === 'Album Designer' ? albumDesignerRole : null;
+
+      if (!role) continue;
+
+      for (const moduleName of rolePermConfig.modules) {
+        const module = moduleMap[moduleName];
+        if (!module) continue;
+
+        const existing = await RolePermission.findOne({
+          roleId: role.roleId,
+          moduleId: module.moduleId
+        });
+
+        if (!existing) {
+          const permissionId = `perm_${nanoid()}`;
+          await RolePermission.create({
+            permissionId,
+            roleId: role.roleId,
+            moduleId: module.moduleId,
+            ...rolePermConfig.permissions
+          });
+          permissionCreatedCount++;
+        } else {
+          permissionExistingCount++;
+        }
+      }
+    }
+
+    console.log(`✓ Role Permissions: ${permissionCreatedCount} created, ${permissionExistingCount} already exist`);
+
 // 5. Create default profiles for LayaPro tenant
     const defaultProfiles = [
       { name: 'Candid Photographer', description: 'Captures candid moments and natural expressions' },
       { name: 'Cinematographer', description: 'Creates cinematic video content' },
       { name: 'Traditional Photographer', description: 'Specializes in traditional photography styles' },
       { name: 'Traditional Videographer', description: 'Captures traditional video content' },
-      { name: 'Photo Editor', description: 'Edits and enhances photographs' },
-      { name: 'Video Editor', description: 'Edits and produces video content' },
-      { name: 'Album Designer', description: 'Designs photo albums and layouts' }
     ];
 
     console.log('\n✓ Creating default profiles...');

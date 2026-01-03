@@ -16,7 +16,7 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       phoneNumber,
       govtIdNumber,
       roleId,
-      profileId,
+      profileIds,
       address,
       isFreelancer,
       paymentType,
@@ -102,7 +102,7 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       phoneNumber,
       govtIdNumber,
       roleId: isFreelancer ? undefined : roleId,
-      profileId,
+      profileIds: Array.isArray(profileIds) ? profileIds : [],
       userId,
       address,
       isFreelancer: isFreelancer || false,
@@ -143,14 +143,19 @@ export const getAllTeamMembers = async (req: AuthRequest, res: Response) => {
     // Get all team members for this tenant
     const teamMembers = await Team.find({ tenantId }).sort({ createdAt: -1 }).lean();
 
-    // Get all profile IDs from team members
-    const profileIds = teamMembers
-      .map(member => member.profileId)
-      .filter(id => id != null);
+    // Get all profile IDs from team members (both profileId and profileIds)
+    const profileIdsSet = new Set<string>();
+    teamMembers.forEach(member => {
+      if (member.profileId) profileIdsSet.add(member.profileId);
+      if (Array.isArray(member.profileIds)) {
+        member.profileIds.forEach(id => profileIdsSet.add(id));
+      }
+    });
+    const allProfileIds = Array.from(profileIdsSet);
 
     // Fetch all profiles in one query
     const profiles = await Profile.find({ 
-      profileId: { $in: profileIds },
+      profileId: { $in: allProfileIds },
       tenantId 
     }).lean();
 
@@ -162,7 +167,10 @@ export const getAllTeamMembers = async (req: AuthRequest, res: Response) => {
     // Attach profile data to team members
     const teamMembersWithProfiles = teamMembers.map(member => ({
       ...member,
-      profile: member.profileId ? profileMap.get(member.profileId) : null
+      profile: member.profileId ? profileMap.get(member.profileId) : null,
+      profiles: Array.isArray(member.profileIds) 
+        ? member.profileIds.map(id => profileMap.get(id)).filter(p => p != null)
+        : []
     }));
 
     return res.status(200).json({

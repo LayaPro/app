@@ -5,11 +5,83 @@
   position: relative;
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .label {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.infoButton:hover {
+  color: var(--color-primary);
+  background: var(--bg-hover);
+}
+
+.infoButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.infoButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+.infoTooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  min-width: 250px;
+  max-width: 350px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .required {
@@ -41,9 +113,16 @@
   border-color: var(--color-primary);
 }
 
-.selectButton.open {
+.selectButton:focus {
+  outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+.selectButton.open {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
 }
 
 .selectButton.error {
@@ -71,12 +150,12 @@
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-  border: 1px solid var(--color-primary);
+  background: rgba(99, 102, 241, 0.08);
+  border: 1px solid rgba(99, 102, 241, 0.4);
   border-radius: var(--radius-md);
   font-size: 13px;
   font-weight: 500;
-  color: var(--text-primary);
+  color: #4f46e5;
   max-width: 200px;
 }
 
@@ -95,13 +174,13 @@
   border: none;
   cursor: pointer;
   padding: 0;
-  color: var(--color-primary);
+  color: #6366f1;
   transition: all var(--transition-fast);
   flex-shrink: 0;
 }
 
 .chipRemove:hover {
-  color: var(--color-secondary);
+  color: #4338ca;
   transform: scale(1.1);
 }
 
@@ -125,8 +204,9 @@
 }
 
 .placeholder {
-  color: var(--text-secondary);
-  font-size: 14px;
+  color: var(--text-tertiary);
+  font-size: 15px;
+  font-weight: 400;
 }
 
 .chevron {
@@ -220,6 +300,12 @@
 
 .option.selected {
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+}
+
+.option.focused {
+  background: var(--bg-hover);
+  outline: 2px solid var(--color-primary);
+  outline-offset: -2px;
 }
 
 .checkbox {

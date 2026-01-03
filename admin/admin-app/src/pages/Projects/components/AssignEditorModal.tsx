@@ -243,7 +243,7 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
               <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
             <div>
-              <div className={styles.modeTitle}>Per Event</div>
+              <div className={styles.modeTitle}>per event</div>
               <div className={styles.modeDesc}>Assign different editors per event</div>
             </div>
           </button>
@@ -322,7 +322,7 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
           </div>
         ) : (
           <div className={styles.perEventSection}>
-            <label className={styles.label}>Assign Editor Per Event</label>
+            <label className={styles.label}>Assign editor per event</label>
             <div className={styles.eventList}>
               {eventMappings.map((mapping) => {
                 const currentEditor = teamMembers.find(m => m.memberId === mapping.editorId);

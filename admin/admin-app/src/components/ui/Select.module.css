@@ -230,6 +230,10 @@
   background: var(--bg-hover);
 }
 
+.option.focused:not(.optionDisabled) {
+  background: var(--bg-hover);
+}
+
 .option.selected {
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: white;
@@ -237,6 +241,11 @@
 }
 
 .option.selected:hover {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  opacity: 0.9;
+}
+
+.option.selected.focused {
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   opacity: 0.9;
 }

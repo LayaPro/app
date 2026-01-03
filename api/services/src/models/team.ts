@@ -13,7 +13,8 @@ const TeamSchema = new Schema<ITeam>(
     phoneNumber: { type: String, trim: true },
     govtIdNumber: { type: String, trim: true },
     roleId: { type: String, index: true }, // Reference to Role
-    profileId: { type: String, index: true }, // Reference to Profile
+    profileId: { type: String, index: true }, // Reference to Profile (deprecated, use profileIds)
+    profileIds: { type: [String], default: [] }, // Array of Profile references
     userId: { type: String, index: true }, // Reference to User for login
     address: { type: String },
     isFreelancer: { type: Boolean, required: true, default: false },

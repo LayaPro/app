@@ -37,6 +37,20 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewMember, setViewMember] = useState<any>(null);
 
+  // Enrich team members data with profile names for search
+  const enrichedTeamMembers = teamMembers.map(member => {
+    const profileIds = Array.isArray(member.profileIds) ? member.profileIds : (member.profileId ? [member.profileId] : []);
+    const profileNames = profileIds
+      .map((id: string) => profiles.find(p => p.profileId === id)?.name)
+      .filter((name: string | undefined) => name)
+      .join(', ');
+    
+    return {
+      ...member,
+      _profileNames: profileNames // Add searchable field
+    };
+  });
+
   const handleCreateMember = () => {
     setSelectedMember(null);
     setIsFormOpen(true);
@@ -106,11 +120,6 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
       'linear-gradient(135deg, #ef4444 0%, #f97316 100%)', // red to orange
     ];
     return gradients[(name?.charCodeAt(0) || 0) % gradients.length];
-  };
-
-  const getProfileName = (profileId: string) => {
-    const profile = profiles.find(p => p.profileId === profileId);
-    return profile?.name || '-';
   };
 
   const columns: Column<any>[] = [
@@ -217,7 +226,61 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
       key: 'profileId',
       header: 'Work Profile',
       sortable: false,
-      render: (row) => getProfileName(row.profileId),
+      render: (row) => {
+        const profileIds = Array.isArray(row.profileIds) ? row.profileIds : (row.profileId ? [row.profileId] : []);
+        if (profileIds.length === 0) return '-';
+        
+        const profileNames = profileIds
+          .map((id: string) => profiles.find(p => p.profileId === id)?.name)
+          .filter((name: string | undefined) => name);
+        
+        if (profileNames.length === 0) return '-';
+        
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            {profileNames.map((name: any, index: number) => (
+              <span key={index} style={{ fontSize: '13px' }}>{name}</span>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'roleId',
+      header: 'Role',
+      sortable: false,
+      render: (row) => {
+        const role = roles.find(r => r.roleId === row.roleId);
+        return role?.name || '-';
+      },
+    },
+    {
+      key: 'salary',
+      header: 'Salary',
+      sortable: true,
+      render: (row) => {
+        if (!row.salary) return '-';
+        const formatIndianNumber = (value: string): string => {
+          if (!value) return '';
+          const num = parseFloat(value);
+          if (isNaN(num)) return value;
+          return new Intl.NumberFormat('en-IN', {
+            style: 'currency',
+            currency: 'INR',
+            maximumFractionDigits: 0
+          }).format(num);
+        };
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+            <span style={{ fontWeight: '500' }}>{formatIndianNumber(row.salary)}</span>
+            {row.paymentType && (
+              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+                {row.paymentType === 'per-month' ? 'per month' : 'per event'}
+              </span>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: 'isFreelancer',
@@ -289,7 +352,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         
         <DataTable
           columns={columns}
-          data={teamMembers}
+          data={enrichedTeamMembers}
           itemsPerPage={10}
           emptyMessage="No team members found"
           onCreateClick={handleCreateMember}
@@ -312,7 +375,10 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         onClose={() => setIsViewModalOpen(false)}
         onEdit={handleEditFromView}
         member={viewMember}
-        profile={viewMember ? profiles.find((p: any) => p.profileId === viewMember.profileId) : undefined}
+        profiles={viewMember ? (() => {
+          const profileIds = Array.isArray(viewMember.profileIds) ? viewMember.profileIds : (viewMember.profileId ? [viewMember.profileId] : []);
+          return profileIds.map((id: string) => profiles.find((p: any) => p.profileId === id)).filter((p: any) => p);
+        })() : []}
         role={viewMember ? roles.find((r: any) => r.roleId === viewMember.roleId) : undefined}
         onSuccess={onSuccess}
       />

@@ -130,6 +130,7 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
           break;
         case 'Escape':
           e.preventDefault();
+          e.stopPropagation();
           setIsOpen(false);
           setSearchTerm('');
           setFocusedIndex(-1);
@@ -138,8 +139,8 @@ export const SearchableSelect: React.FC<SearchableSelectProps> = ({
       }
     };
 
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, focusedIndex, filteredOptions]);
 
   // Reset focused index when search term changes

@@ -22,7 +22,7 @@
   font-size: 0.9375rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: background 0.2s ease, color 0.2s ease;
   outline: none !important;
   -webkit-tap-highlight-color: transparent;
 }
@@ -32,10 +32,17 @@
   color: var(--text-primary);
 }
 
+.tab:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  border-bottom: none;
+}
+
 .tab:focus,
 .tab:active {
   outline: none !important;
-  border-bottom: 1px solid var(--bg-primary) !important;
+  border-bottom: none !important;
 }
 
 .tabActive {
@@ -49,6 +56,13 @@
 .tabActive:hover {
   background: var(--bg-primary);
   color: var(--color-primary);
+}
+
+.tabActive:focus-visible {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+  border-bottom: 1px solid var(--bg-primary);
 }
 
 .tabActive:focus,

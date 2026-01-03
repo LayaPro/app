@@ -15,6 +15,7 @@ interface MultiSelectProps {
   placeholder?: string;
   error?: string;
   required?: boolean;
+  info?: string;
 }
 
 export const MultiSelect: React.FC<MultiSelectProps> = ({
@@ -25,13 +26,18 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   placeholder = 'Select...',
   error,
   required,
+  info,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [focusedIndex, setFocusedIndex] = useState(-1);
+  const [showInfo, setShowInfo] = useState(false);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
 
   const selectedOptions = options.filter(opt => value.includes(opt.value));
 
@@ -53,12 +59,21 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      const isClickInsideContainer = containerRef.current?.contains(target);
+      const isClickInsideButton = buttonRef.current?.contains(target);
       const isClickInsideDropdown = dropdownRef.current?.contains(target);
       
-      if (!isClickInsideContainer && !isClickInsideDropdown) {
+      if (!isClickInsideButton && !isClickInsideDropdown) {
         setIsOpen(false);
         setSearchTerm('');
+      }
+    };
+
+    const handleInfoClickOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const isClickInsideInfo = infoRef.current?.contains(target);
+      
+      if (!isClickInsideInfo && showInfo) {
+        setShowInfo(false);
       }
     };
 
@@ -76,7 +91,71 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
         window.removeEventListener('scroll', handleScroll, true);
       };
     }
-  }, [isOpen]);
+
+    if (showInfo) {
+      document.addEventListener('mousedown', handleInfoClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleInfoClickOutside);
+      };
+    }
+  }, [isOpen, showInfo]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex(prev => 
+            prev < filteredOptions.length - 1 ? prev + 1 : prev
+          );
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex(prev => (prev > 0 ? prev - 1 : -1));
+          if (focusedIndex === 0) {
+            searchInputRef.current?.focus();
+          }
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (focusedIndex >= 0 && filteredOptions[focusedIndex]) {
+            handleToggle(filteredOptions[focusedIndex].value);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(false);
+          setSearchTerm('');
+          setFocusedIndex(-1);
+          buttonRef.current?.focus();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, focusedIndex, filteredOptions]);
+
+  // Reset focused index when search term changes
+  useEffect(() => {
+    setFocusedIndex(-1);
+  }, [searchTerm]);
+
+  // Scroll focused item into view
+  useEffect(() => {
+    if (focusedIndex >= 0 && dropdownRef.current) {
+      const focusedElement = dropdownRef.current.querySelector(
+        `[data-index="${focusedIndex}"]`
+      ) as HTMLElement;
+      if (focusedElement) {
+        focusedElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [focusedIndex]);
 
   const handleToggle = (optionValue: string) => {
     if (value.includes(optionValue)) {
@@ -105,10 +184,33 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
   return (
     <div className={styles.container} ref={containerRef}>
       {label && (
-        <label className={styles.label}>
-          {label}
-          {required && <span className={styles.required}>*</span>}
-        </label>
+        <div className={styles.labelRow}>
+          <label className={styles.label}>
+            {label}
+            {required && <span className={styles.required}>*</span>}
+          </label>
+          {info && (
+            <div className={styles.infoWrapper} ref={infoRef}>
+              <button
+                type="button"
+                className={styles.infoButton}
+                onClick={() => setShowInfo(!showInfo)}
+                tabIndex={-1}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="12" cy="8" r="0.5" fill="currentColor" strokeWidth="1" />
+                </svg>
+              </button>
+              {showInfo && (
+                <div className={styles.infoTooltip}>
+                  {info}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       )}
       
       <div className={styles.selectWrapper}>
@@ -201,6 +303,7 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
+                ref={searchInputRef}
                 type="text"
                 className={styles.searchInput}
                 placeholder="Search..."
@@ -212,14 +315,17 @@ export const MultiSelect: React.FC<MultiSelectProps> = ({
 
             <div className={styles.optionsList}>
               {filteredOptions.length > 0 ? (
-                filteredOptions.map((option) => {
+                filteredOptions.map((option, index) => {
                   const isSelected = value.includes(option.value);
+                  const isFocused = index === focusedIndex;
                   return (
                     <button
                       key={option.value}
                       type="button"
-                      className={`${styles.option} ${isSelected ? styles.selected : ''}`}
+                      data-index={index}
+                      className={`${styles.option} ${isSelected ? styles.selected : ''} ${isFocused ? styles.focused : ''}`}
                       onClick={(e) => handleOptionClick(option.value, e)}
+                      onMouseEnter={() => setFocusedIndex(index)}
                     >
                       <input
                         type="checkbox"

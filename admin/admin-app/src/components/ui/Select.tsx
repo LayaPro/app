@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import styles from './Select.module.css';
 
 export interface SelectOption {
@@ -33,6 +33,7 @@ export const Select: React.FC<SelectProps> = ({
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const [focusedIndex, setFocusedIndex] = useState(-1);
   const [showInfo, setShowInfo] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -79,13 +80,82 @@ export const Select: React.FC<SelectProps> = ({
     }
   };
 
-  const handleSelect = (optionValue: string) => {
+  const handleSelect = useCallback((optionValue: string) => {
     const option = options.find(opt => opt.value === optionValue);
     if (!option?.disabled) {
       onChange(optionValue);
       setIsOpen(false);
     }
-  };
+  }, [options, onChange]);
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setFocusedIndex(prev => {
+            let next = prev + 1;
+            while (next < options.length && options[next].disabled) {
+              next++;
+            }
+            return next < options.length ? next : prev;
+          });
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setFocusedIndex(prev => {
+            let next = prev - 1;
+            while (next >= 0 && options[next].disabled) {
+              next--;
+            }
+            return next >= 0 ? next : prev;
+          });
+          break;
+        case 'Enter':
+          e.preventDefault();
+          e.stopPropagation();
+          if (focusedIndex >= 0 && options[focusedIndex] && !options[focusedIndex].disabled) {
+            handleSelect(options[focusedIndex].value);
+          }
+          break;
+        case 'Escape':
+          e.preventDefault();
+          e.stopPropagation();
+          setIsOpen(false);
+          setFocusedIndex(-1);
+          buttonRef.current?.focus();
+          break;
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, focusedIndex, options, handleSelect]);
+
+  // Reset focused index when dropdown opens
+  useEffect(() => {
+    if (isOpen) {
+      const selectedIndex = options.findIndex(opt => opt.value === value);
+      setFocusedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    } else {
+      setFocusedIndex(-1);
+    }
+  }, [isOpen, value, options]);
+
+  // Scroll focused item into view
+  useEffect(() => {
+    if (focusedIndex >= 0 && dropdownRef.current) {
+      const focusedElement = dropdownRef.current.querySelector(
+        `[data-index="${focusedIndex}"]`
+      ) as HTMLElement;
+      if (focusedElement) {
+        focusedElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [focusedIndex]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
@@ -166,32 +236,37 @@ export const Select: React.FC<SelectProps> = ({
               {options.length === 0 ? (
                 <div className={styles.noOptions}>No options available</div>
               ) : (
-                options.map((option) => (
-                  <button
-                    key={option.value}
-                    type="button"
-                    className={`${styles.option} ${option.value === value ? styles.selected : ''} ${option.disabled ? styles.optionDisabled : ''}`}
-                    onClick={() => handleSelect(option.value)}
-                    disabled={option.disabled}
-                  >
-                    <span className={styles.optionLabel}>{option.label}</span>
-                    {option.value === value && (
-                      <svg
-                        className={styles.checkIcon}
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                    )}
-                  </button>
-                ))
+                options.map((option, index) => {
+                  const isFocused = index === focusedIndex;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      data-index={index}
+                      className={`${styles.option} ${option.value === value ? styles.selected : ''} ${option.disabled ? styles.optionDisabled : ''} ${isFocused ? styles.focused : ''}`}
+                      onClick={() => handleSelect(option.value)}
+                      onMouseEnter={() => setFocusedIndex(index)}
+                      disabled={option.disabled}
+                    >
+                      <span className={styles.optionLabel}>{option.label}</span>
+                      {option.value === value && (
+                        <svg
+                          className={styles.checkIcon}
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      )}
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>

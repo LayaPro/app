@@ -6,6 +6,7 @@ import { Checkbox } from '../../components/ui/Checkbox';
 import { FormError } from '../../components/ui/FormError';
 import { PhoneInput } from '../../components/ui/PhoneInput';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
+import { MultiSelect } from '../../components/ui/MultiSelect';
 import { InfoCard } from '../../components/ui/InfoCard';
 import { AmountInput } from '../../components/ui/AmountInput';
 import { Select } from '../../components/ui/Select';
@@ -20,7 +21,7 @@ export interface TeamMemberFormData {
   phoneNumber?: string;
   govtIdNumber?: string;
   roleId?: string;
-  profileId?: string;
+  profileIds?: string[];
   address?: string;
   isFreelancer: boolean;
   paymentType?: 'per-month' | 'per-event';
@@ -51,7 +52,7 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
     phoneNumber: '',
     govtIdNumber: '',
     roleId: '',
-    profileId: '',
+    profileIds: [],
     address: '',
     isFreelancer: false,
     paymentType: 'per-month',
@@ -71,7 +72,7 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
         phoneNumber: sanitizePhoneNumber(member.phoneNumber || ''),
         govtIdNumber: sanitizeAlphanumeric(member.govtIdNumber || ''),
         roleId: member.roleId || '',
-        profileId: member.profileId || '',
+        profileIds: Array.isArray(member.profileIds) ? member.profileIds : (member.profileId ? [member.profileId] : []),
         address: sanitizeTextarea(member.address || ''),
         isFreelancer: member.isFreelancer || false,
         paymentType: member.paymentType || 'per-month',
@@ -85,7 +86,7 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
         phoneNumber: '',
         govtIdNumber: '',
         roleId: '',
-        profileId: '',
+        profileIds: [],
         address: '',
         isFreelancer: false,
         paymentType: 'per-month',
@@ -181,8 +182,8 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
       newErrors.roleId = 'Access role is required for team members with login access';
     }
 
-    if (!formData.profileId || !formData.profileId.trim()) {
-      newErrors.profileId = 'Work profile is required';
+    if (!formData.profileIds || formData.profileIds.length === 0) {
+      newErrors.profileIds = 'At least one work profile is required';
     }
 
     if (!formData.salary || !formData.salary.trim()) {
@@ -328,18 +329,18 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
         </div>
 
         <div className={styles.formGroup}>
-          <SearchableSelect
-            label="Work Profile"
-            value={formData.profileId || ''}
-            onChange={(value) => handleChange('profileId', value)}
+          <MultiSelect
+            label="Work Profiles"
+            value={formData.profileIds || []}
+            onChange={(value) => handleChange('profileIds', value)}
             options={profiles.map((profile) => ({
               value: profile.profileId,
               label: profile.name
             }))}
-            placeholder="Search and select work profile"
-            error={errors.profileId}
-            info="Assign a work profile to define role and responsibilities"
+            placeholder="Select work profiles"
+            error={errors.profileIds}
             required
+            info="Select one or more work profiles that this team member will handle"
           />
         </div>
 
@@ -350,8 +351,8 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
               value={formData.paymentType || 'per-month'}
               onChange={(value) => handleChange('paymentType', value as 'per-month' | 'per-event')}
               options={[
-                { value: 'per-month', label: 'Per Month' },
-                { value: 'per-event', label: 'Per Event' }
+                { value: 'per-month', label: 'per month' },
+                { value: 'per-event', label: 'per event' }
               ]}
               info="Choose how this team member will be compensated"
             />
