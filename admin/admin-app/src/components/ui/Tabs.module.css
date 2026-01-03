@@ -1,0 +1,131 @@
+.tabsContainer {
+  background: transparent;
+}
+
+.tabsHeader {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0;
+  margin-bottom: -1px;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.9375rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.tab:focus,
+.tab:active {
+  outline: none !important;
+  border-bottom: 1px solid var(--bg-primary) !important;
+}
+
+.tabActive {
+  background: var(--bg-primary);
+  color: var(--color-primary);
+  border-color: var(--border-color);
+  border-bottom: 1px solid var(--bg-primary);
+  font-weight: 600;
+}
+
+.tabActive:hover {
+  background: var(--bg-primary);
+  color: var(--color-primary);
+}
+
+.tabActive:focus,
+.tabActive:active {
+  outline: none !important;
+  border-bottom: 1px solid var(--bg-primary) !important;
+}
+
+.tabIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tabIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tabBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.5rem;
+  background: var(--color-primary);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 12px;
+}
+
+.tabsContent {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 0 12px 12px 12px;
+  overflow: visible;
+}
+
+.tabPanel {
+  display: none;
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.tabPanelActive {
+  display: block;
+  animation: slideInContent 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideInContent {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .tabsHeader {
+    gap: 0.25rem;
+  }
+
+  .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+  }
+
+  .tabIcon svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tabBadge {
+    min-width: 1.25rem;
+    height: 1.25rem;
+    font-size: 0.6875rem;
+    padding: 0 0.375rem;
+  }
+}

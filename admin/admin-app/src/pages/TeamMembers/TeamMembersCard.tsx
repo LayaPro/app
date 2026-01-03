@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { DataTable } from '../../components/ui/DataTable.js';
 import type { Column } from '../../components/ui/DataTable.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
+import { ActionMenu } from '../../components/ui/ActionMenu.js';
+import type { MenuItem } from '../../components/ui/ActionMenu.js';
 import styles from './TeamCard.module.css';
 import { teamApi } from '../../services/api';
 import { TeamMemberForm } from './TeamMemberForm.js';
 import type { TeamMemberFormData } from './TeamMemberForm.js';
+import { ViewMemberModal } from './ViewMemberModal.js';
 
 interface TeamMembersCardProps {
   teamMembers: any[];
@@ -33,14 +36,27 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
   const [selectedMember, setSelectedMember] = useState<any>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [memberToDelete, setMemberToDelete] = useState<any>(null);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewMember, setViewMember] = useState<any>(null);
 
   const handleCreateMember = () => {
     setSelectedMember(null);
     setIsFormOpen(true);
   };
 
+  const handleViewMember = (member: any) => {
+    setViewMember(member);
+    setIsViewModalOpen(true);
+  };
+
   const handleEditMember = (member: any) => {
     setSelectedMember(member);
+    setIsFormOpen(true);
+  };
+
+  const handleEditFromView = () => {
+    setSelectedMember(viewMember);
+    setIsViewModalOpen(false);
     setIsFormOpen(true);
   };
 
@@ -101,7 +117,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
 
   const columns: Column<any>[] = [
     {
-      key: 'name',
+      key: 'firstName',
       header: 'Name',
       sortable: true,
       render: (row) => (
@@ -110,6 +126,9 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
             style={{
               width: '36px',
               height: '36px',
+              minWidth: '36px',
+              minHeight: '36px',
+              flexShrink: 0,
               borderRadius: '50%',
               background: getAvatarGradient(row.firstName),
               display: 'flex',
@@ -164,28 +183,40 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
       key: 'actions',
       header: 'Actions',
       sortable: false,
-      render: (row) => (
-        <div className={styles.actions}>
-          <button
-            onClick={() => handleEditMember(row)}
-            className={styles.editButton}
-            title="Edit"
-          >
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-          </button>
-          <button
-            onClick={() => handleDeleteMember(row)}
-            className={styles.deleteButton}
-            title="Delete"
-          >
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-            </svg>
-          </button>
-        </div>
-      ),
+      render: (row) => {
+        const menuItems: MenuItem[] = [
+          {
+            label: 'View',
+            icon: (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            ),
+            onClick: () => handleViewMember(row),
+          },
+          {
+            label: 'Edit',
+            icon: (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+            ),
+            onClick: () => handleEditMember(row),
+          },
+          {
+            label: 'Delete',
+            icon: (
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            ),
+            onClick: () => handleDeleteMember(row),
+            variant: 'danger' as const,
+          },
+        ];
+        return <ActionMenu items={menuItems} />;
+      },
     },
   ];
 
@@ -206,6 +237,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
           emptyMessage="No team members found"
           onCreateClick={handleCreateMember}
           createButtonText="Add Team Member"
+          onRowClick={handleViewMember}
         />
       </div>
 
@@ -216,6 +248,15 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         member={selectedMember}
         profiles={profiles}
         roles={roles}
+      />
+
+      <ViewMemberModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        onEdit={handleEditFromView}
+        member={viewMember}
+        profile={viewMember ? profiles.find((p: any) => p.profileId === viewMember.profileId) : undefined}
+        role={viewMember ? roles.find((r: any) => r.roleId === viewMember.roleId) : undefined}
       />
 
       <ConfirmationModal

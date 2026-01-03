@@ -19,6 +19,7 @@ interface DataTableProps<T> {
   renderExpandedRow?: (row: T) => React.ReactNode;
   getRowKey?: (row: T) => string;
   customFilters?: React.ReactNode;
+  onRowClick?: (row: T) => void;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -32,6 +33,7 @@ export function DataTable<T extends Record<string, any>>({
   renderExpandedRow,
   getRowKey,
   customFilters,
+  onRowClick,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -198,7 +200,16 @@ export function DataTable<T extends Record<string, any>>({
                 const isExpanded = expandedRows.has(rowKey);
                 return (
                   <>
-                    <tr key={rowIndex} className={styles.tr}>
+                    <tr 
+                      key={rowIndex} 
+                      className={`${styles.tr} ${onRowClick ? styles.clickable : ''}`}
+                      onClick={(e) => {
+                        // Don't trigger row click if clicking on buttons or interactive elements
+                        if (onRowClick && !(e.target as HTMLElement).closest('button')) {
+                          onRowClick(row);
+                        }
+                      }}
+                    >
                       {renderExpandedRow && (
                         <td className={styles.tdExpand}>
                           <button

@@ -60,6 +60,7 @@ export const Textarea: React.FC<TextareaProps> = ({
                   className={styles.infoButton}
                   onClick={() => setShowInfo(!showInfo)}
                   aria-label="More information"
+                  tabIndex={-1}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                     <circle cx="12" cy="12" r="10" strokeWidth="2"/>

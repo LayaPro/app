@@ -3,7 +3,7 @@
   background: var(--bg-primary);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  overflow: visible;
+  overflow: hidden;
 }
 
 /* Expand/Collapse */
@@ -206,11 +206,15 @@
   width: 100%;
   border-collapse: collapse;
   background-color: var(--bg-primary);
+  position: relative;
+  z-index: 1;
 }
 
 .thead {
   background-color: var(--bg-secondary);
   border-bottom: 1px solid var(--border-color);
+  position: relative;
+  z-index: 1;
 }
 
 .th {
@@ -221,6 +225,7 @@
   color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .thExpand {
@@ -278,10 +283,18 @@
 
 .tr {
   border-bottom: 1px solid var(--border-color);
+  position: relative;
+  z-index: 2;
+  transition: background-color 0.2s ease;
+}
+
+.tr.clickable {
+  cursor: pointer;
 }
 
 .tr:hover {
   background-color: var(--bg-secondary);
+  z-index: 10;
 }
 
 .tr:last-child {
@@ -292,6 +305,8 @@
   padding: 16px 24px;
   font-size: 14px;
   color: var(--text-secondary);
+  position: relative;
+  z-index: inherit;
 }
 
 .td:first-of-type {
