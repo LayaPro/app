@@ -44,7 +44,7 @@ jobs:
           cd admin/admin-app
           eb init ${{ secrets.EB_APP_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
           eb use ${{ secrets.EB_ENV_NAME }}
-          eb deploy
+          eb deploy --timeout 20
 
       - name: Build shared package
         run: |
@@ -88,4 +88,4 @@ jobs:
             AWS_SES_FROM_EMAIL="$AWS_SES_FROM_EMAIL" \
             NODE_ENV="production" \
             PORT="4000"
-          eb deploy
+          eb deploy --timeout 20
