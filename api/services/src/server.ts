@@ -46,6 +46,9 @@ app.get('/verify-token', authController.verifyToken);
 app.post('/refresh-token', authController.refreshToken);
 app.post('/forgot-password', authController.forgotPassword);
 app.post('/reset-password', authController.resetPassword);
+app.post('/setup-password', authController.setupPassword);
+app.post('/send-activation-link', authenticate, authController.sendActivationLink);
+app.post('/resend-activation-link', authController.resendActivationLink);
 
 // ---------- Roles routes ----------
 app.post('/create-role', authenticate, roleController.createRole);

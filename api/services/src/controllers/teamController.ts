@@ -1,11 +1,13 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
+import crypto from 'crypto';
 import Team from '../models/team';
 import User from '../models/user';
 import Role from '../models/role';
 import Profile from '../models/profile';
 import { AuthRequest } from '../middleware/auth';
+import { sendActivationEmail } from '../services/emailService';
 
 export const createTeamMember = async (req: AuthRequest, res: Response) => {
   try {
@@ -68,27 +70,41 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
     }
 
     let userId = undefined;
-    let generatedPassword = undefined;
 
     // Only create user account if NOT a freelancer
     if (!isFreelancer) {
-      // Generate random password for the team member (12 characters)
-      generatedPassword = nanoid(12);
-      const passwordHash = await bcrypt.hash(generatedPassword, 10);
-
-      // Create user entry for login
+      // Create user entry for login (without password initially)
       const newUserId = `user_${nanoid()}`;
+      
+      // Generate activation token (valid for 24 hours)
+      const activationToken = crypto.randomBytes(32).toString('hex');
+      const activationTokenHash = crypto.createHash('sha256').update(activationToken).digest('hex');
+      
       const user = await User.create({
         userId: newUserId,
         tenantId,
         email: email.toLowerCase(),
-        passwordHash,
+        passwordHash: '', // Empty initially, will be set when user activates
         firstName,
         lastName,
         roleId,
-        isActive: true
+        isActive: true,
+        isActivated: false,
+        activationToken: activationTokenHash,
+        activationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
       });
       userId = user.userId;
+
+      // Send activation email
+      try {
+        console.log(`📧 Attempting to send activation email to: ${email.toLowerCase()}`);
+        await sendActivationEmail(email.toLowerCase(), `${firstName} ${lastName}`, activationToken);
+        console.log(`✅ Activation email sent successfully to: ${email.toLowerCase()}`);
+      } catch (emailError: any) {
+        console.error('❌ Failed to send activation email:', emailError);
+        console.error('Email error details:', emailError.message);
+        // Don't fail the whole operation if email fails
+      }
     }
 
     // Create team member with linked userId (null for freelancers)
@@ -113,7 +129,7 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
     return res.status(201).json({
       message: isFreelancer 
         ? 'Freelancer team member created successfully (no login access)' 
-        : 'Team member and user account created successfully',
+        : 'Team member created successfully. Activation link sent to email.',
       teamMember,
       ...(userId && {
         user: {
@@ -121,8 +137,7 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
           email: email.toLowerCase(),
           firstName,
           lastName,
-          roleId,
-          tempPassword: generatedPassword // Send this via email later, remove from response in production
+          roleId
         }
       })
     });

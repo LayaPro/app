@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import User from '../models/user';
 import Role from '../models/role';
+import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailService';
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const JWT_EXPIRES_IN: number = Number(process.env.JWT_EXPIRES_IN) || 7 * 24 * 60 * 60;
@@ -251,4 +252,130 @@ export const resetPassword = async (req: Request, res: Response) => {
   }
 };
 
-export default { login, logout, verifyToken, refreshToken, forgotPassword, resetPassword };
+export const setupPassword = async (req: Request, res: Response) => {
+  try {
+    const { token, password } = req.body;
+
+    if (!token || !password) {
+      return res.status(400).json({ message: 'Token and password are required' });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters long' });
+    }
+
+    // Hash the provided token to match with stored hash
+    const activationTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with valid activation token
+    const user = await User.findOne({
+      activationToken: activationTokenHash,
+      activationTokenExpires: { $gt: new Date() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid or expired activation token' });
+    }
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Update password and activate account
+    user.passwordHash = passwordHash;
+    user.isActivated = true;
+    user.activationToken = null;
+    user.activationTokenExpires = null;
+    await user.save();
+
+    return res.status(200).json({
+      message: 'Password setup successful. You can now login with your credentials.'
+    });
+  } catch (err: any) {
+    console.error('Setup password error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const sendActivationLink = async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Find user
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Generate activation token (valid for 24 hours)
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    const activationTokenHash = crypto.createHash('sha256').update(activationToken).digest('hex');
+    
+    user.activationToken = activationTokenHash;
+    user.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await user.save();
+
+    // Send activation email
+    await sendActivationEmail(user.email, `${user.firstName} ${user.lastName}`, activationToken);
+
+    return res.status(200).json({
+      message: 'Activation link sent successfully'
+    });
+  } catch (err: any) {
+    console.error('Send activation link error:', err);
+    return res.status(500).json({ message: 'Failed to send activation link' });
+  }
+};
+
+export const resendActivationLink = async (req: Request, res: Response) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Find user
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    if (user.isActivated) {
+      return res.status(400).json({ message: 'Account is already activated' });
+    }
+
+    // Generate new activation token (valid for 24 hours)
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    const activationTokenHash = crypto.createHash('sha256').update(activationToken).digest('hex');
+    
+    user.activationToken = activationTokenHash;
+    user.activationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+    await user.save();
+
+    // Send activation email
+    await sendActivationEmail(user.email, `${user.firstName} ${user.lastName}`, activationToken);
+
+    return res.status(200).json({
+      message: 'Activation link resent successfully'
+    });
+  } catch (err: any) {
+    console.error('Resend activation link error:', err);
+    return res.status(500).json({ message: 'Failed to resend activation link' });
+  }
+};
+
+export default { 
+  login, 
+  logout, 
+  verifyToken, 
+  refreshToken, 
+  forgotPassword, 
+  resetPassword,
+  setupPassword,
+  sendActivationLink,
+  resendActivationLink
+};

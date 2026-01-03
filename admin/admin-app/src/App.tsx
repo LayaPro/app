@@ -18,6 +18,7 @@ import Finances from './pages/Finances/index.js';
 import Calendar from './pages/Calendar/index.js';
 import Statistics from './pages/Statistics/index.js';
 import Settings from './pages/Settings/index.js';
+import SetupPassword from './pages/SetupPassword/SetupPassword.js';
 
 // Access Control pages
 import AccessManagement from './pages/AccessManagement/index.js';
@@ -39,9 +40,18 @@ function App() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const sidebarCollapsed = useAppSelector((state) => state.ui.sidebarCollapsed);
 
-  // Show login page if not authenticated
+  // Public routes (no auth required)
+  const PublicRoutes = () => (
+    <Routes>
+      <Route path="/setup-password" element={<SetupPassword />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Login />} />
+    </Routes>
+  );
+
+  // Show public routes if not authenticated
   if (!isAuthenticated) {
-    return <Login />;
+    return <PublicRoutes />;
   }
 
   // Show main app if authenticated
