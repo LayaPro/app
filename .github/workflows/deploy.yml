@@ -65,8 +65,8 @@ jobs:
           cp -r api deploy/
           cp Procfile deploy/
           cp -r .ebextensions deploy/
-          cd deploy
-          zip -r ../application.zip . -x "*.git*" "node_modules/*"
+          # Remove node_modules from deploy folder
+          find deploy -name "node_modules" -type d -prune -exec rm -rf {} +
 
       - name: Deploy API services
         env:
@@ -80,6 +80,12 @@ jobs:
           AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
           AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
         run: |
+          # Move deploy contents to root for deployment
+          rm -rf packages api Procfile .ebextensions
+          shopt -s dotglob
+          mv deploy/* .
+          rmdir deploy
+          # Initialize and deploy
           eb init ${{ secrets.EB_SERVICES_NAME }} --platform "Node.js 20 running on 64bit Amazon Linux 2023" --region ${{ secrets.AWS_REGION }}
           eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
           eb setenv \
@@ -93,4 +99,4 @@ jobs:
             AWS_SES_REGION="$AWS_SES_REGION" \
             AWS_SES_FROM_EMAIL="$AWS_SES_FROM_EMAIL" \
             NODE_ENV="production"
-          eb deploy --source application.zip --timeout 20
+          eb deploy --timeout 20
