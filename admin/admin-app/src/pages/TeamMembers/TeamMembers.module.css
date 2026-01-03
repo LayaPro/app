@@ -14,8 +14,155 @@
   }
 }
 
-.cardsContainer {
+.tabsContainer {
+  background: transparent;
+}
+
+.tabsHeader {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  gap: 8px;
+  margin-bottom: -1px;
+  padding-left: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 14px 24px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-bottom: none;
+  border-radius: 12px 12px 0 0;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  outline: none !important;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tab:focus,
+.tab:active,
+.tab:focus-visible {
+  outline: none !important;
+  border-bottom: none;
+}
+
+.tab svg {
+  width: 20px;
+  height: 20px;
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab:hover:not(.tabActive) {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  transform: translateY(-2px);
+}
+
+.tab:hover svg {
+  transform: scale(1.1);
+}
+
+.tabActive {
+  background: var(--bg-primary);
+  color: var(--color-primary);
+  border: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--bg-primary);
+  z-index: 2;
+  transform: translateY(0);
+  outline: none;
+}
+
+.tabActive:focus,
+.tabActive:active {
+  outline: none;
+  border-bottom: 1px solid var(--bg-primary);
+}
+
+.tabActive svg {
+  transform: scale(1.05);
+}
+
+.tabBadge {
+  background: var(--color-primary);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 24px;
+  text-align: center;
+  transition: all 0.3s;
+}
+
+.tab:not(.tabActive) .tabBadge {
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+}
+
+.tabsContent {
+  position: relative;
+  min-height: 400px;
+  overflow: visible;
+  background: var(--bg-primary);
+  border-radius: 0 12px 12px 12px;
+  border: 1px solid var(--border-color);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.tabPanel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tabPanelActive {
+  position: relative;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  animation: slideInContent 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInContent {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .tab {
+    padding: 12px 16px;
+    font-size: 14px;
+    gap: 8px;
+  }
+
+  .tab svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tab span:first-of-type {
+    display: none;
+  }
+
+  .tabBadge {
+    font-size: 11px;
+    padding: 2px 6px;
+  }
 }

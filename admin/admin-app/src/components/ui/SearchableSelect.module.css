@@ -142,7 +142,6 @@
 
 .selectedText {
   color: var(--text-primary);
-  font-weight: 500;
 }
 
 .placeholder {
@@ -220,7 +219,6 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-weight: 500;
   margin-bottom: 2px;
 }
 

@@ -10,6 +10,18 @@
   gap: 0.5rem;
 }
 
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}
+
 .label {
   font-size: 0.875rem;
   font-weight: 500;
@@ -122,12 +134,13 @@
 }
 
 .submitButton {
-  background-color: var(--color-primary);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
   color: white;
 }
 
 .submitButton:hover:not(:disabled) {
-  background-color: var(--color-primary-hover, #0b5ed7);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  opacity: 0.9;
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }

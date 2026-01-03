@@ -16,7 +16,9 @@ const TeamSchema = new Schema<ITeam>(
     profileId: { type: String, index: true }, // Reference to Profile
     userId: { type: String, index: true }, // Reference to User for login
     address: { type: String },
-    isFreelancer: { type: Boolean, required: true, default: false }
+    isFreelancer: { type: Boolean, required: true, default: false },
+    paymentType: { type: String, enum: ['per-month', 'per-event'], trim: true },
+    salary: { type: String, trim: true }
   },
   { timestamps: true }
 );

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import styles from './Select.module.css';
 
 export interface SelectOption {
@@ -16,6 +16,7 @@ interface SelectProps {
   error?: string;
   disabled?: boolean;
   required?: boolean;
+  info?: string;
   className?: string;
 }
 
@@ -28,34 +29,48 @@ export const Select: React.FC<SelectProps> = ({
   error,
   disabled = false,
   required = false,
+  info,
   className = '',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const selectRef = useRef<HTMLDivElement>(null);
+  const [showInfo, setShowInfo] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const infoRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find(opt => opt.value === value);
-  const displayValue = selectedOption?.label || placeholder;
+  const displayValue = selectedOption?.label || '';
 
-  const filteredOptions = options.filter(option =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Close info tooltip on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
+        setShowInfo(false);
+      }
+    };
+
+    if (showInfo) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showInfo]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (selectRef.current && !selectRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isClickInsideButton = buttonRef.current?.contains(target);
+      const isClickInsideDropdown = dropdownRef.current?.contains(target);
+
+      if (!isClickInsideButton && !isClickInsideDropdown) {
         setIsOpen(false);
-        setSearchTerm('');
       }
     };
 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, [isOpen]);
 
   const handleToggle = () => {
@@ -65,10 +80,10 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   const handleSelect = (optionValue: string) => {
-    if (!options.find(opt => opt.value === optionValue)?.disabled) {
+    const option = options.find(opt => opt.value === optionValue);
+    if (!option?.disabled) {
       onChange(optionValue);
       setIsOpen(false);
-      setSearchTerm('');
     }
   };
 
@@ -80,7 +95,6 @@ export const Select: React.FC<SelectProps> = ({
       setIsOpen(!isOpen);
     } else if (e.key === 'Escape') {
       setIsOpen(false);
-      setSearchTerm('');
     } else if (e.key === 'ArrowDown' && !isOpen) {
       e.preventDefault();
       setIsOpen(true);
@@ -88,90 +102,103 @@ export const Select: React.FC<SelectProps> = ({
   };
 
   return (
-    <div className={`${styles.selectGroup} ${className}`} ref={selectRef}>
+    <div className={`${styles.container} ${className}`} ref={containerRef}>
       {label && (
-        <label className={styles.label}>
-          {label}
-          {required && <span className={styles.required}> *</span>}
-        </label>
-      )}
-      
-      <div
-        className={`${styles.selectWrapper} ${isOpen ? styles.open : ''} ${error ? styles.error : ''} ${disabled ? styles.disabled : ''}`}
-        onClick={handleToggle}
-        onKeyDown={handleKeyDown}
-        tabIndex={disabled ? -1 : 0}
-        role="combobox"
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
-        aria-disabled={disabled}
-      >
-        <div className={styles.selectDisplay}>
-          <span className={!selectedOption ? styles.placeholder : ''}>
-            {displayValue}
-          </span>
-        </div>
-        
-        <div className={styles.selectIcon}>
-          <svg
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            className={isOpen ? styles.iconRotated : ''}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </div>
-
-      {isOpen && (
-        <div className={styles.dropdown}>
-          {options.length > 10 && (
-            <div className={styles.searchWrapper}>
-              <input
-                type="text"
-                className={styles.searchInput}
-                placeholder="Search..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                autoFocus
-              />
+        <div className={styles.labelRow}>
+          <label className={styles.label}>
+            {label}
+            {required && <span className={styles.required}>*</span>}
+          </label>
+          {info && (
+            <div className={styles.infoWrapper} ref={infoRef}>
+              <button
+                type="button"
+                className={styles.infoButton}
+                onClick={() => setShowInfo(!showInfo)}
+                tabIndex={-1}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <circle cx="12" cy="12" r="10" strokeWidth="2" />
+                  <path d="M12 16v-4" strokeWidth="2" strokeLinecap="round" />
+                  <circle cx="12" cy="8" r="0.5" fill="currentColor" strokeWidth="1" />
+                </svg>
+              </button>
+              {showInfo && (
+                <div className={styles.infoTooltip}>
+                  {info}
+                </div>
+              )}
             </div>
           )}
-          
-          <ul className={styles.optionsList} role="listbox">
-            {filteredOptions.length === 0 ? (
-              <li className={styles.noOptions}>No options found</li>
-            ) : (
-              filteredOptions.map((option) => (
-                <li
-                  key={option.value}
-                  className={`${styles.option} ${option.value === value ? styles.selected : ''} ${option.disabled ? styles.optionDisabled : ''}`}
-                  onClick={() => handleSelect(option.value)}
-                  role="option"
-                  aria-selected={option.value === value}
-                  aria-disabled={option.disabled}
-                >
-                  {option.label}
-                  {option.value === value && (
-                    <svg
-                      className={styles.checkIcon}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                    </svg>
-                  )}
-                </li>
-              ))
-            )}
-          </ul>
         </div>
       )}
 
-      {error && <span className={styles.errorText}>{error}</span>}
+      <div className={styles.selectWrapper}>
+        <button
+          ref={buttonRef}
+          type="button"
+          className={`${styles.selectButton} ${isOpen ? styles.open : ''} ${error ? styles.error : ''} ${disabled ? styles.disabled : ''}`}
+          onClick={handleToggle}
+          onKeyDown={handleKeyDown}
+          disabled={disabled}
+        >
+          <span className={displayValue ? styles.selectedText : styles.placeholder}>
+            {displayValue || placeholder}
+          </span>
+          <svg
+            className={`${styles.chevron} ${isOpen ? styles.chevronUp : ''}`}
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <polyline points="6 9 12 15 18 9" />
+          </svg>
+        </button>
+
+        {isOpen && (
+          <div ref={dropdownRef} className={styles.dropdown}>
+            <div className={styles.optionsList}>
+              {options.length === 0 ? (
+                <div className={styles.noOptions}>No options available</div>
+              ) : (
+                options.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={`${styles.option} ${option.value === value ? styles.selected : ''} ${option.disabled ? styles.optionDisabled : ''}`}
+                    onClick={() => handleSelect(option.value)}
+                    disabled={option.disabled}
+                  >
+                    <span className={styles.optionLabel}>{option.label}</span>
+                    {option.value === value && (
+                      <svg
+                        className={styles.checkIcon}
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                    )}
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {error && <div className={styles.errorMessage}>{error}</div>}
     </div>
   );
 };

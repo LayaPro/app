@@ -11,6 +11,8 @@ export interface Team {
   userId?: string; // Reference to User for login access
   address?: string;
   isFreelancer: boolean;
+  paymentType?: 'per-month' | 'per-event';
+  salary?: string;
   createdAt?: Date;
   updatedAt?: Date;
 }

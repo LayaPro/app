@@ -18,7 +18,9 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       roleId,
       profileId,
       address,
-      isFreelancer
+      isFreelancer,
+      paymentType,
+      salary
     } = req.body;
     const tenantId = req.user?.tenantId;
 
@@ -103,7 +105,9 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       profileId,
       userId,
       address,
-      isFreelancer: isFreelancer || false
+      isFreelancer: isFreelancer || false,
+      paymentType,
+      salary
     });
 
     return res.status(201).json({

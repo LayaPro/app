@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './Modal.module.css';
 
 interface ModalProps {
@@ -101,9 +102,21 @@ export const Modal: React.FC<ModalProps> = ({
     };
   }, [isOpen, onClose]);
 
+  const handleFocus = (e: React.FocusEvent) => {
+    // Auto-scroll the focused element into view with some padding
+    setTimeout(() => {
+      const element = e.target as HTMLElement;
+      element.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'center',
+        inline: 'nearest' 
+      });
+    }, 100);
+  };
+
   if (!shouldRender) return null;
 
-  return (
+  return createPortal(
     <div className={`${styles.overlay} ${isAnimating ? styles.open : ''}`}>
       <div 
         ref={modalRef}
@@ -146,10 +159,11 @@ export const Modal: React.FC<ModalProps> = ({
             </svg>
           </button>
         </div>
-        <div className={styles.content}>
+        <div className={styles.content} onFocus={handleFocus}>
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

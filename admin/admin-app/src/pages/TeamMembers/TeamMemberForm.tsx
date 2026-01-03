@@ -7,6 +7,9 @@ import { FormError } from '../../components/ui/FormError';
 import { PhoneInput } from '../../components/ui/PhoneInput';
 import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { InfoCard } from '../../components/ui/InfoCard';
+import { AmountInput } from '../../components/ui/AmountInput';
+import { Select } from '../../components/ui/Select';
+import { DialogFooter } from '../../components/ui/DialogFooter';
 import { sanitizeName, sanitizeEmail, sanitizePhoneNumber, sanitizeAlphanumeric, sanitizeTextarea } from '../../utils/sanitize';
 import styles from './Form.module.css';
 
@@ -20,6 +23,8 @@ export interface TeamMemberFormData {
   profileId?: string;
   address?: string;
   isFreelancer: boolean;
+  paymentType?: 'per-month' | 'per-event';
+  salary?: string;
 }
 
 interface TeamMemberFormProps {
@@ -49,6 +54,8 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
     profileId: '',
     address: '',
     isFreelancer: false,
+    paymentType: 'per-month',
+    salary: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -67,6 +74,8 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
         profileId: member.profileId || '',
         address: sanitizeTextarea(member.address || ''),
         isFreelancer: member.isFreelancer || false,
+        paymentType: member.paymentType || 'per-month',
+        salary: member.salary || '',
       });
     } else {
       setFormData({
@@ -79,6 +88,8 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
         profileId: '',
         address: '',
         isFreelancer: false,
+        paymentType: 'per-month',
+        salary: '',
       });
     }
     setErrors({});
@@ -123,11 +134,15 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
     }
     
     // If marking as freelancer, clear roleId since they don't need login access
+    // and set payment type to per-event automatically, also clear salary to avoid confusion
     if (field === 'isFreelancer' && value === true) {
-      setFormData((prev) => ({ ...prev, [field]: sanitizedValue, roleId: '' }));
-      // Also clear roleId error if it exists
+      setFormData((prev) => ({ ...prev, [field]: sanitizedValue, roleId: '', paymentType: 'per-event', salary: '' }));
+      // Also clear roleId and salary errors if they exist
       if (errors.roleId) {
         setErrors((prev) => ({ ...prev, roleId: '' }));
+      }
+      if (errors.salary) {
+        setErrors((prev) => ({ ...prev, salary: '' }));
       }
     } else {
       setFormData((prev) => ({ ...prev, [field]: sanitizedValue }));
@@ -168,6 +183,10 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
 
     if (!formData.profileId || !formData.profileId.trim()) {
       newErrors.profileId = 'Work profile is required';
+    }
+
+    if (!formData.salary || !formData.salary.trim()) {
+      newErrors.salary = 'Salary is required';
     }
 
     setErrors(newErrors);
@@ -324,6 +343,33 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
           />
         </div>
 
+        <div className={styles.formRow}>
+          <div className={styles.formGroup}>
+            <Select
+              label="Payment Type"
+              value={formData.paymentType || 'per-month'}
+              onChange={(value) => handleChange('paymentType', value as 'per-month' | 'per-event')}
+              options={[
+                { value: 'per-month', label: 'Per Month' },
+                { value: 'per-event', label: 'Per Event' }
+              ]}
+              info="Choose how this team member will be compensated"
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <AmountInput
+              label="Salary"
+              value={formData.salary || ''}
+              onChange={(value) => handleChange('salary', value)}
+              placeholder="0"
+              error={errors.salary}
+              info="Enter the payment amount based on the selected payment type"
+              required
+            />
+          </div>
+        </div>
+
         <div className={styles.formGroup}>
           <Textarea
             label="Address"
@@ -337,23 +383,13 @@ export const TeamMemberForm: React.FC<TeamMemberFormProps> = ({
           />
         </div>
 
-        <div className={styles.formActions}>
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : member ? 'Update' : 'Create'}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className={styles.cancelButton}
-            disabled={loading}
-          >
-            Cancel
-          </button>
-        </div>
+        <DialogFooter
+          onCancel={onClose}
+          onSubmit={() => {}}
+          submitText={member ? 'Update Member' : 'Add Member'}
+          cancelText="Cancel"
+          loading={loading}
+        />
       </form>
     </Modal>
   );

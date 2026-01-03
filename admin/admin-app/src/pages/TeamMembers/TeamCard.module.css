@@ -1,3 +1,30 @@
+/* Content Wrapper Styles */
+.contentWrapper {
+  padding: 24px;
+}
+
+.infoText {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin: 0 0 24px 0;
+  padding: 16px 20px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.infoIcon {
+  width: 20px;
+  height: 20px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
 /* Card Styles */
 .card {
   background-color: var(--bg-primary);
