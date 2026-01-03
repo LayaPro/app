@@ -90,4 +90,4 @@ jobs:
             AWS_SES_FROM_EMAIL="$AWS_SES_FROM_EMAIL" \
             NODE_ENV="production" \
             PORT="4000"
-          eb deploy --staged --timeout 20
+          eb deploy --timeout 20
