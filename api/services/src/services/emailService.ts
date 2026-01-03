@@ -138,7 +138,7 @@ If you didn't expect this email, please ignore it.
 
   await sendEmail({
     to: email,
-    subject: '🎨 Welcome to Laya Studio - Set Up Your Password',
+    subject: 'Welcome to Laya Studio - Set Up Your Password',
     htmlBody,
     textBody,
   });

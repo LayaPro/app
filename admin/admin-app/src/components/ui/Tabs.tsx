@@ -28,7 +28,7 @@ export const Tabs: React.FC<TabsProps> = ({
     onTabChange?.(tabId);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, tabId: string, index: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent, _tabId: string, index: number) => {
     let newIndex = index;
     
     switch (e.key) {
