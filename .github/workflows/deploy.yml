@@ -58,9 +58,11 @@ jobs:
           npm ci
           npm run build
 
-      - name: Copy Dockerfile.prod for deployment
+      - name: Prepare deployment package
         run: |
-          cp Dockerfile.prod Dockerfile
+          # Force add dist folders (even if in .gitignore)
+          git add -f packages/shared/dist
+          git add -f api/services/dist
 
       - name: Deploy API services
         env:
@@ -74,7 +76,7 @@ jobs:
           AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
           AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
         run: |
-          eb init ${{ secrets.EB_SERVICES_NAME }} --platform docker --region ${{ secrets.AWS_REGION }}
+          eb init ${{ secrets.EB_SERVICES_NAME }} --platform "Node.js 20 running on 64bit Amazon Linux 2023" --region ${{ secrets.AWS_REGION }}
           eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
           eb setenv \
             MONGO_URI="$MONGO_URI" \
@@ -88,4 +90,4 @@ jobs:
             AWS_SES_FROM_EMAIL="$AWS_SES_FROM_EMAIL" \
             NODE_ENV="production" \
             PORT="4000"
-          eb deploy --timeout 20
+          eb deploy --staged --timeout 20
