@@ -93,6 +93,5 @@ jobs:
             FRONTEND_URL="$FRONTEND_URL" \
             AWS_SES_REGION="$AWS_SES_REGION" \
             AWS_SES_FROM_EMAIL="$AWS_SES_FROM_EMAIL" \
-            NODE_ENV="production" \
-            PORT="4000"
+            NODE_ENV="production"
           eb deploy --timeout 20
