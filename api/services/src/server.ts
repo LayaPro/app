@@ -211,6 +211,8 @@ app.post('/admin-reset-password/:userId', authenticate, requireAdmin, userContro
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || '';
 
+console.log("MONGO_URI:", process.env.MONGO_URI);
+
 mongoose
   .connect(MONGO_URI, { dbName: 'flomingo_db' })
   .then(() => {
