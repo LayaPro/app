@@ -1,11 +1,30 @@
+# version: 1.0
+# runtime: nodejs22
+# build:
+#   commands:
+#     build:
+#       - echo "Checking directory..." && pwd && ls -R
+#       # We move into the folder, install, and build in one continuous line
+#       - cd admin/admin-app && npm install && VITE_API_URL=https://fej22pbnws.ap-south-1.awsapprunner.com npm run build
+# run:
+#   runtime-version: 22
+#   command: cd admin/admin-app && npx serve -s dist -l 8080
+#   network:
+#     port: 8080
+#   env:
+#     - name: NODE_ENV
+#       value: "production"
+
+
 version: 1.0
 runtime: nodejs22
 build:
   commands:
     build:
-      - echo "Checking directory..." && pwd && ls -R
-      # We move into the folder, install, and build in one continuous line
-      - cd admin/admin-app && npm install && VITE_API_URL=https://fej22pbnws.ap-south-1.awsapprunner.com npm run build
+      - cd admin/admin-app && npm install
+      # This creates the .env file physically in the folder so Vite CANNOT miss it
+      - cd admin/admin-app && echo "VITE_API_URL=https://fej22pbnws.ap-south-1.awsapprunner.com" > .env
+      - cd admin/admin-app && npm run build
 run:
   runtime-version: 22
   command: cd admin/admin-app && npx serve -s dist -l 8080
