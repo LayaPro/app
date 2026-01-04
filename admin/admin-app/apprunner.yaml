@@ -1,7 +1,6 @@
 version: 1.0
 runtime: nodejs22
 build:
-  working-directory: admin/admin-app
   commands:
     build:
       - npm install
