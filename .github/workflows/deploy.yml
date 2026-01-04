@@ -33,7 +33,7 @@ jobs:
 
       - name: Build frontend
         env:
-          VITE_API_URL: ${{ secrets.FRONTEND_API_URL }}
+          VITE_API_URL: ${{ secrets.RAILWAY_BACKEND_URL }}
         run: |
           cd admin/admin-app
           npm ci
@@ -52,51 +52,51 @@ jobs:
           npm ci
           npm run build
 
-      - name: Build API services
-        run: |
-          cd api/services
-          npm ci
-          npm run build
+      # - name: Build API services
+      #   run: |
+      #     cd api/services
+      #     npm ci
+      #     npm run build
 
-      - name: Create deployment package
-        run: |
-          mkdir -p deploy
-          cp -r packages deploy/
-          cp -r api deploy/
-          cp Procfile deploy/
-          cp -r .ebextensions deploy/
-          # Remove node_modules from deploy folder
-          find deploy -name "node_modules" -type d -prune -exec rm -rf {} +
+      # - name: Create deployment package
+      #   run: |
+      #     mkdir -p deploy
+      #     cp -r packages deploy/
+      #     cp -r api deploy/
+      #     cp Procfile deploy/
+      #     cp -r .ebextensions deploy/
+      #     # Remove node_modules from deploy folder
+      #     find deploy -name "node_modules" -type d -prune -exec rm -rf {} +
 
-      - name: Deploy API services
-        env:
-          MONGO_URI: ${{ secrets.MONGO_URI }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          AWS_S3_REGION: ${{ secrets.AWS_REGION }}
-          AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
-          AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
-          AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
-        run: |
-          # Move deploy contents to root for deployment
-          rm -rf packages api Procfile .ebextensions
-          shopt -s dotglob
-          mv deploy/* .
-          rmdir deploy
-          # Initialize and deploy
-          eb init ${{ secrets.EB_SERVICES_NAME }} --platform "Node.js 20 running on 64bit Amazon Linux 2023" --region ${{ secrets.AWS_REGION }}
-          eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
-          eb setenv \
-            MONGO_URI="$MONGO_URI" \
-            JWT_SECRET="$JWT_SECRET" \
-            JWT_REFRESH_SECRET="$JWT_REFRESH_SECRET" \
-            AWS_REGION="$AWS_S3_REGION" \
-            AWS_ACCESS_KEY_ID="$AWS_S3_ACCESS_KEY_ID" \
-            AWS_SECRET_ACCESS_KEY="$AWS_S3_SECRET_ACCESS_KEY" \
-            FRONTEND_URL="$FRONTEND_URL" \
-            AWS_SES_REGION="$AWS_SES_REGION" \
-            AWS_SES_FROM_EMAIL="$AWS_SES_FROM_EMAIL" \
-            NODE_ENV="production"
-          eb deploy --timeout 20
+      # - name: Deploy API services
+      #   env:
+      #     MONGO_URI: ${{ secrets.MONGO_URI }}
+      #     JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      #     JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
+      #     AWS_S3_REGION: ${{ secrets.AWS_REGION }}
+      #     AWS_S3_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     AWS_S3_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+      #     AWS_SES_REGION: ${{ secrets.AWS_SES_REGION }}
+      #     AWS_SES_FROM_EMAIL: ${{ secrets.AWS_SES_FROM_EMAIL }}
+      #   run: |
+      #     # Move deploy contents to root for deployment
+      #     rm -rf packages api Procfile .ebextensions
+      #     shopt -s dotglob
+      #     mv deploy/* .
+      #     rmdir deploy
+      #     # Initialize and deploy
+      #     eb init ${{ secrets.EB_SERVICES_NAME }} --platform "Node.js 20 running on 64bit Amazon Linux 2023" --region ${{ secrets.AWS_REGION }}
+      #     eb use ${{ secrets.EB_SERVICES_ENV_NAME }}
+      #     eb setenv \
+      #       MONGO_URI="$MONGO_URI" \
+      #       JWT_SECRET="$JWT_SECRET" \
+      #       JWT_REFRESH_SECRET="$JWT_REFRESH_SECRET" \
+      #       AWS_REGION="$AWS_S3_REGION" \
+      #       AWS_ACCESS_KEY_ID="$AWS_S3_ACCESS_KEY_ID" \
+      #       AWS_SECRET_ACCESS_KEY="$AWS_S3_SECRET_ACCESS_KEY" \
+      #       FRONTEND_URL="$FRONTEND_URL" \
+      #       AWS_SES_REGION="$AWS_SES_REGION" \
+      #       AWS_SES_FROM_EMAIL="$AWS_SES_FROM_EMAIL" \
+      #       NODE_ENV="production"
+      #     eb deploy --timeout 20
