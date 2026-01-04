@@ -3,18 +3,19 @@ FROM node:20-alpine AS build
 WORKDIR /app
 
 # Copy shared package
-COPY ../../packages/shared packages/shared
+COPY packages/shared packages/shared
 
-# Copy frontend source code
-COPY . .
+# Copy frontend source
+COPY admin/admin-app admin/admin-app
+
+# Build frontend
 WORKDIR /app/admin/admin-app
-
-# Install dependencies and build
 RUN npm ci
 RUN npm run build
 
 # Stage 2: Serve with Nginx
 FROM nginx:alpine
+# Copy the built frontend
 COPY --from=build /app/admin/admin-app/dist /usr/share/nginx/html
 
 EXPOSE 80
