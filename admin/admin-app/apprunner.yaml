@@ -3,12 +3,12 @@ runtime: nodejs22
 build:
   commands:
     build:
-      - npm install
-      # This injects the URL into Vite during the build process
-      - VITE_API_URL=https://fej22pbnws.ap-south-1.awsapprunner.com npm run build
+      - echo "Checking directory..." && pwd && ls -R
+      # We move into the folder, install, and build in one continuous line
+      - cd admin/admin-app && npm install && VITE_API_URL=https://fej22pbnws.ap-south-1.awsapprunner.com npm run build
 run:
   runtime-version: 22
-  command: npx serve -s dist -l 8080
+  command: cd admin/admin-app && npx serve -s dist -l 8080
   network:
     port: 8080
   env:
