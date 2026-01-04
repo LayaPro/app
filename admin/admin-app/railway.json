@@ -1,8 +1,9 @@
 {
+  "$schema": "https://railway.app/railway.schema.json",
   "build": {
-    "buildCommand": "npm ci && npm run build"
+    "buildCommand": "rm -rf node_modules .vite && npm ci --omit=dev && npm run build"
   },
   "deploy": {
-    "startCommand": "npx serve -s build -l $PORT"
+    "startCommand": "npx serve -s dist -l $PORT"
   }
 }
