@@ -1,7 +1,21 @@
 import { Schema, model, Document } from 'mongoose';
-import { Equipment as SharedEquipment } from 'laya-shared';
 
-export interface IEquipment extends Document, SharedEquipment {}
+export interface IEquipment extends Document {
+  equipmentId: string;
+  tenantId: string;
+  name: string;
+  serialNumber?: string;
+  qr?: string;
+  brand?: string;
+  price?: number;
+  purchaseDate?: Date;
+  isOnRent: boolean;
+  perDayRent?: number;
+  image?: string;
+  condition?: number; // Points out of 5
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const EquipmentSchema = new Schema<IEquipment>(
   {

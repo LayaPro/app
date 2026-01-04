@@ -1,7 +1,17 @@
 import { Schema, model, Document } from 'mongoose';
-import { EventExpense as SharedEventExpense } from 'laya-shared';
 
-export interface IEventExpense extends Document, SharedEventExpense {}
+export interface IEventExpense extends Document {
+  eventExpenseId: string;
+  tenantId: string;
+  clientEventId: string; // Reference to ClientEvent
+  crewId: string; // Team member ID, or '-1' if not salary-related
+  expenseComment?: string;
+  expenseAmount: number;
+  paymentDate?: Date;
+  addedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const EventExpenseSchema = new Schema<IEventExpense>(
   {

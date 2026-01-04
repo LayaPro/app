@@ -27,8 +27,7 @@
     "nanoid": "^5.1.6",
     "node-cron": "^4.2.1",
     "p-map": "^7.0.2",
-    "sharp": "^0.33.5",
-    "laya-shared": "file:../../packages/shared"
+    "sharp": "^0.33.5"
   },
   "devDependencies": {
     "@types/archiver": "^6.0.2",

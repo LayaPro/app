@@ -1,7 +1,14 @@
 import { Schema, model, Document } from 'mongoose';
-import { ImageStatus as SharedImageStatus } from 'laya-shared';
 
-export interface IImageStatus extends Document, SharedImageStatus {}
+export interface IImageStatus extends Document {
+  statusId: string;
+  tenantId: string;
+  statusCode: string; // Uppercase with underscores (e.g., UPLOADED, REVIEW_PENDING)
+  statusDescription: string; // Human-readable description
+  step: number; // Sequential order of status
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const ImageStatusSchema = new Schema<IImageStatus>(
   {

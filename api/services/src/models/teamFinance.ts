@@ -1,7 +1,29 @@
 import { Schema, model, Document } from 'mongoose';
-import { TeamFinance as SharedTeamFinance, SalaryTransaction } from 'laya-shared';
 
-export interface ITeamFinance extends Document, SharedTeamFinance {}
+export interface SalaryTransaction {
+  transactionId: string;
+  datetime: Date;
+  amount: number;
+  comment?: string;
+  nature: 'paid' | 'bonus' | 'deduction';
+  createdAt?: Date;
+}
+
+export interface ITeamFinance extends Document {
+  financeId: string;
+  tenantId: string;
+  memberId: string; // Reference to Team Member
+  monthlySalary?: number;
+  totalPaid?: number;
+  lastPaymentDate?: Date;
+  nextPaymentDate?: Date;
+  pendingAmount?: number;
+  transactions?: SalaryTransaction[];
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const SalaryTransactionSchema = new Schema<SalaryTransaction>({
   transactionId: { type: String, required: true },

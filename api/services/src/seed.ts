@@ -290,14 +290,14 @@ async function seedDatabase() {
     for (const profileData of defaultProfiles) {
       const existing = await Profile.findOne({ 
         name: profileData.name, 
-        tenantId: layaproTenant.tenantId 
+        tenantId: (layaproTenant as any).tenantId 
       });
 
       if (!existing) {
         const profileId = `profile_${nanoid()}`;
         await Profile.create({
           profileId,
-          tenantId: layaproTenant.tenantId,
+          tenantId: (layaproTenant as any).tenantId,
           name: profileData.name,
           description: profileData.description
         });
@@ -333,14 +333,14 @@ async function seedDatabase() {
     for (const eventData of defaultEvents) {
       const existing = await Event.findOne({ 
         eventCode: eventData.eventCode, 
-        tenantId: layaproTenant.tenantId 
+        tenantId: (layaproTenant as any).tenantId 
       });
 
       if (!existing) {
         const eventId = `event_${nanoid()}`;
         await Event.create({
           eventId,
-          tenantId: layaproTenant.tenantId,
+          tenantId: (layaproTenant as any).tenantId,
           eventCode: eventData.eventCode,
           eventDesc: eventData.eventDesc,
           eventAlias: eventData.eventAlias
@@ -458,14 +458,14 @@ async function seedDatabase() {
     for (const statusData of defaultEventStatuses) {
       const existing = await EventDeliveryStatus.findOne({ 
         statusCode: statusData.statusCode, 
-        tenantId: layaproTenant.tenantId 
+        tenantId: (layaproTenant as any).tenantId 
       });
 
       if (!existing) {
         const statusId = `status_${nanoid()}`;
         await EventDeliveryStatus.create({
           statusId,
-          tenantId: layaproTenant.tenantId,
+          tenantId: (layaproTenant as any).tenantId,
           statusCode: statusData.statusCode,
           statusDescription: statusData.statusDescription,
           step: statusData.step,
@@ -507,14 +507,14 @@ async function seedDatabase() {
     for (const statusData of defaultProjectStatuses) {
       const existing = await ProjectDeliveryStatus.findOne({ 
         statusCode: statusData.statusCode, 
-        tenantId: layaproTenant.tenantId 
+        tenantId: (layaproTenant as any).tenantId 
       });
 
       if (!existing) {
         const statusId = `status_${nanoid()}`;
         await ProjectDeliveryStatus.create({
           statusId,
-          tenantId: layaproTenant.tenantId,
+          tenantId: (layaproTenant as any).tenantId,
           statusCode: statusData.statusCode,
           step: statusData.step
         });
@@ -549,14 +549,14 @@ async function seedDatabase() {
     for (const statusData of defaultImageStatuses) {
       const existing = await ImageStatus.findOne({ 
         statusCode: statusData.statusCode, 
-        tenantId: layaproTenant.tenantId 
+        tenantId: (layaproTenant as any).tenantId 
       });
 
       if (!existing) {
         const statusId = `imgstatus_${nanoid()}`;
         await ImageStatus.create({
           statusId,
-          tenantId: layaproTenant.tenantId,
+          tenantId: (layaproTenant as any).tenantId,
           statusCode: statusData.statusCode,
           statusDescription: statusData.statusDescription,
           step: statusData.step

@@ -1,7 +1,25 @@
 import { Schema, model, Document } from 'mongoose';
-import { Project as SharedProject } from 'laya-shared';
 
-export interface IProject extends Document, SharedProject {}
+export interface IProject extends Document {
+  projectId: string;
+  tenantId: string;
+  projectName: string;
+  brideFirstName?: string;
+  groomFirstName?: string;
+  brideLastName?: string;
+  groomLastName?: string;
+  phoneNumber?: string;
+  budget?: number;
+  address?: string;
+  referredBy?: string;
+  projectDeliveryStatusId?: string; // Reference to ProjectDeliveryStatus
+  s3BucketName?: string;
+  displayPic?: string;
+  coverPhoto?: string;
+  videoUrls?: string[]; // YouTube video URLs
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const ProjectSchema = new Schema<IProject>(
   {

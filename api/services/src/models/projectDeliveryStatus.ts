@@ -1,7 +1,15 @@
 import { Schema, model, Document } from 'mongoose';
-import { ProjectDeliveryStatus as SharedProjectDeliveryStatus } from 'laya-shared';
 
-export interface IProjectDeliveryStatus extends Document, SharedProjectDeliveryStatus {}
+export interface IProjectDeliveryStatus extends Document {
+  statusId: string;
+  tenantId: string;
+  statusCode: string;
+  step: number; // Sequential order of status
+  lastUpdatedDate?: Date;
+  updatedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const ProjectDeliveryStatusSchema = new Schema<IProjectDeliveryStatus>(
   {

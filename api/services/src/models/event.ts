@@ -1,7 +1,14 @@
 import { Schema, model, Document } from 'mongoose';
-import { Event as SharedEvent } from 'laya-shared';
 
-export interface IEvent extends Document, SharedEvent {}
+export interface IEvent extends Document {
+  eventId: string;
+  tenantId: string;
+  eventCode: string;
+  eventDesc: string;
+  eventAlias?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const EventSchema = new Schema<IEvent>(
   {

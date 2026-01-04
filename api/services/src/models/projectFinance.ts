@@ -1,7 +1,31 @@
 import { Schema, model, Document } from 'mongoose';
-import { ProjectFinance as SharedProjectFinance } from 'laya-shared';
 
-export interface IProjectFinance extends Document, SharedProjectFinance {}
+export interface Transaction {
+  transactionId: string;
+  datetime: Date;
+  amount: number;
+  comment?: string;
+  nature: 'received' | 'paid';
+  createdAt?: Date;
+}
+
+export interface IProjectFinance extends Document {
+  financeId: string;
+  tenantId: string;
+  projectId: string; // Reference to Project
+  totalBudget?: number;
+  receivedAmount?: number;
+  receivedDate?: Date;
+  nextDueDate?: Date;
+  nextDueAmount?: number;
+  expenseIds?: string[]; // Array of expense IDs
+  isClientClosed?: boolean;
+  transactions?: Transaction[];
+  createdBy?: string;
+  updatedBy?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const ProjectFinanceSchema = new Schema<IProjectFinance>(
   {

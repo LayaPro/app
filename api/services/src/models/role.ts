@@ -1,7 +1,13 @@
 import { Schema, model, Document } from 'mongoose';
-import { Role as SharedRole } from 'laya-shared';
 
-export interface IRole extends Document, SharedRole {}
+export interface IRole extends Document {
+  roleId: string; // UUID
+  tenantId: string; // '-1' for global roles (Admin, Editor, Designer), tenant's tenantId for tenant-specific roles
+  name: string; // e.g., 'admin', 'photographer'
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const RoleSchema = new Schema<IRole>(
   {

@@ -1,7 +1,13 @@
 import { Schema, model, Document } from 'mongoose';
-import { Profile as SharedProfile } from 'laya-shared';
 
-export interface IProfile extends Document, SharedProfile {}
+export interface IProfile extends Document {
+  profileId: string;
+  tenantId: string;
+  name: string;
+  description?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 const ProfileSchema = new Schema<IProfile>(
   {
