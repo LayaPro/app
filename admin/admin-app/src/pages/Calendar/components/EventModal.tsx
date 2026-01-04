@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import type { ClientEvent } from 'laya-shared';
+import type { ClientEvent } from '@/types/shared';
 import { Modal, Input, Textarea, SearchableSelect, Button, MultiSelect, DatePicker } from '../../../components/ui';
 import type { SelectOption } from '../../../components/ui';
 import styles from './EventModal.module.css';

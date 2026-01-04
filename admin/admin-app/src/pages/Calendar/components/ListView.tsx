@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from 'react';
-import type { ClientEvent } from 'laya-shared';
+import type { ClientEvent } from '@/types/shared';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { SearchableSelect, DatePicker, Modal, Button } from '../../../components/ui';

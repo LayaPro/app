@@ -7,7 +7,7 @@ import { DayView } from './components/DayView';
 import { ListView } from './components/ListView';
 import { EventModal } from './components/EventModal';
 import { clientEventApi, eventApi, teamApi, projectApi, eventDeliveryStatusApi } from '../../services/api';
-import type { ClientEvent } from 'laya-shared';
+import type { ClientEvent } from '@/types/shared';
 import type { CalendarView } from '../../utils/calendar';
 import {
   MONTH_NAMES,

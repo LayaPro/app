@@ -1,4 +1,4 @@
-import type { ClientEvent } from 'laya-shared';
+import type { ClientEvent } from '@/types/shared';
 import styles from '../ProjectWizard.module.css';
 
 interface EventCardProps {

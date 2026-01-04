@@ -1,4 +1,4 @@
-import type { ClientEvent } from 'laya-shared';
+import type { ClientEvent } from '@/types/shared';
 import { Modal } from '../../../components/ui';
 import { formatTimeString, getEventColor } from '../../../utils/calendar';
 import styles from './DayEventsModal.module.css';
