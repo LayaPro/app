@@ -5,8 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "tsc": "tsc",
-    "build": "tsc && VITE_CACHE_DIR=/tmp/.vite vite build --force",
+    "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
