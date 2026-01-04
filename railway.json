@@ -1,10 +1,7 @@
 {
   "$schema": "https://railway.app/railway.schema.json",
-  "build": {
-    "buildCommand": "cd packages/shared && npm ci && npm run build && cd ../../api/services && npm ci && npm run build"
-  },
   "deploy": {
-    "startCommand": "cd api/services && node dist/server.js",
+    "startCommand": "cd api/services && npm start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
