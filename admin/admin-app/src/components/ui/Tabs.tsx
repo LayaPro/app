@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import styles from './Tabs.module.css';
 
