@@ -25,19 +25,9 @@ export const UsersCard: React.FC<UsersCardProps> = ({
   onRefresh,
 }) => {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<any>(null);
+  const [selectedUser] = useState<any>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
-
-  const _handleCreateUser = () => {
-    setSelectedUser(null);
-    setIsFormOpen(true);
-  };
-
-  const _handleEditUser = (user: any) => {
-    setSelectedUser(user);
-    setIsFormOpen(true);
-  };
 
   const handleFormSubmit = async (data: UserFormData) => {
     if (selectedUser) {
@@ -65,11 +55,6 @@ export const UsersCard: React.FC<UsersCardProps> = ({
     } catch (error: any) {
       onError(error.message || 'Failed to update user status');
     }
-  };
-
-  const _handleDeleteUser = (user: any) => {
-    setUserToDelete(user);
-    setIsDeleteModalOpen(true);
   };
 
   const confirmDeleteUser = async () => {
