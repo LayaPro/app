@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
+import QRCode from 'qrcode';
 import Equipment from '../models/equipment';
 import { AuthRequest } from '../middleware/auth';
 
@@ -41,12 +42,21 @@ export const createEquipment = async (req: AuthRequest, res: Response) => {
 
     const equipmentId = `equipment_${nanoid()}`;
     
+    // Generate QR code for the equipment ID
+    const qrCodeDataURL = await QRCode.toDataURL(equipmentId, {
+      errorCorrectionLevel: 'M',
+      type: 'image/png',
+      width: 300,
+      margin: 1
+    });
+    
     console.log('Creating equipment with data:', {
       equipmentId,
       tenantId,
       name,
       imagesCount: images?.length || 0,
-      hasImages: !!images
+      hasImages: !!images,
+      hasQRCode: !!qrCodeDataURL
     });
     
     const equipment = await Equipment.create({
@@ -54,7 +64,7 @@ export const createEquipment = async (req: AuthRequest, res: Response) => {
       tenantId,
       name,
       serialNumber,
-      qr,
+      qr: qrCodeDataURL,
       brand,
       price,
       purchaseDate,
@@ -84,7 +94,6 @@ export const createEquipment = async (req: AuthRequest, res: Response) => {
 
 export const getAllEquipment = async (req: AuthRequest, res: Response) => {
   try {
-    console.log('=== GET ALL EQUIPMENT CALLED ===');
     const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
@@ -104,7 +113,6 @@ export const getAllEquipment = async (req: AuthRequest, res: Response) => {
         fields: Object.keys(equipment[0])
       });
     }
-    console.log('=== END GET ALL EQUIPMENT ===');
 
     return res.status(200).json({
       message: 'Equipment retrieved successfully',

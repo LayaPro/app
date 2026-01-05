@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import styles from './AccessManagement.module.css';
-import { Breadcrumb } from '../../components/ui/index.js';
+import { Breadcrumb, Tabs, type Tab } from '../../components/ui/index.js';
 import { UsersCard } from './UsersCard.js';
 import { RolesCard } from './RolesCard.js';
 import { userApi, roleApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 
 const AccessManagement = () => {
-  const [expandedCard, setExpandedCard] = useState<string | null>('users');
   const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -38,10 +37,6 @@ const AccessManagement = () => {
     }
   };
 
-  const toggleCard = (cardId: string) => {
-    setExpandedCard(expandedCard === cardId ? null : cardId);
-  };
-
   const handleSuccess = (message: string) => {
     showToast('success', message);
   };
@@ -50,32 +45,52 @@ const AccessManagement = () => {
     showToast('error', message);
   };
 
-  return (
-    <div className={styles.pageContainer}>
-      <Breadcrumb />
-
-      <div className={styles.cardsContainer}>
+  const tabs: Tab[] = [
+    {
+      id: 'users',
+      label: 'Users',
+      icon: (
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      ),
+      badge: users.length,
+      content: (
         <UsersCard
           users={users}
           roles={roles}
           loading={loading}
-          isExpanded={expandedCard === 'users'}
-          onToggle={() => toggleCard('users')}
           onSuccess={handleSuccess}
           onError={handleError}
           onRefresh={fetchData}
         />
-
+      ),
+    },
+    {
+      id: 'roles',
+      label: 'Roles',
+      icon: (
+        <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+        </svg>
+      ),
+      badge: roles.length,
+      content: (
         <RolesCard
           roles={roles}
           loading={loading}
-          isExpanded={expandedCard === 'roles'}
-          onToggle={() => toggleCard('roles')}
           onSuccess={handleSuccess}
           onError={handleError}
           onRefresh={fetchData}
         />
-      </div>
+      ),
+    },
+  ];
+
+  return (
+    <div className={styles.pageContainer}>
+      <Breadcrumb />
+      <Tabs tabs={tabs} />
     </div>
   );
 };

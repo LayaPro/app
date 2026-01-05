@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { DataTable } from '../../components/ui/DataTable.js';
 import type { Column } from '../../components/ui/DataTable.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
-import { CollapsibleCard } from '../../components/ui/CollapsibleCard.js';
 import styles from './AccessCard.module.css';
 import { userApi } from '../../services/api';
 import { UserForm } from './UserForm';
@@ -12,8 +11,6 @@ interface UsersCardProps {
   users: any[];
   roles: any[];
   loading: boolean;
-  isExpanded: boolean;
-  onToggle: () => void;
   onSuccess: (message: string) => void;
   onError: (message: string) => void;
   onRefresh: () => void;
@@ -23,8 +20,6 @@ export const UsersCard: React.FC<UsersCardProps> = ({
   users,
   roles,
   loading,
-  isExpanded,
-  onToggle,
   onSuccess,
   onError,
   onRefresh,
@@ -213,17 +208,14 @@ export const UsersCard: React.FC<UsersCardProps> = ({
 
   return (
     <>
-      <CollapsibleCard
-        icon={
-          <svg className={styles.cardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+      <div className={styles.contentWrapper}>
+        <div className={styles.infoText}>
+          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-        }
-        title="Users"
-        subtitle="Manage user accounts and assignments"
-        isExpanded={isExpanded}
-        onToggle={onToggle}
-      >
+          <span>Manage user accounts, credentials, and role assignments. Active users can access the system based on their assigned permissions.</span>
+        </div>
+        
         <DataTable
           columns={usersColumns}
           data={users}
@@ -232,7 +224,7 @@ export const UsersCard: React.FC<UsersCardProps> = ({
           onCreateClick={handleCreateUser}
           createButtonText="Add User"
         />
-      </CollapsibleCard>
+      </div>
 
       <UserForm
         isOpen={isFormOpen}

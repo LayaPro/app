@@ -10,6 +10,8 @@ import { EquipmentForm } from './EquipmentForm.js';
 import type { EquipmentFormData } from './EquipmentForm.js';
 import { formatIndianAmount } from '../../utils/formatAmount';
 import { ViewEquipmentModal } from './ViewEquipmentModal.js';
+import { Modal } from '../../components/ui/Modal.js';
+import { Button } from '../../components/ui/Button.js';
 
 interface EquipmentsCardProps {
   equipments: any[];
@@ -32,6 +34,8 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
   const [equipmentToDelete, setEquipmentToDelete] = useState<any>(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
   const [viewEquipment, setViewEquipment] = useState<any>(null);
+  const [isQRModalOpen, setIsQRModalOpen] = useState(false);
+  const [qrEquipment, setQREquipment] = useState<any>(null);
 
   const handleCreateEquipment = () => {
     setSelectedEquipment(null);
@@ -41,6 +45,12 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
   const handleViewEquipment = (equipment: any) => {
     setViewEquipment(equipment);
     setIsViewModalOpen(true);
+  };
+
+  const handleViewQR = (equipment: any, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setQREquipment(equipment);
+    setIsQRModalOpen(true);
   };
 
   const handleEditEquipment = (equipment: any) => {
@@ -101,7 +111,7 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
     );
   };
 
-  const getRentBadge = (isOnRent: boolean, perDayRent?: number) => {
+  const getRentBadge = (perDayRent?: number) => {
     if (!perDayRent || perDayRent === 0) {
       return '-';
     }
@@ -149,7 +159,50 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
     {
       key: 'rent',
       header: 'Rental',
-      render: (row) => getRentBadge(row.isOnRent, row.perDayRent),
+      render: (row) => getRentBadge(row.perDayRent),
+    },
+    {
+      key: 'qr',
+      header: 'QR',
+      sortable: false,
+      render: (row) => (
+        <button
+          onClick={(e) => handleViewQR(row, e)}
+          style={{
+            background: 'transparent',
+            border: row.qr ? '2px solid #d1d5db' : '2px solid #e5e7eb',
+            borderRadius: '6px',
+            cursor: row.qr ? 'pointer' : 'not-allowed',
+            padding: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: row.qr ? '#6b7280' : '#9ca3af',
+            opacity: row.qr ? 1 : 0.5,
+            transition: 'all 0.2s ease',
+          }}
+          disabled={!row.qr}
+          title={row.qr ? 'View QR Code' : 'QR Code not available'}
+          onMouseEnter={(e) => {
+            if (row.qr) {
+              e.currentTarget.style.backgroundColor = '#f9fafb';
+            }
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = 'transparent';
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <rect x="3" y="3" width="7" height="7" strokeWidth="2" />
+            <rect x="14" y="3" width="7" height="7" strokeWidth="2" />
+            <rect x="3" y="14" width="7" height="7" strokeWidth="2" />
+            <rect x="14" y="14" width="3" height="3" strokeWidth="2" />
+            <rect x="18" y="14" width="3" height="3" strokeWidth="2" />
+            <rect x="14" y="18" width="3" height="3" strokeWidth="2" />
+            <rect x="18" y="18" width="3" height="3" strokeWidth="2" />
+          </svg>
+        </button>
+      ),
     },
     {
       key: 'actions',
@@ -246,6 +299,115 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
           handleEditEquipment(viewEquipment);
         }}
       />
+
+      <Modal
+        isOpen={isQRModalOpen}
+        onClose={() => {
+          setIsQRModalOpen(false);
+          setQREquipment(null);
+        }}
+        title="QR Code"
+        info="Print this QR code in small size and place it on the equipment for easy tracking"
+        size="small"
+      >
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center', 
+          gap: '20px',
+          padding: '24px'
+        }}>
+          {qrEquipment?.qr ? (
+            <>
+              <img 
+                src={qrEquipment.qr} 
+                alt="QR Code" 
+                style={{ 
+                  width: '300px', 
+                  height: '300px',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px'
+                }} 
+              />
+              <div style={{ 
+                textAlign: 'center',
+                width: '100%'
+              }}>
+                <div style={{ 
+                  fontSize: '14px', 
+                  fontWeight: '600',
+                  color: 'var(--text-primary)',
+                  marginBottom: '16px'
+                }}>
+                  {qrEquipment.name}
+                </div>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    // Create canvas to include QR code with equipment name
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+                    
+                    img.onload = () => {
+                      // Set canvas size (QR code + space for text)
+                      canvas.width = 400;
+                      canvas.height = 450;
+                      
+                      // White background
+                      ctx!.fillStyle = '#ffffff';
+                      ctx!.fillRect(0, 0, canvas.width, canvas.height);
+                      
+                      // Draw QR code centered
+                      const qrSize = 300;
+                      const qrX = (canvas.width - qrSize) / 2;
+                      ctx!.drawImage(img, qrX, 40, qrSize, qrSize);
+                      
+                      // Draw equipment name
+                      ctx!.fillStyle = '#000000';
+                      ctx!.font = 'bold 20px Arial';
+                      ctx!.textAlign = 'center';
+                      ctx!.fillText(qrEquipment.name, canvas.width / 2, 380);
+                      
+                      // Draw border
+                      ctx!.strokeStyle = '#e5e7eb';
+                      ctx!.lineWidth = 2;
+                      ctx!.strokeRect(1, 1, canvas.width - 2, canvas.height - 2);
+                      
+                      // Download
+                      canvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob!);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `${qrEquipment.name.replace(/[^a-z0-9]/gi, '_')}_QR.png`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+                      });
+                    };
+                    
+                    img.src = qrEquipment.qr;
+                  }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ marginRight: '6px' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                  Download QR
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div style={{ 
+              textAlign: 'center', 
+              color: 'var(--text-secondary)',
+              padding: '40px'
+            }}>
+              QR Code not available
+            </div>
+          )}
+        </div>
+      </Modal>
     </>
   );
 };

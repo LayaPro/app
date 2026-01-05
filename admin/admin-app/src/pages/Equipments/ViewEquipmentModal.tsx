@@ -60,14 +60,6 @@ export const ViewEquipmentModal: React.FC<ViewEquipmentModalProps> = ({
     );
   };
 
-  const getRentalBadge = (takenOnRent: boolean) => {
-    return (
-      <span className={`${styles.badge} ${takenOnRent ? styles.rented : styles.available}`}>
-        {takenOnRent ? 'On Rent' : 'Available'}
-      </span>
-    );
-  };
-
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Equipment Details">
       <div className={styles.container}>
