@@ -90,7 +90,6 @@
 .value {
   font-size: 15px;
   color: var(--color-text-primary);
-  word-break: break-word;
   line-height: 1.5;
 }
 
@@ -126,11 +125,14 @@
 }
 
 .badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap !important;
+  width: fit-content;
 }
 
 .badge.freelancer {
@@ -209,6 +211,24 @@
 
   .details {
     grid-template-columns: 1fr;
+    row-gap: 16px;
+    column-gap: 0;
+    margin-left: 0;
+    margin-right: 0;
+  }
+
+  .field:nth-child(odd),
+  .field:nth-child(even) {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .badge {
+    display: block;
+    text-align: center;
+    width: fit-content;
+    min-width: 100px;
+    white-space: nowrap !important;
   }
 
   .footer {

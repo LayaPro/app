@@ -52,6 +52,15 @@
   max-width: 400px;
 }
 
+@media (max-width: 768px) {
+  .modal.small {
+    max-width: 90%;
+    max-height: auto;
+    min-height: auto;
+    border-radius: 12px;
+  }
+}
+
 .modal.medium {
   width: 100%;
   max-width: 600px;
@@ -182,21 +191,32 @@
 @media (max-width: 768px) {
   .overlay {
     padding: 0;
+    align-items: flex-start;
   }
 
   .modal {
     max-height: 100vh;
+    min-height: 100vh;
     border-radius: 0;
     width: 100% !important;
     max-width: 100% !important;
   }
 
+  .overlay:has(.modal.small) {
+    align-items: center;
+    padding: 20px;
+  }
+
   .header {
     padding: 14px 16px;
+    flex-shrink: 0;
   }
 
   .content {
-    padding: 20px;
+    padding: 20px 16px;
+    padding-bottom: 24px;
+    overflow-y: auto;
+    flex: 1;
   }
 
   .infoTooltip {

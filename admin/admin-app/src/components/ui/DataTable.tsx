@@ -6,6 +6,7 @@ export interface Column<T> {
   header: string;
   sortable?: boolean;
   render?: (row: T) => React.ReactNode;
+  sortFn?: (a: T, b: T) => number;
 }
 
 interface DataTableProps<T> {
@@ -68,16 +69,37 @@ export function DataTable<T extends Record<string, any>>({
   const sortedData = useMemo(() => {
     if (!sortConfig) return filteredData;
 
+    // Find the column to check for custom sortFn
+    const column = columns.find(col => String(col.key) === String(sortConfig.key));
+
     return [...filteredData].sort((a, b) => {
+      // Use custom sort function if provided
+      if (column?.sortFn) {
+        const result = column.sortFn(a, b);
+        return sortConfig.direction === 'asc' ? result : -result;
+      }
+
+      // Default sorting logic
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
 
+      // Handle null/undefined - put them at the end
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+
       if (aValue === bValue) return 0;
+
+      // Case-insensitive comparison for strings
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const comparison = aValue.toLowerCase() < bValue.toLowerCase() ? -1 : 1;
+        return sortConfig.direction === 'asc' ? comparison : -comparison;
+      }
 
       const comparison = aValue < bValue ? -1 : 1;
       return sortConfig.direction === 'asc' ? comparison : -comparison;
     });
-  }, [filteredData, sortConfig]);
+  }, [filteredData, sortConfig, columns]);
 
   // Pagination
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
@@ -86,6 +108,7 @@ export function DataTable<T extends Record<string, any>>({
   const paginatedData = sortedData.slice(startIndex, endIndex);
 
   const handleSort = (key: string) => {
+    setCurrentPage(1);
     setSortConfig(current => {
       if (!current || current.key !== key) {
         return { key, direction: 'asc' };

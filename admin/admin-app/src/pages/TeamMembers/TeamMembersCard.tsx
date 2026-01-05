@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { DataTable } from '../../components/ui/DataTable.js';
 import type { Column } from '../../components/ui/DataTable.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
@@ -122,7 +122,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
     return gradients[(name?.charCodeAt(0) || 0) % gradients.length];
   };
 
-  const columns: Column<any>[] = [
+  const columns: Column<any>[] = useMemo(() => [
     {
       key: 'firstName',
       header: 'Name',
@@ -258,6 +258,19 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
       key: 'salary',
       header: 'Salary',
       sortable: true,
+      sortFn: (a: any, b: any) => {
+        // Handle null/undefined/empty values - put them at the end
+        const salaryA = a.salary ? parseFloat(String(a.salary)) : -1;
+        const salaryB = b.salary ? parseFloat(String(b.salary)) : -1;
+        
+        // If both are invalid, keep original order
+        if (salaryA === -1 && salaryB === -1) return 0;
+        // Put invalid values at the end
+        if (salaryA === -1) return 1;
+        if (salaryB === -1) return -1;
+        
+        return salaryA - salaryB;
+      },
       render: (row) => {
         if (!row.salary) return '-';
         const formatIndianNumber = (value: string): string => {
@@ -292,6 +305,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
           borderRadius: '12px', 
           fontSize: '12px',
           fontWeight: '600',
+          whiteSpace: 'nowrap',
           backgroundColor: row.isFreelancer ? '#fef3c7' : '#dbeafe',
           color: row.isFreelancer ? '#92400e' : '#1e40af',
         }}>
@@ -338,7 +352,7 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
         return <ActionMenu items={menuItems} />;
       },
     },
-  ];
+  ], [profiles, roles, onSuccess, handleViewMember, handleEditMember, handleDeleteMember]);
 
   return (
     <>

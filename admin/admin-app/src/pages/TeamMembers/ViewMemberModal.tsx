@@ -109,11 +109,12 @@ export const ViewMemberModal: React.FC<ViewMemberModalProps> = ({
 
           <div className={styles.field}>
             <label>Type</label>
-            <div className={styles.value}>
-              <span className={`${styles.badge} ${member.isFreelancer ? styles.freelancer : styles.inhouse}`}>
-                {member.isFreelancer ? 'Freelancer' : 'In-house'}
-              </span>
-            </div>
+            <span 
+              className={`${styles.badge} ${member.isFreelancer ? styles.freelancer : styles.inhouse}`}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              {member.isFreelancer ? 'Freelancer' : 'In‑house'}
+            </span>
           </div>
 
           {role && !member.isFreelancer && (

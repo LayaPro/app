@@ -47,11 +47,14 @@
 @media (max-width: 640px) {
   .footer {
     gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding-bottom: 1rem;
   }
 
   .cancelButton,
   .submitButton {
-    padding: 0.5rem 1rem;
+    padding: 0.625rem 1rem;
     font-size: 0.875rem;
+    flex: 1;
   }
 }

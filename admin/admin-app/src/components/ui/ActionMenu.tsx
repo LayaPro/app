@@ -27,21 +27,37 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ items }) => {
       }
     };
 
+    const updatePosition = () => {
+      if (isOpen && triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        
+        setPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 120,
+        });
+      }
+    };
+
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('scroll', updatePosition, true);
+      window.addEventListener('resize', updatePosition);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
     };
   }, [isOpen]);
 
   const handleToggle = () => {
     if (!isOpen && triggerRef.current) {
       const rect = triggerRef.current.getBoundingClientRect();
+      
       setPosition({
-        top: rect.bottom + 4 + window.scrollY,
-        left: window.innerWidth - rect.right + window.scrollX,
+        top: rect.bottom + 4,
+        left: rect.right - 120,
       });
     }
     setIsOpen(!isOpen);
@@ -70,9 +86,8 @@ export const ActionMenu: React.FC<ActionMenuProps> = ({ items }) => {
           ref={menuRef}
           className={styles.dropdown}
           style={{
-            position: 'absolute',
             top: `${position.top}px`,
-            right: `${position.left}px`,
+            left: `${position.left}px`,
           }}
         >
           {items.map((item, index) => {

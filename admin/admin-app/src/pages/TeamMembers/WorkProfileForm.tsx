@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
+import { Textarea } from '../../components/ui/Textarea';
 import styles from './Form.module.css';
 
 export interface WorkProfileFormData {
@@ -61,6 +62,12 @@ export const WorkProfileForm: React.FC<WorkProfileFormProps> = ({
       newErrors.name = 'Profile name must be at least 2 characters';
     }
 
+    if (!formData.description?.trim()) {
+      newErrors.description = 'Description is required';
+    } else if (formData.description.trim().length < 5) {
+      newErrors.description = 'Description must be at least 5 characters';
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -85,7 +92,13 @@ export const WorkProfileForm: React.FC<WorkProfileFormProps> = ({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={profile ? 'Edit Work Profile' : 'Add Work Profile'} size="medium">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={profile ? 'Edit Work Profile' : 'Add Work Profile'} 
+      size="small"
+      info="Work profiles help categorize team members by their roles like photographer, editor, or videographer. This makes it easier to assign members to events based on their skills."
+    >
       <form onSubmit={handleSubmit} className={styles.form}>
         {submitError && (
           <div style={{
@@ -109,23 +122,35 @@ export const WorkProfileForm: React.FC<WorkProfileFormProps> = ({
             error={errors.name}
             placeholder="e.g., Photographer, Editor, Videographer"
             required
+            maxLength={50}
+            showCharCount
+            info="Choose a clear, descriptive name for this role (max 50 characters)"
           />
         </div>
 
         <div className={styles.formGroup}>
-          <label className={styles.label}>
-            Description
-          </label>
-          <textarea
-            className={styles.textarea}
-            value={formData.description}
+          <Textarea
+            label="Description"
+            value={formData.description || ''}
             onChange={(e) => handleChange('description', e.target.value)}
-            placeholder="Optional description..."
+            placeholder="Describe the responsibilities and duties..."
             rows={4}
+            maxLength={200}
+            showCharCount
+            required
+            error={errors.description}
+            info="Add details about the responsibilities and duties for this role (max 200 characters)"
           />
         </div>
 
         <div className={styles.formActions}>
+          <button
+            type="submit"
+            className={styles.submitButton}
+            disabled={loading}
+          >
+            {loading ? 'Saving...' : profile ? 'Update Work Profile' : 'Create Work Profile'}
+          </button>
           <button
             type="button"
             onClick={onClose}
@@ -133,13 +158,6 @@ export const WorkProfileForm: React.FC<WorkProfileFormProps> = ({
             disabled={loading}
           >
             Cancel
-          </button>
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : profile ? 'Update' : 'Create'}
           </button>
         </div>
       </form>
