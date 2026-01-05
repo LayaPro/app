@@ -29,12 +29,12 @@ export const UsersCard: React.FC<UsersCardProps> = ({
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<any>(null);
 
-  const handleCreateUser = () => {
+  const _handleCreateUser = () => {
     setSelectedUser(null);
     setIsFormOpen(true);
   };
 
-  const handleEditUser = (user: any) => {
+  const _handleEditUser = (user: any) => {
     setSelectedUser(user);
     setIsFormOpen(true);
   };
@@ -67,7 +67,7 @@ export const UsersCard: React.FC<UsersCardProps> = ({
     }
   };
 
-  const handleDeleteUser = (user: any) => {
+  const _handleDeleteUser = (user: any) => {
     setUserToDelete(user);
     setIsDeleteModalOpen(true);
   };

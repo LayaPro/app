@@ -1,3 +1,29 @@
+/* Content Wrapper and Info Banner */
+.contentWrapper {
+  padding: 24px;
+}
+
+.infoText {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(59, 130, 246, 0.08);
+  border-radius: 8px;
+  margin-bottom: 20px;
+  color: var(--color-primary);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.infoIcon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--color-primary);
+  margin-top: 2px;
+}
+
 /* Card Styles */
 .card {
   background-color: var(--bg-primary);

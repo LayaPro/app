@@ -84,7 +84,7 @@ export const eventDeliveryStatusApi = {
     return handleResponse(response);
   },
 
-  update: async (statusId: string, data: { statusCode?: string; statusDescription?: string; step?: number }) => {
+  update: async (statusId: string, data: { statusCode?: string; statusDescription?: string; step?: number; statusCustomerNote?: string }) => {
     const response = await fetch(`${API_BASE_URL}/update-event-delivery-status/${statusId}`, {
       method: 'PUT',
       headers: {
