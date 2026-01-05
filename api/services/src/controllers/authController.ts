@@ -9,6 +9,8 @@ import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailSe
 const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const JWT_EXPIRES_IN: number = Number(process.env.JWT_EXPIRES_IN) || 7 * 24 * 60 * 60;
 
+console.log('[Auth Controller] JWT_SECRET loaded:', JWT_SECRET?.substring(0, 10) + '...');
+
 interface LoginRequest {
   email: string;
   password: string;

@@ -42,9 +42,20 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       }
     };
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        event.stopPropagation();
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [includeTime]);
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [includeTime, isOpen]);
 
   const formatDate = (date: Date | null) => {
     if (!date) return '';
@@ -117,7 +128,15 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         type="button"
         className={`${styles.day} ${isSelected ? styles.selected : ''} ${isToday ? styles.today : ''} ${isDisabled ? styles.disabled : ''}`}
         onClick={() => !isDisabled && handleDateSelect(day)}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !isDisabled) {
+            e.preventDefault();
+            handleDateSelect(day);
+          }
+        }}
         disabled={isDisabled}
+        tabIndex={isDisabled ? -1 : 0}
+        aria-label={`Select ${monthName} ${day}`}
       >
         {day}
       </button>
@@ -137,6 +156,9 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         type="button"
         className={`${styles.dateButton} ${error ? styles.error : ''} ${isOpen ? styles.open : ''}`}
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={label ? `${label} date picker` : 'Date picker'}
+        aria-expanded={isOpen}
+        aria-haspopup="dialog"
       >
         <svg className={styles.calendarIcon} width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -149,13 +171,13 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       {isOpen && (
         <div className={styles.dropdown}>
           <div className={styles.header}>
-            <button type="button" className={styles.navButton} onClick={handlePrevMonth}>
+            <button type="button" className={styles.navButton} onClick={handlePrevMonth} aria-label="Previous month">
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
             <span className={styles.monthLabel}>{monthName}</span>
-            <button type="button" className={styles.navButton} onClick={handleNextMonth}>
+            <button type="button" className={styles.navButton} onClick={handleNextMonth} aria-label="Next month">
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>

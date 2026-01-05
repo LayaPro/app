@@ -2,20 +2,23 @@ import { useState, useEffect } from 'react';
 import { Modal } from '../../components/ui/Modal';
 import { Input } from '../../components/ui/Input';
 import { Select } from '../../components/ui/Select';
+import { AmountInput } from '../../components/ui/AmountInput';
+import { DatePicker } from '../../components/ui/DatePicker';
+import { ImageUpload } from '../../components/ui/ImageUpload';
 import { Checkbox } from '../../components/ui';
+import { DialogFooter } from '../../components/ui/DialogFooter';
 import type { SelectOption } from '../../components/ui/Select';
 import styles from './Form.module.css';
 
 export interface EquipmentFormData {
   name: string;
   serialNumber?: string;
-  qr?: string;
   brand?: string;
   price?: number;
   purchaseDate?: string;
-  isOnRent: boolean;
+  takenOnRent: boolean;
   perDayRent?: number;
-  image?: string;
+  images?: string[];
   condition?: number;
 }
 
@@ -35,13 +38,12 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   const [formData, setFormData] = useState<EquipmentFormData>({
     name: '',
     serialNumber: '',
-    qr: '',
     brand: '',
     price: undefined,
     purchaseDate: '',
-    isOnRent: false,
+    takenOnRent: false,
     perDayRent: undefined,
-    image: '',
+    images: [],
     condition: undefined,
   });
   const [loading, setLoading] = useState(false);
@@ -53,26 +55,24 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       setFormData({
         name: equipment.name || '',
         serialNumber: equipment.serialNumber || '',
-        qr: equipment.qr || '',
         brand: equipment.brand || '',
         price: equipment.price || undefined,
         purchaseDate: equipment.purchaseDate ? new Date(equipment.purchaseDate).toISOString().split('T')[0] : '',
-        isOnRent: equipment.isOnRent || false,
+        takenOnRent: equipment.takenOnRent || equipment.isOnRent || false,
         perDayRent: equipment.perDayRent || undefined,
-        image: equipment.image || '',
+        images: equipment.images || equipment.imageUrls || [],
         condition: equipment.condition || undefined,
       });
     } else {
       setFormData({
         name: '',
         serialNumber: '',
-        qr: '',
         brand: '',
         price: undefined,
         purchaseDate: '',
-        isOnRent: false,
+        takenOnRent: false,
         perDayRent: undefined,
-        image: '',
+        images: [],
         condition: undefined,
       });
     }
@@ -94,6 +94,12 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
       newErrors.name = 'Equipment name is required';
     } else if (formData.name.length < 2) {
       newErrors.name = 'Equipment name must be at least 2 characters';
+    }
+
+    if (!formData.brand?.trim()) {
+      newErrors.brand = 'Brand is required';
+    } else if (formData.brand.trim().length < 2) {
+      newErrors.brand = 'Brand must be at least 2 characters';
     }
 
     if (formData.condition !== undefined && (formData.condition < 0 || formData.condition > 5)) {
@@ -143,7 +149,13 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={equipment ? 'Edit Equipment' : 'Add Equipment'} size="medium">
+    <Modal 
+      isOpen={isOpen} 
+      onClose={onClose} 
+      title={equipment ? 'Edit Equipment' : 'Add Equipment'} 
+      size="medium"
+      info="Manage your studio equipment inventory including cameras, lenses, lighting, and accessories. Track condition, pricing, and rental availability."
+    >
       <form onSubmit={handleSubmit} className={styles.form}>
         {submitError && (
           <div style={{
@@ -167,6 +179,9 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             error={errors.name}
             placeholder="e.g., Canon EOS R5, Sony A7IV"
             required
+            maxLength={100}
+            showCharCount
+            info="Enter the model name and type of equipment (max 100 characters)"
           />
         </div>
 
@@ -176,6 +191,11 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             value={formData.brand || ''}
             onChange={(e) => handleChange('brand', e.target.value)}
             placeholder="e.g., Canon, Sony, Nikon"
+            required
+            error={errors.brand}
+            maxLength={50}
+            showCharCount
+            info="Manufacturer or brand name (max 50 characters)"
           />
         </div>
 
@@ -184,36 +204,30 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             label="Serial Number"
             value={formData.serialNumber || ''}
             onChange={(e) => handleChange('serialNumber', e.target.value)}
-            placeholder="Optional"
+            placeholder="Unique serial number"
+            maxLength={50}
+            showCharCount
+            info="Manufacturer's serial number for warranty and identification (max 50 characters)"
           />
         </div>
 
         <div className={styles.formGroup}>
-          <Input
-            label="QR Code"
-            value={formData.qr || ''}
-            onChange={(e) => handleChange('qr', e.target.value)}
-            placeholder="Optional"
-          />
-        </div>
-
-        <div className={styles.formGroup}>
-          <Input
+          <AmountInput
             label="Price"
-            type="number"
             value={formData.price?.toString() || ''}
-            onChange={(e) => handleChange('price', e.target.value ? parseFloat(e.target.value) : undefined)}
-            placeholder="Purchase price"
+            onChange={(value) => handleChange('price', value ? parseFloat(value) : undefined)}
+            placeholder="0"
             error={errors.price}
+            info="Original purchase price in INR for inventory value tracking"
           />
         </div>
 
         <div className={styles.formGroup}>
-          <Input
+          <DatePicker
             label="Purchase Date"
-            type="date"
             value={formData.purchaseDate || ''}
-            onChange={(e) => handleChange('purchaseDate', e.target.value)}
+            onChange={(value) => handleChange('purchaseDate', value)}
+            placeholder="Select purchase date"
           />
         </div>
 
@@ -224,56 +238,48 @@ export const EquipmentForm: React.FC<EquipmentFormProps> = ({
             onChange={(value) => handleChange('condition', value ? parseInt(value) : undefined)}
             options={conditionOptions}
             error={errors.condition}
+            info="Current physical and functional condition of the equipment"
           />
         </div>
 
-        <div className={styles.formGroup}>
-          <Input
-            label="Image URL"
-            value={formData.image || ''}
-            onChange={(e) => handleChange('image', e.target.value)}
-            placeholder="Optional"
-          />
-        </div>
+        <ImageUpload
+          images={formData.images || []}
+          onChange={(images) => handleChange('images', images)}
+          maxFiles={4}
+          maxSizeMB={2}
+          label="Equipment Images"
+          info="Upload up to 4 images for visual identification (max 2MB each)"
+        />
 
         <div className={styles.formGroup}>
           <Checkbox
-            label="Available for Rent"
-            checked={formData.isOnRent}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('isOnRent', e.target.checked)}
+            label="Taken on Rent"
+            checked={formData.takenOnRent}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleChange('takenOnRent', e.target.checked)}
+            info="Check if this equipment is currently rented out"
           />
         </div>
 
-        {formData.isOnRent && (
+        {formData.takenOnRent && (
           <div className={styles.formGroup}>
-            <Input
+            <AmountInput
               label="Rent Per Day"
-              type="number"
               value={formData.perDayRent?.toString() || ''}
-              onChange={(e) => handleChange('perDayRent', e.target.value ? parseFloat(e.target.value) : undefined)}
-              placeholder="Daily rental rate"
+              onChange={(value) => handleChange('perDayRent', value ? parseFloat(value) : undefined)}
+              placeholder="0"
               error={errors.perDayRent}
+              info="Daily rental charge in INR for this equipment"
             />
           </div>
         )}
 
-        <div className={styles.formActions}>
-          <button
-            type="button"
-            onClick={onClose}
-            className={styles.cancelButton}
-            disabled={loading}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            className={styles.submitButton}
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : equipment ? 'Update' : 'Create'}
-          </button>
-        </div>
+        <DialogFooter
+          onCancel={onClose}
+          onSubmit={() => {}}
+          submitText={equipment ? 'Update Equipment' : 'Create Equipment'}
+          cancelText="Cancel"
+          loading={loading}
+        />
       </form>
     </Modal>
   );

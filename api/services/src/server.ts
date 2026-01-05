@@ -1,6 +1,17 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load .env from the services directory
+dotenv.config({ path: path.join(__dirname, '../.env') });
+
+console.log('=== ENV CHECK ===');
+console.log('Current directory:', __dirname);
+console.log('JWT_SECRET exists:', !!process.env.JWT_SECRET);
+console.log('JWT_SECRET preview:', process.env.JWT_SECRET?.substring(0, 20));
+console.log('=================');
+
 import express from 'express';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import testController from './controllers/testController';
 import roleController from './controllers/roleController';
@@ -28,8 +39,6 @@ import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload, uploadPdf } from './middleware/upload';
 import { startEventStatusUpdater } from './jobs/eventStatusUpdater';
-
-dotenv.config();
 
 const app = express();
 app.use(express.json({ limit: '10gb' }));
@@ -105,7 +114,13 @@ app.put('/update-project-delivery-status/:statusId', authenticate, requireAdmin,
 app.delete('/delete-project-delivery-status/:statusId', authenticate, requireAdmin, projectDeliveryStatusController.deleteProjectDeliveryStatus);
 
 // ---------- Equipment routes ----------
-app.post('/create-equipment', authenticate, requireAdmin, equipmentController.createEquipment);
+app.post('/create-equipment', authenticate, requireAdmin, (req, res, next) => {
+  console.log('=== EQUIPMENT ROUTE HIT ===');
+  console.log('Body keys:', Object.keys(req.body));
+  console.log('Has images:', !!req.body.images);
+  console.log('Images length:', req.body.images?.length);
+  next();
+}, equipmentController.createEquipment);
 app.get('/get-all-equipment', authenticate, requireAdmin, equipmentController.getAllEquipment);
 app.get('/get-equipment/:equipmentId', authenticate, requireAdmin, equipmentController.getEquipmentById);
 app.put('/update-equipment/:equipmentId', authenticate, requireAdmin, equipmentController.updateEquipment);

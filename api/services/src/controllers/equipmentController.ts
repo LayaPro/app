@@ -5,6 +5,11 @@ import { AuthRequest } from '../middleware/auth';
 
 export const createEquipment = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('=== CREATE EQUIPMENT DEBUG ===');
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+    console.log('Images field:', req.body.images);
+    console.log('Images length:', req.body.images?.length);
+    
     const {
       name,
       serialNumber,
@@ -13,8 +18,10 @@ export const createEquipment = async (req: AuthRequest, res: Response) => {
       price,
       purchaseDate,
       isOnRent,
+      takenOnRent,
       perDayRent,
       image,
+      images,
       condition
     } = req.body;
     const tenantId = req.user?.tenantId;
@@ -33,6 +40,15 @@ export const createEquipment = async (req: AuthRequest, res: Response) => {
     }
 
     const equipmentId = `equipment_${nanoid()}`;
+    
+    console.log('Creating equipment with data:', {
+      equipmentId,
+      tenantId,
+      name,
+      imagesCount: images?.length || 0,
+      hasImages: !!images
+    });
+    
     const equipment = await Equipment.create({
       equipmentId,
       tenantId,
@@ -42,11 +58,19 @@ export const createEquipment = async (req: AuthRequest, res: Response) => {
       brand,
       price,
       purchaseDate,
-      isOnRent: isOnRent || false,
+      isOnRent: isOnRent || takenOnRent || false,
+      takenOnRent: takenOnRent || isOnRent || false,
       perDayRent,
       image,
+      images: images || [],
       condition
     });
+
+    console.log('Equipment created successfully:', {
+      equipmentId: equipment.equipmentId,
+      imagesInDb: equipment.images?.length || 0
+    });
+    console.log('=== END CREATE EQUIPMENT DEBUG ===');
 
     return res.status(201).json({
       message: 'Equipment created successfully',
@@ -60,6 +84,7 @@ export const createEquipment = async (req: AuthRequest, res: Response) => {
 
 export const getAllEquipment = async (req: AuthRequest, res: Response) => {
   try {
+    console.log('=== GET ALL EQUIPMENT CALLED ===');
     const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
@@ -68,6 +93,18 @@ export const getAllEquipment = async (req: AuthRequest, res: Response) => {
 
     // All users only see their own tenant's equipment
     const equipment = await Equipment.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    
+    console.log(`Found ${equipment.length} equipment items`);
+    if (equipment.length > 0) {
+      console.log('First equipment sample:', {
+        name: equipment[0].name,
+        hasImages: !!equipment[0].images,
+        imagesCount: equipment[0].images?.length || 0,
+        hasTakenOnRent: 'takenOnRent' in equipment[0],
+        fields: Object.keys(equipment[0])
+      });
+    }
+    console.log('=== END GET ALL EQUIPMENT ===');
 
     return res.status(200).json({
       message: 'Equipment retrieved successfully',

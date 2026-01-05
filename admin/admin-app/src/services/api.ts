@@ -335,7 +335,7 @@ export const equipmentApi = {
     return handleResponse(response);
   },
 
-  create: async (data: { name: string; type?: string; serialNumber?: string; purchaseDate?: string; status?: string }) => {
+  create: async (data: any) => {
     const response = await fetch(`${API_BASE_URL}/create-equipment`, {
       method: 'POST',
       headers: {
@@ -347,7 +347,7 @@ export const equipmentApi = {
     return handleResponse(response);
   },
 
-  update: async (equipmentId: string, data: { name?: string; type?: string; serialNumber?: string; purchaseDate?: string; status?: string }) => {
+  update: async (equipmentId: string, data: any) => {
     const response = await fetch(`${API_BASE_URL}/update-equipment/${equipmentId}`, {
       method: 'PUT',
       headers: {

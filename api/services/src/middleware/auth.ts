@@ -3,6 +3,9 @@ import jwt, { Secret } from 'jsonwebtoken';
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
+console.log('[Auth Middleware] JWT_SECRET loaded:', JWT_SECRET?.substring(0, 10) + '...');
+console.log('[Auth Middleware] JWT_SECRET loaded:', JWT_SECRET?.substring(0, 10) + '...');
+
 export interface AuthRequest extends Request {
   user?: {
     userId: string;

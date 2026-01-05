@@ -10,8 +10,10 @@ export interface IEquipment extends Document {
   price?: number;
   purchaseDate?: Date;
   isOnRent: boolean;
+  takenOnRent: boolean;
   perDayRent?: number;
   image?: string;
+  images?: string[];
   condition?: number; // Points out of 5
   createdAt: Date;
   updatedAt: Date;
@@ -28,8 +30,10 @@ const EquipmentSchema = new Schema<IEquipment>(
     price: { type: Number },
     purchaseDate: { type: Date },
     isOnRent: { type: Boolean, required: true, default: false },
+    takenOnRent: { type: Boolean, required: true, default: false },
     perDayRent: { type: Number },
     image: { type: String },
+    images: { type: [String], default: [] },
     condition: { type: Number, min: 0, max: 5 } // Points out of 5
   },
   { timestamps: true }

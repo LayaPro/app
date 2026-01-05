@@ -33,11 +33,17 @@
 }
 
 .dateButton:hover {
+  border-color: rgb(99, 102, 241);
+}
+
+.dateButton:focus {
+  outline: none;
   border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
 }
 
 .dateButton.open {
-  border-color: var(--color-primary);
+  border-color: rgb(99, 102, 241);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
 }
 
@@ -103,7 +109,7 @@
 
 .navButton {
   background: transparent;
-  border: none;
+  border: 2px solid transparent;
   color: var(--text-secondary);
   cursor: pointer;
   padding: 4px;
@@ -117,6 +123,12 @@
 .navButton:hover {
   background: var(--bg-hover);
   color: var(--color-primary);
+}
+
+.navButton:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
 }
 
 .weekdays {
@@ -148,7 +160,7 @@
 
 .day {
   aspect-ratio: 1;
-  border: none;
+  border: 2px solid transparent;
   background: transparent;
   cursor: pointer;
   border-radius: var(--radius-md);
@@ -162,13 +174,19 @@
   min-height: 32px;
 }
 
+.day:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
 .day:hover:not(.disabled) {
   background: var(--bg-hover);
   color: var(--color-primary);
 }
 
 .day.today {
-  border: 2px solid var(--color-primary);
+  border-color: var(--color-primary);
   font-weight: 600;
 }
 

@@ -293,7 +293,7 @@
 }
 
 .tr:hover {
-  background-color: var(--bg-secondary);
+  background-color: rgba(99, 102, 241, 0.05);
   z-index: 10;
 }
 

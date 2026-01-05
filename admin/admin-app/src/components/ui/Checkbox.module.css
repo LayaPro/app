@@ -48,5 +48,21 @@
   font-size: 14px;
   color: var(--text-primary);
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   user-select: none;
 }
+
+.info {
+  display: inline-flex;
+  align-items: center;
+  color: var(--text-tertiary);
+  cursor: help;
+  transition: color 0.2s;
+}
+
+.info:hover {
+  color: var(--primary);
+}
+
