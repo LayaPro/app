@@ -141,13 +141,13 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
     {
       key: 'serialNumber',
       header: 'Serial Number',
-      sortable: true,
+      sortable: false,
       render: (row) => row.serialNumber || '-',
     },
     {
       key: 'condition',
       header: 'Condition',
-      sortable: true,
+      sortable: false,
       render: (row) => getConditionBadge(row.condition),
     },
     {
@@ -185,7 +185,7 @@ export const EquipmentsCard: React.FC<EquipmentsCardProps> = ({
           title={row.qr ? 'View QR Code' : 'QR Code not available'}
           onMouseEnter={(e) => {
             if (row.qr) {
-              e.currentTarget.style.backgroundColor = '#f9fafb';
+              e.currentTarget.style.backgroundColor = 'rgba(107, 114, 128, 0.1)';
             }
           }}
           onMouseLeave={(e) => {
