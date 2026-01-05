@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import styles from './Tabs.module.css';
 
@@ -61,7 +61,10 @@ export const Tabs: React.FC<TabsProps> = ({
 
   return (
     <div className={styles.tabsContainer}>
-      <div className={styles.tabsHeader} role="tablist">
+      <div 
+        className={styles.tabsHeader} 
+        role="tablist"
+      >
         {tabs.map((tab, index) => (
           <button
             key={tab.id}

@@ -112,66 +112,31 @@ export const EventWorkflowCard: FC<EventWorkflowCardProps> = ({
       key: 'step',
       header: 'Step',
       render: (row) => {
-        const isLastStep = row.step === displayStatuses.length;
+        const isMobile = window.innerWidth <= 768;
         
         return (
           <div style={{ 
             display: 'flex', 
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             alignItems: 'center',
-            position: 'relative',
-            paddingLeft: '12px',
-            width: '64px',
+            paddingLeft: '4px',
+            width: isMobile ? '44px' : '52px',
           }}>
             <span style={{ 
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '40px',
-              height: '40px',
-              borderRadius: '8px',
-              fontSize: '1rem',
+              width: isMobile ? '32px' : '40px',
+              height: isMobile ? '32px' : '40px',
+              borderRadius: isMobile ? '6px' : '8px',
+              fontSize: isMobile ? '0.875rem' : '1rem',
               fontWeight: '600',
               color: '#64748b',
               backgroundColor: '#f8fafc',
               border: '2px solid #e2e8f0',
-              position: 'relative',
-              zIndex: 1,
             }}>
               {row.step}
             </span>
-            {!isLastStep && (
-              <svg 
-                width="24" 
-                height="35" 
-                viewBox="0 0 24 35" 
-                fill="none" 
-                style={{ 
-                  position: 'absolute',
-                  top: '40px',
-                  left: '26px',
-                  pointerEvents: 'none',
-                  zIndex: 0,
-                }}
-              >
-                <line 
-                  x1="12" 
-                  y1="0" 
-                  x2="12" 
-                  y2="20" 
-                  stroke="#cbd5e1" 
-                  strokeWidth="2"
-                  opacity="0.6"
-                />
-                <path 
-                  d="M12 28 L8 24 M12 28 L16 24" 
-                  stroke="#cbd5e1" 
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  opacity="0.6"
-                />
-              </svg>
-            )}
           </div>
         );
       },
