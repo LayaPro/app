@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
 import { Input, Textarea, Button, Loading, ImageUpload, PhoneInput } from '../../components/ui/index.ts';
+import { countries } from '../../components/ui/PhoneInput';
 import styles from '../EventsSetup/EventCard.module.css';
 import { organizationApi } from '../../services/api.js';
 import { sanitizeTextInput, sanitizeTextarea } from '../../utils/sanitize.js';
@@ -20,6 +21,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
   onError,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   
   const [formData, setFormData] = useState({
     companyName: '',
@@ -27,7 +29,8 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
     logo: '',
     aboutUs: '',
     email: '',
-    phoneNumber: '',
+    countryCode: '+91',
+    phone: '',
     address: '',
     website: '',
     facebook: '',
@@ -35,18 +38,25 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
     youtube: '',
   });
 
+  // Validation helpers
+  const validateUrl = (url: string): string | null => {
+    if (!url || !url.trim()) return null;
+    if (!/^https?:\/\/.+\..+/.test(url)) {
+      return 'URL must start with http:// or https:// and include a domain';
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (organization) {
-      const phoneNumber = organization.phone && organization.countryCode
-        ? `${organization.countryCode}${organization.phone}`
-        : '';
       setFormData({
         companyName: organization.companyName || '',
         tagline: organization.tagline || '',
         logo: organization.logo || '',
         aboutUs: organization.aboutUs || '',
         email: organization.email || '',
-        phoneNumber,
+        countryCode: organization.countryCode || '+91',
+        phone: organization.phone || '',
         address: organization.address || '',
         website: organization.website || '',
         facebook: organization.facebook || '',
@@ -57,55 +67,62 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
   }, [organization]);
 
   const handleSave = async () => {
-    // Split phone number into country code and phone
-    let countryCode = '+91';
-    let phone = '';
-    if (formData.phoneNumber) {
-      const match = formData.phoneNumber.match(/^(\+\d+)(\d+)$/);
-      if (match) {
-        countryCode = match[1];
-        phone = match[2];
-      }
+    // Validate all fields
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.companyName.trim()) {
+      newErrors.companyName = 'Company name is required';
     }
+
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+
+    if (formData.phone && formData.phone.length < 6) {
+      newErrors.phone = 'Phone number must be at least 6 digits';
+    }
+
+    if (formData.countryCode && !formData.countryCode.startsWith('+')) {
+      newErrors.countryCode = 'Country code must start with +';
+    }
+
+    // Validate URLs
+    const urlFields = ['website', 'facebook', 'instagram', 'youtube'] as const;
+    urlFields.forEach(field => {
+      const value = formData[field];
+      if (value && value.trim()) {
+        const urlError = validateUrl(value);
+        if (urlError) {
+          newErrors[field] = urlError;
+        }
+      }
+    });
+
+    // If there are errors, set them and stop
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    // Clear any previous errors
+    setErrors({});
 
     const sanitizedData = {
       companyName: sanitizeTextInput(formData.companyName),
       tagline: sanitizeTextInput(formData.tagline),
-      logo: sanitizeTextInput(formData.logo),
+      logo: formData.logo, // Don't sanitize - it's a base64 image or S3 URL
       aboutUs: sanitizeTextarea(formData.aboutUs),
       email: sanitizeTextInput(formData.email),
-      phone: sanitizeTextInput(phone),
-      countryCode: sanitizeTextInput(countryCode),
+      phone: formData.phone, // Don't sanitize - just numbers
+      countryCode: formData.countryCode, // Don't sanitize - need the + symbol
       address: sanitizeTextarea(formData.address),
       website: sanitizeTextInput(formData.website),
       facebook: sanitizeTextInput(formData.facebook),
       instagram: sanitizeTextInput(formData.instagram),
       youtube: sanitizeTextInput(formData.youtube),
     };
-
-    // Validations
-    if (!sanitizedData.companyName.trim()) {
-      onError('Company name is required');
-      return;
-    }
-
-    if (!sanitizedData.email.trim()) {
-      onError('Email is required');
-      return;
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedData.email)) {
-      onError('Invalid email format');
-      return;
-    }
-
-    if (formData.phoneNumber && formData.phoneNumber.length < 12) {
-      onError('Phone number must be at least 12 characters (including country code)');
-      return;
-    }
-
-    if (sanitizedData.website && !/^https?:\/\/.+/.test(sanitizedData.website)) {
-      onError('Website must start with http:// or https://');
-      return;
-    }
 
     try {
       setIsSaving(true);
@@ -156,6 +173,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               maxLength={100}
               showCharCount
               info="Your official company name as registered"
+              error={errors.companyName}
               required
             />
 
@@ -171,8 +189,22 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
 
             <PhoneInput
               label="Phone Number"
-              value={formData.phoneNumber}
-              onChange={(value) => setFormData({ ...formData, phoneNumber: value })}
+              value={formData.countryCode + formData.phone}
+              onChange={(value) => {
+                // Use the same logic as PhoneInput - find matching country code (longest first)
+                const sortedCountries = [...countries].sort((a, b) => b.dialCode.length - a.dialCode.length);
+                const matchedCountry = sortedCountries.find(c => value.startsWith(c.dialCode));
+                if (matchedCountry) {
+                  setFormData({ 
+                    ...formData, 
+                    countryCode: matchedCountry.dialCode, 
+                    phone: value.substring(matchedCountry.dialCode.length) 
+                  });
+                } else if (value === '') {
+                  setFormData({ ...formData, countryCode: '+91', phone: '' });
+                }
+              }}
+              error={errors.phone || errors.countryCode}
               info="Contact phone number with country code"
             />
 
@@ -185,12 +217,13 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               maxLength={100}
               showCharCount
               info="Primary contact email for your organization"
+              error={errors.email}
               required
             />
 
             <div>
               <ImageUpload
-                images={formData.logo && formData.logo.trim() ? [formData.logo] : []}
+                images={formData.logo ? [formData.logo] : []}
                 onChange={(images: string[]) => setFormData({ ...formData, logo: images[0] || '' })}
                 maxFiles={1}
                 maxSizeMB={2}
@@ -232,6 +265,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               maxLength={200}
               showCharCount
               info="Company website URL (must start with http:// or https://)"
+              error={errors.website}
             />
 
             <Input
@@ -242,6 +276,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               maxLength={200}
               showCharCount
               info="Link to your Facebook page"
+              error={errors.facebook}
             />
             <Input
               label="Instagram"
@@ -251,6 +286,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               maxLength={200}
               showCharCount
               info="Link to your Instagram profile"
+              error={errors.instagram}
             />
             <Input
               label="YouTube"
@@ -260,6 +296,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               maxLength={200}
               showCharCount
               info="Link to your YouTube channel"
+              error={errors.youtube}
             />
           </div>
         </div>
@@ -270,16 +307,14 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               variant="secondary"
               onClick={() => {
                 if (organization) {
-                  const phoneNumber = organization.phone && organization.countryCode
-                    ? `${organization.countryCode}${organization.phone}`
-                    : '';
                   setFormData({
                     companyName: organization.companyName || '',
                     tagline: organization.tagline || '',
                     logo: organization.logo || '',
                     aboutUs: organization.aboutUs || '',
                     email: organization.email || '',
-                    phoneNumber,
+                    countryCode: organization.countryCode || '+91',
+                    phone: organization.phone || '',
                     address: organization.address || '',
                     website: organization.website || '',
                     facebook: organization.facebook || '',

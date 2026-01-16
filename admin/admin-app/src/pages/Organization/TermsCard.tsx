@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { Textarea, Button, Loading } from '../../components/ui/index.js';
 import styles from '../EventsSetup/EventCard.module.css';
 import { organizationApi } from '../../services/api.js';
-import { sanitizeTextInput } from '../../utils/sanitize.js';
+import { sanitizeTextarea } from '../../utils/sanitize.js';
 import type { Organization } from '../../types/index.js';
 
 interface TermsCardProps {
@@ -19,14 +19,11 @@ export const TermsCard: FC<TermsCardProps> = ({
   onSuccess,
   onError,
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
   const [formData, setFormData] = useState({
     termsOfService: '',
     termsOfPayment: '',
-    cancellationPolicy: '',
-    refundPolicy: '',
   });
 
   useEffect(() => {
@@ -34,8 +31,6 @@ export const TermsCard: FC<TermsCardProps> = ({
       setFormData({
         termsOfService: organization.termsOfService || '',
         termsOfPayment: organization.termsOfPayment || '',
-        cancellationPolicy: organization.cancellationPolicy || '',
-        refundPolicy: organization.refundPolicy || '',
       });
     }
   }, [organization]);
@@ -47,17 +42,14 @@ export const TermsCard: FC<TermsCardProps> = ({
     }
 
     const sanitizedData = {
-      termsOfService: sanitizeTextInput(formData.termsOfService),
-      termsOfPayment: sanitizeTextInput(formData.termsOfPayment),
-      cancellationPolicy: sanitizeTextInput(formData.cancellationPolicy),
-      refundPolicy: sanitizeTextInput(formData.refundPolicy),
+      termsOfService: sanitizeTextarea(formData.termsOfService),
+      termsOfPayment: sanitizeTextarea(formData.termsOfPayment),
     };
 
     try {
       setIsSaving(true);
       await organizationApi.update(sanitizedData);
-      onSuccess('Terms and policies updated successfully');
-      setIsEditing(false);
+      onSuccess('Terms updated successfully');
     } catch (error: any) {
       onError(error.message || 'Failed to update terms and policies');
     } finally {
@@ -109,103 +101,107 @@ export const TermsCard: FC<TermsCardProps> = ({
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
               Terms of Service
             </label>
-            <Textarea
-              value={formData.termsOfService}
-              onChange={(e) => setFormData({ ...formData, termsOfService: e.target.value })}
-              placeholder="Enter your terms of service..."
-              disabled={!isEditing}
-              rows={8}
-            />
-            <p style={{ marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              General terms and conditions for your services
-            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <Textarea
+                value={formData.termsOfService}
+                onChange={(e) => setFormData({ ...formData, termsOfService: e.target.value })}
+                placeholder="Enter your terms of service (one per line)..."
+                rows={8}
+                maxLength={2000}
+                showCharCount
+                info="General terms and conditions for your services. Each line will appear as a bullet point."
+              />
+              <div style={{ 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '8px', 
+                padding: '12px 16px',
+                backgroundColor: 'var(--background-secondary)',
+                fontSize: '14px',
+                lineHeight: '1.6',
+                maxHeight: '280px',
+                overflowY: 'auto'
+              }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--text-secondary)' }}>Preview:</div>
+                {formData.termsOfService ? (
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)' }}>
+                    {formData.termsOfService.split('\n').filter(line => line.trim()).map((line, index) => (
+                      <li key={index} style={{ marginBottom: '4px', wordWrap: 'break-word' }}>{line.trim()}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic' }}>
+                    Your terms will appear here as bullet points
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
 
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
               Terms of Payment
             </label>
-            <Textarea
-              value={formData.termsOfPayment}
-              onChange={(e) => setFormData({ ...formData, termsOfPayment: e.target.value })}
-              placeholder="Enter your payment terms..."
-              disabled={!isEditing}
-              rows={6}
-            />
-            <p style={{ marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Payment schedule, methods, and late payment policies
-            </p>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
-              Cancellation Policy
-            </label>
-            <Textarea
-              value={formData.cancellationPolicy}
-              onChange={(e) => setFormData({ ...formData, cancellationPolicy: e.target.value })}
-              placeholder="Enter your cancellation policy..."
-              disabled={!isEditing}
-              rows={6}
-            />
-            <p style={{ marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Rules and conditions for booking cancellations
-            </p>
-          </div>
-
-          <div>
-            <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
-              Refund Policy
-            </label>
-            <Textarea
-              value={formData.refundPolicy}
-              onChange={(e) => setFormData({ ...formData, refundPolicy: e.target.value })}
-              placeholder="Enter your refund policy..."
-              disabled={!isEditing}
-              rows={6}
-            />
-            <p style={{ marginTop: '6px', fontSize: '13px', color: 'var(--text-secondary)' }}>
-              Conditions and process for refunds
-            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+              <Textarea
+                value={formData.termsOfPayment}
+                onChange={(e) => setFormData({ ...formData, termsOfPayment: e.target.value })}
+                placeholder="Enter your payment terms (one per line)..."
+                rows={6}
+                maxLength={1000}
+                showCharCount
+                info="Payment schedule, methods, and late payment policies. Each line will appear as a bullet point."
+              />
+              <div style={{ 
+                border: '1px solid var(--border-color)', 
+                borderRadius: '8px', 
+                padding: '12px 16px',
+                backgroundColor: 'var(--background-secondary)',
+                fontSize: '14px',
+                lineHeight: '1.6',
+                maxHeight: '200px',
+                overflowY: 'auto'
+              }}>
+                <div style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--text-secondary)' }}>Preview:</div>
+                {formData.termsOfPayment ? (
+                  <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)' }}>
+                    {formData.termsOfPayment.split('\n').filter(line => line.trim()).map((line, index) => (
+                      <li key={index} style={{ marginBottom: '4px', wordWrap: 'break-word' }}>{line.trim()}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p style={{ color: 'var(--text-secondary)', margin: 0, fontStyle: 'italic' }}>
+                    Your payment terms will appear here as bullet points
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', marginTop: '16px', borderTop: '1px solid var(--border-color)' }}>
-          {isEditing ? (
-            <>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setIsEditing(false);
-                  if (organization) {
-                    setFormData({
-                      termsOfService: organization.termsOfService || '',
-                      termsOfPayment: organization.termsOfPayment || '',
-                      cancellationPolicy: organization.cancellationPolicy || '',
-                      refundPolicy: organization.refundPolicy || '',
-                    });
-                  }
-                }}
-                disabled={isSaving}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="primary"
-                onClick={handleSave}
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </>
-          ) : (
+          {organization && (
             <Button
-              variant="primary"
-              onClick={() => setIsEditing(true)}
+              variant="secondary"
+              onClick={() => {
+                if (organization) {
+                  setFormData({
+                    termsOfService: organization.termsOfService || '',
+                    termsOfPayment: organization.termsOfPayment || '',
+                  });
+                }
+              }}
+              disabled={isSaving}
             >
-              Edit Terms
+              Reset
             </Button>
           )}
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving...' : 'Save Changes'}
+          </Button>
         </div>
       </div>
     </div>

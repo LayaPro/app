@@ -94,6 +94,9 @@ const countries: Country[] = [
   { code: 'YE', name: 'Yemen', dialCode: '+967', flag: '🇾🇪', maxLength: 9 },
 ];
 
+// Export countries for use in other components
+export { countries };
+
 interface PhoneInputProps {
   label: string;
   value: string;
@@ -197,18 +200,28 @@ export const PhoneInput: React.FC<PhoneInputProps> = ({
     }
   }, [focusedIndex, isOpen]);
 
-  // Parse initial value
+  // Parse initial value and update when value changes
   useEffect(() => {
+    console.log('PhoneInput received value:', value);
     if (value) {
-      const matchedCountry = countries.find(c => value.startsWith(c.dialCode));
+      // Sort countries by dial code length (longest first) to match correctly
+      const sortedCountries = [...countries].sort((a, b) => b.dialCode.length - a.dialCode.length);
+      const matchedCountry = sortedCountries.find(c => value.startsWith(c.dialCode));
+      console.log('Matched country:', matchedCountry);
       if (matchedCountry) {
         setCountryCode(matchedCountry.dialCode);
-        setPhoneNumber(value.substring(matchedCountry.dialCode.length));
+        const extractedPhone = value.substring(matchedCountry.dialCode.length);
+        console.log('Setting phoneNumber to:', extractedPhone);
+        setPhoneNumber(extractedPhone);
       } else {
+        console.log('No country matched, setting full value as phone');
         setPhoneNumber(value);
       }
+    } else {
+      setCountryCode('+91');
+      setPhoneNumber('');
     }
-  }, []);
+  }, [value]);
 
   const selectedCountry = countries.find(c => c.dialCode === countryCode) || countries[0];
   const filteredCountries = countries.filter(c =>
