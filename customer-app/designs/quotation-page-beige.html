@@ -1,0 +1,1381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Quotation | Laya Productions</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-cream: #F5F0E8;
+            --bg-warm: #EDE6DB;
+            --bg-card: #FDFBF7;
+            --brown-dark: #3D2B1F;
+            --brown-medium: #5C4033;
+            --brown-light: #8B6914;
+            --brown-accent: #A67B5B;
+            --gold: #B8860B;
+            --gold-light: #DAA520;
+            --text-muted: #7D6B5D;
+            --border-light: rgba(61, 43, 31, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--bg-cream);
+            color: var(--brown-dark);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        /* Artistic Watermark Background */
+        .watermark-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .watermark-bg::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='none' stroke='%23A67B5B' stroke-width='0.5' opacity='0.08' d='M100,10 Q150,50 140,100 Q130,150 100,190 Q70,150 60,100 Q50,50 100,10 Z'/%3E%3C/svg%3E");
+            background-size: 300px 300px;
+            animation: floatWatermark 60s linear infinite;
+        }
+
+        .watermark-bg::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%23B8860B' stroke-width='0.3' opacity='0.05'/%3E%3Ccircle cx='50' cy='50' r='30' fill='none' stroke='%23B8860B' stroke-width='0.3' opacity='0.05'/%3E%3Ccircle cx='50' cy='50' r='20' fill='none' stroke='%23B8860B' stroke-width='0.3' opacity='0.05'/%3E%3C/svg%3E");
+            background-size: 400px 400px;
+            animation: floatWatermark2 80s linear infinite reverse;
+        }
+
+        @keyframes floatWatermark {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(-50px, -50px) rotate(360deg); }
+        }
+
+        @keyframes floatWatermark2 {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            100% { transform: translate(30px, 30px) rotate(-360deg); }
+        }
+
+        /* Floral Corner Decorations */
+        .floral-corner {
+            position: fixed;
+            width: 300px;
+            height: 300px;
+            pointer-events: none;
+            z-index: 1;
+            opacity: 0.12;
+        }
+
+        .floral-corner.top-left {
+            top: 0;
+            left: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='none' stroke='%235C4033' stroke-width='1.5' d='M0,100 Q50,80 80,50 Q100,20 100,0 M0,80 Q40,60 60,40 Q80,15 80,0 M0,60 Q30,45 45,30 Q60,10 60,0 M0,150 Q80,130 120,80 Q150,40 150,0 M0,180 Q100,160 150,100 Q180,50 180,0'/%3E%3Ccircle cx='80' cy='50' r='3' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='60' cy='40' r='2' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='120' cy='80' r='4' fill='%23B8860B' opacity='0.5'/%3E%3C/svg%3E") no-repeat;
+            background-size: contain;
+        }
+
+        .floral-corner.top-right {
+            top: 0;
+            right: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='none' stroke='%235C4033' stroke-width='1.5' d='M200,100 Q150,80 120,50 Q100,20 100,0 M200,80 Q160,60 140,40 Q120,15 120,0 M200,60 Q170,45 155,30 Q140,10 140,0 M200,150 Q120,130 80,80 Q50,40 50,0 M200,180 Q100,160 50,100 Q20,50 20,0'/%3E%3Ccircle cx='120' cy='50' r='3' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='140' cy='40' r='2' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='80' cy='80' r='4' fill='%23B8860B' opacity='0.5'/%3E%3C/svg%3E") no-repeat;
+            background-size: contain;
+        }
+
+        .floral-corner.bottom-left {
+            bottom: 0;
+            left: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='none' stroke='%235C4033' stroke-width='1.5' d='M0,100 Q50,120 80,150 Q100,180 100,200 M0,120 Q40,140 60,160 Q80,185 80,200 M0,140 Q30,155 45,170 Q60,190 60,200 M0,50 Q80,70 120,120 Q150,160 150,200 M0,20 Q100,40 150,100 Q180,150 180,200'/%3E%3Ccircle cx='80' cy='150' r='3' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='60' cy='160' r='2' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='120' cy='120' r='4' fill='%23B8860B' opacity='0.5'/%3E%3C/svg%3E") no-repeat;
+            background-size: contain;
+        }
+
+        .floral-corner.bottom-right {
+            bottom: 0;
+            right: 0;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cpath fill='none' stroke='%235C4033' stroke-width='1.5' d='M200,100 Q150,120 120,150 Q100,180 100,200 M200,120 Q160,140 140,160 Q120,185 120,200 M200,140 Q170,155 155,170 Q140,190 140,200 M200,50 Q120,70 80,120 Q50,160 50,200 M200,20 Q100,40 50,100 Q20,150 20,200'/%3E%3Ccircle cx='120' cy='150' r='3' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='140' cy='160' r='2' fill='%23B8860B' opacity='0.5'/%3E%3Ccircle cx='80' cy='120' r='4' fill='%23B8860B' opacity='0.5'/%3E%3C/svg%3E") no-repeat;
+            background-size: contain;
+        }
+
+        /* Content wrapper */
+        .content-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Typography */
+        h1, h2, h3, h4, h5 {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 500;
+            color: var(--brown-dark);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: linear-gradient(135deg, var(--bg-cream) 0%, var(--bg-warm) 100%);
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(184, 134, 11, 0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            text-align: center;
+            padding: 2rem;
+            max-width: 900px;
+            animation: fadeInUp 1.2s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hero-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            letter-spacing: 8px;
+            text-transform: uppercase;
+            color: var(--brown-accent);
+            margin-bottom: 3rem;
+            position: relative;
+            display: inline-block;
+        }
+
+        .hero-logo::before,
+        .hero-logo::after {
+            content: '✦';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gold);
+            font-size: 0.8rem;
+        }
+
+        .hero-logo::before {
+            left: -30px;
+        }
+
+        .hero-logo::after {
+            right: -30px;
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 6rem);
+            font-weight: 300;
+            line-height: 1.1;
+            margin-bottom: 1rem;
+            color: var(--brown-dark);
+        }
+
+        .hero h1 span {
+            display: block;
+            font-style: italic;
+            color: var(--gold);
+        }
+
+        .hero-tagline {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-style: italic;
+            color: var(--brown-medium);
+            margin-bottom: 2rem;
+        }
+
+        .hero-couple {
+            font-size: 1rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 1.5rem 3rem;
+            border: 1px solid var(--border-light);
+            display: inline-block;
+            margin-top: 2rem;
+            background: rgba(253, 251, 247, 0.5);
+        }
+
+        .scroll-indicator {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            color: var(--brown-accent);
+            font-size: 0.75rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            animation: bounce 2s infinite;
+        }
+
+        .scroll-indicator svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--gold);
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); }
+            40% { transform: translateX(-50%) translateY(-10px); }
+            60% { transform: translateX(-50%) translateY(-5px); }
+        }
+
+        /* Section Styles */
+        section {
+            padding: 100px 5%;
+            position: relative;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+
+        .section-label {
+            font-size: 0.75rem;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 1rem;
+            display: block;
+        }
+
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-divider {
+            width: 80px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold), transparent);
+            margin: 0 auto;
+        }
+
+        /* About Section */
+        .about {
+            background: var(--bg-warm);
+        }
+
+        .about-content {
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .about-text {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.4rem;
+            line-height: 2;
+            color: var(--brown-medium);
+            margin-bottom: 3rem;
+        }
+
+        .about-stats {
+            display: flex;
+            justify-content: center;
+            gap: 60px;
+            flex-wrap: wrap;
+            margin-top: 3rem;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 2rem;
+            background: var(--bg-card);
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(61, 43, 31, 0.05);
+            min-width: 180px;
+        }
+
+        .stat-number {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 3rem;
+            font-weight: 600;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Deliverables Section */
+        .deliverables {
+            background: var(--bg-cream);
+        }
+
+        .deliverables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .deliverable-card {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(61, 43, 31, 0.05);
+            transition: all 0.4s ease;
+            border: 1px solid transparent;
+        }
+
+        .deliverable-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 0;
+            background: linear-gradient(180deg, var(--gold), var(--brown-accent));
+            transition: height 0.4s ease;
+        }
+
+        .deliverable-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 60px rgba(61, 43, 31, 0.1);
+            border-color: var(--border-light);
+        }
+
+        .deliverable-card:hover::before {
+            height: 100%;
+        }
+
+        .deliverable-icon {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 1.5rem;
+            color: var(--gold);
+        }
+
+        .deliverable-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--brown-dark);
+        }
+
+        .deliverable-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            line-height: 1.8;
+        }
+
+        /* Events Section */
+        .events {
+            background: var(--bg-warm);
+        }
+
+        .events-table-wrapper {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(61, 43, 31, 0.08);
+        }
+
+        .events-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .events-table thead {
+            background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown-medium) 100%);
+        }
+
+        .events-table th {
+            padding: 20px 30px;
+            text-align: left;
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: var(--bg-cream);
+            letter-spacing: 1px;
+        }
+
+        .events-table td {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--brown-medium);
+        }
+
+        .events-table tbody tr {
+            transition: background 0.3s ease;
+        }
+
+        .events-table tbody tr:hover {
+            background: rgba(184, 134, 11, 0.05);
+        }
+
+        .events-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .event-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--brown-dark);
+        }
+
+        .crew-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 14px;
+            background: rgba(184, 134, 11, 0.1);
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--brown-medium);
+        }
+
+        .crew-badge svg {
+            width: 16px;
+            height: 16px;
+            color: var(--gold);
+        }
+
+        /* Pricing Section */
+        .pricing {
+            background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown-medium) 100%);
+            color: var(--bg-cream);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .pricing::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%23B8860B' stroke-width='0.3' opacity='0.1'/%3E%3C/svg%3E");
+            background-size: 200px 200px;
+            animation: floatWatermark 60s linear infinite;
+        }
+
+        .pricing .section-label {
+            color: var(--gold-light);
+        }
+
+        .pricing .section-title {
+            color: var(--bg-cream);
+        }
+
+        .pricing .section-divider {
+            background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+        }
+
+        .price-display {
+            position: relative;
+            z-index: 1;
+            margin: 60px 0;
+        }
+
+        .price-amount {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(4rem, 12vw, 8rem);
+            font-weight: 300;
+            color: var(--bg-cream);
+            line-height: 1;
+        }
+
+        .price-amount .currency {
+            font-size: 0.4em;
+            vertical-align: top;
+            color: var(--gold-light);
+        }
+
+        .price-note {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            font-style: italic;
+            color: rgba(245, 240, 232, 0.7);
+            margin-top: 1rem;
+        }
+
+        .price-validity {
+            display: inline-block;
+            padding: 12px 30px;
+            border: 1px solid rgba(184, 134, 11, 0.4);
+            margin-top: 2rem;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold-light);
+        }
+
+        /* Add-ons Section */
+        .addons {
+            background: var(--bg-cream);
+        }
+
+        .addons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 25px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .addon-card {
+            background: var(--bg-card);
+            padding: 35px;
+            border-radius: 4px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(61, 43, 31, 0.05);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-light);
+        }
+
+        .addon-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 50px rgba(61, 43, 31, 0.1);
+        }
+
+        .addon-card h4 {
+            font-size: 1.3rem;
+            margin-bottom: 0.75rem;
+            color: var(--brown-dark);
+        }
+
+        .addon-price {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--gold);
+        }
+
+        .addon-note {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Terms Section */
+        .terms {
+            background: var(--bg-warm);
+        }
+
+        .terms-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 40px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .terms-block {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(61, 43, 31, 0.05);
+        }
+
+        .terms-block h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: var(--brown-dark);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .terms-block h3 svg {
+            width: 28px;
+            height: 28px;
+            color: var(--gold);
+        }
+
+        .terms-list {
+            list-style: none;
+        }
+
+        .terms-list li {
+            padding: 12px 0;
+            padding-left: 28px;
+            position: relative;
+            color: var(--brown-medium);
+            border-bottom: 1px solid var(--border-light);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .terms-list li:last-child {
+            border-bottom: none;
+        }
+
+        .terms-list li::before {
+            content: '✦';
+            position: absolute;
+            left: 0;
+            color: var(--gold);
+            font-size: 0.7rem;
+        }
+
+        /* Payment Section */
+        .payment {
+            background: var(--bg-cream);
+        }
+
+        .payment-timeline {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .payment-timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, var(--gold), var(--brown-accent));
+            transform: translateX(-50%);
+        }
+
+        .payment-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .payment-item:nth-child(odd) {
+            flex-direction: row;
+        }
+
+        .payment-item:nth-child(even) {
+            flex-direction: row-reverse;
+        }
+
+        .payment-content {
+            width: calc(50% - 50px);
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 10px 40px rgba(61, 43, 31, 0.05);
+        }
+
+        .payment-item:nth-child(odd) .payment-content {
+            text-align: right;
+            margin-right: 50px;
+        }
+
+        .payment-item:nth-child(even) .payment-content {
+            text-align: left;
+            margin-left: 50px;
+        }
+
+        .payment-dot {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 20px;
+            background: var(--gold);
+            border-radius: 50%;
+            border: 4px solid var(--bg-cream);
+            z-index: 1;
+        }
+
+        .payment-percent {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 2.5rem;
+            font-weight: 600;
+            color: var(--gold);
+            line-height: 1;
+        }
+
+        .payment-label {
+            font-size: 1.1rem;
+            color: var(--brown-dark);
+            margin-top: 0.5rem;
+            font-weight: 500;
+        }
+
+        .payment-desc {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* CTA Section */
+        .cta {
+            background: linear-gradient(135deg, var(--bg-warm) 0%, var(--bg-cream) 100%);
+            text-align: center;
+            padding: 120px 5%;
+        }
+
+        .cta-content {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .cta h2 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 1.5rem;
+            color: var(--brown-dark);
+        }
+
+        .cta p {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.3rem;
+            color: var(--brown-medium);
+            margin-bottom: 2.5rem;
+        }
+
+        .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 45px;
+            background: linear-gradient(135deg, var(--brown-dark) 0%, var(--brown-medium) 100%);
+            color: var(--bg-cream);
+            text-decoration: none;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(61, 43, 31, 0.2);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(61, 43, 31, 0.3);
+        }
+
+        .cta-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--brown-dark);
+            color: var(--bg-cream);
+            text-align: center;
+            padding: 60px 5%;
+        }
+
+        .footer-logo {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            letter-spacing: 6px;
+            text-transform: uppercase;
+            color: var(--gold-light);
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-contact {
+            font-size: 0.9rem;
+            color: rgba(245, 240, 232, 0.7);
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-contact a {
+            color: var(--gold-light);
+            text-decoration: none;
+        }
+
+        .footer-divider {
+            width: 60px;
+            height: 1px;
+            background: var(--gold);
+            margin: 2rem auto;
+            opacity: 0.5;
+        }
+
+        .footer-copy {
+            font-size: 0.8rem;
+            color: rgba(245, 240, 232, 0.5);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .floral-corner {
+                width: 150px;
+                height: 150px;
+            }
+
+            .about-stats {
+                gap: 20px;
+            }
+
+            .stat-item {
+                min-width: 140px;
+                padding: 1.5rem;
+            }
+
+            .events-table th,
+            .events-table td {
+                padding: 15px;
+            }
+
+            .payment-timeline::before {
+                left: 20px;
+            }
+
+            .payment-item,
+            .payment-item:nth-child(even) {
+                flex-direction: column;
+                align-items: flex-start;
+                padding-left: 50px;
+            }
+
+            .payment-content,
+            .payment-item:nth-child(odd) .payment-content,
+            .payment-item:nth-child(even) .payment-content {
+                width: 100%;
+                text-align: left;
+                margin: 0;
+            }
+
+            .payment-dot {
+                left: 20px;
+            }
+
+            .terms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Scroll Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease;
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <!-- Artistic Watermark Background -->
+    <div class="watermark-bg"></div>
+    
+    <!-- Floral Corner Decorations -->
+    <div class="floral-corner top-left"></div>
+    <div class="floral-corner top-right"></div>
+    <div class="floral-corner bottom-left"></div>
+    <div class="floral-corner bottom-right"></div>
+
+    <div class="content-wrapper">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <span class="hero-logo">Laya Productions</span>
+                <h1>
+                    Capturing Your
+                    <span>Forever</span>
+                </h1>
+                <p class="hero-tagline">Every Frame Tells Your Love Story</p>
+                <div class="hero-couple">Neehar & Bride</div>
+            </div>
+            <div class="scroll-indicator">
+                <span>Scroll</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M19 12l-7 7-7-7"/>
+                </svg>
+            </div>
+        </section>
+
+        <!-- About Section -->
+        <section class="about">
+            <div class="section-header reveal">
+                <span class="section-label">About Us</span>
+                <h2 class="section-title">Our Story</h2>
+                <div class="section-divider"></div>
+            </div>
+            <div class="about-content reveal">
+                <p class="about-text">
+                    Laya Productions is a team of passionate storytellers dedicated to capturing the essence of your special day. 
+                    With years of experience in wedding cinematography, we transform fleeting moments into timeless memories. 
+                    Our approach combines artistic vision with technical excellence, ensuring every frame reflects the beauty 
+                    and emotion of your celebration.
+                </p>
+                <div class="about-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">200+</div>
+                        <div class="stat-label">Weddings Captured</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Client Satisfaction</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">5+</div>
+                        <div class="stat-label">Years Experience</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Deliverables Section -->
+        <section class="deliverables">
+            <div class="section-header reveal">
+                <span class="section-label">What You Get</span>
+                <h2 class="section-title">Our Deliverables</h2>
+                <div class="section-divider"></div>
+            </div>
+            <div class="deliverables-grid">
+                <div class="deliverable-card reveal">
+                    <svg class="deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="2" y="3" width="20" height="14" rx="2"/>
+                        <path d="M8 21h8M12 17v4"/>
+                        <polygon points="10,8 10,12 14,10" fill="currentColor"/>
+                    </svg>
+                    <h3>Wedding Film</h3>
+                    <p>A cinematic masterpiece capturing every precious moment of your wedding day, edited to perfection with professional color grading.</p>
+                </div>
+                <div class="deliverable-card reveal">
+                    <svg class="deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                    <h3>Highlight Reel</h3>
+                    <p>A 3-5 minute highlight video perfect for sharing on social media, capturing the essence of your celebration.</p>
+                </div>
+                <div class="deliverable-card reveal">
+                    <svg class="deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <circle cx="8.5" cy="8.5" r="1.5"/>
+                        <path d="M21 15l-5-5L5 21"/>
+                    </svg>
+                    <h3>Pre-Wedding Shoot</h3>
+                    <p>A romantic photo and video session at the location of your choice, creating beautiful memories before the big day.</p>
+                </div>
+                <div class="deliverable-card reveal">
+                    <svg class="deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M14.5 4h-5L7 7H4a2 2 0 00-2 2v9a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2h-3l-2.5-3z"/>
+                        <circle cx="12" cy="13" r="3"/>
+                    </svg>
+                    <h3>Candid Photography</h3>
+                    <p>Natural, unposed moments captured throughout your events, showcasing genuine emotions and interactions.</p>
+                </div>
+                <div class="deliverable-card reveal">
+                    <svg class="deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="4" y="4" width="16" height="16" rx="2"/>
+                        <rect x="9" y="9" width="6" height="6"/>
+                        <line x1="9" y1="2" x2="9" y2="4"/>
+                        <line x1="15" y1="2" x2="15" y2="4"/>
+                        <line x1="9" y1="20" x2="9" y2="22"/>
+                        <line x1="15" y1="20" x2="15" y2="22"/>
+                        <line x1="2" y1="9" x2="4" y2="9"/>
+                        <line x1="2" y1="15" x2="4" y2="15"/>
+                        <line x1="20" y1="9" x2="22" y2="9"/>
+                        <line x1="20" y1="15" x2="22" y2="15"/>
+                    </svg>
+                    <h3>Drone Coverage</h3>
+                    <p>Breathtaking aerial shots that capture the grandeur of your venue and celebrations from a unique perspective.</p>
+                </div>
+                <div class="deliverable-card reveal">
+                    <svg class="deliverable-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
+                        <line x1="12" y1="6" x2="12" y2="12"/>
+                        <line x1="9" y1="9" x2="15" y2="9"/>
+                    </svg>
+                    <h3>Photo Album</h3>
+                    <p>A premium quality printed album with carefully curated photographs, designed to last a lifetime.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Events Section -->
+        <section class="events">
+            <div class="section-header reveal">
+                <span class="section-label">Coverage</span>
+                <h2 class="section-title">Events We'll Capture</h2>
+                <div class="section-divider"></div>
+            </div>
+            <div class="events-table-wrapper reveal">
+                <table class="events-table">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Photography</th>
+                            <th>Videography</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="event-name">Mehendi</span></td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    1 Photographer
+                                </span>
+                            </td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    1 Videographer
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="event-name">Haldi</span></td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    1 Photographer
+                                </span>
+                            </td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    1 Videographer
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="event-name">Wedding</span></td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 010 7.75"/>
+                                    </svg>
+                                    2 Photographers
+                                </span>
+                            </td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 010 7.75"/>
+                                    </svg>
+                                    2 Videographers
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="event-name">Reception</span></td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 010 7.75"/>
+                                    </svg>
+                                    2 Photographers
+                                </span>
+                            </td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 010 7.75"/>
+                                    </svg>
+                                    2 Videographers
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="event-name">Sangeet</span></td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    1 Photographer
+                                </span>
+                            </td>
+                            <td>
+                                <span class="crew-badge">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                        <circle cx="12" cy="7" r="4"/>
+                                    </svg>
+                                    1 Videographer
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Pricing Section -->
+        <section class="pricing">
+            <div class="section-header reveal">
+                <span class="section-label">Investment</span>
+                <h2 class="section-title">Your Package</h2>
+                <div class="section-divider"></div>
+            </div>
+            <div class="price-display reveal">
+                <div class="price-amount">
+                    <span class="currency">₹</span>4,35,000
+                </div>
+                <p class="price-note">All inclusive package for your complete wedding coverage</p>
+                <div class="price-validity">Valid until February 2026</div>
+            </div>
+        </section>
+
+        <!-- Add-ons Section -->
+        <section class="addons">
+            <div class="section-header reveal">
+                <span class="section-label">Enhance Your Package</span>
+                <h2 class="section-title">Add-On Services</h2>
+                <div class="section-divider"></div>
+            </div>
+            <div class="addons-grid">
+                <div class="addon-card reveal">
+                    <h4>Premium Albums</h4>
+                    <div class="addon-price">₹25,000 - ₹30,000</div>
+                    <p class="addon-note">12x36 / 12x30 sizes available</p>
+                </div>
+                <div class="addon-card reveal">
+                    <h4>Web Live Streaming</h4>
+                    <div class="addon-price">₹10,000</div>
+                    <p class="addon-note">Per event</p>
+                </div>
+                <div class="addon-card reveal">
+                    <h4>LED Wall Display</h4>
+                    <div class="addon-price">₹15,000</div>
+                    <p class="addon-note">Live event projection</p>
+                </div>
+                <div class="addon-card reveal">
+                    <h4>Social Media Reels</h4>
+                    <div class="addon-price">₹15,000</div>
+                    <p class="addon-note">Instagram & YouTube shorts</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Terms Section -->
+        <section class="terms">
+            <div class="section-header reveal">
+                <span class="section-label">Important Information</span>
+                <h2 class="section-title">Terms & Conditions</h2>
+                <div class="section-divider"></div>
+            </div>
+            <div class="terms-grid">
+                <div class="terms-block reveal">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+                        </svg>
+                        Terms of Service
+                    </h3>
+                    <ul class="terms-list">
+                        <li>Travel and accommodation to be arranged by the client for outstation events</li>
+                        <li>Raw footage will not be provided; only edited final deliverables</li>
+                        <li>Delivery timeline: 45-60 working days after the event</li>
+                        <li>One round of revisions included in the package</li>
+                        <li>Additional revisions charged at ₹2,000 per revision</li>
+                        <li>Copyright remains with Laya Productions; usage rights granted to client</li>
+                    </ul>
+                </div>
+                <div class="terms-block reveal">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
+                        Payment Terms
+                    </h3>
+                    <ul class="terms-list">
+                        <li>50% advance payment required to confirm the booking</li>
+                        <li>45% payment due on the day of the main event</li>
+                        <li>5% final payment upon album delivery</li>
+                        <li>Payments accepted via Bank Transfer, UPI, or Cheque</li>
+                        <li>Booking is confirmed only after advance payment receipt</li>
+                        <li>Cancellation policy: Advance is non-refundable</li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <!-- Payment Timeline -->
+        <section class="payment">
+            <div class="section-header reveal">
+                <span class="section-label">Payment Schedule</span>
+                <h2 class="section-title">How to Pay</h2>
+                <div class="section-divider"></div>
+            </div>
+            <div class="payment-timeline">
+                <div class="payment-item reveal">
+                    <div class="payment-content">
+                        <div class="payment-percent">50%</div>
+                        <div class="payment-label">Advance Payment</div>
+                        <div class="payment-desc">₹2,17,500 to confirm booking</div>
+                    </div>
+                    <div class="payment-dot"></div>
+                </div>
+                <div class="payment-item reveal">
+                    <div class="payment-content">
+                        <div class="payment-percent">45%</div>
+                        <div class="payment-label">Event Day</div>
+                        <div class="payment-desc">₹1,95,750 on wedding day</div>
+                    </div>
+                    <div class="payment-dot"></div>
+                </div>
+                <div class="payment-item reveal">
+                    <div class="payment-content">
+                        <div class="payment-percent">5%</div>
+                        <div class="payment-label">Final Payment</div>
+                        <div class="payment-desc">₹21,750 on album delivery</div>
+                    </div>
+                    <div class="payment-dot"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="cta">
+            <div class="cta-content reveal">
+                <h2>Let's Create Magic Together</h2>
+                <p>Ready to make your wedding memories last forever? We can't wait to be part of your special day.</p>
+                <a href="tel:+919876543210" class="cta-button">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+                    </svg>
+                    Contact Us
+                </a>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            <div class="footer-logo">Laya Productions</div>
+            <p class="footer-contact">
+                <a href="mailto:hello@layaproductions.com">hello@layaproductions.com</a>
+            </p>
+            <p class="footer-contact">
+                <a href="tel:+919876543210">+91 98765 43210</a>
+            </p>
+            <div class="footer-divider"></div>
+            <p class="footer-copy">© 2026 Laya Productions. Crafted with love.</p>
+        </footer>
+    </div>
+
+    <script>
+        // Scroll Reveal Animation
+        const revealElements = document.querySelectorAll('.reveal');
+        
+        const revealOnScroll = () => {
+            revealElements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const windowHeight = window.innerHeight;
+                
+                if (elementTop < windowHeight - 100) {
+                    element.classList.add('active');
+                }
+            });
+        };
+
+        window.addEventListener('scroll', revealOnScroll);
+        window.addEventListener('load', revealOnScroll);
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Parallax effect for watermark
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const watermark = document.querySelector('.watermark-bg');
+            if (watermark) {
+                watermark.style.transform = `translateY(${scrolled * 0.1}px)`;
+            }
+        });
+    </script>
+</body>
+</html>

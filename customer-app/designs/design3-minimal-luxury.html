@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design 3 - Minimal Luxury</title>
+  <link href="https://fonts.googleapis.com/css2?family=Italiana&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg: #FDFBF7;
+      --bg-alt: #F5F0E8;
+      --text-primary: #1A1A1A;
+      --text-secondary: #666666;
+      --accent: #8B7355;
+      --accent-dark: #6B5A47;
+      --white: #FFFFFF;
+      --border: rgba(139, 115, 85, 0.15);
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Jost', sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Smooth page transitions */
+    .page-transition {
+      position: fixed;
+      inset: 0;
+      background: var(--text-primary);
+      z-index: 10000;
+      transform: translateY(100%);
+      animation: slideUp 1.5s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+    }
+
+    @keyframes slideUp {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-100%); }
+    }
+
+    /* Navigation */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 0 80px;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.5s ease;
+    }
+
+    header.scrolled {
+      height: 80px;
+      background: rgba(253, 251, 247, 0.95);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 1px 0 var(--border);
+    }
+
+    .logo {
+      font-family: 'Italiana', serif;
+      font-size: 32px;
+      color: var(--text-primary);
+      text-decoration: none;
+      letter-spacing: 4px;
+    }
+
+    .nav-menu {
+      display: flex;
+      align-items: center;
+      gap: 60px;
+      list-style: none;
+    }
+
+    .nav-menu a {
+      text-decoration: none;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      position: relative;
+      padding: 10px 0;
+      transition: color 0.3s ease;
+    }
+
+    .nav-menu a::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 0;
+      height: 1px;
+      background: var(--accent);
+      transition: width 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    .nav-menu a:hover {
+      color: var(--accent);
+    }
+
+    .nav-menu a:hover::before {
+      width: 100%;
+    }
+
+    .nav-cta {
+      padding: 15px 35px;
+      background: var(--text-primary);
+      color: var(--white) !important;
+      border-radius: 0;
+      transition: all 0.4s ease !important;
+    }
+
+    .nav-cta:hover {
+      background: var(--accent) !important;
+    }
+
+    .nav-cta::before {
+      display: none !important;
+    }
+
+    /* Hero Section */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 0 80px;
+      position: relative;
+    }
+
+    .hero-wrapper {
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .hero-content {
+      padding-right: 60px;
+    }
+
+    .hero-eyebrow {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 30px;
+      overflow: hidden;
+    }
+
+    .hero-eyebrow span {
+      display: inline-block;
+      opacity: 0;
+      transform: translateY(100%);
+      animation: revealText 0.8s ease forwards 0.5s;
+    }
+
+    .hero-title {
+      font-family: 'Italiana', serif;
+      font-size: 80px;
+      font-weight: 400;
+      line-height: 1.05;
+      margin-bottom: 40px;
+      letter-spacing: -1px;
+    }
+
+    .hero-title .line {
+      display: block;
+      overflow: hidden;
+    }
+
+    .hero-title .line span {
+      display: block;
+      opacity: 0;
+      transform: translateY(100%);
+      animation: revealText 1s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+    }
+
+    .hero-title .line:nth-child(1) span { animation-delay: 0.6s; }
+    .hero-title .line:nth-child(2) span { animation-delay: 0.75s; }
+    .hero-title .line:nth-child(3) span { animation-delay: 0.9s; }
+
+    @keyframes revealText {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero-description {
+      font-size: 17px;
+      color: var(--text-secondary);
+      line-height: 1.9;
+      margin-bottom: 50px;
+      max-width: 480px;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards 1.2s;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .hero-actions {
+      display: flex;
+      gap: 30px;
+      align-items: center;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards 1.4s;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px 45px;
+      background: var(--text-primary);
+      color: var(--white);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: all 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      transform: translateX(-101%);
+      transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    .btn-primary:hover::before {
+      transform: translateX(0);
+    }
+
+    .btn-primary span,
+    .btn-primary svg {
+      position: relative;
+      z-index: 1;
+    }
+
+    .btn-primary svg {
+      transition: transform 0.3s ease;
+    }
+
+    .btn-primary:hover svg {
+      transform: translateX(5px);
+    }
+
+    .btn-text {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text-primary);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 1px;
+      transition: color 0.3s ease;
+    }
+
+    .btn-text:hover {
+      color: var(--accent);
+    }
+
+    .btn-text svg {
+      transition: transform 0.3s ease;
+    }
+
+    .btn-text:hover svg {
+      transform: translateX(5px);
+    }
+
+    /* Hero Gallery */
+    .hero-gallery {
+      position: relative;
+      height: 650px;
+      opacity: 0;
+      animation: fadeIn 1s ease forwards 0.8s;
+    }
+
+    .gallery-main {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      width: 420px;
+      height: 550px;
+      overflow: hidden;
+    }
+
+    .gallery-main img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      animation: scaleIn 1.5s cubic-bezier(0.76, 0, 0.24, 1) forwards 0.8s;
+      transform: scale(1.2);
+    }
+
+    @keyframes scaleIn {
+      to { transform: scale(1); }
+    }
+
+    .gallery-secondary {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 280px;
+      height: 350px;
+      overflow: hidden;
+      z-index: 2;
+      box-shadow: 30px 30px 60px rgba(0, 0, 0, 0.1);
+    }
+
+    .gallery-secondary img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      animation: scaleIn 1.5s cubic-bezier(0.76, 0, 0.24, 1) forwards 1s;
+      transform: scale(1.2);
+    }
+
+    .gallery-decoration {
+      position: absolute;
+      top: 0;
+      left: 80px;
+      width: 200px;
+      height: 250px;
+      border: 1px solid var(--accent);
+      opacity: 0;
+      animation: fadeIn 1s ease forwards 1.2s;
+    }
+
+    /* Marquee */
+    .marquee {
+      background: var(--text-primary);
+      padding: 25px 0;
+      overflow: hidden;
+    }
+
+    .marquee-content {
+      display: flex;
+      gap: 80px;
+      animation: marquee 30s linear infinite;
+      white-space: nowrap;
+    }
+
+    .marquee-item {
+      display: flex;
+      align-items: center;
+      gap: 80px;
+      font-family: 'Italiana', serif;
+      font-size: 20px;
+      color: var(--bg);
+      letter-spacing: 4px;
+    }
+
+    .marquee-item::after {
+      content: '✦';
+      color: var(--accent);
+    }
+
+    @keyframes marquee {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+
+    /* Section Styles */
+    section {
+      padding: 150px 80px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .section-title {
+      font-family: 'Italiana', serif;
+      font-size: 56px;
+      font-weight: 400;
+      line-height: 1.15;
+      margin-bottom: 30px;
+    }
+
+    /* About Section */
+    .about {
+      background: var(--bg-alt);
+    }
+
+    .about-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 120px;
+      align-items: center;
+    }
+
+    .about-content p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 2;
+      margin-bottom: 40px;
+    }
+
+    .about-stats {
+      display: flex;
+      gap: 60px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .stat {
+      text-align: left;
+    }
+
+    .stat-value {
+      font-family: 'Italiana', serif;
+      font-size: 56px;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 10px;
+      letter-spacing: 1px;
+    }
+
+    .about-image {
+      position: relative;
+    }
+
+    .about-image img {
+      width: 100%;
+      height: 600px;
+      object-fit: cover;
+    }
+
+    .about-image::after {
+      content: '';
+      position: absolute;
+      bottom: -30px;
+      left: -30px;
+      width: 100%;
+      height: 100%;
+      border: 1px solid var(--accent);
+      z-index: -1;
+    }
+
+    /* Services */
+    .services {
+      background: var(--bg);
+    }
+
+    .services-header {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 80px;
+    }
+
+    .services-header p {
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    .services-grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 30px;
+    }
+
+    .service-card {
+      padding: 50px 35px;
+      background: var(--bg-alt);
+      border: 1px solid transparent;
+      transition: all 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+      position: relative;
+    }
+
+    .service-card::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: var(--accent);
+      transform: scaleX(0);
+      transition: transform 0.5s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    .service-card:hover {
+      background: var(--white);
+      border-color: var(--border);
+      transform: translateY(-10px);
+    }
+
+    .service-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .service-number {
+      font-family: 'Italiana', serif;
+      font-size: 48px;
+      color: var(--border);
+      margin-bottom: 30px;
+      line-height: 1;
+    }
+
+    .service-card h3 {
+      font-family: 'Italiana', serif;
+      font-size: 26px;
+      font-weight: 400;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+    }
+
+    .service-card p {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+    }
+
+    /* Portfolio */
+    .portfolio {
+      background: var(--text-primary);
+      color: var(--white);
+    }
+
+    .portfolio .section-title {
+      color: var(--white);
+    }
+
+    .portfolio-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      max-width: 1400px;
+      margin: 0 auto 60px;
+    }
+
+    .portfolio-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: gap 0.3s ease;
+    }
+
+    .portfolio-link:hover {
+      gap: 15px;
+    }
+
+    .portfolio-grid {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    .portfolio-item {
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    .portfolio-item::before {
+      content: '';
+      display: block;
+      padding-top: 120%;
+    }
+
+    .portfolio-item:first-child {
+      grid-row: span 2;
+    }
+
+    .portfolio-item:first-child::before {
+      padding-top: calc(240% + 30px);
+    }
+
+    .portfolio-item img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 1s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    .portfolio-item:hover img {
+      transform: scale(1.1);
+    }
+
+    .portfolio-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(26, 26, 26, 0.9) 0%, transparent 50%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 40px;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .portfolio-item:hover .portfolio-overlay {
+      opacity: 1;
+    }
+
+    .portfolio-overlay span {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      transform: translateY(20px);
+      transition: transform 0.5s ease;
+    }
+
+    .portfolio-overlay h4 {
+      font-family: 'Italiana', serif;
+      font-size: 28px;
+      font-weight: 400;
+      transform: translateY(20px);
+      transition: transform 0.5s ease 0.1s;
+    }
+
+    .portfolio-item:hover .portfolio-overlay span,
+    .portfolio-item:hover .portfolio-overlay h4 {
+      transform: translateY(0);
+    }
+
+    /* Testimonial */
+    .testimonial {
+      background: var(--bg-alt);
+      text-align: center;
+    }
+
+    .testimonial-wrapper {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .testimonial-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 40px;
+      color: var(--accent);
+      opacity: 0.5;
+    }
+
+    .testimonial-text {
+      font-family: 'Italiana', serif;
+      font-size: 36px;
+      font-weight: 400;
+      line-height: 1.6;
+      margin-bottom: 50px;
+      color: var(--text-primary);
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .testimonial-author img {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .author-details {
+      text-align: left;
+    }
+
+    .author-details h5 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+
+    .author-details span {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* CTA */
+    .cta {
+      background: var(--bg);
+      text-align: center;
+    }
+
+    .cta-wrapper {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .cta .section-title {
+      margin-bottom: 20px;
+    }
+
+    .cta p {
+      font-size: 17px;
+      color: var(--text-secondary);
+      margin-bottom: 50px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 15px;
+      padding: 20px 45px;
+      background: transparent;
+      border: 1px solid var(--text-primary);
+      color: var(--text-primary);
+      text-decoration: none;
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      transition: all 0.5s ease;
+    }
+
+    .btn-outline:hover {
+      background: var(--text-primary);
+      color: var(--white);
+    }
+
+    /* Footer */
+    footer {
+      background: var(--text-primary);
+      color: var(--white);
+      padding: 100px 80px 50px;
+    }
+
+    .footer-wrapper {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 80px;
+      padding-bottom: 80px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-brand .logo {
+      color: var(--white);
+      display: block;
+      margin-bottom: 25px;
+    }
+
+    .footer-brand p {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.6);
+      line-height: 1.8;
+      margin-bottom: 30px;
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 15px;
+    }
+
+    .footer-social a {
+      width: 45px;
+      height: 45px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--white);
+      transition: all 0.3s ease;
+    }
+
+    .footer-social a:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .footer-column h4 {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 30px;
+    }
+
+    .footer-column ul {
+      list-style: none;
+    }
+
+    .footer-column li {
+      margin-bottom: 15px;
+    }
+
+    .footer-column a {
+      color: rgba(255, 255, 255, 0.6);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.3s ease;
+    }
+
+    .footer-column a:hover {
+      color: var(--accent);
+    }
+
+    .footer-bottom {
+      padding-top: 50px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-bottom p {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.4);
+    }
+
+    .footer-bottom a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Scroll Animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(60px);
+      transition: all 1s cubic-bezier(0.76, 0, 0.24, 1);
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 1200px) {
+      header { padding: 0 40px; }
+      section { padding: 100px 40px; }
+      .hero { padding: 0 40px; }
+      .hero-wrapper { grid-template-columns: 1fr; gap: 60px; }
+      .hero-content { padding-right: 0; }
+      .hero-gallery { display: none; }
+      .about-wrapper { grid-template-columns: 1fr; gap: 60px; }
+      .services-grid { grid-template-columns: repeat(2, 1fr); }
+      .portfolio-grid { grid-template-columns: 1fr 1fr; }
+      .footer-top { grid-template-columns: 1fr 1fr; gap: 50px; }
+    }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 48px; }
+      .section-title { font-size: 40px; }
+      .nav-menu { display: none; }
+      .services-grid { grid-template-columns: 1fr; }
+      .portfolio-grid { grid-template-columns: 1fr; }
+      .about-stats { flex-direction: column; gap: 30px; }
+      .footer-top { grid-template-columns: 1fr; }
+      .cta-buttons { flex-direction: column; align-items: center; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Page Transition -->
+  <div class="page-transition"></div>
+
+  <!-- Header -->
+  <header>
+    <a href="#" class="logo">LUMIÈRE</a>
+    <ul class="nav-menu">
+      <li><a href="#home">Home</a></li>
+      <li><a href="#about">About</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#portfolio">Portfolio</a></li>
+      <li><a href="#contact" class="nav-cta">Inquire</a></li>
+    </ul>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero" id="home">
+    <div class="hero-wrapper">
+      <div class="hero-content">
+        <p class="hero-eyebrow"><span>Premium Event Curation</span></p>
+        <h1 class="hero-title">
+          <span class="line"><span>The Art of</span></span>
+          <span class="line"><span>Extraordinary</span></span>
+          <span class="line"><span>Celebrations</span></span>
+        </h1>
+        <p class="hero-description">We believe every moment deserves to be celebrated beautifully. Our bespoke event design transforms your vision into an unforgettable experience.</p>
+        <div class="hero-actions">
+          <a href="#contact" class="btn-primary">
+            <span>Plan Your Event</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+          <a href="#portfolio" class="btn-text">
+            View Portfolio
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M5 12h14M12 5l7 7-7 7"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+      <div class="hero-gallery">
+        <div class="gallery-main">
+          <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=800&h=1000&fit=crop" alt="Elegant Event">
+        </div>
+        <div class="gallery-secondary">
+          <img src="https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=600&h=750&fit=crop" alt="Wedding Decoration">
+        </div>
+        <div class="gallery-decoration"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Marquee -->
+  <div class="marquee">
+    <div class="marquee-content">
+      <span class="marquee-item">Weddings</span>
+      <span class="marquee-item">Corporate Events</span>
+      <span class="marquee-item">Private Parties</span>
+      <span class="marquee-item">Galas</span>
+      <span class="marquee-item">Celebrations</span>
+      <span class="marquee-item">Weddings</span>
+      <span class="marquee-item">Corporate Events</span>
+      <span class="marquee-item">Private Parties</span>
+      <span class="marquee-item">Galas</span>
+      <span class="marquee-item">Celebrations</span>
+    </div>
+  </div>
+
+  <!-- About -->
+  <section class="about" id="about">
+    <div class="about-wrapper">
+      <div class="about-content reveal">
+        <p class="section-label">Our Story</p>
+        <h2 class="section-title">Where Vision Meets Perfection</h2>
+        <p>For over a decade, Lumière has been crafting extraordinary events that reflect the unique essence of each client. Our approach combines artistic vision with meticulous execution.</p>
+        <p>We understand that every celebration tells a story. From intimate gatherings to grand soirées, we bring your narrative to life through thoughtful design and flawless coordination.</p>
+        <div class="about-stats">
+          <div class="stat">
+            <div class="stat-value">750+</div>
+            <div class="stat-label">Events Created</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">12</div>
+            <div class="stat-label">Years of Excellence</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value">100%</div>
+            <div class="stat-label">Client Satisfaction</div>
+          </div>
+        </div>
+      </div>
+      <div class="about-image reveal">
+        <img src="https://images.unsplash.com/photo-1511795409834-ef04bbd61622?w=800&h=1000&fit=crop" alt="About Lumière">
+      </div>
+    </div>
+  </section>
+
+  <!-- Services -->
+  <section class="services" id="services">
+    <div class="services-header reveal">
+      <p class="section-label">What We Do</p>
+      <h2 class="section-title">Our Services</h2>
+      <p>From concept to completion, we offer comprehensive event planning services tailored to your unique needs.</p>
+    </div>
+    <div class="services-grid">
+      <div class="service-card reveal">
+        <div class="service-number">01</div>
+        <h3>Wedding Design</h3>
+        <p>Crafting timeless ceremonies and receptions that celebrate your love story with elegance and personal touches.</p>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-number">02</div>
+        <h3>Corporate Events</h3>
+        <p>Professional gatherings that inspire, engage, and leave lasting impressions on clients and colleagues alike.</p>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-number">03</div>
+        <h3>Private Celebrations</h3>
+        <p>Intimate gatherings and milestone moments transformed into unforgettable experiences for you and your loved ones.</p>
+      </div>
+      <div class="service-card reveal">
+        <div class="service-number">04</div>
+        <h3>Floral Design</h3>
+        <p>Exquisite arrangements that add beauty and sophistication to every corner of your celebration space.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Portfolio -->
+  <section class="portfolio" id="portfolio">
+    <div class="portfolio-header">
+      <div class="reveal">
+        <p class="section-label" style="color: var(--accent);">Featured Work</p>
+        <h2 class="section-title">Our Portfolio</h2>
+      </div>
+      <a href="#" class="portfolio-link reveal">
+        View All Projects
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
+      </a>
+    </div>
+    <div class="portfolio-grid">
+      <div class="portfolio-item reveal">
+        <img src="https://images.unsplash.com/photo-1519167758481-83f550bb49b3?w=800&h=1200&fit=crop" alt="Garden Wedding">
+        <div class="portfolio-overlay">
+          <span>Wedding</span>
+          <h4>The Enchanted Garden</h4>
+        </div>
+      </div>
+      <div class="portfolio-item reveal">
+        <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&h=600&fit=crop" alt="Corporate Gala">
+        <div class="portfolio-overlay">
+          <span>Corporate</span>
+          <h4>Annual Awards Gala</h4>
+        </div>
+      </div>
+      <div class="portfolio-item reveal">
+        <img src="https://images.unsplash.com/photo-1530103862676-de8c9debad1d?w=800&h=600&fit=crop" alt="Birthday">
+        <div class="portfolio-overlay">
+          <span>Private</span>
+          <h4>Golden Jubilee</h4>
+        </div>
+      </div>
+      <div class="portfolio-item reveal">
+        <img src="https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=800&h=600&fit=crop" alt="Reception">
+        <div class="portfolio-overlay">
+          <span>Wedding</span>
+          <h4>Royal Reception</h4>
+        </div>
+      </div>
+      <div class="portfolio-item reveal">
+        <img src="https://images.unsplash.com/photo-1505236858219-8359eb29e329?w=800&h=600&fit=crop" alt="Launch Event">
+        <div class="portfolio-overlay">
+          <span>Corporate</span>
+          <h4>Product Launch</h4>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonial -->
+  <section class="testimonial">
+    <div class="testimonial-wrapper reveal">
+      <svg class="testimonial-icon" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z"/>
+      </svg>
+      <p class="testimonial-text">"Lumière exceeded every expectation. They transformed our vision into a reality that was beyond anything we could have imagined. Truly exceptional service from start to finish."</p>
+      <div class="testimonial-author">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop" alt="Client">
+        <div class="author-details">
+          <h5>Ananya & Vikram</h5>
+          <span>Wedding • December 2025</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta" id="contact">
+    <div class="cta-wrapper reveal">
+      <p class="section-label">Let's Connect</p>
+      <h2 class="section-title">Ready to Create Something Beautiful?</h2>
+      <p>Every great celebration begins with a conversation. Share your vision with us, and let's craft an extraordinary experience together.</p>
+      <div class="cta-buttons">
+        <a href="mailto:hello@lumiere.com" class="btn-primary">
+          <span>Start Planning</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M5 12h14M12 5l7 7-7 7"/>
+          </svg>
+        </a>
+        <a href="tel:+919876543210" class="btn-outline">
+          <span>Call Us</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-wrapper">
+      <div class="footer-top">
+        <div class="footer-brand">
+          <a href="#" class="logo">LUMIÈRE</a>
+          <p>Crafting extraordinary celebrations since 2013. Where every detail matters and every moment is designed to be remembered.</p>
+          <div class="footer-social">
+            <a href="#">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </a>
+            <a href="#">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M22.46 6c-.77.35-1.6.58-2.46.69.88-.53 1.56-1.37 1.88-2.38-.83.5-1.75.85-2.72 1.05C18.37 4.5 17.26 4 16 4c-2.35 0-4.27 1.92-4.27 4.29 0 .34.04.67.11.98C8.28 9.09 5.11 7.38 3 4.79c-.37.63-.58 1.37-.58 2.15 0 1.49.75 2.81 1.91 3.56-.71 0-1.37-.2-1.95-.5v.03c0 2.08 1.48 3.82 3.44 4.21a4.22 4.22 0 0 1-1.93.07 4.28 4.28 0 0 0 4 2.98 8.521 8.521 0 0 1-5.33 1.84c-.34 0-.68-.02-1.02-.06C3.44 20.29 5.7 21 8.12 21 16 21 20.33 14.46 20.33 8.79c0-.19 0-.37-.01-.56.84-.6 1.56-1.36 2.14-2.23z"/>
+              </svg>
+            </a>
+            <a href="#">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+        <div class="footer-column">
+          <h4>Navigation</h4>
+          <ul>
+            <li><a href="#home">Home</a></li>
+            <li><a href="#about">About Us</a></li>
+            <li><a href="#services">Services</a></li>
+            <li><a href="#portfolio">Portfolio</a></li>
+            <li><a href="#contact">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Services</h4>
+          <ul>
+            <li><a href="#">Wedding Design</a></li>
+            <li><a href="#">Corporate Events</a></li>
+            <li><a href="#">Private Celebrations</a></li>
+            <li><a href="#">Floral Design</a></li>
+            <li><a href="#">Venue Selection</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Contact</h4>
+          <ul>
+            <li><a href="mailto:hello@lumiere.com">hello@lumiere.com</a></li>
+            <li><a href="tel:+919876543210">+91 98765 43210</a></li>
+            <li><a href="#">Mumbai, India</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <p>© 2026 Lumière Events. All rights reserved.</p>
+        <p>Crafted by <a href="#">LayaPro</a></p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Header scroll effect
+    window.addEventListener('scroll', () => {
+      const header = document.querySelector('header');
+      if (window.scrollY > 100) {
+        header.classList.add('scrolled');
+      } else {
+        header.classList.remove('scrolled');
+      }
+    });
+
+    // Reveal on scroll
+    const reveals = document.querySelectorAll('.reveal');
+
+    function revealOnScroll() {
+      reveals.forEach((el, i) => {
+        const windowHeight = window.innerHeight;
+        const elementTop = el.getBoundingClientRect().top;
+        const revealPoint = 150;
+
+        if (elementTop < windowHeight - revealPoint) {
+          setTimeout(() => {
+            el.classList.add('active');
+          }, i * 100);
+        }
+      });
+    }
+
+    window.addEventListener('scroll', revealOnScroll);
+    revealOnScroll();
+
+    // Smooth parallax for hero gallery
+    window.addEventListener('scroll', () => {
+      const scrolled = window.pageYOffset;
+      const galleryMain = document.querySelector('.gallery-main');
+      const gallerySecondary = document.querySelector('.gallery-secondary');
+      
+      if (galleryMain && scrolled < window.innerHeight) {
+        galleryMain.style.transform = `translateY(${scrolled * 0.15}px)`;
+        gallerySecondary.style.transform = `translateY(${scrolled * 0.08}px)`;
+      }
+    });
+
+    // Counter animation for stats
+    const statValues = document.querySelectorAll('.stat-value');
+    
+    const animateValue = (el) => {
+      const text = el.textContent;
+      const hasPlus = text.includes('+');
+      const hasPercent = text.includes('%');
+      const target = parseInt(text);
+      let current = 0;
+      const increment = target / 50;
+      const suffix = hasPlus ? '+' : (hasPercent ? '%' : '');
+      
+      const timer = setInterval(() => {
+        current += increment;
+        if (current >= target) {
+          el.textContent = target + suffix;
+          clearInterval(timer);
+        } else {
+          el.textContent = Math.floor(current) + suffix;
+        }
+      }, 30);
+    };
+
+    const statsObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
+          entry.target.classList.add('animated');
+          animateValue(entry.target);
+        }
+      });
+    }, { threshold: 0.5 });
+
+    statValues.forEach(stat => statsObserver.observe(stat));
+
+    // Smooth scroll for anchor links
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+          target.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start'
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+.quote {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.background {
+  position: absolute;
+  top: -10%;
+  left: 0;
+  width: 100%;
+  height: 120%;
+  z-index: 0;
+}
+
+.background img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(10, 10, 10, 0.85) 0%,
+    rgba(10, 10, 10, 0.7) 50%,
+    rgba(10, 10, 10, 0.9) 100%
+  );
+}
+
+.content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 900px;
+  padding: var(--section-padding) 48px;
+  text-align: center;
+}
+
+.inner {
+  background: rgba(255, 255, 255, 0.02);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 80px 60px;
+  border-radius: 4px;
+}
+
+.decorTop {
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--color-gold);
+  margin-bottom: 24px;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--color-light);
+  margin-bottom: 24px;
+}
+
+.accent {
+  font-style: italic;
+  color: var(--color-gold);
+}
+
+.subtitle {
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: var(--color-light-muted);
+  max-width: 600px;
+  margin: 0 auto 40px;
+}
+
+.cta {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+
+/* Trust Indicators */
+.trust {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  flex-wrap: wrap;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.trustItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--color-light-muted);
+}
+
+.trustItem svg {
+  color: var(--color-gold);
+}
+
+/* Decorative Lines */
+.decorLines {
+  position: absolute;
+  bottom: 60px;
+  left: 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.line {
+  height: 1px;
+  background: linear-gradient(90deg, var(--color-gold), transparent);
+  opacity: 0.3;
+}
+
+@media (max-width: 768px) {
+  .content {
+    padding: 80px 24px;
+  }
+
+  .inner {
+    padding: 48px 24px;
+  }
+
+  .cta {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cta button {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  .trust {
+    flex-direction: column;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .decorLines {
+    display: none;
+  }
+}

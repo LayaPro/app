@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Your Event Quotation | Laya Productions</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #1a1a1a;
+      --secondary: #2d2d2d;
+      --accent: #d4af37;
+      --accent-dark: #c9a962;
+      --text: #ffffff;
+      --text-light: #b0b0b0;
+      --bg: #0a0a0a;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Video Hero */
+    .hero-video {
+      position: relative;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .video-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(10, 10, 10, 0.7) 0%, rgba(26, 26, 26, 0.5) 50%, rgba(10, 10, 10, 0.7) 100%);
+      backdrop-filter: blur(2px);
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .hero-company {
+      font-size: 16px;
+      letter-spacing: 4px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 20px;
+      opacity: 0;
+      animation: fadeInUp 1s ease forwards 0.2s;
+    }
+
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 72px;
+      font-weight: 600;
+      line-height: 1.2;
+      margin-bottom: 20px;
+      max-width: 800px;
+      opacity: 0;
+      animation: fadeInUp 1s ease forwards 0.4s;
+    }
+
+    .hero-subtitle {
+      font-size: 20px;
+      color: var(--text-light);
+      margin-bottom: 40px;
+      max-width: 600px;
+      line-height: 1.6;
+      opacity: 0;
+      animation: fadeInUp 1s ease forwards 0.6s;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      animation: bounce 2s infinite;
+    }
+
+    .scroll-text {
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--text-light);
+      text-transform: uppercase;
+    }
+
+    .scroll-line {
+      width: 1px;
+      height: 30px;
+      background: linear-gradient(to bottom, var(--accent), transparent);
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateX(-50%) translateY(0); }
+      50% { transform: translateX(-50%) translateY(10px); }
+    }
+
+    /* Sections */
+    section {
+      padding: 100px 60px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      margin-bottom: 60px;
+      text-align: center;
+    }
+
+    .section-label {
+      font-size: 12px;
+      letter-spacing: 3px;
+      color: var(--accent);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 15px;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-light);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.8;
+    }
+
+    /* About Section */
+    .about {
+      background: linear-gradient(180deg, var(--secondary) 0%, var(--primary) 100%);
+      max-width: 100%;
+      padding: 100px 60px;
+    }
+
+    .about-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+
+    .about-content h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      margin-bottom: 30px;
+      line-height: 1.3;
+    }
+
+    .about-content p {
+      font-size: 16px;
+      color: var(--text-light);
+      line-height: 1.8;
+      margin-bottom: 20px;
+    }
+
+    .about-highlight {
+      background: rgba(212, 175, 55, 0.1);
+      border-left: 3px solid var(--accent);
+      padding: 25px;
+      margin: 25px 0;
+      font-style: italic;
+      color: var(--accent);
+      font-size: 18px;
+    }
+
+    .about-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+    }
+
+    .stat-card {
+      background: rgba(212, 175, 55, 0.1);
+      padding: 40px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-family: 'Playfair Display', serif;
+      font-size: 56px;
+      color: var(--accent);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .stat-label {
+      font-size: 16px;
+      color: var(--text-light);
+    }
+
+    /* Deliverables Section */
+    .deliverables-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    .deliverable-card {
+      background: var(--secondary);
+      padding: 40px;
+      border-radius: 8px;
+      border-left: 3px solid var(--accent);
+      transition: all 0.4s ease;
+    }
+
+    .deliverable-card:hover {
+      transform: translateY(-10px);
+      background: rgba(212, 175, 55, 0.05);
+    }
+
+    .deliverable-icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+    }
+
+    .deliverable-card h4 {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      margin-bottom: 15px;
+      color: var(--accent);
+    }
+
+    .deliverable-card p {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.6;
+    }
+
+    /* Events Table */
+    .events-section {
+      background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
+      max-width: 100%;
+      padding: 100px 60px;
+    }
+
+    .events-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .events-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--secondary);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .events-table thead {
+      background: var(--primary);
+    }
+
+    .events-table th {
+      padding: 20px;
+      text-align: left;
+      font-size: 14px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .events-table td {
+      padding: 18px 20px;
+      border-top: 1px solid rgba(212, 175, 55, 0.1);
+      font-size: 15px;
+    }
+
+    .events-table tbody tr:hover {
+      background: rgba(212, 175, 55, 0.03);
+    }
+
+    .event-name {
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Pricing Section */
+    .pricing {
+      text-align: center;
+    }
+
+    .price-box {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%);
+      border: 2px solid var(--accent);
+      border-radius: 12px;
+      padding: 60px;
+      margin: 40px auto;
+      max-width: 600px;
+    }
+
+    .price-label {
+      font-size: 14px;
+      color: var(--text-light);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+
+    .price-amount {
+      font-family: 'Playfair Display', serif;
+      font-size: 64px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .price-desc {
+      font-size: 16px;
+      color: var(--text-light);
+    }
+
+    /* Packages */
+    .packages {
+      background: linear-gradient(180deg, var(--secondary) 0%, var(--primary) 100%);
+      max-width: 100%;
+      padding: 100px 60px;
+    }
+
+    .packages-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .packages-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+    }
+
+    .package-card {
+      background: var(--bg);
+      padding: 35px;
+      border-radius: 8px;
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      transition: all 0.4s ease;
+    }
+
+    .package-card:hover {
+      border-color: var(--accent);
+      background: rgba(212, 175, 55, 0.05);
+    }
+
+    .package-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 22px;
+      color: var(--accent);
+      margin-bottom: 15px;
+    }
+
+    .package-details {
+      font-size: 14px;
+      color: var(--text-light);
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .package-price {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    /* Terms Section */
+    .terms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+    }
+
+    .terms-block h4 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: var(--accent);
+      margin-bottom: 25px;
+    }
+
+    .terms-block ul {
+      list-style: none;
+    }
+
+    .terms-block li {
+      font-size: 15px;
+      color: var(--text-light);
+      margin-bottom: 15px;
+      padding-left: 25px;
+      position: relative;
+      line-height: 1.6;
+    }
+
+    .terms-block li::before {
+      content: '✓';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: bold;
+    }
+
+    /* CTA Section */
+    .cta {
+      background: linear-gradient(135deg, var(--accent-dark) 0%, var(--accent) 100%);
+      text-align: center;
+      padding: 80px 60px;
+      border-radius: 12px;
+      margin: 60px auto;
+      max-width: 900px;
+    }
+
+    .cta h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      color: var(--primary);
+      margin-bottom: 20px;
+    }
+
+    .cta p {
+      font-size: 18px;
+      color: rgba(26, 26, 26, 0.8);
+      margin-bottom: 40px;
+    }
+
+    .cta-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 16px 40px;
+      border: none;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: all 0.4s ease;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: var(--accent);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: var(--primary);
+      border: 2px solid var(--primary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--primary);
+      color: var(--accent);
+    }
+
+    /* Footer */
+    footer {
+      padding: 60px;
+      text-align: center;
+      border-top: 1px solid rgba(212, 175, 55, 0.2);
+    }
+
+    .footer-company {
+      font-family: 'Playfair Display', serif;
+      font-size: 32px;
+      color: var(--accent);
+      margin-bottom: 15px;
+    }
+
+    .footer-tagline {
+      color: var(--text-light);
+      margin-bottom: 25px;
+      font-size: 16px;
+    }
+
+    .footer-contact {
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      margin: 30px 0;
+      flex-wrap: wrap;
+    }
+
+    .footer-contact a {
+      color: var(--text-light);
+      text-decoration: none;
+      transition: color 0.3s ease;
+    }
+
+    .footer-contact a:hover {
+      color: var(--accent);
+    }
+
+    .footer-copyright {
+      font-size: 12px;
+      color: var(--text-light);
+      margin-top: 30px;
+    }
+
+    /* Scroll animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: all 0.8s ease;
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      section { padding: 80px 40px; }
+      .hero-title { font-size: 52px; }
+      .section-title { font-size: 38px; }
+      .about-grid { grid-template-columns: 1fr; gap: 50px; }
+      .deliverables-grid { grid-template-columns: 1fr 1fr; }
+      .packages-grid { grid-template-columns: 1fr 1fr; }
+      .terms-grid { grid-template-columns: 1fr; gap: 40px; }
+    }
+
+    @media (max-width: 768px) {
+      .hero-title { font-size: 36px; }
+      .section-title { font-size: 32px; }
+      .price-amount { font-size: 48px; }
+      section { padding: 60px 25px; }
+      .about, .events-section, .packages { padding: 60px 25px; }
+      .deliverables-grid { grid-template-columns: 1fr; }
+      .packages-grid { grid-template-columns: 1fr; }
+      .footer-contact { flex-direction: column; gap: 15px; }
+      .cta { margin: 40px 20px; padding: 50px 30px; }
+      .cta h2 { font-size: 32px; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section with Video -->
+  <section class="hero-video">
+    <video class="video-bg" autoplay muted loop playsinline>
+      <source src="https://videos.pexels.com/video-files/5725893/5725893-hd_1920_1080_30fps.mp4" type="video/mp4">
+    </video>
+    <div class="video-overlay"></div>
+    
+    <div class="hero-content">
+      <div class="hero-company">Laya Productions</div>
+      <h1 class="hero-title">Your Dream Wedding, Beautifully Captured</h1>
+      <p class="hero-subtitle">Premium photography & cinematography services crafted to perfection for your special day</p>
+    </div>
+
+    <div class="scroll-indicator">
+      <div class="scroll-text">Explore Quotation</div>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <div class="about">
+    <div class="about-inner">
+      <div class="section-header">
+        <div class="section-label">About Us</div>
+        <h2 class="section-title">Who We Are</h2>
+      </div>
+      
+      <div class="about-grid reveal">
+        <div class="about-content">
+          <h3>We Capture Magic</h3>
+          <p>We offer professional wedding photography and cinematography, delivering best output cruising past all your expectations. We are well recognized for our exceptional work.</p>
+          <p>Based in Hyderabad but we travel across the globe to perfectly capture your big day in the most magical way!</p>
+          
+          <div class="about-highlight">
+            "Delivering best output with highest standards of customer satisfaction is our goal"
+          </div>
+          
+          <p>We are a fun-loving team of creative professionals who LOVE WHAT WE DO! Our biggest strength is our experienced & well-trained crew in photography and cinematography.</p>
+        </div>
+        
+        <div class="about-stats">
+          <div class="stat-card">
+            <div class="stat-number">500+</div>
+            <div class="stat-label">Events Captured</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-number">100%</div>
+            <div class="stat-label">Client Satisfaction</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deliverables Section -->
+  <section>
+    <div class="section-header">
+      <div class="section-label">What We Deliver</div>
+      <h2 class="section-title">Our Deliverables</h2>
+      <p class="section-desc">Comprehensive packages designed to capture every precious moment</p>
+    </div>
+
+    <div class="deliverables-grid">
+      <div class="deliverable-card reveal">
+        <div class="deliverable-icon">📸</div>
+        <h4>Colour Corrected Images</h4>
+        <p>We colour correct every individual picture to create stunning, professional-grade images.</p>
+      </div>
+
+      <div class="deliverable-card reveal">
+        <div class="deliverable-icon">📖</div>
+        <h4>Premium Wedding Albums</h4>
+        <p>Eye-catching lay-flat pages featuring the finest quality construction lending a luxurious look.</p>
+      </div>
+
+      <div class="deliverable-card reveal">
+        <div class="deliverable-icon">🎬</div>
+        <h4>Wedding Film</h4>
+        <p>Your story telling love story, documentary, couple shoot, housewarming - beautifully crafted.</p>
+      </div>
+
+      <div class="deliverable-card reveal">
+        <div class="deliverable-icon">📹</div>
+        <h4>Full Length Videos</h4>
+        <p>Completely edited full length videos of all your events, delivered on your hard drives.</p>
+      </div>
+
+      <div class="deliverable-card reveal">
+        <div class="deliverable-icon">💾</div>
+        <h4>Raw Deliverables</h4>
+        <p>We provide both photos and videos in raw format - thank us later for future-thinking!</p>
+      </div>
+
+      <div class="deliverable-card reveal">
+        <div class="deliverable-icon">🌐</div>
+        <h4>Web Live Streaming</h4>
+        <p>Live telecasting of your event for family and friends worldwide with a custom shareable link.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Events Section -->
+  <div class="events-section">
+    <div class="events-inner">
+      <div class="section-header">
+        <div class="section-label">Event Coverage</div>
+        <h2 class="section-title">Complete Event List</h2>
+        <p class="section-desc">Professional coverage for every ceremony and celebration</p>
+      </div>
+
+      <table class="events-table reveal">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Photographers</th>
+            <th>Videographers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="event-name">Mehendi</td>
+            <td>1 Candid</td>
+            <td>1 Cinematic, 1 Traditional</td>
+          </tr>
+          <tr>
+            <td class="event-name">Haldi (Groom)</td>
+            <td>1 Candid, 1 Traditional</td>
+            <td>1 Cinematic, 1 Traditional</td>
+          </tr>
+          <tr>
+            <td class="event-name">Pellikoduku</td>
+            <td>1 Traditional</td>
+            <td>1 Traditional</td>
+          </tr>
+          <tr>
+            <td class="event-name">Haldi (Bride)</td>
+            <td>1 Candid, 1 Traditional</td>
+            <td>1 Cinematic, 1 Traditional</td>
+          </tr>
+          <tr>
+            <td class="event-name">Pellikuthuru</td>
+            <td>1 Traditional</td>
+            <td>1 Traditional</td>
+          </tr>
+          <tr>
+            <td class="event-name">Ritual at Hall</td>
+            <td>1 Traditional</td>
+            <td>1 Traditional</td>
+          </tr>
+          <tr>
+            <td class="event-name">Wedding</td>
+            <td>1 Candid, 1 Traditional</td>
+            <td>1 Cinematic, 1 Traditional, 1 Drone</td>
+          </tr>
+          <tr>
+            <td class="event-name">Vratham</td>
+            <td>1 Traditional</td>
+            <td>1 Traditional</td>
+          </tr>
+          <tr>
+            <td class="event-name">Couple Shoot</td>
+            <td>1 Candid</td>
+            <td>-</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Pricing Section -->
+  <section class="pricing">
+    <div class="section-header">
+      <div class="section-label">Investment</div>
+      <h2 class="section-title">Our Quotation</h2>
+    </div>
+
+    <div class="price-box reveal">
+      <div class="price-label">Total Package Price</div>
+      <div class="price-amount">₹4,35,000</div>
+      <div class="price-desc">Four Lakhs Thirty Five Thousand Rupees Only</div>
+    </div>
+
+    <p style="color: var(--text-light); font-size: 15px; margin-top: 30px; line-height: 1.8;">
+      Includes Two Premium Albums (30 sheets, size 12×15) with one-time change request within 60 days
+    </p>
+  </section>
+
+  <!-- Packages Section -->
+  <div class="packages">
+    <div class="packages-inner">
+      <div class="section-header">
+        <div class="section-label">Add-On Services</div>
+        <h2 class="section-title">Additional Pricing</h2>
+      </div>
+
+      <div class="packages-grid">
+        <div class="package-card reveal">
+          <div class="package-name">Premium Album (Type 1)</div>
+          <div class="package-details">30 sheets (12×15) with premium finish</div>
+          <div class="package-price">₹25,000</div>
+        </div>
+
+        <div class="package-card reveal">
+          <div class="package-name">Premium Album (Type 2)</div>
+          <div class="package-details">30 sheets (12×15) enhanced design</div>
+          <div class="package-price">₹30,000</div>
+        </div>
+
+        <div class="package-card reveal">
+          <div class="package-name">Web Live Streaming</div>
+          <div class="package-details">Per event live telecasting</div>
+          <div class="package-price">₹10,000/Event</div>
+        </div>
+
+        <div class="package-card reveal">
+          <div class="package-name">LED Display (8×10)</div>
+          <div class="package-details">Professional event coverage display</div>
+          <div class="package-price">₹15,000/Event</div>
+        </div>
+
+        <div class="package-card reveal">
+          <div class="package-name">Instant Reels</div>
+          <div class="package-details">Quick social media reels</div>
+          <div class="package-price">₹15,000</div>
+        </div>
+
+        <div class="package-card reveal">
+          <div class="package-name">Cinematic Film</div>
+          <div class="package-details">4-6 minute wedding feature</div>
+          <div class="package-price">Included</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Terms Section -->
+  <section>
+    <div class="section-header">
+      <div class="section-label">Important Information</div>
+      <h2 class="section-title">Terms & Conditions</h2>
+    </div>
+
+    <div class="terms-grid reveal">
+      <div class="terms-block">
+        <h4>Terms of Service</h4>
+        <ul>
+          <li>Transportation provided by client outside Hyderabad</li>
+          <li>Accommodation provided by client for out-station</li>
+          <li>Confirmation subject to 50% advance receipt</li>
+          <li>Only cinematic events added to teaser</li>
+          <li>Client provides two hard drives for soft copies</li>
+          <li>Web live quality depends on network conditions</li>
+        </ul>
+      </div>
+
+      <div class="terms-block">
+        <h4>Payment Terms</h4>
+        <ul>
+          <li><strong>50% Advance</strong> - Booking confirmation</li>
+          <li><strong>45% On Event Day</strong> - Start of event</li>
+          <li><strong>5% After Delivery</strong> - Album delivery</li>
+          <li>Plan changes subject to availability</li>
+          <li>Data collection within 30 days of delivery</li>
+          <li>No data retention after 30 days</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <div class="cta reveal">
+    <h2>Ready to Capture Your Memories?</h2>
+    <p>Let's create something magical together. Reach out to discuss your requirements.</p>
+    <div class="cta-buttons">
+      <a href="mailto:hello@layaproductions.com" class="btn btn-primary">
+        Get In Touch →
+      </a>
+      <a href="tel:+919876543210" class="btn btn-secondary">
+        Call Us
+      </a>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer>
+    <div class="footer-company">Laya Productions</div>
+    <p class="footer-tagline">Professional Wedding Photography & Cinematography</p>
+    <div class="footer-contact">
+      <a href="tel:+919876543210">📞 +91 98765 43210</a>
+      <a href="mailto:hello@layaproductions.com">✉️ hello@layaproductions.com</a>
+      <a href="#">📍 Hyderabad, India</a>
+    </div>
+    <div class="footer-copyright">
+      © 2026 Laya Productions. All rights reserved.
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal animation
+    const reveals = document.querySelectorAll('.reveal');
+
+    function revealOnScroll() {
+      reveals.forEach(el => {
+        const windowHeight = window.innerHeight;
+        const elementTop = el.getBoundingClientRect().top;
+        const revealPoint = 100;
+
+        if (elementTop < windowHeight - revealPoint) {
+          el.classList.add('active');
+        }
+      });
+    }
+
+    window.addEventListener('scroll', revealOnScroll);
+    revealOnScroll();
+
+    // Video parallax effect
+    window.addEventListener('scroll', () => {
+      const videoBg = document.querySelector('.video-bg');
+      const scrolled = window.pageYOffset;
+      
+      if (scrolled < window.innerHeight) {
+        videoBg.style.transform = `translateY(${scrolled * 0.4}px)`;
+      }
+    });
+  </script>
+</body>
+</html>

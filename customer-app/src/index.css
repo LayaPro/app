@@ -1,0 +1,207 @@
+/* Premium Customer App - Global Styles */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  /* Premium Color Palette */
+  --color-gold: #C9A962;
+  --color-gold-light: #E8D5A3;
+  --color-gold-dark: #A68B4B;
+  
+  --color-dark: #0A0A0A;
+  --color-dark-secondary: #141414;
+  --color-dark-tertiary: #1A1A1A;
+  
+  --color-light: #FAFAFA;
+  --color-light-secondary: #F0F0F0;
+  --color-light-muted: #A0A0A0;
+  
+  /* Typography */
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  /* Spacing */
+  --section-padding: 120px;
+  --container-max-width: 1400px;
+  
+  /* Transitions */
+  --transition-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-dark);
+  color: var(--color-light);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Premium Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: clamp(3rem, 8vw, 7rem);
+  font-weight: 400;
+}
+
+h2 {
+  font-size: clamp(2rem, 5vw, 4rem);
+}
+
+h3 {
+  font-size: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+p {
+  font-size: clamp(1rem, 1.2vw, 1.125rem);
+  color: var(--color-light-muted);
+  line-height: 1.8;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* Premium Button Styles */
+.btn-premium {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 18px 48px;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border: 1px solid var(--color-gold);
+  background: transparent;
+  color: var(--color-gold);
+  cursor: pointer;
+  transition: all 0.4s var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-premium::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: var(--color-gold);
+  transition: left 0.4s var(--transition-smooth);
+  z-index: -1;
+}
+
+.btn-premium:hover {
+  color: var(--color-dark);
+}
+
+.btn-premium:hover::before {
+  left: 0;
+}
+
+.btn-premium-filled {
+  background: var(--color-gold);
+  color: var(--color-dark);
+}
+
+.btn-premium-filled::before {
+  background: var(--color-light);
+}
+
+/* Container */
+.container {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  padding: 0 48px;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 24px;
+  }
+  
+  :root {
+    --section-padding: 80px;
+  }
+}
+
+/* Premium Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-dark);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-gold);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-gold-light);
+}
+
+/* Selection */
+::selection {
+  background: var(--color-gold);
+  color: var(--color-dark);
+}
+
+/* Premium Divider */
+.divider {
+  width: 60px;
+  height: 1px;
+  background: var(--color-gold);
+  margin: 24px 0;
+}
+
+.divider-center {
+  margin: 24px auto;
+}
+
+/* Text Gradient */
+.text-gradient {
+  background: linear-gradient(135deg, var(--color-gold-light) 0%, var(--color-gold) 50%, var(--color-gold-dark) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow Effect */
+.glow {
+  text-shadow: 0 0 40px rgba(201, 169, 98, 0.3);
+}
+
+/* Blur Glass Effect */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
