@@ -187,3 +187,55 @@ export interface DashboardStats {
     pendingPayments: number;
   };
 }
+
+// Organization Types
+export interface Organization {
+  organizationId: string;
+  tenantId: string;
+  
+  // Basic Details
+  companyName: string;
+  tagline?: string;
+  logo?: string; // S3 URL
+  primaryColor?: string;
+  secondaryColor?: string;
+  
+  // About Us
+  aboutUs?: string;
+  mission?: string;
+  vision?: string;
+  
+  // Contact Information
+  email?: string;
+  phone?: string;
+  countryCode?: string;
+  address?: string;
+  website?: string;
+  
+  // Social Media Links
+  facebook?: string;
+  instagram?: string;
+  twitter?: string;
+  linkedin?: string;
+  youtube?: string;
+  
+  // Terms of Service
+  termsOfService?: string;
+  termsOfPayment?: string;
+  cancellationPolicy?: string;
+  refundPolicy?: string;
+  
+  // Portfolio Images
+  portfolioImages?: {
+    imageUrl: string;
+    title?: string;
+    description?: string;
+    category?: string;
+    order?: number;
+  }[];
+  
+  createdAt?: Date;
+  updatedAt?: Date;
+  createdBy?: string;
+  updatedBy?: string;
+}

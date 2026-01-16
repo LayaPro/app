@@ -17,6 +17,7 @@ export { Toast } from './Toast.js';
 export { ToastContainer } from './ToastContainer.js';
 export { CollapsibleCard } from './CollapsibleCard.js';
 export { Loading } from './Loading.js';
+export { ImageUpload } from './ImageUpload.js';
 export { AlbumPdfUploadManager } from './AlbumPdfUploadManager.js';
 export { Tabs } from './Tabs.js';
 export type { Column } from './DataTable.js';

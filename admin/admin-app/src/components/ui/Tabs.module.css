@@ -54,8 +54,10 @@
   background: var(--bg-primary);
   color: var(--color-primary);
   border-color: var(--border-color);
-  border-bottom: 1px solid var(--bg-primary);
+  border-bottom-color: var(--bg-primary);
   font-weight: 600;
+  position: relative;
+  z-index: 1;
 }
 
 .tabActive:hover {
@@ -67,13 +69,13 @@
   outline: none;
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-  border-bottom: 1px solid var(--bg-primary);
+  border-bottom-color: var(--bg-primary);
 }
 
 .tabActive:focus,
 .tabActive:active {
   outline: none !important;
-  border-bottom: 1px solid var(--bg-primary) !important;
+  border-bottom-color: var(--bg-primary) !important;
 }
 
 .tabIcon {
@@ -104,7 +106,8 @@
 .tabsContent {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 0 12px 12px 12px;
+  border-radius: 12px;
+  border-top-left-radius: 0;
   overflow: visible;
 }
 

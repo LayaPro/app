@@ -107,6 +107,7 @@
   transition: all var(--transition-base);
   resize: vertical;
   min-height: 80px;
+  white-space: pre-wrap;
 }
 
 .textarea::placeholder {
@@ -134,7 +135,7 @@
   font-size: 12px;
   color: var(--text-secondary);
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .charCount.maxReached {

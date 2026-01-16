@@ -35,6 +35,7 @@ import financeStatsController from './controllers/financeStatsController';
 import searchController from './controllers/searchController';
 import userController from './controllers/userController';
 import albumPdfController from './controllers/albumPdfController';
+import organizationController from './controllers/organizationController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload, uploadPdf } from './middleware/upload';
@@ -212,6 +213,12 @@ app.get('/finance-stats', authenticate, financeStatsController.getFinanceStats);
 
 // ---------- Search routes ----------
 app.get('/search', authenticate, searchController.globalSearch);
+
+// ---------- Organization routes ----------
+app.get('/get-organization', authenticate, organizationController.getOrganization);
+app.post('/create-organization', authenticate, requireAdmin, organizationController.createOrganization);
+app.put('/update-organization', authenticate, requireAdmin, organizationController.updateOrganization);
+app.delete('/delete-organization', authenticate, requireAdmin, organizationController.deleteOrganization);
 
 // ---------- Users routes ----------
 app.post('/create-user', authenticate, requireAdmin, userController.createUser);

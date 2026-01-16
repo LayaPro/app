@@ -921,3 +921,51 @@ export const imageStatusApi = {
     return handleResponse(response);
   },
 };
+
+// Organization API
+export const organizationApi = {
+  get: async () => {
+    const response = await fetch(`${API_BASE_URL}/get-organization`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/create-organization`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/update-organization`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async () => {
+    const response = await fetch(`${API_BASE_URL}/delete-organization`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};

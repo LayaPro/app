@@ -46,9 +46,7 @@ export const Login: React.FC = () => {
 
     try {
       // Make API call to login endpoint
-      // const response = await fetch(`${import.meta.env.VITE_API_URL}/login`, {
-      const response = await fetch(`https://fej22pbnws.ap-south-1.awsapprunner.com/login`, {
-
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'https://fej22pbnws.ap-south-1.awsapprunner.com'}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

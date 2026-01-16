@@ -12,6 +12,7 @@ import ProjectDeliveryStatus from './models/projectDeliveryStatus';
 import ImageStatus from './models/imageStatus';
 import Module from './models/module';
 import RolePermission from './models/rolePermission';
+import Organization from './models/organization';
 
 dotenv.config();
 
@@ -573,6 +574,25 @@ async function seedDatabase() {
     }
     if (existingImageStatusCount > 0) {
       console.log(`✓ ${existingImageStatusCount} image status(es) already exist`);
+    }
+
+    // Create Organization for LayaPro tenant if it doesn't exist
+    let organization = await Organization.findOne({ tenantId: layaproTenant.tenantId });
+    if (!organization) {
+      const organizationId = `org_${nanoid()}`;
+      organization = await Organization.create({
+        organizationId,
+        tenantId: layaproTenant.tenantId,
+        companyName: layaproTenant.tenantCompanyName,
+        email: layaproTenant.tenantEmailAddress,
+        countryCode: layaproTenant.countryCode,
+        phone: layaproTenant.tenantPhoneNumber,
+        createdBy: adminUser.userId,
+        updatedBy: adminUser.userId
+      });
+      console.log('\n✓ Created organization for LayaPro tenant:', organizationId);
+    } else {
+      console.log('\n✓ Organization already exists for LayaPro tenant');
     }
 
     console.log('\n✅ Database seeding completed successfully!');

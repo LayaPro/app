@@ -1,0 +1,307 @@
+import type { FC } from 'react';
+import { useState, useEffect } from 'react';
+import { Input, Textarea, Button, Loading, ImageUpload, PhoneInput } from '../../components/ui/index.ts';
+import styles from '../EventsSetup/EventCard.module.css';
+import { organizationApi } from '../../services/api.js';
+import { sanitizeTextInput, sanitizeTextarea } from '../../utils/sanitize.js';
+import type { Organization } from '../../types/index.js';
+
+interface BasicDetailsCardProps {
+  organization: Organization | null;
+  loading: boolean;
+  onSuccess: (message: string) => void;
+  onError: (message: string) => void;
+}
+
+export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
+  organization,
+  loading,
+  onSuccess,
+  onError,
+}) => {
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    companyName: '',
+    tagline: '',
+    logo: '',
+    aboutUs: '',
+    email: '',
+    phoneNumber: '',
+    address: '',
+    website: '',
+    facebook: '',
+    instagram: '',
+    youtube: '',
+  });
+
+  useEffect(() => {
+    if (organization) {
+      const phoneNumber = organization.phone && organization.countryCode
+        ? `${organization.countryCode}${organization.phone}`
+        : '';
+      setFormData({
+        companyName: organization.companyName || '',
+        tagline: organization.tagline || '',
+        logo: organization.logo || '',
+        aboutUs: organization.aboutUs || '',
+        email: organization.email || '',
+        phoneNumber,
+        address: organization.address || '',
+        website: organization.website || '',
+        facebook: organization.facebook || '',
+        instagram: organization.instagram || '',
+        youtube: organization.youtube || '',
+      });
+    }
+  }, [organization]);
+
+  const handleSave = async () => {
+    // Split phone number into country code and phone
+    let countryCode = '+91';
+    let phone = '';
+    if (formData.phoneNumber) {
+      const match = formData.phoneNumber.match(/^(\+\d+)(\d+)$/);
+      if (match) {
+        countryCode = match[1];
+        phone = match[2];
+      }
+    }
+
+    const sanitizedData = {
+      companyName: sanitizeTextInput(formData.companyName),
+      tagline: sanitizeTextInput(formData.tagline),
+      logo: sanitizeTextInput(formData.logo),
+      aboutUs: sanitizeTextarea(formData.aboutUs),
+      email: sanitizeTextInput(formData.email),
+      phone: sanitizeTextInput(phone),
+      countryCode: sanitizeTextInput(countryCode),
+      address: sanitizeTextarea(formData.address),
+      website: sanitizeTextInput(formData.website),
+      facebook: sanitizeTextInput(formData.facebook),
+      instagram: sanitizeTextInput(formData.instagram),
+      youtube: sanitizeTextInput(formData.youtube),
+    };
+
+    // Validations
+    if (!sanitizedData.companyName.trim()) {
+      onError('Company name is required');
+      return;
+    }
+
+    if (!sanitizedData.email.trim()) {
+      onError('Email is required');
+      return;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(sanitizedData.email)) {
+      onError('Invalid email format');
+      return;
+    }
+
+    if (formData.phoneNumber && formData.phoneNumber.length < 12) {
+      onError('Phone number must be at least 12 characters (including country code)');
+      return;
+    }
+
+    if (sanitizedData.website && !/^https?:\/\/.+/.test(sanitizedData.website)) {
+      onError('Website must start with http:// or https://');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      if (organization) {
+        await organizationApi.update(sanitizedData);
+        onSuccess('Organization updated successfully');
+      } else {
+        await organizationApi.create(sanitizedData);
+        onSuccess('Organization created successfully');
+      }
+    } catch (error: any) {
+      onError(error.message || 'Failed to save organization');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div>
+        <div className={styles.contentWrapper}>
+          <Loading />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className={styles.contentWrapper}>
+        <div className={styles.infoText}>
+          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>
+            Configure your organization's basic information, branding, and contact details. This information will be used in proposals and customer-facing materials.
+          </span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+          {/* Left Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <Input
+              label="Company Name"
+              value={formData.companyName}
+              onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+              placeholder="Enter company name"
+              maxLength={100}
+              showCharCount
+              info="Your official company name as registered"
+              required
+            />
+
+            <Input
+              label="Tagline"
+              value={formData.tagline}
+              onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
+              placeholder="Your company tagline"
+              maxLength={150}
+              showCharCount
+              info="A brief, memorable phrase describing your business"
+            />
+
+            <PhoneInput
+              label="Phone Number"
+              value={formData.phoneNumber}
+              onChange={(value) => setFormData({ ...formData, phoneNumber: value })}
+              info="Contact phone number with country code"
+            />
+
+            <Input
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              placeholder="contact@company.com"
+              maxLength={100}
+              showCharCount
+              info="Primary contact email for your organization"
+              required
+            />
+
+            <div>
+              <ImageUpload
+                images={formData.logo && formData.logo.trim() ? [formData.logo] : []}
+                onChange={(images: string[]) => setFormData({ ...formData, logo: images[0] || '' })}
+                maxFiles={1}
+                maxSizeMB={2}
+                label="Company Logo"
+                info="Upload your company logo (max 2MB)"
+              />
+            </div>
+          </div>
+
+          {/* Right Column */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            <Textarea
+              label="About Us"
+              value={formData.aboutUs}
+              onChange={(e) => setFormData({ ...formData, aboutUs: e.target.value })}
+              placeholder="Tell customers about your company..."
+              rows={4}
+              maxLength={500}
+              showCharCount
+              info="Brief description of your company and services"
+            />
+
+            <Textarea
+              label="Address"
+              value={formData.address}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              placeholder="Your business address..."
+              rows={3}
+              maxLength={300}
+              showCharCount
+              info="Your complete business address"
+            />
+
+            <Input
+              label="Website"
+              value={formData.website}
+              onChange={(e) => setFormData({ ...formData, website: e.target.value })}
+              placeholder="https://yourwebsite.com"
+              maxLength={200}
+              showCharCount
+              info="Company website URL (must start with http:// or https://)"
+            />
+
+            <Input
+              label="Facebook"
+              value={formData.facebook}
+              onChange={(e) => setFormData({ ...formData, facebook: e.target.value })}
+              placeholder="Facebook URL"
+              maxLength={200}
+              showCharCount
+              info="Link to your Facebook page"
+            />
+            <Input
+              label="Instagram"
+              value={formData.instagram}
+              onChange={(e) => setFormData({ ...formData, instagram: e.target.value })}
+              placeholder="Instagram URL"
+              maxLength={200}
+              showCharCount
+              info="Link to your Instagram profile"
+            />
+            <Input
+              label="YouTube"
+              value={formData.youtube}
+              onChange={(e) => setFormData({ ...formData, youtube: e.target.value })}
+              placeholder="YouTube URL"
+              maxLength={200}
+              showCharCount
+              info="Link to your YouTube channel"
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', marginTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+          {organization && (
+            <Button
+              variant="secondary"
+              onClick={() => {
+                if (organization) {
+                  const phoneNumber = organization.phone && organization.countryCode
+                    ? `${organization.countryCode}${organization.phone}`
+                    : '';
+                  setFormData({
+                    companyName: organization.companyName || '',
+                    tagline: organization.tagline || '',
+                    logo: organization.logo || '',
+                    aboutUs: organization.aboutUs || '',
+                    email: organization.email || '',
+                    phoneNumber,
+                    address: organization.address || '',
+                    website: organization.website || '',
+                    facebook: organization.facebook || '',
+                    instagram: organization.instagram || '',
+                    youtube: organization.youtube || '',
+                  });
+                }
+              }}
+              disabled={isSaving}
+            >
+              Reset
+            </Button>
+          )}
+          <Button
+            variant="primary"
+            onClick={handleSave}
+            disabled={isSaving}
+          >
+            {isSaving ? 'Saving...' : organization ? 'Save Changes' : 'Create Organization'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};

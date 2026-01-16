@@ -131,9 +131,9 @@ export const EventWorkflowCard: FC<EventWorkflowCardProps> = ({
               borderRadius: isMobile ? '6px' : '8px',
               fontSize: isMobile ? '0.875rem' : '1rem',
               fontWeight: '600',
-              color: '#64748b',
-              backgroundColor: '#f8fafc',
-              border: '2px solid #e2e8f0',
+              color: 'var(--text-secondary)',
+              backgroundColor: 'var(--surface-secondary)',
+              border: '2px solid var(--border-color)',
             }}>
               {row.step}
             </span>

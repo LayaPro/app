@@ -26,6 +26,9 @@ export const ROUTES = {
   GALLERY_SETUP: '/workflow/gallery-setup',
   PROJECTS_SETUP: '/workflow/projects-setup',
   
+  // Organization
+  ORGANIZATION: '/organization',
+  
   SETTINGS: '/settings',
 } as const;
 

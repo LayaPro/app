@@ -36,6 +36,9 @@ import EventsSetup from './pages/EventsSetup/index.js';
 import GallerySetup from './pages/GallerySetup/index.js';
 import ProjectsSetup from './pages/ProjectsSetup/index.js';
 
+// Organization page
+import Organization from './pages/Organization/index.js';
+
 function App() {
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const sidebarCollapsed = useAppSelector((state) => state.ui.sidebarCollapsed);
@@ -102,6 +105,9 @@ function App() {
           <Route path={ROUTES.EVENTS_SETUP} element={<EventsSetup />} />
           <Route path={ROUTES.GALLERY_SETUP} element={<GallerySetup />} />
           <Route path={ROUTES.PROJECTS_SETUP} element={<ProjectsSetup />} />
+          
+          {/* Organization */}
+          <Route path={ROUTES.ORGANIZATION} element={<Organization />} />
           
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
           

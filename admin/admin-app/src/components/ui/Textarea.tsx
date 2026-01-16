@@ -12,6 +12,7 @@ interface TextareaProps {
   maxLength?: number;
   showCharCount?: boolean;
   info?: string;
+  disabled?: boolean;
 }
 
 export const Textarea: React.FC<TextareaProps> = ({
@@ -25,6 +26,7 @@ export const Textarea: React.FC<TextareaProps> = ({
   maxLength,
   showCharCount,
   info,
+  disabled,
 }) => {
   const [showInfo, setShowInfo] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
@@ -90,6 +92,7 @@ export const Textarea: React.FC<TextareaProps> = ({
         placeholder={placeholder}
         rows={rows}
         maxLength={maxLength}
+        disabled={disabled}
       />
       {error && <span className={styles.errorText}>{error}</span>}
     </div>
