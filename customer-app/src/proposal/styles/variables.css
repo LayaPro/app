@@ -1,0 +1,16 @@
+/* Color Variables */
+:root {
+    --bg-primary: #FAF8F5;
+    --bg-secondary: #F5F0E8;
+    --bg-card: #FFFFFF;
+    --text-primary: #2C2416;
+    --text-secondary: #6B6355;
+    --accent-gold: #C9A961;
+    --accent-rose: #D4A373;
+    --accent-dark: #8B7355;
+    --shadow-soft: rgba(0, 0, 0, 0.08);
+    --shadow-medium: rgba(0, 0, 0, 0.15);
+}
+
+/* Typography */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Raleway:wght@300;400;500;600&family=Dancing+Script:wght@400;500;600;700&family=Alex+Brush&display=swap');

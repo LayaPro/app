@@ -1,0 +1,30 @@
+.page-transition {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-dark) 100%);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: curtainSlide 2s cubic-bezier(0.76, 0, 0.24, 1) forwards;
+}
+
+.transition-logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    color: var(--accent-gold);
+    letter-spacing: 8px;
+    opacity: 0;
+    animation: logoReveal 1.5s ease-out forwards;
+}
+
+@keyframes curtainSlide {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(-100%); }
+}
+
+@keyframes logoReveal {
+    0% { opacity: 0; transform: scale(0.8); }
+    40%, 70% { opacity: 1; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.1); }
+}

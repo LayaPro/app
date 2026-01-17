@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wedding Photography Quotation - Premium</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Montserrat:wght@200;300;400;500;600&family=Alex+Brush&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --cream: #FFF8F0;
+            --soft-pink: #F4E4D7;
+            --rose-gold: #E8C4B8;
+            --deep-rose: #D4A5A5;
+            --sage: #A8B5A0;
+            --charcoal: #3D3D3D;
+            --gold-shimmer: #D4AF37;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--soft-pink) 50%, #FAF0E6 100%);
+            color: var(--charcoal);
+            overflow-x: hidden;
+            line-height: 1.6;
+        }
+
+        /* ===== FLOATING PARTICLES ===== */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, var(--rose-gold) 0%, transparent 70%);
+            border-radius: 50%;
+            opacity: 0;
+            animation: floatParticle 20s infinite ease-in-out;
+        }
+
+        .particle:nth-child(1) { width: 80px; height: 80px; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 120px; height: 120px; left: 30%; animation-delay: 3s; }
+        .particle:nth-child(3) { width: 60px; height: 60px; left: 50%; animation-delay: 6s; }
+        .particle:nth-child(4) { width: 100px; height: 100px; left: 70%; animation-delay: 9s; }
+        .particle:nth-child(5) { width: 90px; height: 90px; left: 85%; animation-delay: 12s; }
+
+        @keyframes floatParticle {
+            0%, 100% { transform: translateY(100vh) scale(0); opacity: 0; }
+            10% { opacity: 0.15; }
+            50% { opacity: 0.25; transform: translateY(-20vh) scale(1); }
+            90% { opacity: 0.15; }
+        }
+
+        /* ===== HERO SECTION ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(244, 228, 215, 0.4) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(232, 196, 184, 0.4) 0%, transparent 50%);
+            animation: breathe 8s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            max-width: 900px;
+            padding: 40px;
+            animation: heroFadeIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes heroFadeIn {
+            from { opacity: 0; transform: translateY(60px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-badge {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(244, 228, 215, 0.9));
+            border-radius: 50px;
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            font-weight: 500;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(212, 165, 165, 0.2);
+            backdrop-filter: blur(10px);
+            animation: badgeFloat 4s ease-in-out infinite;
+        }
+
+        @keyframes badgeFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(3rem, 8vw, 7rem);
+            font-weight: 300;
+            line-height: 1.1;
+            margin-bottom: 25px;
+            background: linear-gradient(135deg, var(--charcoal) 0%, var(--deep-rose) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: titleReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.3s both;
+        }
+
+        @keyframes titleReveal {
+            from { opacity: 0; transform: translateY(40px) rotateX(20deg); }
+            to { opacity: 1; transform: translateY(0) rotateX(0); }
+        }
+
+        .hero-script {
+            font-family: 'Alex Brush', cursive;
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            color: var(--deep-rose);
+            margin: 20px 0;
+            animation: scriptSlide 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.6s both;
+        }
+
+        @keyframes scriptSlide {
+            from { opacity: 0; transform: translateX(-50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .hero-couple {
+            font-size: 1.3rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            color: var(--charcoal);
+            opacity: 0.8;
+            animation: coupleReveal 1.5s cubic-bezier(0.16, 1, 0.3, 1) 0.9s both;
+        }
+
+        @keyframes coupleReveal {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 0.8; transform: scale(1); }
+        }
+
+        /* ===== GLASS MORPHISM CONTAINER ===== */
+        .glass-container {
+            max-width: 1200px;
+            margin: -100px auto 80px;
+            padding: 80px 60px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            box-shadow: 
+                0 20px 80px rgba(212, 165, 165, 0.15),
+                inset 0 1px 0 rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            position: relative;
+            z-index: 1;
+            animation: containerSlideUp 1s cubic-bezier(0.16, 1, 0.3, 1) 1.2s both;
+        }
+
+        @keyframes containerSlideUp {
+            from { opacity: 0; transform: translateY(100px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== SECTION HEADERS ===== */
+        .section-header {
+            text-align: center;
+            margin-bottom: 60px;
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .section-header.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .section-label {
+            font-size: 0.85rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--deep-rose);
+            font-weight: 500;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .section-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 300;
+            color: var(--charcoal);
+            position: relative;
+            display: inline-block;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--rose-gold), transparent);
+        }
+
+        /* ===== DELIVERABLES GRID ===== */
+        .deliverables-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin: 60px 0;
+        }
+
+        .deliverable-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(248, 240, 230, 0.9));
+            padding: 40px 30px;
+            border-radius: 25px;
+            text-align: center;
+            border: 1px solid rgba(232, 196, 184, 0.3);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+        }
+
+        .deliverable-card.visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+
+        .deliverable-card:hover {
+            transform: translateY(-15px) scale(1.02);
+            box-shadow: 0 30px 60px rgba(212, 165, 165, 0.25);
+            border-color: var(--rose-gold);
+        }
+
+        .deliverable-icon {
+            width: 70px;
+            height: 70px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--rose-gold), var(--deep-rose));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            color: white;
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .deliverable-card:hover .deliverable-icon {
+            transform: rotate(360deg) scale(1.1);
+        }
+
+        .deliverable-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--charcoal);
+            margin-bottom: 10px;
+        }
+
+        .deliverable-desc {
+            font-size: 0.9rem;
+            color: var(--charcoal);
+            opacity: 0.7;
+            line-height: 1.6;
+        }
+
+        /* ===== EVENTS TABLE ===== */
+        .events-table {
+            width: 100%;
+            margin: 40px 0;
+            border-collapse: separate;
+            border-spacing: 0 15px;
+        }
+
+        .events-table thead th {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding: 20px;
+            text-align: left;
+            color: var(--charcoal);
+            background: linear-gradient(135deg, rgba(232, 196, 184, 0.3), rgba(244, 228, 215, 0.3));
+            backdrop-filter: blur(10px);
+        }
+
+        .events-table thead th:first-child { border-radius: 15px 0 0 15px; }
+        .events-table thead th:last-child { border-radius: 0 15px 15px 0; }
+
+        .events-table tbody tr {
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(10px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+
+        .events-table tbody tr.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .events-table tbody tr:hover {
+            background: rgba(232, 196, 184, 0.2);
+            transform: translateX(10px) scale(1.02);
+            box-shadow: 0 10px 30px rgba(212, 165, 165, 0.15);
+        }
+
+        .events-table td {
+            padding: 25px 20px;
+            font-size: 1rem;
+        }
+
+        .events-table tbody tr td:first-child { border-radius: 15px 0 0 15px; font-weight: 500; }
+        .events-table tbody tr td:last-child { border-radius: 0 15px 15px 0; }
+
+        .crew-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, rgba(168, 181, 160, 0.2), rgba(212, 165, 165, 0.2));
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        /* ===== PRICING CARD ===== */
+        .pricing-showcase {
+            margin: 80px 0;
+            text-align: center;
+        }
+
+        .pricing-card {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--charcoal) 0%, #5a4a4a 100%);
+            padding: 80px 100px;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 40px 100px rgba(61, 61, 61, 0.4);
+            opacity: 0;
+            transform: scale(0.9) rotateX(10deg);
+            transition: all 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .pricing-card.visible {
+            opacity: 1;
+            transform: scale(1) rotateX(0);
+        }
+
+        .pricing-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(
+                from 0deg at 50% 50%,
+                transparent 0deg,
+                rgba(212, 175, 55, 0.3) 60deg,
+                transparent 120deg,
+                transparent 180deg,
+                rgba(212, 175, 55, 0.3) 240deg,
+                transparent 300deg
+            );
+            animation: priceRotate 15s linear infinite;
+        }
+
+        @keyframes priceRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .pricing-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .pricing-label {
+            color: var(--rose-gold);
+            font-size: 0.9rem;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 20px;
+        }
+
+        .pricing-amount {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 5rem;
+            font-weight: 300;
+            color: white;
+            margin: 20px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            animation: priceGlow 3s ease-in-out infinite;
+        }
+
+        @keyframes priceGlow {
+            0%, 100% { text-shadow: 0 0 20px rgba(212, 175, 55, 0.5); }
+            50% { text-shadow: 0 0 40px rgba(212, 175, 55, 0.8); }
+        }
+
+        .pricing-currency {
+            font-size: 2.5rem;
+            color: var(--gold-shimmer);
+        }
+
+        .pricing-note {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+        }
+
+        /* ===== PAYMENT TIMELINE ===== */
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 40px 0;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, transparent, var(--rose-gold), transparent);
+            transform: translateX(-50%);
+        }
+
+        .timeline-item {
+            position: relative;
+            margin: 50px 0;
+            opacity: 0;
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .timeline-item.visible {
+            opacity: 1;
+        }
+
+        .timeline-item:nth-child(odd) {
+            transform: translateX(-50px);
+            padding-right: 50%;
+            text-align: right;
+        }
+
+        .timeline-item:nth-child(even) {
+            transform: translateX(50px);
+            padding-left: 50%;
+        }
+
+        .timeline-item.visible:nth-child(odd),
+        .timeline-item.visible:nth-child(even) {
+            transform: translateX(0);
+        }
+
+        .timeline-dot {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, var(--rose-gold), var(--deep-rose));
+            border-radius: 50%;
+            box-shadow: 0 0 0 8px rgba(232, 196, 184, 0.2);
+            animation: dotPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes dotPulse {
+            0%, 100% { box-shadow: 0 0 0 8px rgba(232, 196, 184, 0.2); }
+            50% { box-shadow: 0 0 0 15px rgba(232, 196, 184, 0.4); }
+        }
+
+        .timeline-content {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 20px;
+            border: 1px solid rgba(232, 196, 184, 0.3);
+            transition: all 0.4s ease;
+        }
+
+        .timeline-item:hover .timeline-content {
+            transform: scale(1.05);
+            box-shadow: 0 20px 40px rgba(212, 165, 165, 0.2);
+        }
+
+        .timeline-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.8rem;
+            font-weight: 600;
+            color: var(--charcoal);
+            margin-bottom: 10px;
+        }
+
+        .timeline-desc {
+            font-size: 0.95rem;
+            color: var(--charcoal);
+            opacity: 0.7;
+            margin-bottom: 15px;
+        }
+
+        .timeline-amount {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--deep-rose);
+        }
+
+        /* ===== CTA SECTION ===== */
+        .cta-section {
+            text-align: center;
+            padding: 100px 40px;
+            margin: 80px 0;
+            background: linear-gradient(135deg, rgba(232, 196, 184, 0.2), rgba(244, 228, 215, 0.2));
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(212, 165, 165, 0.1) 0%, transparent 70%);
+            animation: ctaRotate 20s linear infinite;
+        }
+
+        @keyframes ctaRotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .cta-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 300;
+            color: var(--charcoal);
+            margin-bottom: 20px;
+        }
+
+        .cta-subtitle {
+            font-size: 1.1rem;
+            color: var(--charcoal);
+            opacity: 0.7;
+            margin-bottom: 40px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            padding: 20px 60px;
+            background: linear-gradient(135deg, var(--deep-rose), var(--rose-gold));
+            color: white;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            box-shadow: 0 20px 40px rgba(212, 165, 165, 0.3);
+        }
+
+        .cta-button:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 30px 60px rgba(212, 165, 165, 0.4);
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--charcoal);
+            opacity: 0.6;
+            font-size: 0.9rem;
+        }
+
+        /* ===== SCROLL PROGRESS ===== */
+        .scroll-progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--rose-gold), var(--deep-rose), var(--gold-shimmer));
+            z-index: 1000;
+            transition: width 0.1s ease;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .glass-container { padding: 40px 30px; margin: -50px 20px 40px; }
+            .deliverables-grid { grid-template-columns: 1fr; }
+            .pricing-card { padding: 60px 40px; }
+            .timeline-item:nth-child(odd),
+            .timeline-item:nth-child(even) {
+                padding: 0 0 0 60px;
+                text-align: left;
+            }
+            .timeline::before { left: 20px; }
+            .timeline-dot { left: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Scroll Progress -->
+    <div class="scroll-progress" id="scrollProgress"></div>
+
+    <!-- Floating Particles -->
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <span class="hero-badge">Laya Productions</span>
+            <h1 class="hero-title">Timeless<br>Memories</h1>
+            <p class="hero-script">Captured with Love</p>
+            <p class="hero-couple">Neehar & Bride</p>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <div class="glass-container">
+        
+        <!-- Deliverables -->
+        <div class="section-header">
+            <span class="section-label">What You'll Receive</span>
+            <h2 class="section-title">Deliverables</h2>
+        </div>
+
+        <div class="deliverables-grid">
+            <div class="deliverable-card">
+                <div class="deliverable-icon">📸</div>
+                <h3 class="deliverable-title">Pre-Wedding Shoot</h3>
+                <p class="deliverable-desc">Outdoor location with 200+ edited photos</p>
+            </div>
+            <div class="deliverable-card">
+                <div class="deliverable-icon">💐</div>
+                <h3 class="deliverable-title">Traditional Photos</h3>
+                <p class="deliverable-desc">Ceremony & rituals professionally captured</p>
+            </div>
+            <div class="deliverable-card">
+                <div class="deliverable-icon">🎬</div>
+                <h3 class="deliverable-title">Cinematic Video</h3>
+                <p class="deliverable-desc">3-5 minute highlight reel in 4K</p>
+            </div>
+            <div class="deliverable-card">
+                <div class="deliverable-icon">✨</div>
+                <h3 class="deliverable-title">Candid Coverage</h3>
+                <p class="deliverable-desc">Unscripted moments & emotions</p>
+            </div>
+            <div class="deliverable-card">
+                <div class="deliverable-icon">🚁</div>
+                <h3 class="deliverable-title">Drone Shots</h3>
+                <p class="deliverable-desc">Aerial perspectives of your venue</p>
+            </div>
+            <div class="deliverable-card">
+                <div class="deliverable-icon">📖</div>
+                <h3 class="deliverable-title">Premium Album</h3>
+                <p class="deliverable-desc">40-page coffee table photobook</p>
+            </div>
+        </div>
+
+        <!-- Events -->
+        <div class="section-header" style="margin-top: 100px;">
+            <span class="section-label">Coverage Details</span>
+            <h2 class="section-title">Events & Crew</h2>
+        </div>
+
+        <table class="events-table">
+            <thead>
+                <tr>
+                    <th>Event</th>
+                    <th>Photography</th>
+                    <th>Videography</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Mehendi</td>
+                    <td><span class="crew-badge">📷 1 Photographer</span></td>
+                    <td><span class="crew-badge">🎥 1 Videographer</span></td>
+                </tr>
+                <tr>
+                    <td>Haldi</td>
+                    <td><span class="crew-badge">📷 1 Photographer</span></td>
+                    <td><span class="crew-badge">🎥 1 Videographer</span></td>
+                </tr>
+                <tr>
+                    <td>Wedding</td>
+                    <td><span class="crew-badge">📷 2 Photographers</span></td>
+                    <td><span class="crew-badge">🎥 2 Videographers</span></td>
+                </tr>
+                <tr>
+                    <td>Reception</td>
+                    <td><span class="crew-badge">📷 2 Photographers</span></td>
+                    <td><span class="crew-badge">🎥 2 Videographers</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- Pricing -->
+        <div class="pricing-showcase">
+            <div class="section-header">
+                <span class="section-label">Investment</span>
+                <h2 class="section-title">Complete Package</h2>
+            </div>
+
+            <div class="pricing-card">
+                <div class="pricing-content">
+                    <p class="pricing-label">Total Package Price</p>
+                    <div class="pricing-amount">
+                        <span class="pricing-currency">₹</span>
+                        <span>4,35,000</span>
+                    </div>
+                    <p class="pricing-note">All-inclusive coverage for your special days</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Timeline -->
+        <div class="section-header" style="margin-top: 120px;">
+            <span class="section-label">Payment Structure</span>
+            <h2 class="section-title">Easy Payment Plan</h2>
+        </div>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <h3 class="timeline-title">Booking Amount</h3>
+                    <p class="timeline-desc">Upon confirmation to secure your dates</p>
+                    <p class="timeline-amount">₹2,17,500 (50%)</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <h3 class="timeline-title">Pre-Event Payment</h3>
+                    <p class="timeline-desc">One week before the first event</p>
+                    <p class="timeline-amount">₹1,95,750 (45%)</p>
+                </div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                    <h3 class="timeline-title">Final Payment</h3>
+                    <p class="timeline-desc">Upon delivery of all materials</p>
+                    <p class="timeline-amount">₹21,750 (5%)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Terms -->
+        <div class="section-header" style="margin-top: 120px;">
+            <span class="section-label">Important Information</span>
+            <h2 class="section-title">Terms & Conditions</h2>
+        </div>
+
+        <div style="max-width: 800px; margin: 0 auto; padding: 30px; background: rgba(255, 255, 255, 0.5); border-radius: 20px; line-height: 2;">
+            <p style="margin-bottom: 15px;"><strong>1.</strong> All photos & videos will be delivered within 45 working days</p>
+            <p style="margin-bottom: 15px;"><strong>2.</strong> Raw footage and unedited photos will not be provided</p>
+            <p style="margin-bottom: 15px;"><strong>3.</strong> Travel and accommodation for outstation events to be arranged by client</p>
+            <p style="margin-bottom: 15px;"><strong>4.</strong> Booking amount is non-refundable upon cancellation</p>
+            <p style="margin-bottom: 15px;"><strong>5.</strong> Copyright of all media remains with Laya Productions</p>
+        </div>
+
+    </div>
+
+    <!-- CTA -->
+    <section class="cta-section" style="margin: 0 40px 80px;">
+        <div class="cta-content">
+            <h2 class="cta-title">Let's Create Magic Together</h2>
+            <p class="cta-subtitle">Book your dates now and let us capture your forever moments</p>
+            <a href="#" class="cta-button">CONFIRM BOOKING</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <p>&copy; 2026 Laya Productions. All rights reserved.</p>
+        <p>Creating memories, one frame at a time.</p>
+    </footer>
+
+    <script>
+        // Scroll Progress Bar
+        window.addEventListener('scroll', () => {
+            const scrollProgress = document.getElementById('scrollProgress');
+            const scrollPercentage = (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100;
+            scrollProgress.style.width = scrollPercentage + '%';
+        });
+
+        // Intersection Observer for animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all animated elements
+        document.querySelectorAll('.section-header, .deliverable-card, .events-table tbody tr, .pricing-card, .timeline-item').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

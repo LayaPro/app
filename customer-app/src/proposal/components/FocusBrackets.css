@@ -1,0 +1,99 @@
+.bg-focus {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 75%;
+    max-width: 900px;
+    height: 70vh;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    pointer-events: none;
+    opacity: 0;
+    animation: bracketRipple 1.2s cubic-bezier(0.16, 1, 0.3, 1) 2s forwards;
+}
+
+.bg-focus::before,
+.bg-focus::after {
+    content: '';
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    border: 3px solid;
+    border-color: var(--accent-gold);
+    opacity: 0;
+    animation: angleGrow 0.8s cubic-bezier(0.16, 1, 0.3, 1) 2.6s forwards, focusPulse 3s ease-in-out 3.4s infinite;
+}
+
+.bg-focus::before {
+    top: 0;
+    left: 0;
+    border-right: none;
+    border-bottom: none;
+}
+
+.bg-focus::after {
+    bottom: 0;
+    right: 0;
+    border-left: none;
+    border-top: none;
+}
+
+@keyframes bracketRipple {
+    0% { 
+        transform: translate(-50%, -50%) scale(0.3); 
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% { 
+        transform: translate(-50%, -50%) scale(1); 
+        opacity: 1;
+    }
+}
+
+@keyframes angleGrow {
+    0% {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    100% {
+        opacity: 0.15;
+        transform: scale(1);
+    }
+}
+
+@keyframes focusPulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 0.15;
+    }
+    50% {
+        transform: scale(1.15);
+        opacity: 0.4;
+    }
+}
+
+.recording-dot {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #8B7355;
+    box-shadow: 0 0 12px rgba(139, 115, 85, 0.8);
+    opacity: 0;
+    animation: recordingDot 2s ease-in-out 3.2s infinite;
+}
+
+@keyframes recordingDot {
+    0%, 100% {
+        opacity: 0.9;
+        box-shadow: 0 0 12px rgba(139, 115, 85, 0.8);
+    }
+    50% {
+        opacity: 0.3;
+        box-shadow: 0 0 4px rgba(139, 115, 85, 0.4);
+    }
+}
