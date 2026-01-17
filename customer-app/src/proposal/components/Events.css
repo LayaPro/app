@@ -1,0 +1,74 @@
+.events {
+    padding: 120px 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(245,240,232,0.4) 100%);
+}
+
+.events-table-wrapper {
+    max-width: 1000px;
+    margin: 80px auto 0;
+    background: var(--bg-card);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px var(--shadow-soft);
+}
+
+.events-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.events-table thead {
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-dark) 100%);
+}
+
+.events-table th {
+    padding: 20px 30px;
+    text-align: left;
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--bg-primary);
+    letter-spacing: 1px;
+}
+
+.events-table td {
+    padding: 20px 30px;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+    color: var(--text-secondary);
+}
+
+.events-table tbody tr {
+    transition: background 0.3s ease;
+}
+
+.events-table tbody tr:hover {
+    background: rgba(201, 169, 97, 0.05);
+}
+
+.events-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.event-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.crew-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    background: rgba(201, 169, 97, 0.1);
+    border-radius: 20px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.crew-badge svg {
+    width: 16px;
+    height: 16px;
+    color: var(--accent-gold);
+}

@@ -1,0 +1,66 @@
+.pricing {
+    padding: 120px 0;
+}
+
+.pricing-card {
+    background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent-dark) 100%);
+    border-radius: 40px;
+    padding: 100px 80px;
+    margin: 80px auto 0;
+    max-width: 1400px;
+    box-shadow: 0 30px 80px var(--shadow-medium);
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+}
+
+.pricing-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, var(--accent-gold) 0%, transparent 70%);
+    opacity: 0.1;
+    animation: rotatePricing 30s linear infinite;
+}
+
+@keyframes rotatePricing {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.pricing-card > * {
+    position: relative;
+    z-index: 2;
+}
+
+.pricing-header {
+    text-align: center;
+    margin-bottom: 0;
+}
+
+.pricing-amount {
+    font-family: 'Playfair Display', serif;
+    font-size: 6rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    margin: 30px 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.pricing-currency {
+    font-size: 4rem;
+    opacity: 0.8;
+}
+
+.pricing-label {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.7);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}

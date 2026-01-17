@@ -1,0 +1,17 @@
+footer {
+    padding: 60px 0;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.footer-divider {
+    width: 100px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, var(--accent-gold) 50%, transparent 100%);
+    margin: 40px auto;
+}
+
+.footer-text {
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
