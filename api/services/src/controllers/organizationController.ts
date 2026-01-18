@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import Organization from '../models/organization';
 import Tenant from '../models/tenant';
 import { AuthRequest } from '../middleware/auth';
+import { uploadToS3 } from '../utils/s3';
 
 export const getOrganization = async (req: AuthRequest, res: Response) => {
   try {
@@ -155,7 +156,8 @@ export const updateOrganization = async (req: AuthRequest, res: Response) => {
       termsOfPayment,
       cancellationPolicy,
       refundPolicy,
-      portfolioImages
+      portfolioImages,
+      quotationPortfolioImages
     } = req.body;
 
     const tenantId = req.user?.tenantId;
@@ -195,6 +197,7 @@ export const updateOrganization = async (req: AuthRequest, res: Response) => {
     if (cancellationPolicy !== undefined) organization.cancellationPolicy = cancellationPolicy;
     if (refundPolicy !== undefined) organization.refundPolicy = refundPolicy;
     if (portfolioImages !== undefined) organization.portfolioImages = portfolioImages;
+    if (quotationPortfolioImages !== undefined) organization.quotationPortfolioImages = quotationPortfolioImages;
 
     organization.updatedBy = userId || '';
 
@@ -237,9 +240,68 @@ export const deleteOrganization = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const uploadQuotationImages = async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    const files = req.files as Express.Multer.File[];
+    
+    if (!files || files.length === 0) {
+      return res.status(400).json({ message: 'No images provided' });
+    }
+
+    if (files.length > 3) {
+      return res.status(400).json({ message: 'Maximum 3 images allowed' });
+    }
+
+    // Get organization to check current image count
+    const organization = await Organization.findOne({ tenantId });
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    const currentImagesCount = organization.quotationPortfolioImages?.length || 0;
+    if (currentImagesCount + files.length > 3) {
+      return res.status(400).json({ 
+        message: `Can only add ${3 - currentImagesCount} more image(s). Maximum 3 images allowed.` 
+      });
+    }
+
+    // Upload images to S3
+    const imageUrls: string[] = [];
+    
+    for (const file of files) {
+      const fileName = `quotation-portfolio-${Date.now()}-${nanoid(8)}.${file.originalname.split('.').pop()}`;
+      
+      const imageUrl = await uploadToS3({
+        buffer: file.buffer,
+        fileName,
+        mimeType: file.mimetype,
+        folder: `portfolio`,
+      });
+      
+      imageUrls.push(imageUrl);
+    }
+
+    res.json({
+      message: 'Images uploaded successfully',
+      imageUrls
+    });
+  } catch (error: any) {
+    console.error('Error uploading quotation images:', error);
+    res.status(500).json({ message: error.message || 'Error uploading images' });
+  }
+};
+
 export default {
   getOrganization,
   createOrganization,
   updateOrganization,
-  deleteOrganization
+  deleteOrganization,
+  uploadQuotationImages
 };

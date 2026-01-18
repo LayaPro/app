@@ -5,7 +5,6 @@ import { Breadcrumb, Tabs } from '../../components/ui/index.js';
 import type { Tab } from '../../components/ui/Tabs.js';
 import { BasicDetailsCard } from './BasicDetailsCard';
 import { TermsCard } from './TermsCard';
-import { PortfolioCard } from './PortfolioCard';
 import { useToast } from '../../context/ToastContext';
 import type { Organization } from '../../types/index.js';
 
@@ -70,24 +69,6 @@ const OrganizationPage = () => {
       ),
       content: (
         <TermsCard
-          organization={organization}
-          loading={loading}
-          onSuccess={handleSuccess}
-          onError={handleError}
-        />
-      ),
-    },
-    {
-      id: 'portfolio',
-      label: 'Portfolio',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
-      badge: organization?.portfolioImages?.length,
-      content: (
-        <PortfolioCard
           organization={organization}
           loading={loading}
           onSuccess={handleSuccess}

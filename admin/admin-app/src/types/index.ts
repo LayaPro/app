@@ -234,6 +234,9 @@ export interface Organization {
     order?: number;
   }[];
   
+  // Quotation Portfolio Images (for About Us section - max 3, stored as base64 or URLs)
+  quotationPortfolioImages?: string[];
+  
   createdAt?: Date;
   updatedAt?: Date;
   createdBy?: string;

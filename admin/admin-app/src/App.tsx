@@ -14,6 +14,7 @@ import { ToastContainer } from './components/ui/ToastContainer.js';
 import Dashboard from './pages/Dashboard/index.js';
 import Albums from './pages/Albums/index.js';
 import Projects from './pages/Projects/index.js';
+import Proposals from './pages/Proposals/index.js';
 import Finances from './pages/Finances/index.js';
 import Calendar from './pages/Calendar/index.js';
 import Statistics from './pages/Statistics/index.js';
@@ -86,6 +87,7 @@ function App() {
           <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
           <Route path={ROUTES.ALBUMS} element={<Albums />} />
           <Route path={ROUTES.PROJECTS} element={<Projects />} />
+          <Route path={ROUTES.PROPOSALS} element={<Proposals />} />
           <Route path={ROUTES.FINANCES} element={<Finances />} />
           <Route path={ROUTES.CALENDAR} element={<Calendar />} />
           <Route path={ROUTES.STATISTICS} element={<Statistics />} />

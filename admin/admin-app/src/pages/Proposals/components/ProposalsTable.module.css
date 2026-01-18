@@ -1,0 +1,102 @@
+.proposalNumber {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  color: var(--primary-color);
+}
+
+.clientName {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.clientEmail {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.phoneText {
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.amount {
+  font-weight: 600;
+  font-family: 'Courier New', monospace;
+  color: var(--text-primary);
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.dateText {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.actionsCell {
+  position: relative;
+}
+
+.actionsDropdownButton {
+  padding: 6px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionsDropdownButton:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.actionsDropdown {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  min-width: 160px;
+  overflow: hidden;
+}
+
+.actionsDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: left;
+}
+
+.actionsDropdownItem:hover {
+  background: var(--bg-secondary);
+}
+
+.actionsDropdownItem svg {
+  flex-shrink: 0;
+  stroke-width: 2;
+}

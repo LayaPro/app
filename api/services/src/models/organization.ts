@@ -45,6 +45,9 @@ export interface IOrganization extends Document {
     order?: number;
   }[];
   
+  // Quotation Portfolio Images (simple array for About Us section)
+  quotationPortfolioImages?: string[];
+  
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -96,6 +99,9 @@ const OrganizationSchema = new Schema<IOrganization>(
       category: { type: String, trim: true },
       order: { type: Number, default: 0 }
     }],
+    
+    // Quotation Portfolio Images
+    quotationPortfolioImages: [{ type: String }],
     
     createdBy: { type: String },
     updatedBy: { type: String }

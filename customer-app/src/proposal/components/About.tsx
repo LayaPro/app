@@ -1,6 +1,14 @@
 import './About.css';
 
 export const About = () => {
+    const images = [
+        'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600&q=80',
+        'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80',
+        'https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=600&q=80'
+    ];
+    const titles = ['Romantic Moments', 'Love Story', 'Sacred Rituals'];
+    const descriptions = ['WEDDING DAY', 'PRE-WEDDING', 'CEREMONY'];
+
     return (
         <section className="about reveal">
             <div className="about-content">
@@ -12,27 +20,15 @@ export const About = () => {
                 </p>
                 
                 <div className="portfolio-grid">
-                    <div className="portfolio-item reveal-scale">
-                        <img src="https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600&q=80" alt="Wedding Couple" />
-                        <div className="portfolio-overlay">
-                            <h3>Romantic Moments</h3>
-                            <p>WEDDING DAY</p>
+                    {images.map((imageUrl, index) => (
+                        <div key={index} className="portfolio-item reveal-scale">
+                            <img src={imageUrl} alt={`Portfolio image ${index + 1}`} />
+                            <div className="portfolio-overlay">
+                                <h3>{titles[index]}</h3>
+                                <p>{descriptions[index]}</p>
+                            </div>
                         </div>
-                    </div>
-                    <div className="portfolio-item reveal-scale">
-                        <img src="https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80" alt="Pre-Wedding Shoot" />
-                        <div className="portfolio-overlay">
-                            <h3>Love Story</h3>
-                            <p>PRE-WEDDING</p>
-                        </div>
-                    </div>
-                    <div className="portfolio-item reveal-scale">
-                        <img src="https://images.unsplash.com/photo-1591604466107-ec97de577aff?w=600&q=80" alt="Wedding Ceremony" />
-                        <div className="portfolio-overlay">
-                            <h3>Sacred Rituals</h3>
-                            <p>CEREMONY</p>
-                        </div>
-                    </div>
+                    ))}
                 </div>
             </div>
         </section>
