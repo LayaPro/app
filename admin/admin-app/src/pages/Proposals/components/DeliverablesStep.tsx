@@ -1,0 +1,87 @@
+import { useState } from 'react';
+import { Button } from '../../../components/ui/index.js';
+import { AddDeliverableModal } from './AddDeliverableModal.js';
+import type { ProposalFormData } from '../ProposalWizard';
+import styles from '../ProposalWizard.module.css';
+
+interface DeliverablesStepProps {
+  formData: ProposalFormData;
+  updateFormData: (field: string, value: any) => void;
+}
+
+export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
+  formData,
+  updateFormData,
+}) => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const handleAddDeliverable = (deliverable: { name: string; description: string }) => {
+    const newDeliverable = {
+      name: deliverable.name,
+      description: deliverable.description,
+      price: 0,
+    };
+    updateFormData('addOns', [...formData.addOns, newDeliverable]);
+    setIsModalOpen(false);
+  };
+
+  const removeDeliverable = (index: number) => {
+    const updatedDeliverables = formData.addOns.filter((_, i) => i !== index);
+    updateFormData('addOns', updatedDeliverables);
+  };
+
+  return (
+    <div className={styles.form}>
+      <div className={styles.formSection}>
+        {formData.addOns.length === 0 ? (
+          <div className={styles.emptyState}>
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <p>No deliverables added yet</p>
+            <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+              Add items that will be delivered to the client
+            </span>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {formData.addOns.map((deliverable, index) => (
+              <div key={index} className={styles.eventCard}>
+                <div className={styles.eventHeader}>
+                  <div className={styles.eventInfo}>
+                    <div className={styles.eventName}>{deliverable.name}</div>
+                    {deliverable.description && (
+                      <div className={styles.eventSummary}>{deliverable.description}</div>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    onClick={() => removeDeliverable(index)}
+                    style={{ color: 'var(--error-color)', padding: '4px 8px' }}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div style={{ marginTop: '24px' }}>
+          <Button onClick={() => setIsModalOpen(true)} variant="primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Deliverable
+          </Button>
+        </div>
+      </div>
+
+      <AddDeliverableModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onAdd={handleAddDeliverable}
+      />
+    </div>
+  );
+};

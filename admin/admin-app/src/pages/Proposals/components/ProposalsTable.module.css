@@ -4,6 +4,11 @@
   color: var(--primary-color);
 }
 
+.projectName {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
 .clientName {
   font-weight: 500;
   color: var(--text-primary);
@@ -24,6 +29,14 @@
   font-weight: 600;
   font-family: 'Courier New', monospace;
   color: var(--text-primary);
+}
+
+.pinText {
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  color: var(--primary-color);
+  font-size: 16px;
+  letter-spacing: 2px;
 }
 
 .statusBadge {
@@ -64,17 +77,27 @@
 }
 
 .actionsDropdown {
-  position: absolute;
-  right: 0;
-  top: 100%;
-  margin-top: 4px;
+  position: fixed;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 100;
+  z-index: 9999;
   min-width: 160px;
   overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+  transform-origin: top;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .actionsDropdownItem {
@@ -94,6 +117,20 @@
 
 .actionsDropdownItem:hover {
   background: var(--bg-secondary);
+}
+
+.actionsDropdownDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 4px 0;
+}
+
+.actionsDropdownItemDanger {
+  color: #ef4444;
+}
+
+.actionsDropdownItemDanger:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 
 .actionsDropdownItem svg {

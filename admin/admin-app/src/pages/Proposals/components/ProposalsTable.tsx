@@ -2,23 +2,28 @@ import { useState, useEffect, useRef } from 'react';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { useToast } from '../../../context/ToastContext';
+import { proposalApi } from '../../../services/api';
 import styles from './ProposalsTable.module.css';
 
 interface Proposal {
   proposalId: string;
-  proposalNumber: string;
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
-  amount: number;
-  status: 'draft' | 'sent' | 'viewed' | 'accepted' | 'rejected';
+  projectName: string;
+  totalAmount: number;
+  accessCode: string;
+  accessPin: string;
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
   createdAt: string;
-  validUntil: string;
+  validUntil?: string;
 }
 
 export const ProposalsTable = () => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
@@ -50,11 +55,14 @@ export const ProposalsTable = () => {
 
   const fetchProposals = async () => {
     try {
-      // TODO: Replace with actual API call
-      const mockData: Proposal[] = [];
-      setProposals(mockData);
+      setIsLoading(true);
+      const response = await proposalApi.getAll();
+      setProposals(response.proposals || []);
     } catch (error) {
       console.error('Error fetching proposals:', error);
+      showToast('error', 'Failed to fetch proposals');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -62,9 +70,9 @@ export const ProposalsTable = () => {
     switch (status) {
       case 'draft': return '#6b7280';
       case 'sent': return '#3b82f6';
-      case 'viewed': return '#8b5cf6';
       case 'accepted': return '#22c55e';
       case 'rejected': return '#ef4444';
+      case 'expired': return '#f97316';
       default: return '#6b7280';
     }
   };
@@ -80,6 +88,12 @@ export const ProposalsTable = () => {
       day: 'numeric', 
       year: 'numeric' 
     });
+  };
+
+  const handlePreview = (proposal: Proposal) => {
+    const customerAppUrl = import.meta.env.VITE_CUSTOMER_APP_URL || 'http://localhost:5174';
+    const previewUrl = `${customerAppUrl}/proposal/${proposal.accessCode}`;
+    window.open(previewUrl, '_blank');
   };
 
   const handleView = (proposal: Proposal) => {
@@ -104,11 +118,11 @@ export const ProposalsTable = () => {
 
   const columns: Column<Proposal>[] = [
     {
-      key: 'proposalNumber',
-      header: 'Proposal #',
+      key: 'projectName',
+      header: 'Project',
       sortable: true,
       render: (proposal) => (
-        <span className={styles.proposalNumber}>{proposal.proposalNumber}</span>
+        <span className={styles.projectName}>{proposal.projectName}</span>
       ),
     },
     {
@@ -131,11 +145,19 @@ export const ProposalsTable = () => {
       ),
     },
     {
-      key: 'amount',
+      key: 'totalAmount',
       header: 'Amount',
       sortable: true,
       render: (proposal) => (
-        <span className={styles.amount}>₹{proposal.amount.toLocaleString('en-IN')}</span>
+        <span className={styles.amount}>₹{proposal.totalAmount.toLocaleString('en-IN')}</span>
+      ),
+    },
+    {
+      key: 'accessPin',
+      header: 'PIN',
+      sortable: false,
+      render: (proposal) => (
+        <span className={styles.pinText}>{proposal.accessPin}</span>
       ),
     },
     {
@@ -163,14 +185,6 @@ export const ProposalsTable = () => {
       ),
     },
     {
-      key: 'validUntil',
-      header: 'Valid Until',
-      sortable: true,
-      render: (proposal) => (
-        <span className={styles.dateText}>{formatDate(proposal.validUntil)}</span>
-      ),
-    },
-    {
       key: 'actions',
       header: 'Actions',
       sortable: false,
@@ -180,6 +194,11 @@ export const ProposalsTable = () => {
             className={styles.actionsDropdownButton}
             onClick={(e) => {
               e.stopPropagation();
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setDropdownPosition({
+                top: rect.bottom + 4,
+                left: rect.right - 160
+              });
               setOpenActionDropdown(openActionDropdown === proposal.proposalId ? null : proposal.proposalId);
             }}
           >
@@ -189,7 +208,11 @@ export const ProposalsTable = () => {
           </button>
           
           {openActionDropdown === proposal.proposalId && (
-            <div ref={dropdownRef} className={styles.actionsDropdown}>
+            <div 
+              ref={dropdownRef} 
+              className={styles.actionsDropdown}
+              style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
+            >
               <button 
                 className={styles.actionsDropdownItem}
                 onClick={(e) => {
@@ -203,6 +226,19 @@ export const ProposalsTable = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 View
+              </button>
+              <button 
+                className={styles.actionsDropdownItem}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePreview(proposal);
+                  setOpenActionDropdown(null);
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                Preview Quotation
               </button>
               <button 
                 className={styles.actionsDropdownItem}
@@ -230,8 +266,9 @@ export const ProposalsTable = () => {
                 </svg>
                 Send
               </button>
+              <div className={styles.actionsDropdownDivider} />
               <button 
-                className={styles.actionsDropdownItem}
+                className={`${styles.actionsDropdownItem} ${styles.actionsDropdownItemDanger}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleDelete(proposal);
@@ -249,6 +286,14 @@ export const ProposalsTable = () => {
       ),
     },
   ];
+
+  if (isLoading) {
+    return (
+      <div style={{ padding: '48px', textAlign: 'center', color: '#6b7280' }}>
+        Loading proposals...
+      </div>
+    );
+  }
 
   return (
     <DataTable

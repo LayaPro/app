@@ -1,0 +1,324 @@
+.pin-entry-overlay {
+  position: fixed;
+  inset: 0;
+  background: linear-gradient(135deg, #FAF8F5 0%, #F5F0E8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.pin-entry-container {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  padding: 24px;
+}
+
+.pin-entry-card {
+  background: var(--bg-card);
+  border-radius: 24px;
+  padding: 48px 40px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.12),
+    0 0 1px rgba(0, 0, 0, 0.1);
+  position: relative;
+  z-index: 2;
+  animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pin-entry-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.pin-lock-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 24px;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-rose));
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(201, 169, 97, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 20px rgba(201, 169, 97, 0);
+  }
+}
+
+.pin-lock-icon svg {
+  width: 36px;
+  height: 36px;
+  stroke-width: 2;
+}
+
+.pin-entry-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+}
+
+.pin-entry-subtitle {
+  font-family: 'Raleway', sans-serif;
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.6;
+}
+
+.pin-inputs-container {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.pin-input {
+  width: 64px;
+  height: 72px;
+  font-size: 32px;
+  font-weight: 600;
+  font-family: 'Raleway', sans-serif;
+  text-align: center;
+  border: 2px solid #E5DFD5;
+  border-radius: 16px;
+  background: #FDFCFB;
+  color: var(--text-primary);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+  caret-color: var(--accent-gold);
+}
+
+.pin-input:focus {
+  border-color: var(--accent-gold);
+  background: white;
+  box-shadow: 
+    0 0 0 4px rgba(201, 169, 97, 0.1),
+    0 8px 16px rgba(0, 0, 0, 0.08);
+  transform: scale(1.05);
+}
+
+.pin-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.pin-input-error {
+  border-color: #E53E3E;
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-8px); }
+  75% { transform: translateX(8px); }
+}
+
+.pin-error {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(229, 62, 62, 0.1);
+  border: 1px solid rgba(229, 62, 62, 0.2);
+  border-radius: 12px;
+  color: #C53030;
+  font-family: 'Raleway', sans-serif;
+  font-size: 14px;
+  margin-bottom: 24px;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pin-error svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.pin-submit-button {
+  width: 100%;
+  padding: 16px 24px;
+  background: linear-gradient(135deg, var(--accent-gold), var(--accent-rose));
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(201, 169, 97, 0.3);
+}
+
+.pin-submit-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(201, 169, 97, 0.4);
+}
+
+.pin-submit-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.pin-submit-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.pin-submit-button svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.pin-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.pin-help-text {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 24px;
+  padding: 16px;
+  background: #F9F7F4;
+  border-radius: 12px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.pin-help-text svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  stroke-width: 2;
+  color: var(--accent-dark);
+}
+
+.pin-decoration-left,
+.pin-decoration-right {
+  position: absolute;
+  width: 300px;
+  height: 300px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(201, 169, 97, 0.15), transparent 70%);
+  filter: blur(40px);
+  z-index: 1;
+  pointer-events: none;
+}
+
+.pin-decoration-left {
+  top: -150px;
+  left: -150px;
+}
+
+.pin-decoration-right {
+  bottom: -150px;
+  right: -150px;
+  background: radial-gradient(circle, rgba(212, 163, 115, 0.15), transparent 70%);
+}
+
+/* Mobile Responsive */
+@media (max-width: 600px) {
+  .pin-entry-card {
+    padding: 40px 24px;
+  }
+
+  .pin-entry-title {
+    font-size: 26px;
+  }
+
+  .pin-entry-subtitle {
+    font-size: 14px;
+  }
+
+  .pin-lock-icon {
+    width: 64px;
+    height: 64px;
+  }
+
+  .pin-lock-icon svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .pin-inputs-container {
+    gap: 12px;
+  }
+
+  .pin-input {
+    width: 56px;
+    height: 64px;
+    font-size: 28px;
+  }
+
+  .pin-help-text {
+    font-size: 12px;
+    padding: 12px;
+  }
+}

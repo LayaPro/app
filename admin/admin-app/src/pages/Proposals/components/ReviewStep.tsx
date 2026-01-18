@@ -1,19 +1,16 @@
 import { Button } from '../../../components/ui/index.js';
+import { AmountInput } from '../../../components/ui/AmountInput.js';
+import { formatIndianAmount } from '../../../utils/formatAmount.js';
 import type { ProposalFormData } from '../ProposalWizard';
 import styles from '../ProposalWizard.module.css';
 
 interface ReviewStepProps {
   formData: ProposalFormData;
   onEdit: (step: number) => void;
+  updateFormData: (field: string, value: any) => void;
 }
 
-export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit }) => {
-  const calculateTotal = (): number => {
-    const addOnsTotal = formData.addOns.reduce((sum, addOn) => sum + (addOn.price || 0), 0);
-    // Base amount would come from events pricing in a real implementation
-    return addOnsTotal;
-  };
-
+export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, updateFormData }) => {
   return (
     <div className={styles.form}>
       {/* Basic Details */}
@@ -85,12 +82,24 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit }) => {
                   <span className={styles.reviewLabel}>Venue:</span>
                   <span className={styles.reviewValue}>{event.venue || 'Not specified'}</span>
                 </div>
-                <div className={styles.reviewItem}>
-                  <span className={styles.reviewLabel}>Coverage:</span>
-                  <span className={styles.reviewValue}>
-                    {event.photographer} Photographer(s), {event.videographer} Videographer(s), {event.hours} hours
-                  </span>
-                </div>
+                
+                {event.photographyServices && event.photographyServices.length > 0 && (
+                  <div className={styles.reviewItem}>
+                    <span className={styles.reviewLabel}>Photography:</span>
+                    <span className={styles.reviewValue}>
+                      {event.photographyServices.map(s => `${s.label} (${s.count})`).join(', ')}
+                    </span>
+                  </div>
+                )}
+                
+                {event.videographyServices && event.videographyServices.length > 0 && (
+                  <div className={styles.reviewItem}>
+                    <span className={styles.reviewLabel}>Videography:</span>
+                    <span className={styles.reviewValue}>
+                      {event.videographyServices.map(s => `${s.label} (${s.count})`).join(', ')}
+                    </span>
+                  </div>
+                )}
               </div>
             ))
           )}
@@ -106,25 +115,25 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit }) => {
           </Button>
         </div>
         <div className={styles.reviewContent}>
+          {formData.termsOfService && (
+            <div className={styles.reviewItem}>
+              <span className={styles.reviewLabel}>Terms of Service:</span>
+              <span className={styles.reviewValue} style={{ whiteSpace: 'pre-line' }}>{formData.termsOfService}</span>
+            </div>
+          )}
           {formData.paymentTerms && (
             <div className={styles.reviewItem}>
-              <span className={styles.reviewLabel}>Payment Terms:</span>
-              <span className={styles.reviewValue}>{formData.paymentTerms}</span>
+              <span className={styles.reviewLabel}>Terms of Payment:</span>
+              <span className={styles.reviewValue} style={{ whiteSpace: 'pre-line' }}>{formData.paymentTerms}</span>
             </div>
           )}
-          {formData.cancellationPolicy && (
+          {formData.deliverables && (
             <div className={styles.reviewItem}>
-              <span className={styles.reviewLabel}>Cancellation Policy:</span>
-              <span className={styles.reviewValue}>{formData.cancellationPolicy}</span>
+              <span className={styles.reviewLabel}>Deliverables:</span>
+              <span className={styles.reviewValue} style={{ whiteSpace: 'pre-line' }}>{formData.deliverables}</span>
             </div>
           )}
-          {formData.deliveryTimeline && (
-            <div className={styles.reviewItem}>
-              <span className={styles.reviewLabel}>Delivery Timeline:</span>
-              <span className={styles.reviewValue}>{formData.deliveryTimeline}</span>
-            </div>
-          )}
-          {!formData.paymentTerms && !formData.cancellationPolicy && !formData.deliveryTimeline && (
+          {!formData.termsOfService && !formData.paymentTerms && !formData.deliverables && (
             <p className={styles.emptyText}>No terms defined</p>
           )}
         </div>
@@ -158,10 +167,39 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit }) => {
       </div>
 
       {/* Total */}
-      <div className={styles.totalSection}>
-        <div className={styles.totalRow}>
-          <span className={styles.totalLabel}>Total Amount:</span>
-          <span className={styles.totalValue}>₹{calculateTotal().toLocaleString()}</span>
+      <div className={styles.reviewSection}>
+        <div className={styles.reviewHeader}>
+          <h3>Final Quotation</h3>
+        </div>
+        <div className={styles.reviewContent}>
+          <div className={styles.formGroup}>
+            <AmountInput
+              label="Final Quotation Price"
+              value={formData.totalAmount?.toString() || ''}
+              onChange={(value) => updateFormData('totalAmount', parseFloat(value) || 0)}
+              placeholder="0"
+              required
+              info="Total amount to be quoted to the client"
+            />
+          </div>
+          {formData.totalAmount && formData.totalAmount > 0 && (
+            <div style={{ 
+              marginTop: '16px', 
+              padding: '16px', 
+              backgroundColor: 'var(--background-secondary)', 
+              borderRadius: '8px',
+              border: '1px solid var(--border-color)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                  Amount:
+                </span>
+                <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-primary)' }}>
+                  ₹{formatIndianAmount(formData.totalAmount)}
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

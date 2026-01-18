@@ -2,10 +2,13 @@ import { useState } from 'react';
 import { Breadcrumb, Button } from '../../components/ui/index.js';
 import { ProposalsTable } from './components/ProposalsTable';
 import { ProposalWizard } from './ProposalWizard';
+import { proposalApi } from '../../services/api';
+import { useToast } from '../../context/ToastContext';
 import styles from '../Page.module.css';
 
 const Proposals = () => {
   const [showWizard, setShowWizard] = useState(false);
+  const { showToast } = useToast();
 
   const handleCreateProposal = () => {
     setShowWizard(true);
@@ -15,10 +18,37 @@ const Proposals = () => {
     setShowWizard(false);
   };
 
-  const handleSubmit = (proposalData: any) => {
-    console.log('Proposal data:', proposalData);
-    // TODO: Call API to create proposal
-    setShowWizard(false);
+  const handleSubmit = async (proposalData: any) => {
+    try {
+      // Validate required fields
+      if (!proposalData.totalAmount || proposalData.totalAmount <= 0) {
+        showToast('error', 'Please enter the final quotation price');
+        return;
+      }
+
+      // Transform deliverables (addOns) to match API structure
+      const payload = {
+        clientName: proposalData.clientName,
+        clientEmail: proposalData.clientEmail,
+        clientPhone: proposalData.clientPhone,
+        projectName: proposalData.projectName,
+        weddingDate: proposalData.weddingDate,
+        venue: proposalData.venue,
+        events: proposalData.events,
+        termsOfService: proposalData.termsOfService,
+        paymentTerms: proposalData.paymentTerms,
+        deliverables: proposalData.addOns, // addOns are deliverables in the model
+        totalAmount: proposalData.totalAmount,
+        validUntil: proposalData.validUntil,
+      };
+
+      await proposalApi.create(payload);
+      showToast('success', 'Proposal created successfully');
+      setShowWizard(false);
+    } catch (error: any) {
+      console.error('Error creating proposal:', error);
+      showToast('error', error.message || 'Failed to create proposal');
+    }
   };
 
   if (showWizard) {

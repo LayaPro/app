@@ -969,3 +969,67 @@ export const organizationApi = {
     return handleResponse(response);
   },
 };
+
+// Proposal API
+export const proposalApi = {
+  create: async (data: any) => {
+    const response = await fetch(`${API_BASE_URL}/create-proposal`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  getAll: async (params?: { status?: string; clientEmail?: string; search?: string }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.clientEmail) queryParams.append('clientEmail', params.clientEmail);
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const url = `${API_BASE_URL}/get-all-proposals${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/get-proposal/${id}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  update: async (id: string, data: any) => {
+    const response = await fetch(`${API_BASE_URL}/update-proposal/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/delete-proposal/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};

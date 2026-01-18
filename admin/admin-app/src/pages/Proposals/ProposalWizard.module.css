@@ -148,7 +148,7 @@
 
 .wizardContent {
   flex: 1;
-  padding: 24px 48px 120px;
+  padding: 24px 48px 24px;
   width: 100%;
   background: var(--bg-primary-neutral);
   position: relative;
@@ -529,7 +529,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
+  gap: 16px;
 }
 
 .eventInfo {
@@ -537,17 +537,80 @@
   flex-direction: column;
   gap: 8px;
   flex: 1;
+  min-width: 0;
+}
+
+.eventTitleRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .eventName {
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text-primary);
-  font-size: 17px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  letter-spacing: 0.01em;
+  font-size: 16px;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.servicesChipsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.eventSummary {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.totalStaffBadge {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.serviceChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, var(--background-secondary), var(--background-tertiary));
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  font-size: 12px;
+  transition: all 0.2s ease;
+}
+
+.serviceChip:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.serviceType {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.serviceCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 9px;
+  font-size: 10px;
+  font-weight: 600;
 }
 
 .eventMeta {
@@ -577,8 +640,30 @@
   font-size: 14px;
   color: var(--text-secondary);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.eventDetailRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+}
+
+.detailLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.detailValue {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
 }
 
 .eventDetails span {
@@ -690,10 +775,30 @@
 }
 
 .emptyState {
-  text-align: center;
-  padding: 48px;
-  color: var(--color-text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 48px 24px;
+  margin: 24px 0;
+  background: var(--background-secondary);
+  border: 2px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  color: var(--text-secondary);
   font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.emptyState svg {
+  color: var(--text-tertiary);
+  opacity: 0.5;
+}
+
+.emptyState p {
+  margin: 0;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .pageHeader {

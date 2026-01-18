@@ -71,10 +71,10 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
 
           <div className={styles.formGroup}>
             <DatePicker
-              label="Wedding Date"
+              label="Event Date"
               value={formData.weddingDate || ''}
               onChange={(value) => updateFormData('weddingDate', value)}
-              placeholder="Select wedding date"
+              placeholder="Select event date"
             />
           </div>
 

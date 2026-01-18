@@ -1,6 +1,9 @@
+import { useProposal } from '../context/ProposalContext';
 import './About.css';
 
 export const About = () => {
+    const { organization } = useProposal();
+    
     const images = [
         'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=600&q=80',
         'https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80',
@@ -13,10 +16,9 @@ export const About = () => {
         <section className="about reveal">
             <div className="about-content">
                 <span className="section-label">About Us</span>
-                <h2 className="section-title">Laya Productions</h2>
+                <h2 className="section-title">{organization?.companyName || 'Our Studio'}</h2>
                 <p className="section-description">
-                    We are passionate storytellers dedicated to capturing the magic of your special day. With years of experience 
-                    and a keen eye for detail, we transform fleeting moments into timeless memories that you'll cherish forever.
+                    {organization?.aboutUs || 'We are passionate storytellers dedicated to capturing the magic of your special day. With years of experience and a keen eye for detail, we transform fleeting moments into timeless memories that you\'ll cherish forever.'}
                 </p>
                 
                 <div className="portfolio-grid">

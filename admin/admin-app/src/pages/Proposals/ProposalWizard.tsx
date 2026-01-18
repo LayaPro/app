@@ -3,7 +3,7 @@ import { Breadcrumb } from '../../components/ui/index.js';
 import { BasicDetailsStep } from './components/BasicDetailsStep.js';
 import { EventsStep } from './components/EventsStep.js';
 import { TermsStep } from './components/TermsStep.js';
-import { AddOnsStep } from './components/AddOnsStep.js';
+import { DeliverablesStep } from './components/DeliverablesStep.js';
 import { ReviewStep } from './components/ReviewStep.js';
 import styles from './ProposalWizard.module.css';
 import pageStyles from '../Page.module.css';
@@ -26,17 +26,25 @@ export interface ProposalFormData {
   events: Array<{
     eventId: string;
     eventName: string;
+    eventType?: string;
     date?: string;
     venue?: string;
-    photographer?: number;
-    videographer?: number;
-    hours?: number;
+    photographyServices?: Array<{
+      type: string;
+      label: string;
+      count: number;
+    }>;
+    videographyServices?: Array<{
+      type: string;
+      label: string;
+      count: number;
+    }>;
   }>;
   
   // Terms
+  termsOfService?: string;
   paymentTerms?: string;
-  cancellationPolicy?: string;
-  deliveryTimeline?: string;
+  deliverables?: string;
   
   // Add-ons
   addOns: Array<{
@@ -54,7 +62,7 @@ const STEPS = [
   { id: 1, label: 'Basic Details' },
   { id: 2, label: 'Events' },
   { id: 3, label: 'Terms' },
-  { id: 4, label: 'Add-ons' },
+  { id: 4, label: 'Deliverables' },
   { id: 5, label: 'Review' },
 ];
 
@@ -69,9 +77,9 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
     weddingDate: '',
     venue: '',
     events: [],
+    termsOfService: '',
     paymentTerms: '',
-    cancellationPolicy: '',
-    deliveryTimeline: '',
+    deliverables: '',
     addOns: [],
     totalAmount: 0,
     validUntil: '',
@@ -172,7 +180,7 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
         );
       case 4:
         return (
-          <AddOnsStep
+          <DeliverablesStep
             formData={formData}
             updateFormData={updateFormData}
           />
@@ -181,6 +189,7 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
         return (
           <ReviewStep
             formData={formData}
+            updateFormData={updateFormData}
             onEdit={(step: number) => setCurrentStep(step)}
           />
         );

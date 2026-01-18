@@ -36,6 +36,7 @@ import searchController from './controllers/searchController';
 import userController from './controllers/userController';
 import albumPdfController from './controllers/albumPdfController';
 import organizationController from './controllers/organizationController';
+import * as proposalController from './controllers/proposalController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload, uploadPdf } from './middleware/upload';
@@ -44,7 +45,12 @@ import { startEventStatusUpdater } from './jobs/eventStatusUpdater';
 const app = express();
 app.use(express.json({ limit: '10gb' }));
 app.use(express.urlencoded({ limit: '10gb', extended: true }));
-app.use(cors());
+app.use(cors({
+  origin: true, // Allow all origins in development
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Proposal-Pin']
+}));
 
 // ---------- Miscellaneous routes ----------
 app.get('/test', testController.getTest);
@@ -219,6 +225,14 @@ app.get('/get-organization', authenticate, organizationController.getOrganizatio
 app.post('/create-organization', authenticate, requireAdmin, organizationController.createOrganization);
 app.put('/update-organization', authenticate, requireAdmin, organizationController.updateOrganization);
 app.delete('/delete-organization', authenticate, requireAdmin, organizationController.deleteOrganization);
+
+// ---------- Proposal routes ----------
+app.post('/create-proposal', authenticate, requireAdmin, proposalController.createProposal);
+app.get('/get-all-proposals', authenticate, proposalController.getAllProposals);
+app.get('/get-proposal/:id', authenticate, proposalController.getProposalById);
+app.put('/update-proposal/:id', authenticate, requireAdmin, proposalController.updateProposal);
+app.delete('/delete-proposal/:id', authenticate, requireAdmin, proposalController.deleteProposal);
+app.post('/verify-proposal-pin/:accessCode', proposalController.verifyProposalPin);
 
 // ---------- Users routes ----------
 app.post('/create-user', authenticate, requireAdmin, userController.createUser);
