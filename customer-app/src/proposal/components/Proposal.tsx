@@ -120,11 +120,28 @@ export const Proposal = () => {
         });
 
         // Observe all elements with reveal classes
-        const revealElements = document.querySelectorAll('.reveal, .reveal-scale');
-        revealElements.forEach((el) => revealObserver.observe(el));
+        const observeElements = () => {
+            const revealElements = document.querySelectorAll('.reveal, .reveal-scale');
+            revealElements.forEach((el) => {
+                // Remove any existing active class first
+                el.classList.remove('active');
+                revealObserver.observe(el);
+            });
+        };
+
+        // Initial observation
+        observeElements();
+
+        // Re-observe after delays to catch dynamically rendered elements
+        const timeout1 = setTimeout(observeElements, 100);
+        const timeout2 = setTimeout(observeElements, 500);
 
         return () => {
+            clearTimeout(timeout1);
+            clearTimeout(timeout2);
+            const revealElements = document.querySelectorAll('.reveal, .reveal-scale');
             revealElements.forEach((el) => revealObserver.unobserve(el));
+            revealObserver.disconnect();
         };
     }, [isAuthenticated]);
 
@@ -149,13 +166,31 @@ export const Proposal = () => {
                 <PageTransition />
                 <ScrollProgress />
                 <div className="animated-bg"></div>
+                
+                {/* Floating Particles */}
+                <div className="proposal-floating-particles">
+                    {[...Array(30)].map((_, i) => (
+                        <div 
+                            key={i} 
+                            className="proposal-particle"
+                            style={{
+                                left: `${Math.random() * 100}%`,
+                                top: `${Math.random() * 100}%`,
+                                '--delay': `${Math.random() * 5}s`,
+                                '--duration': `${4 + Math.random() * 6}s`,
+                                '--x': `${(Math.random() - 0.5) * 100}px`,
+                            } as any}
+                        ></div>
+                    ))}
+                </div>
+
                 <Hero />
                 <About />
-                <Deliverables />
                 <Events />
+                <Deliverables />
                 <Pricing />
-                <AddOns />
                 <Payment />
+                <AddOns />
                 <Terms />
                 <CTA />
                 <Footer />

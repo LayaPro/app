@@ -2,3 +2,47 @@
     position: relative;
     min-height: 100vh;
 }
+
+/* Floating Particles on Main Content */
+.proposal-floating-particles {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 1;
+}
+
+.proposal-particle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: radial-gradient(circle, rgba(201, 169, 97, 0.6), transparent);
+    border-radius: 50%;
+    animation: proposalParticleFloat var(--duration) ease-in-out infinite;
+    animation-delay: var(--delay);
+    opacity: 0;
+}
+
+@keyframes proposalParticleFloat {
+    0% {
+        opacity: 0.4;
+        transform: translate(0, 0) scale(0.5);
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translate(calc(var(--x) * 0.3), -120px) scale(1);
+    }
+}
+
+/* Ensure content sections are above particles */
+.proposal-container > section {
+    position: relative;
+    z-index: 1;
+}

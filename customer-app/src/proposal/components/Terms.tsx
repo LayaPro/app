@@ -1,6 +1,31 @@
+import { useProposal } from '../context/ProposalContext';
 import './Terms.css';
 
 export const Terms = () => {
+    const { proposal } = useProposal();
+    const termsOfService = proposal?.termsOfService || '';
+
+    // Parse terms - each line break is a new item
+    const parseTerms = () => {
+        if (!termsOfService || !termsOfService.trim()) {
+            return [];
+        }
+
+        // Split by actual newlines (handle both \n and \r\n)
+        const lines = termsOfService.split(/\r?\n/)
+            .map((line: string) => line.trim())
+            .filter((line: string) => line.length > 0);
+        
+        // Remove existing numbering if present (e.g., "1. ", "1) ", "1 - ")
+        return lines.map((line: string) => line.replace(/^\d+[.)\-]\s*/, '').trim());
+    };
+
+    const terms = parseTerms();
+
+    if (terms.length === 0) {
+        return null;
+    }
+
     return (
         <section className="terms">
             <div className="content-wrapper">
@@ -9,36 +34,12 @@ export const Terms = () => {
 
                 <div className="terms-content reveal-scale">
                     <div className="terms-list">
-                        <div className="term-item">
-                            <div className="term-number">1</div>
-                            <p className="term-text">
-                                All payments are non-refundable once the booking is confirmed. Date changes are subject to availability and may incur additional charges.
-                            </p>
-                        </div>
-                        <div className="term-item">
-                            <div className="term-number">2</div>
-                            <p className="term-text">
-                                Edited photos and videos will be delivered within 60 days of the final event. The premium album will be delivered within 90 days.
-                            </p>
-                        </div>
-                        <div className="term-item">
-                            <div className="term-number">3</div>
-                            <p className="term-text">
-                                Laya Productions retains the copyright to all photographs and videos. You receive a personal usage license for prints and social media.
-                            </p>
-                        </div>
-                        <div className="term-item">
-                            <div className="term-number">4</div>
-                            <p className="term-text">
-                                We reserve the right to use selected images for our portfolio, website, and marketing materials unless explicitly requested otherwise.
-                            </p>
-                        </div>
-                        <div className="term-item">
-                            <div className="term-number">5</div>
-                            <p className="term-text">
-                                Any additional services, overtime, or travel expenses outside the agreed scope will be charged separately as per our standard rates.
-                            </p>
-                        </div>
+                        {terms.map((term: string, index: number) => (
+                            <div key={index} className="term-item">
+                                <div className="term-number">{index + 1}</div>
+                                <p className="term-text">{term}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

@@ -3,25 +3,19 @@ import './LoadingCurtain.css';
 export const LoadingCurtain = () => {
     return (
         <div className="loading-curtain-overlay">
-            <div className="loading-shimmer"></div>
-            
             <div className="loading-content">
                 <div className="loading-icon-wrapper">
-                    <div className="loading-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-                            <circle cx="12" cy="12" r="6" strokeWidth="2"/>
-                            <circle cx="12" cy="12" r="2" strokeWidth="2" fill="currentColor"/>
-                            <line x1="18" y1="6" x2="20" y2="4" strokeWidth="2" strokeLinecap="round"/>
-                            <line x1="6" y1="18" x2="4" y2="20" strokeWidth="2" strokeLinecap="round"/>
-                        </svg>
-                    </div>
+                    <div className="loading-dot"></div>
+                    <div className="loading-ripple"></div>
+                    <div className="loading-ripple loading-ripple-2"></div>
                     <div className="loading-ring"></div>
                     <div className="loading-ring loading-ring-2"></div>
                 </div>
                 
-                <h2 className="loading-title">Crafting Your Experience</h2>
-                <p className="loading-subtitle">Preparing your personalized proposal...</p>
+                <h2 className="loading-title">
+                    <span className="loading-text-1">Crafting Your Experience</span>
+                    <span className="loading-text-2">Creating Your Proposal</span>
+                </h2>
                 
                 <div className="loading-dots">
                     <span></span>
@@ -32,7 +26,7 @@ export const LoadingCurtain = () => {
 
             {/* Floating Elements */}
             <div className="loading-decorations">
-                {[...Array(20)].map((_, i) => (
+                {[...Array(80)].map((_, i) => (
                     <div 
                         key={i} 
                         className="loading-particle"
@@ -46,12 +40,19 @@ export const LoadingCurtain = () => {
                 ))}
             </div>
 
-            {/* Elegant light rays */}
-            <div className="loading-rays">
-                <div className="ray"></div>
-                <div className="ray"></div>
-                <div className="ray"></div>
-            </div>
+            {/* Elegant light rays - COMMENTED FOR LATER USE */}
+            {/* <div className="loading-rays">
+                {[...Array(4)].map((_, i) => (
+                    <div 
+                        key={i} 
+                        className="ray"
+                        style={{
+                            '--rotation': `${45 + (i * 90)}deg`,
+                            '--delay': `${i * 0.5}s`,
+                        } as any}
+                    ></div>
+                ))}
+            </div> */}
         </div>
     );
 };

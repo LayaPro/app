@@ -111,7 +111,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
 
     const sanitizedData = {
       companyName: sanitizeTextInput(formData.companyName),
-      tagline: sanitizeTextInput(formData.tagline),
+      tagline: sanitizeTextarea(formData.tagline),
       logo: formData.logo, // Don't sanitize - it's a base64 image or S3 URL
       aboutUs: sanitizeTextarea(formData.aboutUs),
       email: sanitizeTextInput(formData.email),
@@ -177,14 +177,15 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
               required
             />
 
-            <Input
-              label="Tagline"
+            <Textarea
+              label="Brand Tagline"
               value={formData.tagline}
               onChange={(e) => setFormData({ ...formData, tagline: e.target.value })}
-              placeholder="Your company tagline"
-              maxLength={150}
+              placeholder="Your brand tagline or punchline"
+              maxLength={40}
+              rows={3}
               showCharCount
-              info="A brief, memorable phrase describing your business"
+              info="A brief, memorable phrase describing your business. Use line breaks for multiple lines."
             />
 
             <PhoneInput

@@ -54,25 +54,23 @@
 
 /* Section Styles */
 .section-label {
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
     font-size: 0.9rem;
     font-weight: 600;
     letter-spacing: 5px;
     text-transform: uppercase;
     color: var(--accent-gold);
     margin-bottom: 25px;
-    position: relative;
-    padding-left: 70px;
     opacity: 1;
 }
 
-.section-label::before {
+.section-label::before,
+.section-label::after {
     content: '';
-    position: absolute;
-    left: 0;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 55px;
+    flex: 0 0 55px;
     height: 2px;
     background: var(--accent-gold);
     box-shadow: 0 0 10px rgba(201, 169, 97, 0.3);
@@ -85,6 +83,7 @@
     line-height: 1.2;
     margin-bottom: 30px;
     color: var(--text-primary);
+    text-align: center;
 }
 
 .section-description {
@@ -93,4 +92,7 @@
     max-width: 700px;
     line-height: 1.9;
     margin-bottom: 60px;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
 }

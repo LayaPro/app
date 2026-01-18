@@ -1,6 +1,10 @@
+import { useProposal } from '../context/ProposalContext';
 import './Events.css';
 
 export const Events = () => {
+    const { proposal } = useProposal();
+    const events = proposal?.events || [];
+
     return (
         <section className="events">
             <div className="content-wrapper">
@@ -21,98 +25,45 @@ export const Events = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td><span className="event-name">Mehendi</span></td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
-                                    </svg>
-                                    1 Photographer
-                                </span>
-                            </td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
-                                    </svg>
-                                    1 Videographer
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><span className="event-name">Haldi</span></td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
-                                    </svg>
-                                    1 Photographer
-                                </span>
-                            </td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
-                                        <circle cx="12" cy="7" r="4"/>
-                                    </svg>
-                                    1 Videographer
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><span className="event-name">Wedding</span></td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-                                        <path d="M16 3.13a4 4 0 010 7.75"/>
-                                    </svg>
-                                    2 Photographers
-                                </span>
-                            </td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-                                        <path d="M16 3.13a4 4 0 010 7.75"/>
-                                    </svg>
-                                    2 Videographers
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td><span className="event-name">Reception</span></td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-                                        <path d="M16 3.13a4 4 0 010 7.75"/>
-                                    </svg>
-                                    2 Photographers
-                                </span>
-                            </td>
-                            <td>
-                                <span className="crew-badge">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-                                        <circle cx="9" cy="7" r="4"/>
-                                        <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-                                        <path d="M16 3.13a4 4 0 010 7.75"/>
-                                    </svg>
-                                    2 Videographers
-                                </span>
-                            </td>
-                        </tr>
+                        {events.map((event: any, index: number) => (
+                            <tr key={event.eventId || index}>
+                                <td><span className="event-name">{event.eventName}</span></td>
+                                <td>
+                                    {event.photographyServices && event.photographyServices.length > 0 ? (
+                                        <div className="crew-badges">
+                                            {event.photographyServices.map((service: any, idx: number) => (
+                                                <span key={idx} className="crew-badge">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                                        <circle cx="12" cy="7" r="4"/>
+                                                    </svg>
+                                                    {service.count} {service.label}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span className="crew-badge-empty">—</span>
+                                    )}
+                                </td>
+                                <td>
+                                    {event.videographyServices && event.videographyServices.length > 0 ? (
+                                        <div className="crew-badges">
+                                            {event.videographyServices.map((service: any, idx: number) => (
+                                                <span key={idx} className="crew-badge">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+                                                        <circle cx="12" cy="7" r="4"/>
+                                                    </svg>
+                                                    {service.count} {service.label}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <span className="crew-badge-empty">—</span>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
                     </tbody>
                 </table>
             </div>
