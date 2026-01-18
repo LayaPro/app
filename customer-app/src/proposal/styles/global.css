@@ -96,3 +96,170 @@
     margin-left: auto;
     margin-right: auto;
 }
+
+/* Print Styles */
+@media print {
+    @page {
+        size: A4;
+        margin: 1cm;
+    }
+
+    body {
+        background: white !important;
+    }
+
+    .proposal-container {
+        background: white !important;
+    }
+
+    .animated-bg,
+    .proposal-floating-particles,
+    .scroll-progress,
+    .scroll-indicator {
+        display: none !important;
+    }
+
+    /* Fix hero content visibility */
+    .hero {
+        min-height: auto !important;
+        height: auto !important;
+        padding: 40px 20px !important;
+    }
+
+    .hero-content {
+        opacity: 1 !important;
+        transform: none !important;
+    }
+
+    .hero-logo,
+    .hero-title,
+    .hero-couple {
+        opacity: 1 !important;
+        transform: none !important;
+        color: #2C2416 !important;
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+    }
+
+    .hero-title span {
+        color: #2C2416 !important;
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+    }
+
+    .hero-ornament,
+    .focus-brackets {
+        display: none !important;
+    }
+
+    /* Ensure full-width sections print correctly */
+    .about,
+    .pricing-card,
+    .cta-content {
+        background: white !important;
+        border: 1px solid #ddd !important;
+        box-shadow: none !important;
+        page-break-inside: avoid;
+        margin: 20px 0 !important;
+        padding: 30px !important;
+    }
+
+    /* Fix text colors for print */
+    .about .section-title,
+    .about .section-description,
+    .pricing-card .section-title,
+    .cta h2,
+    .cta p {
+        color: #2C2416 !important;
+        background: none !important;
+        -webkit-text-fill-color: initial !important;
+    }
+
+    .pricing-label {
+        color: #6B6355 !important;
+    }
+
+    /* Avoid page breaks inside these elements */
+    section,
+    .hero,
+    .about-content,
+    .deliverables-grid,
+    .events-table,
+    .payment-timeline,
+    .terms-list,
+    .pricing-header {
+        page-break-inside: avoid;
+    }
+
+    /* Force page breaks before these sections */
+    .pricing,
+    .cta {
+        page-break-before: always;
+    }
+
+    /* Hide interactive elements */
+    .cta-buttons,
+    button {
+        display: none !important;
+    }
+
+    /* Adjust spacing for print */
+    section {
+        margin: 0 !important;
+        padding: 20px 0 !important;
+    }
+
+    /* Make deliverables cards smaller for print */
+    .deliverables-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 15px !important;
+    }
+
+    .deliverable-card {
+        padding: 15px !important;
+        min-height: auto !important;
+    }
+
+    .deliverable-icon {
+        width: 40px !important;
+        height: 40px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .deliverable-card h3 {
+        font-size: 1rem !important;
+        margin-bottom: 8px !important;
+    }
+
+    .deliverable-card p {
+        font-size: 0.85rem !important;
+        line-height: 1.4 !important;
+    }
+
+    .deliverable-price {
+        font-size: 0.9rem !important;
+        margin-top: 8px !important;
+    }
+
+    /* Make terms and conditions cards smaller for print */
+    .terms-list {
+        gap: 15px !important;
+    }
+
+    .term-item {
+        padding: 12px 15px !important;
+        gap: 12px !important;
+    }
+
+    .term-number {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 0.9rem !important;
+        flex-shrink: 0 !important;
+    }
+
+    .term-text {
+        font-size: 0.9rem !important;
+        line-height: 1.4 !important;
+    }
+}

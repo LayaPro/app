@@ -101,7 +101,7 @@
 }
 
 .btn-secondary:hover {
-    background: white;
+    background: var(--bg-secondary);
     color: var(--text-primary);
     transform: translateY(-5px);
 }

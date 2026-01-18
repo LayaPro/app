@@ -233,6 +233,7 @@ app.get('/get-proposal/:id', authenticate, proposalController.getProposalById);
 app.put('/update-proposal/:id', authenticate, requireAdmin, proposalController.updateProposal);
 app.delete('/delete-proposal/:id', authenticate, requireAdmin, proposalController.deleteProposal);
 app.post('/verify-proposal-pin/:accessCode', proposalController.verifyProposalPin);
+app.patch('/proposals/:id/status', proposalController.updateProposalStatus);
 
 // ---------- Users routes ----------
 app.post('/create-user', authenticate, requireAdmin, userController.createUser);

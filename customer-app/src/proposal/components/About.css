@@ -75,10 +75,14 @@
     margin-left: auto;
     margin-right: auto;
     text-align: center;
-    color: rgba(255,255,255,0.85);
+    color: rgba(255,255,255,0.95);
     font-size: 1.4rem;
     line-height: 2.2;
     max-width: 1000px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.85) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .portfolio-grid {

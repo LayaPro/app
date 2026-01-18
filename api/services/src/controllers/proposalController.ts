@@ -308,3 +308,40 @@ export const verifyProposalPin = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const updateProposalStatus = async (req: AuthRequest, res: Response) => {
+  console.log('[Proposal] ========== UPDATE PROPOSAL STATUS REQUEST ==========');
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    console.log('[Proposal] Update status:', { id, status });
+
+    // Validate status
+    const validStatuses = ['draft', 'sent', 'accepted', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: 'Invalid status value' });
+    }
+
+    // Find and update proposal
+    const proposal = await Proposal.findByIdAndUpdate(
+      id,
+      { status, updatedAt: new Date() },
+      { new: true }
+    );
+
+    if (!proposal) {
+      return res.status(404).json({ message: 'Proposal not found' });
+    }
+
+    console.log('[Proposal] Status updated successfully:', proposal._id);
+
+    return res.status(200).json({
+      message: 'Proposal status updated successfully',
+      proposal
+    });
+  } catch (err: any) {
+    console.error('[Proposal] Update status error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};

@@ -25,6 +25,11 @@ export const proposalApi = {
     return response.data;
   },
   
+  updateProposalStatus: async (proposalId: string, status: string) => {
+    const response = await axiosInstance.patch(`/proposals/${proposalId}/status`, { status });
+    return response.data;
+  },
+  
   setPin: (pin: string) => {
     sessionStorage.setItem('proposal_pin', pin);
   },
