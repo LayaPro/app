@@ -110,7 +110,7 @@ export const ProposalsTable = () => {
 
   const handlePreview = (proposal: Proposal) => {
     const customerAppUrl = import.meta.env.VITE_CUSTOMER_APP_URL || 'http://localhost:5174';
-    const previewUrl = `${customerAppUrl}/proposal/${proposal.accessCode}`;
+    const previewUrl = `${customerAppUrl}/${proposal.accessCode}`;
     window.open(previewUrl, '_blank');
   };
 

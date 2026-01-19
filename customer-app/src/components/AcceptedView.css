@@ -1,0 +1,369 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Raleway:wght@300;400;500;600&family=Dancing+Script:wght@400;500;600;700&display=swap');
+
+.accepted-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2C2420 0%, #3D2F28 50%, #2C2420 100%);
+  padding: 60px 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Floating Particles - Matching proposal style */
+.accepted-floating-particles {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+}
+
+.accepted-particle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: radial-gradient(circle, rgba(201, 169, 97, 0.7), transparent);
+  border-radius: 50%;
+  animation: acceptedParticleFloat var(--duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+  opacity: 0;
+}
+
+@keyframes acceptedParticleFloat {
+  0% {
+    opacity: 0.3;
+    transform: translate(0, 0) scale(0.4);
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--x) * 0.4), -150px) scale(1.2);
+  }
+}
+
+/* Content Card */
+.accepted-content {
+  max-width: 700px;
+  width: 100%;
+  background: rgba(250, 248, 245, 0.98);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  padding: 80px 60px;
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(201, 169, 97, 0.2);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  border: 1px solid rgba(201, 169, 97, 0.15);
+}
+
+/* Icon */
+.accepted-icon-wrapper {
+  margin: 0 auto 30px;
+  display: flex;
+  justify-content: center;
+}
+
+.accepted-icon {
+  width: 110px;
+  height: 110px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #C9A961, #D4A373);
+  border-radius: 50%;
+  color: white;
+  box-shadow: 
+    0 10px 40px rgba(201, 169, 97, 0.4),
+    0 0 0 8px rgba(201, 169, 97, 0.1);
+  position: relative;
+}
+
+.accepted-icon::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, transparent, rgba(201, 169, 97, 0.3));
+  animation: iconPulse 3s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+}
+
+/* Title */
+.accepted-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 3rem;
+  font-weight: 600;
+  color: #2C2416;
+  margin: 0 0 20px 0;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+}
+
+/* Divider */
+.accepted-divider {
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #C9A961, transparent);
+  margin: 0 auto 25px;
+  opacity: 0.6;
+}
+
+/* Project Name */
+.accepted-project-name {
+  font-family: 'Dancing Script', cursive;
+  font-size: 2.25rem;
+  font-weight: 600;
+  color: #8B7355;
+  margin: 0 0 40px 0;
+  line-height: 1.4;
+}
+
+/* Message */
+.accepted-message {
+  margin: 0 0 50px 0;
+}
+
+.accepted-message-main {
+  font-family: 'Raleway', sans-serif;
+  font-size: 1.125rem;
+  color: #2C2416;
+  line-height: 1.8;
+  margin: 0 0 16px 0;
+  font-weight: 500;
+}
+
+.accepted-message-sub {
+  font-family: 'Raleway', sans-serif;
+  font-size: 1rem;
+  color: #6B6355;
+  line-height: 1.7;
+  margin: 0;
+  font-weight: 400;
+}
+
+/* Loader */
+.accepted-loader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.loader-dots {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.loader-dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C9A961, #D4A373);
+  animation: dotBounce 1.6s infinite ease-in-out;
+  box-shadow: 0 2px 8px rgba(201, 169, 97, 0.4);
+}
+
+.loader-dots span:nth-child(1) {
+  animation-delay: -0.48s;
+}
+
+.loader-dots span:nth-child(2) {
+  animation-delay: -0.32s;
+}
+
+.loader-dots span:nth-child(3) {
+  animation-delay: -0.16s;
+}
+
+.loader-dots span:nth-child(4) {
+  animation-delay: 0s;
+}
+
+@keyframes dotBounce {
+  0%, 80%, 100% {
+    transform: scale(0.6) translateY(0);
+    opacity: 0.5;
+  }
+  40% {
+    transform: scale(1.2) translateY(-8px);
+    opacity: 1;
+  }
+}
+
+.loader-text {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.95rem;
+  color: #8B7355;
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+}
+
+/* Signature */
+.accepted-signature {
+  font-family: 'Dancing Script', cursive;
+  font-size: 1.5rem;
+  color: #C9A961;
+  margin: 0;
+  font-weight: 500;
+}
+
+/* Decorative Corners */
+.accepted-corner {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  opacity: 0.15;
+}
+
+.accepted-corner::before,
+.accepted-corner::after {
+  content: '';
+  position: absolute;
+  background: #C9A961;
+}
+
+.accepted-corner-tl {
+  top: 20px;
+  left: 20px;
+}
+
+.accepted-corner-tl::before {
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.accepted-corner-tl::after {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+}
+
+.accepted-corner-tr {
+  top: 20px;
+  right: 20px;
+}
+
+.accepted-corner-tr::before {
+  top: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.accepted-corner-tr::after {
+  top: 0;
+  right: 0;
+  width: 100%;
+  height: 2px;
+}
+
+.accepted-corner-bl {
+  bottom: 20px;
+  left: 20px;
+}
+
+.accepted-corner-bl::before {
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.accepted-corner-bl::after {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+}
+
+.accepted-corner-br {
+  bottom: 20px;
+  right: 20px;
+}
+
+.accepted-corner-br::before {
+  bottom: 0;
+  right: 0;
+  width: 2px;
+  height: 100%;
+}
+
+.accepted-corner-br::after {
+  bottom: 0;
+  right: 0;
+  width: 100%;
+  height: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .accepted-content {
+    padding: 60px 30px;
+    margin: 20px;
+  }
+
+  .accepted-title {
+    font-size: 2.25rem;
+  }
+
+  .accepted-project-name {
+    font-size: 1.75rem;
+  }
+
+  .accepted-icon {
+    width: 90px;
+    height: 90px;
+  }
+
+  .accepted-icon svg {
+    width: 50px;
+    height: 50px;
+  }
+
+  .accepted-message-main {
+    font-size: 1rem;
+  }
+
+  .accepted-message-sub {
+    font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .accepted-content {
+    padding: 50px 24px;
+  }
+
+  .accepted-title {
+    font-size: 1.875rem;
+  }
+
+  .accepted-project-name {
+    font-size: 1.5rem;
+  }
+}

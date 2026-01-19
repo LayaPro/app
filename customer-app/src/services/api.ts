@@ -12,9 +12,9 @@ const axiosInstance = axios.create({
 // Add interceptor to include PIN in headers for authenticated requests
 axiosInstance.interceptors.request.use((config) => {
   // Get PIN from session storage if available
-  const savedPin = sessionStorage.getItem('proposal_pin');
+  const savedPin = sessionStorage.getItem('portal_pin');
   if (savedPin) {
-    config.headers['X-Proposal-Pin'] = savedPin;
+    config.headers['X-Portal-Pin'] = savedPin;
   }
   return config;
 });
@@ -31,11 +31,26 @@ export const proposalApi = {
   },
   
   setPin: (pin: string) => {
-    sessionStorage.setItem('proposal_pin', pin);
+    sessionStorage.setItem('portal_pin', pin);
   },
   
   clearPin: () => {
-    sessionStorage.removeItem('proposal_pin');
+    sessionStorage.removeItem('portal_pin');
+  },
+};
+
+export const customerPortalApi = {
+  getPortalData: async (accessCode: string, pin: string) => {
+    const response = await axiosInstance.post(`/customer-portal/${accessCode}`, { pin });
+    return response.data;
+  },
+  
+  setPin: (pin: string) => {
+    sessionStorage.setItem('portal_pin', pin);
+  },
+  
+  clearPin: () => {
+    sessionStorage.removeItem('portal_pin');
   },
 };
 
@@ -45,4 +60,3 @@ export const organizationApi = {
     return response.data;
   },
 };
-

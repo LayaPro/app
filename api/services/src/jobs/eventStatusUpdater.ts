@@ -4,11 +4,11 @@ import EventDeliveryStatus from '../models/eventDeliveryStatus';
 
 /**
  * Cron job to automatically update event statuses based on datetime
- * Runs every 15 minutes
+ * Runs every minute
  */
 export const startEventStatusUpdater = () => {
-  // Run every 15 minutes
-  cron.schedule('*/15 * * * *', async () => {
+  // Run every minute
+  cron.schedule('* * * * *', async () => {
     try {
       console.log('[EventStatusUpdater] Running status check...');
       const now = new Date();
@@ -87,5 +87,5 @@ export const startEventStatusUpdater = () => {
     }
   });
 
-  console.log('✓ Event status updater cron job started (runs every 15 minutes)');
+  console.log('✓ Event status updater cron job started (runs every minute)');
 };

@@ -2,6 +2,12 @@ import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import Proposal from '../models/proposal';
 import Organization from '../models/organization';
+import Project from '../models/project';
+import ClientEvent from '../models/clientEvent';
+import Event from '../models/event';
+import EventDeliveryStatus from '../models/eventDeliveryStatus';
+import Image from '../models/image';
+import ImageStatus from '../models/imageStatus';
 import { AuthRequest } from '../middleware/auth';
 import { sendProposalEmail } from '../services/emailService';
 
@@ -399,5 +405,226 @@ export const sendProposal = async (req: AuthRequest, res: Response) => {
   } catch (err: any) {
     console.error('[Proposal] Send proposal error:', err);
     return res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+};
+
+/**
+ * Get customer portal data based on access code
+ * Returns what the customer should see based on their progress:
+ * - Proposal stage: Show quotation (can accept)
+ * - Accepted stage: Show "Quotation Accepted" until project is created
+ * - Project stage: Show timeline with events
+ */
+export const getCustomerPortalData = async (req: AuthRequest, res: Response) => {
+  try {
+    const { accessCode } = req.params;
+    const { pin } = req.body;
+
+    if (!pin) {
+      return res.status(400).json({ message: 'PIN is required' });
+    }
+
+    // Find proposal
+    const proposal = await Proposal.findOne({ accessCode });
+
+    if (!proposal) {
+      return res.status(404).json({ message: 'Portal not found' });
+    }
+
+    if (proposal.accessPin !== pin) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    // Fetch organization data
+    const organization = await Organization.findOne({ tenantId: proposal.tenantId });
+
+    // Remove sensitive data from proposal
+    const proposalData = proposal.toObject();
+    const { accessPin, ...proposalWithoutPin } = proposalData;
+
+    // Determine portal stage based on proposal status
+    let portalStage: 'proposal' | 'accepted' | 'project' | 'gallery';
+    let projectData = null;
+    let eventsData = null;
+    let galleryData = null;
+
+    if (proposal.status === 'project_created') {
+      // Default to project stage (timeline)
+      portalStage = 'project';
+
+      // Find the project created from this proposal
+      const project = await Project.findOne({ 
+        proposalId: proposal.proposalId,
+        tenantId: proposal.tenantId 
+      });
+
+      if (project) {
+        // Check if any event/album has been published or is in any status after publishing
+        // Published and onwards: PUBLISHED, CLIENT_SELECTION_DONE, ALBUM_DESIGN_ONGOING, 
+        // ALBUM_DESIGN_COMPLETE, ALBUM_PRINTING, DELIVERY
+        const galleryStatuses = await EventDeliveryStatus.find({ 
+          statusCode: { 
+            $in: [
+              'PUBLISHED', 
+              'CLIENT_SELECTION_DONE', 
+              'ALBUM_DESIGN_ONGOING',
+              'ALBUM_DESIGN_COMPLETE',
+              'ALBUM_PRINTING',
+              'DELIVERY'
+            ] 
+          },
+          tenantId: proposal.tenantId 
+        });
+
+        const galleryStatusIds = galleryStatuses.map(s => s.statusId);
+        console.log('[Customer Portal] Gallery status IDs:', galleryStatusIds);
+
+        // Check if any event has a gallery-ready status
+        const hasPublishedAlbum = await ClientEvent.exists({ 
+          projectId: project.projectId,
+          eventDeliveryStatusId: { $in: galleryStatusIds }
+        });
+
+        console.log('[Customer Portal] Has published album:', hasPublishedAlbum);
+
+        if (hasPublishedAlbum) {
+          // Show gallery view with published album images
+          portalStage = 'gallery';
+          console.log('[Customer Portal] Switching to GALLERY stage');
+
+          // Find the first published event
+          const publishedEvent = await ClientEvent.findOne({
+            projectId: project.projectId,
+            eventDeliveryStatusId: { $in: galleryStatusIds }
+          }).sort({ fromDatetime: 1 });
+
+          if (publishedEvent) {
+            // Fetch images for this published event
+            const eventImages = await Image.find({
+              projectId: project.projectId,
+              clientEventId: publishedEvent.clientEventId,
+              uploadStatus: 'completed'
+            })
+            .sort({ sortOrder: 1 })
+            .limit(100);
+
+            console.log('[Customer Portal] Found images for published event:', eventImages.length);
+
+            galleryData = {
+              projectName: project.projectName,
+              coverPhoto: project.coverPhoto || project.displayPic,
+              clientName: proposal.clientName,
+              albumImages: eventImages.map(img => ({
+                imageId: img.imageId,
+                thumbnailUrl: img.thumbnailUrl,
+                compressedUrl: img.compressedUrl,
+                originalUrl: img.originalUrl,
+              }))
+            };
+          }
+
+          projectData = {
+            projectId: project.projectId,
+            projectName: project.projectName,
+            displayPic: project.displayPic,
+            coverPhoto: project.coverPhoto,
+          };
+        } else {
+          // Show timeline view
+          portalStage = 'project';
+        }
+
+        // Fetch project events (for timeline view or reference)
+        const events = await ClientEvent.find({ 
+          projectId: project.projectId,
+          tenantId: proposal.tenantId 
+        }).sort({ fromDatetime: 1 }); // Sort chronologically
+
+        // Fetch event names from Event master data
+        const eventIds = events.map(e => e.eventId);
+        const eventMasterData = await Event.find({ 
+          eventId: { $in: eventIds },
+          tenantId: proposal.tenantId 
+        });
+        
+        const eventNameMap = new Map(
+          eventMasterData.map(e => [e.eventId, e.eventDesc || e.eventCode])
+        );
+
+        // Fetch event delivery status details
+        const statusIds = events.map(e => e.eventDeliveryStatusId).filter(Boolean);
+        const statusData = await EventDeliveryStatus.find({
+          statusId: { $in: statusIds },
+          tenantId: proposal.tenantId
+        });
+
+        const statusMap = new Map(
+          statusData.map(s => [s.statusId, { 
+            statusCode: s.statusCode, 
+            statusDescription: s.statusDescription,
+            statusCustomerNote: s.statusCustomerNote 
+          }])
+        );
+
+        if (!projectData) {
+          projectData = {
+            projectId: project.projectId,
+            projectName: project.projectName,
+            displayPic: project.displayPic,
+            coverPhoto: project.coverPhoto,
+          };
+        }
+
+        eventsData = events.map(event => {
+          const fromDate = event.fromDatetime ? new Date(event.fromDatetime).toISOString().split('T')[0] : undefined;
+          const toDate = event.toDatetime ? new Date(event.toDatetime).toISOString().split('T')[0] : undefined;
+          const fromTime = event.fromDatetime ? new Date(event.fromDatetime).toTimeString().slice(0, 5) : undefined;
+          const toTime = event.toDatetime ? new Date(event.toDatetime).toTimeString().slice(0, 5) : undefined;
+
+          const statusInfo = event.eventDeliveryStatusId ? statusMap.get(event.eventDeliveryStatusId) : null;
+
+          return {
+            eventId: event.eventId,
+            eventName: eventNameMap.get(event.eventId) || 'Event',
+            fromDate,
+            toDate,
+            fromTime,
+            toTime,
+            venue: event.venue,
+            venueLocation: event.venueMapUrl,
+            eventDeliveryStatusId: event.eventDeliveryStatusId,
+            statusCode: statusInfo?.statusCode,
+            statusDescription: statusInfo?.statusDescription,
+            statusCustomerNote: statusInfo?.statusCustomerNote,
+          };
+        });
+      }
+    } else if (proposal.status === 'accepted') {
+      // Proposal accepted but project not created yet
+      portalStage = 'accepted';
+    } else {
+      // Draft or sent - show proposal for review/acceptance
+      portalStage = 'proposal';
+    }
+
+    console.log('[Customer Portal] Final portalStage:', portalStage);
+    console.log('[Customer Portal] Gallery data:', galleryData ? `${galleryData.albumImages?.length} images` : 'null');
+
+    return res.status(200).json({
+      message: 'Portal data retrieved successfully',
+      portalStage,
+      proposal: proposalWithoutPin,
+      project: projectData,
+      events: eventsData,
+      gallery: galleryData,
+      organization: organization ? {
+        companyName: organization.companyName,
+        tagline: organization.tagline,
+        aboutUs: organization.aboutUs,
+      } : null
+    });
+  } catch (err: any) {
+    console.error('[Proposal] Get customer portal data error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };

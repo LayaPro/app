@@ -1,7 +1,7 @@
-import { Proposal } from './proposal/components/Proposal';
+import { CustomerPortal } from './components/CustomerPortal';
 
 function App() {
-  return <Proposal />;
+  return <CustomerPortal />;
 }
 
 export default App;

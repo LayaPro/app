@@ -49,7 +49,7 @@ app.use(cors({
   origin: true, // Allow all origins in development
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Proposal-Pin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Proposal-Pin', 'X-Portal-Pin']
 }));
 
 // ---------- Miscellaneous routes ----------
@@ -233,6 +233,7 @@ app.get('/get-proposal/:id', authenticate, proposalController.getProposalById);
 app.put('/update-proposal/:id', authenticate, requireAdmin, proposalController.updateProposal);
 app.delete('/delete-proposal/:id', authenticate, requireAdmin, proposalController.deleteProposal);
 app.post('/verify-proposal-pin/:accessCode', proposalController.verifyProposalPin);
+app.post('/customer-portal/:accessCode', proposalController.getCustomerPortalData);
 app.patch('/proposals/:id/status', proposalController.updateProposalStatus);
 app.post('/send-proposal/:id', authenticate, requireAdmin, proposalController.sendProposal);
 
