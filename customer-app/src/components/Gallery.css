@@ -498,10 +498,10 @@
   }
 }
 
-/* Image Grid - Masonry Layout */
+/* Image Grid - Column-based Masonry Layout */
 .gallery-grid {
-  column-count: 5;
-  column-gap: 8px;
+  display: flex;
+  gap: 8px;
   padding: 30px 8px;
   max-width: 1920px;
   margin: 0 auto;
@@ -509,17 +509,21 @@
   z-index: 1;
 }
 
-@media (max-width: 1400px) {
-  .gallery-grid {
-    column-count: 4;
-  }
+.gallery-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 @media (max-width: 968px) {
   .gallery-grid {
-    column-count: 3;
     padding: 20px 6px;
-    column-gap: 6px;
+    gap: 6px;
+  }
+
+  .gallery-column {
+    gap: 6px;
   }
 
   .gallery-event-heading {
@@ -543,24 +547,41 @@
 
 @media (max-width: 600px) {
   .gallery-grid {
-    column-count: 2;
     padding: 15px 6px;
-    column-gap: 6px;
+    gap: 6px;
+  }
+
+  .gallery-column {
+    gap: 6px;
   }
 }
 
-/* Grid Item - Masonry Style */
+/* Grid Item */
 .gallery-grid-item {
   position: relative;
-  display: inline-block;
   width: 100%;
-  margin-bottom: 8px;
   overflow: hidden;
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #FFFFFF;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  break-inside: avoid;
-  vertical-align: top;
+  opacity: 0;
+  transform: translateY(50px) scale(0.95);
+}
+
+.gallery-grid-item.visible {
+  animation: fadeInUp 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .gallery-grid-item:hover {

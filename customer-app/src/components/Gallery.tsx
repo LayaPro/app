@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Gallery.css';
 
 interface AlbumImage {
@@ -29,6 +29,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const [showDock, setShowDock] = useState(false);
   const [showEventMenu, setShowEventMenu] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState(false);
+  const [columns, setColumns] = useState<AlbumImage[][]>([[], [], [], [], []]);
   const gridRef = useRef<HTMLDivElement>(null);
   const eventMenuRef = useRef<HTMLDivElement>(null);
   const eventHeadingRef = useRef<HTMLDivElement>(null);
@@ -57,6 +58,62 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
       setCoverLoaded(true);
     };
   }, [displayCover]);
+
+  // Load all images at once and distribute to columns
+  useEffect(() => {
+    if (albumImages.length === 0) return;
+
+    const loadAllImages = async () => {
+      console.log(`Loading all ${albumImages.length} images...`);
+      
+      // Load all images to get dimensions
+      const loadPromises = albumImages.map((img, index) => {
+        return new Promise<{ image: AlbumImage; width: number; height: number; index: number }>((resolve) => {
+          const imageEl = new Image();
+          const timeout = setTimeout(() => {
+            resolve({ image: img, width: 800, height: 1000, index });
+          }, 3000);
+          
+          imageEl.onload = () => {
+            clearTimeout(timeout);
+            resolve({
+              image: img,
+              width: imageEl.naturalWidth,
+              height: imageEl.naturalHeight,
+              index
+            });
+          };
+          imageEl.onerror = () => {
+            clearTimeout(timeout);
+            resolve({ image: img, width: 800, height: 1000, index });
+          };
+          imageEl.src = img.thumbnailUrl || img.compressedUrl;
+        });
+      });
+
+      const loadedImages = await Promise.all(loadPromises);
+      console.log(`All ${loadedImages.length} images loaded`);
+
+      // Distribute to columns using shortest-column algorithm
+      const newCols: AlbumImage[][] = [[], [], [], [], []];
+      const GAP_HEIGHT = 8;
+      const columnHeights = [0, 0, 0, 0, 0];
+
+      loadedImages.forEach(({ image, width, height, index }) => {
+        const shortestCol = columnHeights.indexOf(Math.min(...columnHeights));
+        const aspectRatio = width > 0 ? height / width : 1;
+        const imageWithAspect = { ...image, _aspectRatio: aspectRatio } as any;
+        
+        newCols[shortestCol].push(imageWithAspect);
+        columnHeights[shortestCol] += aspectRatio + GAP_HEIGHT / 100;
+      });
+
+      setColumns(newCols);
+      console.log('All images added to columns');
+    };
+
+    loadAllImages();
+  }, [albumImages]);
 
   // Toggle like
   const toggleLike = (imageId: string, e: React.MouseEvent) => {
@@ -96,6 +153,30 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Scroll animations for gallery items
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry, index) => {
+          if (entry.isIntersecting) {
+            setTimeout(() => {
+              entry.target.classList.add('visible');
+            }, index * 50);
+          }
+        });
+      },
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
+    );
+
+    const items = document.querySelectorAll('.gallery-grid-item');
+    items.forEach((item) => observer.observe(item));
+
+    return () => observer.disconnect();
+  }, [columns]);
+
   // Close event menu on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -121,6 +202,22 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
 
   return (
     <div className="gallery-container">
+      {/* Debug Counter */}
+      <div style={{
+        position: 'fixed',
+        top: '10px',
+        right: '10px',
+        background: 'rgba(0,0,0,0.8)',
+        color: 'white',
+        padding: '10px 15px',
+        borderRadius: '8px',
+        zIndex: 10000,
+        fontSize: '14px',
+        fontWeight: 'bold'
+      }}>
+        {columns.flat().length} / {albumImages.length} images
+      </div>
+      
       {/* Main Content - Fade in when loaded */}
       <div className={`gallery-content ${coverLoaded ? 'loaded' : ''}`}>
         {/* Floating Particles */}
@@ -251,22 +348,24 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
         <p key={`${selectedEvent}-subtitle`} className="gallery-event-heading-subtitle">{albumImages.length} precious moments</p>
       </div>
 
-      {/* Image Grid - Masonry Layout */}
+      {/* Image Grid - Column-based Masonry */}
       <div className="gallery-grid" ref={gridRef}>
-        {albumImages.map((image) => (
-          <div 
-            key={image.imageId} 
-            className="gallery-grid-item"
-            onClick={() => setSelectedImage(image)}
-          >
-            <img 
-              src={image.thumbnailUrl || image.compressedUrl} 
-              alt={`Photo ${image.imageId}`}
-              className="gallery-grid-image"
-              loading="lazy"
-            />
+        {columns.map((column, colIndex) => (
+          <div key={colIndex} className="gallery-column">
+            {column.map((image) => (
+              <div 
+                key={image.imageId} 
+                className="gallery-grid-item"
+                onClick={() => setSelectedImage(image)}
+              >
+                <img 
+                  src={image.thumbnailUrl || image.compressedUrl} 
+                  alt={`Photo ${image.imageId}`}
+                  className="gallery-grid-image"
+                  loading="lazy"
+                />
             
-            {/* Image Actions */}
+                {/* Image Actions */}
             <div className="gallery-image-actions">
               <button 
                 className="gallery-action-btn gallery-download-btn"
@@ -288,13 +387,13 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
                 <svg width="20" height="20" viewBox="0 0 24 24" fill={likedImages.has(image.imageId) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
-              </button>
+                </button>
+              </div>
             </div>
+            ))}
           </div>
         ))}
-      </div>
-
-      {/* Lightbox */}
+      </div>      {/* Lightbox */}
       {selectedImage && (
         <div className="gallery-lightbox" onClick={() => setSelectedImage(null)}>
           <div className="gallery-lightbox-content" onClick={(e) => e.stopPropagation()}>
