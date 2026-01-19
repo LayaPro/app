@@ -142,6 +142,7 @@ export const CustomerPortal = () => {
           coverPhoto={portalData.gallery?.coverPhoto}
           clientName={portalData.gallery?.clientName}
           albumImages={portalData.gallery?.albumImages || []}
+          events={portalData.events || []}
         />
       );
 
