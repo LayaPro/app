@@ -68,6 +68,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .actionsDropdownButton:hover {
@@ -76,13 +78,23 @@
   color: var(--primary-color);
 }
 
+.dropdownBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9998;
+  background: transparent;
+}
+
 .actionsDropdown {
   position: fixed;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  z-index: 9999;
+  z-index: 10000;
   min-width: 160px;
   overflow: hidden;
   animation: slideDown 0.2s ease-out;

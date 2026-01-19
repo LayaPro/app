@@ -57,7 +57,7 @@ export interface IProposal extends Document {
   validUntil?: Date;
   
   // Status
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'project_created';
   
   // Common fields (from organization) - stored as reference, not duplicated
   // These will be fetched from organization at generation time:
@@ -134,7 +134,7 @@ const ProposalSchema = new Schema<IProposal>(
     // Status
     status: { 
       type: String, 
-      enum: ['draft', 'sent', 'accepted', 'rejected', 'expired'],
+      enum: ['draft', 'sent', 'accepted', 'rejected', 'expired', 'project_created'],
       default: 'draft',
       required: true 
     },

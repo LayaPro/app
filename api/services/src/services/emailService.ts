@@ -31,6 +31,19 @@ interface SendEmailParams {
 }
 
 export const sendEmail = async ({ to, subject, htmlBody, textBody }: SendEmailParams): Promise<void> => {
+  // Check if running in development without proper AWS credentials
+  const isDevelopment = process.env.NODE_ENV !== 'production';
+  const hasAwsCredentials = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY;
+
+  if (isDevelopment && !hasAwsCredentials) {
+    console.log('📧 [DEV MODE] Email would be sent:');
+    console.log('To:', to);
+    console.log('Subject:', subject);
+    console.log('HTML Body:', htmlBody.substring(0, 200) + '...');
+    console.log('✅ Email logged in development mode (AWS credentials not configured)');
+    return;
+  }
+
   const params = {
     Source: FROM_EMAIL,
     Destination: {
@@ -70,6 +83,92 @@ export const sendEmail = async ({ to, subject, htmlBody, textBody }: SendEmailPa
     });
     throw new Error(`Failed to send email: ${error.message}`);
   }
+};
+
+export const sendProposalEmail = async (
+  clientEmail: string,
+  clientName: string,
+  organizationName: string,
+  proposalUrl: string,
+  accessPin: string,
+  projectName: string
+): Promise<void> => {
+  const htmlBody = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; background: #f9fafb; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 40px 30px; text-align: center; border-radius: 10px 10px 0 0; }
+        .header h1 { color: white; margin: 0; font-size: 28px; }
+        .content { background: #ffffff; padding: 40px 30px; border: 1px solid #e5e7eb; border-top: none; }
+        .pin-box { background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 20px; border-radius: 8px; text-align: center; margin: 25px 0; border: 2px dashed #f59e0b; }
+        .pin-label { font-size: 14px; color: #92400e; font-weight: 600; margin-bottom: 8px; }
+        .pin-code { font-size: 32px; font-weight: 800; color: #b45309; letter-spacing: 4px; font-family: 'Courier New', monospace; }
+        .button { display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; text-decoration: none; border-radius: 8px; font-weight: 600; margin: 20px 0; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; background: #f9fafb; border-radius: 0 0 10px 10px; }
+        .info-text { background: #eff6ff; padding: 15px; border-radius: 8px; color: #1e40af; font-size: 14px; margin: 20px 0; border-left: 4px solid #3b82f6; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>✨ Your Proposal is Ready!</h1>
+        </div>
+        <div class="content">
+          <h2>Hello ${clientName}! 👋</h2>
+          <p>We're excited to share a personalized proposal from <strong>${organizationName}</strong> for your project: <strong>${projectName}</strong>.</p>
+          
+          <p>To view your proposal, you'll need the secure PIN below:</p>
+          
+          <div class="pin-box">
+            <div class="pin-label">🔐 YOUR SECURE PIN</div>
+            <div class="pin-code">${accessPin}</div>
+          </div>
+          
+          <div class="info-text">
+            💡 <strong>Pro Tip:</strong> Keep this PIN safe - you'll need it to access your proposal.
+          </div>
+          
+          <p style="text-align: center;">
+            <a href="${proposalUrl}" class="button">View My Proposal</a>
+          </p>
+          
+          <p style="color: #6b7280; font-size: 14px; margin-top: 30px;">
+            If the button doesn't work, copy and paste this link into your browser:<br>
+            <a href="${proposalUrl}" style="color: #6366f1; word-break: break-all;">${proposalUrl}</a>
+          </p>
+        </div>
+        <div class="footer">
+          <p>This proposal was sent by ${organizationName}</p>
+          <p style="margin-top: 10px; font-size: 12px;">If you have any questions, please contact us directly.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+
+  const textBody = `
+Hello ${clientName}!
+
+You have a new proposal from ${organizationName} for: ${projectName}
+
+Your Secure PIN: ${accessPin}
+
+View your proposal here: ${proposalUrl}
+
+Keep your PIN safe - you'll need it to access your proposal.
+
+If you have any questions, please contact ${organizationName} directly.
+  `;
+
+  await sendEmail({
+    to: clientEmail,
+    subject: `✨ Your Proposal from ${organizationName}`,
+    htmlBody,
+    textBody,
+  });
 };
 
 export const sendActivationEmail = async (email: string, name: string, token: string): Promise<void> => {

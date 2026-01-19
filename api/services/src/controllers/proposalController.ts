@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import Proposal from '../models/proposal';
 import Organization from '../models/organization';
 import { AuthRequest } from '../middleware/auth';
+import { sendProposalEmail } from '../services/emailService';
 
 export const createProposal = async (req: AuthRequest, res: Response) => {
   console.log('[Proposal] ========== CREATE PROPOSAL REQUEST RECEIVED ==========');
@@ -318,7 +319,7 @@ export const updateProposalStatus = async (req: AuthRequest, res: Response) => {
     console.log('[Proposal] Update status:', { id, status });
 
     // Validate status
-    const validStatuses = ['draft', 'sent', 'accepted', 'rejected'];
+    const validStatuses = ['draft', 'sent', 'accepted', 'rejected', 'expired', 'project_created'];
     if (!validStatuses.includes(status)) {
       return res.status(400).json({ message: 'Invalid status value' });
     }
@@ -343,5 +344,60 @@ export const updateProposalStatus = async (req: AuthRequest, res: Response) => {
   } catch (err: any) {
     console.error('[Proposal] Update status error:', err);
     return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const sendProposal = async (req: AuthRequest, res: Response) => {
+  console.log('[Proposal] ========== SEND PROPOSAL REQUEST ==========');
+  try {
+    const { id } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    console.log('[Proposal] Send proposal ID:', id);
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Get proposal by proposalId
+    const proposal = await Proposal.findOne({ proposalId: id, tenantId });
+    if (!proposal) {
+      return res.status(404).json({ message: 'Proposal not found' });
+    }
+
+    // Get organization details
+    const organization = await Organization.findOne({ tenantId });
+    if (!organization) {
+      return res.status(404).json({ message: 'Organization not found' });
+    }
+
+    // Construct proposal URL
+    const customerAppUrl = process.env.CUSTOMER_APP_URL || 'http://localhost:5174';
+    const proposalUrl = `${customerAppUrl}/proposal/${proposal.accessCode}`;
+
+    // Send email
+    await sendProposalEmail(
+      proposal.clientEmail,
+      proposal.clientName,
+      organization.companyName || 'Our Studio',
+      proposalUrl,
+      proposal.accessPin,
+      proposal.projectName
+    );
+
+    // Update proposal status to 'sent'
+    proposal.status = 'sent';
+    proposal.updatedAt = new Date();
+    await proposal.save();
+
+    console.log('[Proposal] Proposal sent successfully to:', proposal.clientEmail);
+
+    return res.status(200).json({
+      message: 'Proposal sent successfully',
+      proposal
+    });
+  } catch (err: any) {
+    console.error('[Proposal] Send proposal error:', err);
+    return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 };

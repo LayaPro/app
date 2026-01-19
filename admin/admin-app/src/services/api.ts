@@ -1032,4 +1032,15 @@ export const proposalApi = {
     });
     return handleResponse(response);
   },
+
+  send: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/send-proposal/${id}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
 };

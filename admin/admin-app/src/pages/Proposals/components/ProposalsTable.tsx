@@ -1,8 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
+import { Modal } from '../../../components/ui/Modal';
 import { useToast } from '../../../context/ToastContext';
 import { proposalApi } from '../../../services/api';
+import { useAppDispatch } from '../../../store/index';
+import { setEditingProject } from '../../../store/slices/projectSlice';
 import styles from './ProposalsTable.module.css';
 
 interface Proposal {
@@ -14,9 +18,16 @@ interface Proposal {
   totalAmount: number;
   accessCode: string;
   accessPin: string;
-  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired';
+  status: 'draft' | 'sent' | 'accepted' | 'rejected' | 'expired' | 'project_created';
   createdAt: string;
   validUntil?: string;
+  events?: Array<{
+    eventId: string;
+    eventName: string;
+    eventType?: string;
+    date?: string;
+    venue?: string;
+  }>;
 }
 
 export const ProposalsTable = () => {
@@ -24,8 +35,13 @@ export const ProposalsTable = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [isSending, setIsSending] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
 
   useEffect(() => {
     fetchProposals();
@@ -73,11 +89,13 @@ export const ProposalsTable = () => {
       case 'accepted': return '#22c55e';
       case 'rejected': return '#ef4444';
       case 'expired': return '#f97316';
+      case 'project_created': return '#8b5cf6';
       default: return '#6b7280';
     }
   };
 
   const getStatusLabel = (status: string) => {
+    if (status === 'project_created') return 'Project Created';
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
@@ -107,13 +125,76 @@ export const ProposalsTable = () => {
   };
 
   const handleSend = (proposal: Proposal) => {
-    console.log('Send proposal:', proposal);
-    showToast('info', 'Send proposal feature coming soon');
+    setSelectedProposal(proposal);
+    setIsSendModalOpen(true);
+    setOpenActionDropdown(null);
+  };
+
+  const confirmSend = async () => {
+    if (!selectedProposal) return;
+
+    try {
+      setIsSending(true);
+      await proposalApi.send(selectedProposal.proposalId);
+      showToast('success', 'Proposal sent successfully via email');
+      setIsSendModalOpen(false);
+      fetchProposals(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error sending proposal:', error);
+      showToast('error', error.message || 'Failed to send proposal');
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const handleDelete = (proposal: Proposal) => {
     console.log('Delete proposal:', proposal);
     showToast('info', 'Delete proposal feature coming soon');
+  };
+
+  const handleCreateProject = async (proposal: Proposal) => {
+    try {
+      // Fetch full proposal details to get events and quotation
+      const fullProposal = await proposalApi.getById(proposal.proposalId);
+      
+      // Transform proposal events to project event format
+      const proposalEvents = (fullProposal.proposal?.events || []).map((event: any) => ({
+        eventId: event.eventType || event.eventId, // Use eventType (event-xxx) not proposal eventId (evt-xxx)
+        eventName: event.eventName,
+        fromProposal: true, // Tag to indicate this came from proposal
+        // These will need to be filled in by user
+        fromDate: '',
+        toDate: '',
+        fromTime: '',
+        toTime: '',
+        venue: event.venue || '',
+        venueLocation: '',
+        teamMembers: [],
+      }));
+
+      // Transform proposal data to project form format
+      const projectData = {
+        projectName: fullProposal.proposal?.projectName || proposal.projectName,
+        contactPerson: fullProposal.proposal?.clientName || proposal.clientName,
+        email: fullProposal.proposal?.clientEmail || proposal.clientEmail,
+        phoneNumber: fullProposal.proposal?.clientPhone || proposal.clientPhone || '',
+        totalBudget: fullProposal.proposal?.totalAmount || proposal.totalAmount || 0,
+        events: proposalEvents,
+        fromProposal: true,
+        proposalId: proposal.proposalId,
+      };
+
+      // Dispatch to Redux store
+      dispatch(setEditingProject(projectData));
+      
+      // Navigate to projects page which will open the wizard
+      navigate('/projects');
+      
+      setOpenActionDropdown(null);
+    } catch (error) {
+      console.error('Error fetching proposal details:', error);
+      showToast('error', 'Failed to load proposal details');
+    }
   };
 
   const columns: Column<Proposal>[] = [
@@ -208,11 +289,16 @@ export const ProposalsTable = () => {
           </button>
           
           {openActionDropdown === proposal.proposalId && (
-            <div 
-              ref={dropdownRef} 
-              className={styles.actionsDropdown}
-              style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
-            >
+            <>
+              <div 
+                className={styles.dropdownBackdrop}
+                onClick={() => setOpenActionDropdown(null)}
+              />
+              <div 
+                ref={dropdownRef} 
+                className={styles.actionsDropdown}
+                style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
+              >
               <button 
                 className={styles.actionsDropdownItem}
                 onClick={(e) => {
@@ -266,6 +352,23 @@ export const ProposalsTable = () => {
                 </svg>
                 Send
               </button>
+              {proposal.status === 'accepted' && (
+                <>
+                  <div className={styles.actionsDropdownDivider} />
+                  <button 
+                    className={styles.actionsDropdownItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCreateProject(proposal);
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Create Project
+                  </button>
+                </>
+              )}
               <div className={styles.actionsDropdownDivider} />
               <button 
                 className={`${styles.actionsDropdownItem} ${styles.actionsDropdownItemDanger}`}
@@ -281,6 +384,7 @@ export const ProposalsTable = () => {
                 Delete
               </button>
             </div>
+            </>
           )}
         </div>
       ),
@@ -296,10 +400,78 @@ export const ProposalsTable = () => {
   }
 
   return (
-    <DataTable
-      data={proposals}
-      columns={columns}
-      emptyMessage="No proposals yet"
-    />
+    <>
+      <DataTable
+        data={proposals}
+        columns={columns}
+        emptyMessage="No proposals yet"
+      />
+
+      <Modal
+        isOpen={isSendModalOpen}
+        onClose={() => setIsSendModalOpen(false)}
+        title="Send Proposal"
+        size="small"
+      >
+        <div style={{ padding: '20px 0' }}>
+          <p style={{ marginBottom: '20px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
+            This will send the proposal to <strong>{selectedProposal?.clientName}</strong> via email at <strong>{selectedProposal?.clientEmail}</strong>.
+          </p>
+          <p style={{ marginBottom: '20px', lineHeight: '1.6', color: 'var(--text-secondary)' }}>
+            The email will include:
+          </p>
+          <ul style={{ marginBottom: '20px', paddingLeft: '24px', lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+            <li>Proposal URL</li>
+            <li>Access PIN: <strong>{selectedProposal?.accessPin}</strong></li>
+            <li>Instructions to view the proposal</li>
+          </ul>
+          <p style={{ 
+            padding: '12px 16px', 
+            background: 'rgba(99, 102, 241, 0.1)', 
+            borderRadius: '8px',
+            color: 'var(--text-secondary)',
+            fontSize: '14px',
+            marginBottom: '20px'
+          }}>
+            📧 Note: WhatsApp integration is not yet available. The proposal will only be sent via email.
+          </p>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+            <button
+              onClick={() => setIsSendModalOpen(false)}
+              disabled={isSending}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)',
+                background: 'transparent',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={confirmSend}
+              disabled={isSending}
+              style={{
+                padding: '10px 20px',
+                borderRadius: '8px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                color: 'white',
+                cursor: isSending ? 'not-allowed' : 'pointer',
+                fontSize: '14px',
+                fontWeight: '600',
+                opacity: isSending ? 0.6 : 1,
+              }}
+            >
+              {isSending ? 'Sending...' : 'Send Proposal'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+    </>
   );
 };

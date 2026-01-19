@@ -6,6 +6,7 @@ import ProjectFinance from '../models/projectFinance';
 import Event from '../models/event';
 import Team from '../models/team';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
+import Proposal from '../models/proposal';
 import { AuthRequest } from '../middleware/auth';
 import { generateBucketName, createS3Bucket, bucketExists } from '../utils/s3Bucket';
 
@@ -23,12 +24,13 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       address,
       referredBy,
       projectDeliveryStatusId,
+      proposalId,
       displayPic,
       coverPhoto
     } = req.body;
     const tenantId = req.user?.tenantId;
     
-    console.log('[Project] Request data:', { projectName, tenantId });
+    console.log('[Project] Request data:', { projectName, tenantId, proposalId });
 
     if (!projectName) {
       return res.status(400).json({ message: 'Project name is required' });
@@ -77,10 +79,28 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       address,
       referredBy,
       projectDeliveryStatusId,
+      proposalId,
       s3BucketName,
       displayPic,
       coverPhoto
     });
+
+    // If project was created from a proposal, update the proposal status
+    if (proposalId) {
+      try {
+        await Proposal.findOneAndUpdate(
+          { proposalId, tenantId },
+          { 
+            status: 'project_created',
+            updatedAt: new Date()
+          }
+        );
+        console.log('[Project] Updated proposal status to project_created:', proposalId);
+      } catch (proposalError) {
+        console.error('[Project] Failed to update proposal status:', proposalError);
+        // Don't fail the project creation if proposal update fails
+      }
+    }
 
     return res.status(201).json({
       message: 'Project created successfully',
@@ -344,10 +364,28 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       budget: finance?.totalBudget,
       address: projectData.address,
       referredBy: projectData.referredBy,
+      proposalId: projectData.proposalId,
       displayPic: projectData.displayPic,
       coverPhoto: projectData.coverPhoto,
       s3BucketName,
     });
+
+    // If project was created from a proposal, update the proposal status
+    if (projectData.proposalId) {
+      try {
+        await Proposal.findOneAndUpdate(
+          { proposalId: projectData.proposalId, tenantId },
+          { 
+            status: 'project_created',
+            updatedAt: new Date()
+          }
+        );
+        console.log('[ProjectWithDetails] Updated proposal status to project_created:', projectData.proposalId);
+      } catch (proposalError) {
+        console.error('[ProjectWithDetails] Failed to update proposal status:', proposalError);
+        // Don't fail the project creation if proposal update fails
+      }
+    }
 
     // Get SCHEDULED status for new events
     const scheduledStatus = await EventDeliveryStatus.findOne({

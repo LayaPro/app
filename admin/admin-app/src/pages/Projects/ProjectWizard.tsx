@@ -133,7 +133,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
           teamMembers: e.teamMembersAssigned || [],
           notes: e.notes || '',
         })) || [],
-        totalBudget: editingProject.finance?.totalBudget || editingProject.budget || 0,
+        totalBudget: editingProject.totalBudget || editingProject.finance?.totalBudget || editingProject.budget || 0,
         receivedAmount: editingProject.finance?.receivedAmount || 0,
         receivedDate: editingProject.finance?.receivedDate ? new Date(editingProject.finance.receivedDate).toISOString().split('T')[0] : undefined,
         nextDueDate: editingProject.finance?.nextDueDate ? new Date(editingProject.finance.nextDueDate).toISOString().split('T')[0] : undefined,
@@ -193,6 +193,12 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
     if (step === 2) {
       if (formData.events.length === 0) {
         newErrors.events = 'Please add at least one event';
+      } else {
+        // Check if all events have required date/time information
+        const eventsWithoutDates = formData.events.filter((event: any) => !event.fromDate || !event.fromTime);
+        if (eventsWithoutDates.length > 0) {
+          newErrors.events = 'All events must have date and time information. Please edit events from proposal to add date/time.';
+        }
       }
     }
 
@@ -239,6 +245,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
         referredBy: formData.referredBy,
         displayPic: formData.displayPic,
         coverPhoto: formData.coverPhoto,
+        proposalId: editingProject?.proposalId, // Include proposalId if project was created from proposal
       };
 
       // Transform events data

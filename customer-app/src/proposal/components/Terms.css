@@ -49,4 +49,10 @@
 .term-text {
     color: var(--text-secondary);
     line-height: 1.8;
+    flex: 1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    hyphens: auto;
+    max-width: 100%;
 }
