@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
 import Proposal from '../models/proposal';
 import Organization from '../models/organization';
@@ -492,36 +492,39 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
           portalStage = 'gallery';
           console.log('[Customer Portal] Switching to GALLERY stage');
 
-          // Find the first published event
-          const publishedEvent = await ClientEvent.findOne({
-            projectId: project.projectId,
-            eventDeliveryStatusId: { $in: galleryStatusIds }
+          // Fetch ALL events for this project
+          const allEvents = await ClientEvent.find({
+            projectId: project.projectId
           }).sort({ fromDatetime: 1 });
 
-          if (publishedEvent) {
-            // Fetch images for this published event
-            const eventImages = await Image.find({
-              projectId: project.projectId,
-              clientEventId: publishedEvent.clientEventId,
-              uploadStatus: 'completed'
-            })
-            .sort({ sortOrder: 1 })
-            .limit(100);
+          // Create mapping: clientEventId -> eventId
+          const eventMap = new Map(allEvents.map(e => [e.clientEventId, e.eventId]));
 
-            console.log('[Customer Portal] Found images for published event:', eventImages.length);
+          // Fetch ALL images for this project
+          const allEventImages = await Image.find({
+            projectId: project.projectId,
+            uploadStatus: 'completed'
+          })
+          .sort({ sortOrder: 1 });
 
-            galleryData = {
-              projectName: project.projectName,
-              coverPhoto: project.coverPhoto || project.displayPic,
-              clientName: proposal.clientName,
-              albumImages: eventImages.map(img => ({
-                imageId: img.imageId,
-                thumbnailUrl: img.thumbnailUrl,
-                compressedUrl: img.compressedUrl,
-                originalUrl: img.originalUrl,
-              }))
-            };
-          }
+          console.log('[Customer Portal] Found images across all events:', allEventImages.length);
+
+          // Add eventId and selectedByClient to each image
+          const imagesWithEventId = allEventImages.map(img => ({
+            imageId: img.imageId,
+            thumbnailUrl: img.thumbnailUrl,
+            compressedUrl: img.compressedUrl,
+            originalUrl: img.originalUrl,
+            eventId: eventMap.get(img.clientEventId), // Map clientEventId -> eventId
+            selectedByClient: img.selectedByClient || false
+          }));
+
+          galleryData = {
+            projectName: project.projectName,
+            coverPhoto: project.coverPhoto || project.displayPic,
+            clientName: proposal.clientName,
+            albumImages: imagesWithEventId
+          };
 
           projectData = {
             projectId: project.projectId,
@@ -625,6 +628,62 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
     });
   } catch (err: any) {
     console.error('[Proposal] Get customer portal data error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Toggle image selection for customer portal (PIN authenticated)
+export const toggleImageSelection = async (req: Request, res: Response) => {
+  try {
+    const { imageIds, selected = true } = req.body;
+    const pin = req.headers['x-portal-pin'] as string;
+
+    console.log('[Customer Portal] Toggle image selection request received');
+    console.log('[Customer Portal] Headers:', req.headers);
+    console.log('[Customer Portal] Body:', { imageIds, selected });
+    console.log('[Customer Portal] PIN from header:', pin);
+
+    if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      console.log('[Customer Portal] Invalid imageIds:', imageIds);
+      return res.status(400).json({ message: 'Image IDs array is required' });
+    }
+
+    if (!pin) {
+      console.log('[Customer Portal] PIN is missing from headers');
+      return res.status(401).json({ message: 'PIN is required' });
+    }
+
+    // Verify PIN is valid by finding a proposal with this PIN
+    const proposal = await Proposal.findOne({ accessPin: pin });
+    console.log('[Customer Portal] Proposal found:', proposal ? proposal.proposalId : 'not found');
+    if (!proposal) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    // Get tenant ID from the proposal's project
+    const project = await Project.findOne({ 
+      proposalId: proposal.proposalId,
+      tenantId: proposal.tenantId 
+    });
+    console.log('[Customer Portal] Project found:', project ? project.projectId : 'not found');
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Update images
+    console.log('[Customer Portal] Updating images:', { imageIds, tenantId: project.tenantId, selected });
+    const result = await Image.updateMany(
+      { imageId: { $in: imageIds }, tenantId: project.tenantId },
+      { $set: { selectedByClient: selected } }
+    );
+
+    console.log('[Customer Portal] Images updated:', { modifiedCount: result.modifiedCount });
+    return res.status(200).json({
+      message: `${result.modifiedCount} image(s) ${selected ? 'selected' : 'deselected'}`,
+      modifiedCount: result.modifiedCount
+    });
+  } catch (err: any) {
+    console.error('[Customer Portal] Toggle image selection error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
