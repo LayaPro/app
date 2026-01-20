@@ -17,11 +17,11 @@ export const LoadingCurtain = () => {
                     <span className="loading-text-2">Creating Your Proposal</span>
                 </h2>
                 
-                <div className="loading-dots">
+                {/* <div className="loading-dots">
                     <span></span>
                     <span></span>
                     <span></span>
-                </div>
+                </div> */}
             </div>
 
             {/* Floating Elements */}
