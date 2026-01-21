@@ -49,6 +49,11 @@ export const customerPortalApi = {
     const response = await axiosInstance.post('/customer-portal/toggle-image-selection', { imageIds, selected });
     return response.data;
   },
+
+  markSelectionDone: async (eventId: string) => {
+    const response = await axiosInstance.post('/customer-portal/mark-selection-done', { eventId });
+    return response.data;
+  },
   
   setPin: (pin: string) => {
     sessionStorage.setItem('portal_pin', pin);

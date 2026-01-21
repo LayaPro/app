@@ -3,12 +3,12 @@
   background: var(--bg-primary);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .tableWrapper {
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
 }
 
 /* Expand/Collapse */

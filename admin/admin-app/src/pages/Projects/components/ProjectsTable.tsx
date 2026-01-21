@@ -43,9 +43,9 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const [endDate, setEndDate] = useState('');
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [totalStatuses, setTotalStatuses] = useState(13); // Will be fetched from DB
-  const dropdownRef = useRef<HTMLDivElement>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const dateRangeRef = useRef<HTMLDivElement>(null);
   const assignEditorModalRef = useRef<AssignEditorModalHandle>(null);
@@ -348,14 +348,24 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       render: (project) => {
         const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>) => {
           e.stopPropagation();
-          setOpenActionDropdown(
-            openActionDropdown === project.projectId ? null : project.projectId
-          );
+          const button = e.currentTarget;
+          const rect = button.getBoundingClientRect();
+          
+          if (openActionDropdown === project.projectId) {
+            setOpenActionDropdown(null);
+            setDropdownPosition(null);
+          } else {
+            setOpenActionDropdown(project.projectId);
+            setDropdownPosition({
+              top: rect.bottom + 4,
+              right: window.innerWidth - rect.right
+            });
+          }
         };
 
         return (
           <div className={styles.actionsCell}>
-            <div className={styles.actionsDropdownContainer} ref={dropdownRef}>
+            <div className={styles.actionsDropdownContainer}>
               <button 
                 className={styles.actionsDropdownButton}
                 onClick={handleDropdownClick}
@@ -364,13 +374,19 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
-              {openActionDropdown === project.projectId && (
+              {openActionDropdown === project.projectId && dropdownPosition && (
               <>
                 <div 
                   className={styles.dropdownBackdrop}
                   onClick={() => setOpenActionDropdown(null)}
                 />
-                <div className={styles.actionsDropdownMenu}>
+                <div 
+                  className={styles.actionsDropdownMenu}
+                  style={{
+                    top: `${dropdownPosition.top}px`,
+                    right: `${dropdownPosition.right}px`
+                  }}
+                >
                   <button 
                     className={styles.actionsDropdownItem}
                     onClick={(e) => {

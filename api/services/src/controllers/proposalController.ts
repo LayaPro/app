@@ -588,6 +588,7 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
 
           return {
             eventId: event.eventId,
+            clientEventId: event.clientEventId,
             eventName: eventNameMap.get(event.eventId) || 'Event',
             fromDate,
             toDate,
@@ -670,11 +671,30 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    // Update images
+    // Get CLIENT_SELECTED status ID
+    const clientSelectedStatus = await ImageStatus.findOne({ 
+      statusCode: 'CLIENT_SELECTED',
+      tenantId: project.tenantId 
+    });
+
+    if (!clientSelectedStatus && selected) {
+      console.log('[Customer Portal] CLIENT_SELECTED status not found');
+      return res.status(404).json({ message: 'CLIENT_SELECTED status not found' });
+    }
+
+    // Update images with both selectedByClient flag and imageStatusId
     console.log('[Customer Portal] Updating images:', { imageIds, tenantId: project.tenantId, selected });
+    const updateData: any = { selectedByClient: selected };
+    
+    // If selecting, set status to CLIENT_SELECTED
+    // If deselecting, you might want to set it back to a default status or leave it
+    if (selected && clientSelectedStatus) {
+      updateData.imageStatusId = clientSelectedStatus.statusId;
+    }
+
     const result = await Image.updateMany(
       { imageId: { $in: imageIds }, tenantId: project.tenantId },
-      { $set: { selectedByClient: selected } }
+      { $set: updateData }
     );
 
     console.log('[Customer Portal] Images updated:', { modifiedCount: result.modifiedCount });
@@ -684,6 +704,73 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('[Customer Portal] Toggle image selection error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const markEventSelectionDone = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.body;
+    const pin = req.headers['x-portal-pin'] as string;
+
+    console.log('[Customer Portal] Mark event selection done request received');
+    console.log('[Customer Portal] EventId:', eventId, 'PIN:', pin);
+
+    if (!eventId) {
+      return res.status(400).json({ message: 'Event ID is required' });
+    }
+
+    if (!pin) {
+      return res.status(401).json({ message: 'PIN is required' });
+    }
+
+    // Verify PIN
+    const proposal = await Proposal.findOne({ accessPin: pin });
+    if (!proposal) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    // Get project
+    const project = await Project.findOne({ 
+      proposalId: proposal.proposalId,
+      tenantId: proposal.tenantId 
+    });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Find CLIENT_SELECTION_DONE status
+    const clientSelectionDoneStatus = await EventDeliveryStatus.findOne({
+      statusCode: 'CLIENT_SELECTION_DONE',
+      tenantId: project.tenantId
+    });
+
+    console.log('[Customer Portal] CLIENT_SELECTION_DONE status found:', clientSelectionDoneStatus);
+
+    if (!clientSelectionDoneStatus) {
+      return res.status(404).json({ message: 'CLIENT_SELECTION_DONE status not found' });
+    }
+
+    // First check if the event exists
+    const existingEvent = await ClientEvent.findOne({
+      clientEventId: eventId,
+      tenantId: project.tenantId
+    });
+    console.log('[Customer Portal] Existing event:', existingEvent);
+
+    // Update event status
+    const result = await ClientEvent.updateOne(
+      { clientEventId: eventId, tenantId: project.tenantId },
+      { $set: { eventDeliveryStatusId: clientSelectionDoneStatus.statusId } }
+    );
+
+    console.log('[Customer Portal] Event status updated:', result);
+    return res.status(200).json({
+      message: 'Event marked as selection done',
+      modifiedCount: result.modifiedCount
+    });
+  } catch (err: any) {
+    console.error('[Customer Portal] Mark event selection done error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

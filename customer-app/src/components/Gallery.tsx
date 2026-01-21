@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import './Gallery.css';
 import { customerPortalApi } from '../services/api';
 
@@ -17,6 +17,7 @@ interface EventInfo {
   statusCode?: string;
   statusCustomerNote?: string;
   statusDescription?: string;
+  clientEventId?: string;
 }
 
 interface GalleryProps {
@@ -37,6 +38,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const [coverLoaded, setCoverLoaded] = useState(false);
   const [columns, setColumns] = useState<AlbumImage[][]>([[], [], [], [], []]);
   const [loadedCount, setLoadedCount] = useState(30);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const imagesPerLoad = 30;
 
   // Get current event data
@@ -56,10 +58,12 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const isEventPublished = currentEvent?.statusCode && 
     publishedStatuses.includes(currentEvent.statusCode);
   
-  // Filter images for the selected event, only if published
-  const currentEventImages = isEventPublished 
-    ? albumImages.filter(img => img.eventId === selectedEvent)
-    : [];
+  // Filter images for the selected event, only if published (memoized to prevent infinite loops)
+  const currentEventImages = useMemo(() => {
+    return isEventPublished 
+      ? albumImages.filter(img => img.eventId === selectedEvent)
+      : [];
+  }, [albumImages, selectedEvent, isEventPublished]);
   
   // Count liked images for current event only
   const currentEventLikedCount = currentEventImages.filter(img => likedImages.has(img.imageId)).length;
@@ -121,7 +125,6 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
 
     const loadImages = async () => {
       const imagesToLoad = currentEventImages.slice(0, loadedCount);
-      console.log(`Loading ${imagesToLoad.length} images for event ${selectedEvent}...`);
       
       // Load images to get dimensions
       const loadPromises = imagesToLoad.map((img, index) => {
@@ -149,7 +152,6 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
       });
 
       const loadedImages = await Promise.all(loadPromises);
-      console.log(`Loaded ${loadedImages.length} images`);
 
       // Distribute to columns using shortest-column algorithm
       const newCols: AlbumImage[][] = [[], [], [], [], []];
@@ -173,13 +175,11 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
 
   // Load more images
   const loadMoreImages = () => {
-    const newCount = Math.min(loadedCount + imagesPerLoad, currentEventImages.length);
-    console.log(`Loading more: ${loadedCount} -> ${newCount}`);
+    const newCount = loadedCount + imagesPerLoad;
     setLoadedCount(newCount);
   };
 
   const hasMore = loadedCount < currentEventImages.length;
-  console.log(`hasMore: ${hasMore}, loadedCount: ${loadedCount}, total: ${currentEventImages.length}`);
 
   // Toggle like (client selection)
   const toggleLike = async (imageId: string, e: React.MouseEvent) => {
@@ -418,13 +418,32 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
               <div className="gallery-event-menu">
                 <button
                   className="gallery-event-option"
-                  onClick={() => {
+                  disabled={currentEventLikedCount === 0}
+                  onClick={async () => {
                     setShowOptionsMenu(false);
-                    // TODO: Implement album selection done functionality
-                    console.log('Album selection done clicked');
+                    if (currentEventLikedCount === 0) return;
+                    
+                    try {
+                      console.log('Sending selection done for event:', selectedEvent);
+                      console.log('Current event data:', currentEvent);
+                      console.log('Using clientEventId:', currentEvent?.clientEventId);
+                      // Use clientEventId to update the correct event
+                      const result = await customerPortalApi.markSelectionDone(currentEvent?.clientEventId || selectedEvent);
+                      console.log('Mark selection done result:', result);
+                      setToast({ message: 'Your selection has been sent successfully!', type: 'success' });
+                      setTimeout(() => setToast(null), 3000);
+                    } catch (error) {
+                      console.error('Failed to mark selection done:', error);
+                      setToast({ message: 'Failed to send selection. Please try again.', type: 'error' });
+                      setTimeout(() => setToast(null), 3000);
+                    }
+                  }}
+                  style={{
+                    opacity: currentEventLikedCount === 0 ? 0.5 : 1,
+                    cursor: currentEventLikedCount === 0 ? 'not-allowed' : 'pointer'
                   }}
                 >
-                  Album selection done
+                  Send selection
                 </button>
               </div>
             )}
@@ -668,6 +687,26 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
               alt="Full size"
               className="gallery-lightbox-image"
             />
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`gallery-toast gallery-toast-${toast.type}`}>
+          <div className="gallery-toast-content">
+            {toast.type === 'success' ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 6L9 17l-5-5"></path>
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+            )}
+            <span>{toast.message}</span>
           </div>
         </div>
       )}

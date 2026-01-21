@@ -837,3 +837,51 @@
   color: #2C2420;
   transform: rotate(90deg);
 }
+
+/* Toast Notification */
+.gallery-toast {
+  position: fixed;
+  top: 80px;
+  right: 30px;
+  padding: 16px 24px;
+  border-radius: 12px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  animation: slideInRight 0.3s ease-out;
+}
+
+.gallery-toast-success {
+  background: linear-gradient(135deg, rgba(46, 125, 50, 0.95) 0%, rgba(56, 142, 60, 0.95) 100%);
+  border: 1px solid rgba(129, 199, 132, 0.3);
+  color: #E8F5E9;
+}
+
+.gallery-toast-error {
+  background: linear-gradient(135deg, rgba(211, 47, 47, 0.95) 0%, rgba(229, 57, 53, 0.95) 100%);
+  border: 1px solid rgba(239, 154, 154, 0.3);
+  color: #FFEBEE;
+}
+
+.gallery-toast-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.gallery-toast-content svg {
+  flex-shrink: 0;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(100px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
