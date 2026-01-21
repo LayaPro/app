@@ -237,6 +237,11 @@
   opacity: 1;
 }
 
+.gallery-dock-button[data-tooltip]:disabled:hover::before,
+.gallery-dock-button[data-tooltip]:disabled:hover::after {
+  opacity: 1;
+}
+
 /* Project Name in Dock */
 .gallery-dock-project-name {
   font-family: 'Dancing Script', cursive;
@@ -362,6 +367,22 @@
 
 .gallery-dock-button:hover svg {
   color: #2C2420;
+}
+
+.gallery-dock-button:disabled {
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(44, 36, 32, 0.4);
+}
+
+.gallery-dock-button:disabled:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
+
+.gallery-dock-button:disabled svg {
+  color: rgba(44, 36, 32, 0.4);
 }
 
 .gallery-dock-badge {

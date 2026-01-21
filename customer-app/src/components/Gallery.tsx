@@ -18,6 +18,7 @@ interface EventInfo {
   statusCustomerNote?: string;
   statusDescription?: string;
   clientEventId?: string;
+  albumPdfUrl?: string | null;
 }
 
 interface GalleryProps {
@@ -397,6 +398,28 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
             </button>
           </div>
 
+          {/* Album PDF */}
+          <div className="gallery-dock-item">
+            <button 
+              className="gallery-dock-button" 
+              data-tooltip={currentEvent?.albumPdfUrl ? "View Album" : "Album not uploaded yet"}
+              onClick={() => {
+                if (currentEvent?.albumPdfUrl) {
+                  window.open(currentEvent.albumPdfUrl, '_blank');
+                }
+              }}
+              style={{
+                cursor: currentEvent?.albumPdfUrl ? 'pointer' : 'not-allowed'
+              }}
+              disabled={!currentEvent?.albumPdfUrl}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+            </button>
+          </div>
+
           {/* Divider */}
           <div className="gallery-dock-divider"></div>
 
@@ -418,10 +441,10 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
               <div className="gallery-event-menu">
                 <button
                   className="gallery-event-option"
-                  disabled={currentEventLikedCount === 0}
+                  disabled={currentEventLikedCount === 0 || !!currentEvent?.albumPdfUrl}
                   onClick={async () => {
                     setShowOptionsMenu(false);
-                    if (currentEventLikedCount === 0) return;
+                    if (currentEventLikedCount === 0 || currentEvent?.albumPdfUrl) return;
                     
                     try {
                       console.log('Sending selection done for event:', selectedEvent);
@@ -439,11 +462,39 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
                     }
                   }}
                   style={{
-                    opacity: currentEventLikedCount === 0 ? 0.5 : 1,
-                    cursor: currentEventLikedCount === 0 ? 'not-allowed' : 'pointer'
+                    opacity: (currentEventLikedCount === 0 || currentEvent?.albumPdfUrl) ? 0.5 : 1,
+                    cursor: (currentEventLikedCount === 0 || currentEvent?.albumPdfUrl) ? 'not-allowed' : 'pointer'
                   }}
                 >
                   Send selection
+                </button>
+                
+                <button
+                  className="gallery-event-option"
+                  disabled={!currentEvent?.albumPdfUrl}
+                  onClick={async () => {
+                    setShowOptionsMenu(false);
+                    if (!currentEvent?.albumPdfUrl) return;
+                    
+                    try {
+                      console.log('Approving album for event:', selectedEvent);
+                      console.log('Using clientEventId:', currentEvent?.clientEventId);
+                      const result = await customerPortalApi.approveAlbum(currentEvent?.clientEventId || selectedEvent);
+                      console.log('Approve album result:', result);
+                      setToast({ message: 'Album approved successfully!', type: 'success' });
+                      setTimeout(() => setToast(null), 3000);
+                    } catch (error) {
+                      console.error('Failed to approve album:', error);
+                      setToast({ message: 'Failed to approve album. Please try again.', type: 'error' });
+                      setTimeout(() => setToast(null), 3000);
+                    }
+                  }}
+                  style={{
+                    opacity: currentEvent?.albumPdfUrl ? 1 : 0.5,
+                    cursor: currentEvent?.albumPdfUrl ? 'pointer' : 'not-allowed'
+                  }}
+                >
+                  Approve album
                 </button>
               </div>
             )}

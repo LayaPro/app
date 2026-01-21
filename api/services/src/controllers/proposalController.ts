@@ -8,6 +8,7 @@ import Event from '../models/event';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Image from '../models/image';
 import ImageStatus from '../models/imageStatus';
+import AlbumPdf from '../models/albumPdf';
 import { AuthRequest } from '../middleware/auth';
 import { sendProposalEmail } from '../services/emailService';
 
@@ -578,6 +579,15 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
           };
         }
 
+        // Fetch album PDFs for this project
+        const albumPdfs = await AlbumPdf.find({ projectId: project.projectId });
+        const albumPdfMap = new Map<string, string>();
+        albumPdfs.forEach(pdf => {
+          pdf.eventIds.forEach(eventId => {
+            albumPdfMap.set(eventId, pdf.albumPdfUrl);
+          });
+        });
+
         eventsData = events.map(event => {
           const fromDate = event.fromDatetime ? new Date(event.fromDatetime).toISOString().split('T')[0] : undefined;
           const toDate = event.toDatetime ? new Date(event.toDatetime).toISOString().split('T')[0] : undefined;
@@ -600,6 +610,7 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
             statusCode: statusInfo?.statusCode,
             statusDescription: statusInfo?.statusDescription,
             statusCustomerNote: statusInfo?.statusCustomerNote,
+            albumPdfUrl: albumPdfMap.get(event.clientEventId) || null,
           };
         });
       }
@@ -771,6 +782,66 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
     });
   } catch (err: any) {
     console.error('[Customer Portal] Mark event selection done error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const approveAlbum = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.body;
+    const pin = req.headers['x-portal-pin'] as string;
+
+    console.log('[Customer Portal] Approve album request received');
+    console.log('[Customer Portal] EventId:', eventId, 'PIN:', pin);
+
+    if (!eventId) {
+      return res.status(400).json({ message: 'Event ID is required' });
+    }
+
+    if (!pin) {
+      return res.status(401).json({ message: 'PIN is required' });
+    }
+
+    // Verify PIN
+    const proposal = await Proposal.findOne({ accessPin: pin });
+    if (!proposal) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    // Get project
+    const project = await Project.findOne({ 
+      proposalId: proposal.proposalId,
+      tenantId: proposal.tenantId 
+    });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    // Find ALBUM_PRINTING status
+    const albumPrintingStatus = await EventDeliveryStatus.findOne({
+      statusCode: 'ALBUM_PRINTING',
+      tenantId: project.tenantId
+    });
+
+    console.log('[Customer Portal] ALBUM_PRINTING status found:', albumPrintingStatus);
+
+    if (!albumPrintingStatus) {
+      return res.status(404).json({ message: 'ALBUM_PRINTING status not found' });
+    }
+
+    // Update event status
+    const result = await ClientEvent.updateOne(
+      { clientEventId: eventId, tenantId: project.tenantId },
+      { $set: { eventDeliveryStatusId: albumPrintingStatus.statusId } }
+    );
+
+    console.log('[Customer Portal] Album approved, event status updated:', result);
+    return res.status(200).json({
+      message: 'Album approved and marked for printing',
+      modifiedCount: result.modifiedCount
+    });
+  } catch (err: any) {
+    console.error('[Customer Portal] Approve album error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

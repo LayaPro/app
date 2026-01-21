@@ -54,6 +54,11 @@ export const customerPortalApi = {
     const response = await axiosInstance.post('/customer-portal/mark-selection-done', { eventId });
     return response.data;
   },
+
+  approveAlbum: async (eventId: string) => {
+    const response = await axiosInstance.post('/customer-portal/approve-album', { eventId });
+    return response.data;
+  },
   
   setPin: (pin: string) => {
     sessionStorage.setItem('portal_pin', pin);

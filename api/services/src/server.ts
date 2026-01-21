@@ -235,6 +235,7 @@ app.delete('/delete-proposal/:id', authenticate, requireAdmin, proposalControlle
 app.post('/verify-proposal-pin/:accessCode', proposalController.verifyProposalPin);
 app.post('/customer-portal/toggle-image-selection', proposalController.toggleImageSelection);
 app.post('/customer-portal/mark-selection-done', proposalController.markEventSelectionDone);
+app.post('/customer-portal/approve-album', proposalController.approveAlbum);
 app.post('/customer-portal/:accessCode', proposalController.getCustomerPortalData);
 app.patch('/proposals/:id/status', proposalController.updateProposalStatus);
 app.post('/send-proposal/:id', authenticate, requireAdmin, proposalController.sendProposal);
