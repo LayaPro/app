@@ -5,6 +5,7 @@ import { Breadcrumb, Tabs } from '../../components/ui/index.js';
 import type { Tab } from '../../components/ui/Tabs.js';
 import { BasicDetailsCard } from './BasicDetailsCard';
 import { TermsCard } from './TermsCard';
+import { DeliverablesCard } from './DeliverablesCard';
 import { useToast } from '../../context/ToastContext';
 import type { Organization } from '../../types/index.js';
 
@@ -69,6 +70,23 @@ const OrganizationPage = () => {
       ),
       content: (
         <TermsCard
+          organization={organization}
+          loading={loading}
+          onSuccess={handleSuccess}
+          onError={handleError}
+        />
+      ),
+    },
+    {
+      id: 'deliverables',
+      label: 'Deliverables',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      ),
+      content: (
+        <DeliverablesCard
           organization={organization}
           loading={loading}
           onSuccess={handleSuccess}

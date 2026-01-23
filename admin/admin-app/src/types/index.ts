@@ -225,6 +225,15 @@ export interface Organization {
   cancellationPolicy?: string;
   refundPolicy?: string;
   
+  // Deliverables
+  deliverables?: {
+    name: string;
+    description?: string;
+  }[];
+  
+  // Add-ons
+  addOns?: string;
+  
   // Portfolio Images
   portfolioImages?: {
     imageUrl: string;

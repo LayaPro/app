@@ -36,6 +36,15 @@ export interface IOrganization extends Document {
   cancellationPolicy?: string;
   refundPolicy?: string;
   
+  // Deliverables
+  deliverables?: {
+    name: string;
+    description?: string;
+  }[];
+  
+  // Add-ons
+  addOns?: string;
+  
   // Portfolio Images
   portfolioImages?: {
     imageUrl: string;
@@ -90,6 +99,15 @@ const OrganizationSchema = new Schema<IOrganization>(
     termsOfPayment: { type: String },
     cancellationPolicy: { type: String },
     refundPolicy: { type: String },
+    
+    // Deliverables
+    deliverables: [{
+      name: { type: String, required: true, trim: true },
+      description: { type: String, trim: true }
+    }],
+    
+    // Add-ons
+    addOns: { type: String },
     
     // Portfolio Images
     portfolioImages: [{

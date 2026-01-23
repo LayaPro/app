@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Button } from '../../../components/ui/index.js';
+import { useState, useEffect } from 'react';
+import { Button, Loading } from '../../../components/ui/index.js';
 import { AddDeliverableModal } from './AddDeliverableModal.js';
+import { organizationApi } from '../../../services/api.js';
 import type { ProposalFormData } from '../ProposalWizard';
 import styles from '../ProposalWizard.module.css';
 
@@ -14,6 +15,45 @@ export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
   updateFormData,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoadingOrg, setIsLoadingOrg] = useState(false);
+  const [orgDeliverables, setOrgDeliverables] = useState<Array<{ name: string; description?: string }>>([]);
+
+  useEffect(() => {
+    const fetchOrgDeliverables = async () => {
+      setIsLoadingOrg(true);
+      try {
+        const response = await organizationApi.get();
+        if (response.organization?.deliverables) {
+          setOrgDeliverables(response.organization.deliverables);
+          
+          // Pre-fill if empty
+          if (!formData.addOns || formData.addOns.length === 0) {
+            const prefilledDeliverables = response.organization.deliverables.map(d => ({
+              name: d.name,
+              description: d.description || '',
+              price: 0,
+            }));
+            updateFormData('addOns', prefilledDeliverables);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch organization deliverables:', error);
+      } finally {
+        setIsLoadingOrg(false);
+      }
+    };
+
+    fetchOrgDeliverables();
+  }, []);
+
+  const loadOrgDeliverables = () => {
+    const deliverables = orgDeliverables.map(d => ({
+      name: d.name,
+      description: d.description || '',
+      price: 0,
+    }));
+    updateFormData('addOns', deliverables);
+  };
 
   const handleAddDeliverable = (deliverable: { name: string; description: string }) => {
     const newDeliverable = {
@@ -29,6 +69,14 @@ export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
     const updatedDeliverables = formData.addOns.filter((_, i) => i !== index);
     updateFormData('addOns', updatedDeliverables);
   };
+
+  if (isLoadingOrg) {
+    return (
+      <div className={styles.form}>
+        <Loading />
+      </div>
+    );
+  }
 
   return (
     <div className={styles.form}>

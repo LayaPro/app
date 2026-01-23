@@ -309,6 +309,7 @@ export const verifyProposalPin = async (req: AuthRequest, res: Response) => {
         companyName: organization.companyName,
         tagline: organization.tagline,
         aboutUs: organization.aboutUs,
+        addOns: organization.addOns,
       } : null
     });
   } catch (err: any) {
@@ -636,6 +637,7 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
         companyName: organization.companyName,
         tagline: organization.tagline,
         aboutUs: organization.aboutUs,
+        addOns: organization.addOns,
       } : null
     });
   } catch (err: any) {

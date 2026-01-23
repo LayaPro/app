@@ -156,6 +156,8 @@ export const updateOrganization = async (req: AuthRequest, res: Response) => {
       termsOfPayment,
       cancellationPolicy,
       refundPolicy,
+      deliverables,
+      addOns,
       portfolioImages,
       quotationPortfolioImages
     } = req.body;
@@ -196,6 +198,8 @@ export const updateOrganization = async (req: AuthRequest, res: Response) => {
     if (termsOfPayment !== undefined) organization.termsOfPayment = termsOfPayment;
     if (cancellationPolicy !== undefined) organization.cancellationPolicy = cancellationPolicy;
     if (refundPolicy !== undefined) organization.refundPolicy = refundPolicy;
+    if (deliverables !== undefined) organization.deliverables = deliverables;
+    if (addOns !== undefined) organization.addOns = addOns;
     if (portfolioImages !== undefined) organization.portfolioImages = portfolioImages;
     if (quotationPortfolioImages !== undefined) organization.quotationPortfolioImages = quotationPortfolioImages;
 
