@@ -1,8 +1,7 @@
 .wizardContainer {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  max-height: 100vh;
+  height: calc(100vh - 170px);
   width: 100%;
   background: var(--bg-primary-neutral);
   border-radius: var(--radius-lg);
@@ -11,9 +10,17 @@
   box-shadow: var(--shadow-md);
 }
 
+@media (max-width: 639px) {
+  .wizardContainer {
+    height: calc(100vh - 145px);
+  }
+}
+
 .progressContainer {
   padding: 32px 32px 24px;
   background: var(--bg-primary-neutral);
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .stepIndicator {
@@ -154,7 +161,8 @@
   position: relative;
   z-index: 1;
   overflow-y: auto;
-  min-height: 500px;
+  overflow-x: hidden;
+  min-height: 0;
 }
 
 @media (max-width: 768px) {
@@ -395,8 +403,10 @@
 
 .reviewItem {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  gap: 4px;
+  align-items: baseline;
+  margin-bottom: 12px;
 }
 
 .reviewFullItem {
@@ -409,17 +419,16 @@
 }
 
 .reviewLabel {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-secondary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  flex-shrink: 0;
 }
 
 .reviewValue {
-  font-size: 15px;
+  font-size: 14px;
   color: var(--text-primary);
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .reviewEventsList {
@@ -512,17 +521,11 @@
 
 .eventCard {
   background: var(--bg-primary-neutral);
-  border: 1px solid var(--border-color);
+  border: 1px solid var(--color-primary);
   border-radius: var(--radius-lg);
   padding: 20px;
   transition: all var(--transition-base);
   box-shadow: var(--shadow-sm);
-}
-
-.eventCard:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
 }
 
 .eventHeader {

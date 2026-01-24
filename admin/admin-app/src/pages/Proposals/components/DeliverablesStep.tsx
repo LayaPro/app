@@ -81,6 +81,19 @@ export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
   return (
     <div className={styles.form}>
       <div className={styles.formSection}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+          <Button 
+            onClick={() => setIsModalOpen(true)} 
+            variant="primary"
+            style={{ width: 'auto', minWidth: '200px' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Add Deliverable
+          </Button>
+        </div>
+
         {formData.addOns.length === 0 ? (
           <div className={styles.emptyState}>
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -102,27 +115,17 @@ export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
                       <div className={styles.eventSummary}>{String(deliverable.description)}</div>
                     )}
                   </div>
-                  <Button
-                    variant="ghost"
+                  <button
                     onClick={() => removeDeliverable(index)}
-                    style={{ color: 'var(--error-color)', padding: '4px 8px' }}
+                    className={styles.removeButton}
                   >
                     Remove
-                  </Button>
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         )}
-
-        <div style={{ marginTop: '24px' }}>
-          <Button onClick={() => setIsModalOpen(true)} variant="primary">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Add Deliverable
-          </Button>
-        </div>
       </div>
 
       <AddDeliverableModal

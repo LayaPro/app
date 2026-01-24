@@ -1,4 +1,4 @@
-import { Input, PhoneInput, DatePicker } from '../../../components/ui/index.js';
+import { Input, PhoneInput, DatePicker, Textarea } from '../../../components/ui/index.js';
 import type { ProposalFormData } from '../ProposalWizard';
 import styles from '../ProposalWizard.module.css';
 
@@ -26,7 +26,7 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
               placeholder="e.g., Rahul & Priya Wedding"
               required
               info="Descriptive name for this project"
-              maxLength={100}
+              maxLength={50}
               showCharCount={true}
             />
           </div>
@@ -40,7 +40,7 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
               placeholder="Enter client name"
               required
               info="Primary contact person for this proposal"
-              maxLength={100}
+              maxLength={50}
               showCharCount={true}
             />
           </div>
@@ -55,7 +55,7 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
               placeholder="Enter client email"
               required
               info="Email address where proposal will be sent"
-              maxLength={100}
+              maxLength={50}
               showCharCount={true}
             />
           </div>
@@ -65,6 +65,8 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
               label="Client Phone"
               value={formData.clientPhone || ''}
               onChange={(value) => updateFormData('clientPhone', value)}
+              error={errors.clientPhone}
+              required
               info="Contact number for follow-ups"
             />
           </div>
@@ -79,14 +81,15 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
           </div>
 
           <div className={styles.formGroup}>
-            <Input
+            <Textarea
               label="Venue"
               value={formData.venue || ''}
               onChange={(e) => updateFormData('venue', e.target.value)}
-              placeholder="Enter venue name"
+              placeholder="Enter venue name and address"
               info="Primary venue location"
-              maxLength={150}
+              maxLength={50}
               showCharCount={true}
+              rows={3}
             />
           </div>
         </div>

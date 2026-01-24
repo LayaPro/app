@@ -33,15 +33,15 @@ export const Modal: React.FC<ModalProps> = ({
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           setIsAnimating(true);
-          // Focus the first input/select/textarea element (not buttons)
+          // Focus the first focusable element (prioritize form controls over buttons)
           setTimeout(() => {
-            const firstInput = modalRef.current?.querySelector<HTMLElement>(
-              'input, select, textarea'
+            const firstFocusable = modalRef.current?.querySelector<HTMLElement>(
+              'input:not([type="hidden"]), select, textarea, button[class*="select"]'
             );
-            if (firstInput) {
-              firstInput.focus();
+            if (firstFocusable) {
+              firstFocusable.focus();
             } else {
-              // If no input elements, ensure scroll is at top
+              // If no focusable elements, ensure scroll is at top
               const contentDiv = modalRef.current?.querySelector<HTMLElement>(`.${styles.content}`);
               if (contentDiv) {
                 contentDiv.scrollTop = 0;

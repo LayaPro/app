@@ -62,6 +62,19 @@ export const EventsStep: React.FC<EventsStepProps> = ({
       )}
 
       <div className={styles.formSection}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+          <Button 
+            onClick={() => setIsModalOpen(true)} 
+            variant="primary"
+            style={{ width: 'auto', minWidth: '200px' }}
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Event
+          </Button>
+        </div>
+
         {formData.events.map((event, index) => (
           <div key={event.eventId} className={styles.eventCard}>
             <div className={styles.eventHeader}>
@@ -87,7 +100,7 @@ export const EventsStep: React.FC<EventsStepProps> = ({
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <span className={styles.totalStaffBadge}>{getTotalStaff(event)} Team Members</span>
+                  <span className={styles.totalStaffBadge}>{getTotalStaff(event)} Services</span>
                 </div>
               </div>
               <button
@@ -108,13 +121,6 @@ export const EventsStep: React.FC<EventsStepProps> = ({
             <p>No events added yet</p>
           </div>
         )}
-
-        <Button onClick={() => setIsModalOpen(true)} variant="primary">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Event
-        </Button>
       </div>
 
       <AddEventModal

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Breadcrumb } from '../../components/ui/index.js';
 import { BasicDetailsStep } from './components/BasicDetailsStep.js';
 import { EventsStep } from './components/EventsStep.js';
@@ -88,11 +88,56 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
           price: Number(d?.price) || 0
         }))
       : [],
-    totalAmount: initialData?.totalAmount || 0,
+    totalAmount: initialData?.totalAmount || null,
     validUntil: initialData?.validUntil || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInputField = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT';
+      
+      // Enter key - advance to next step
+      if (e.key === 'Enter' && !e.shiftKey) {
+        // Don't trigger on textareas or when buttons are focused
+        if (target.tagName !== 'TEXTAREA' && target.tagName !== 'BUTTON') {
+          e.preventDefault();
+          if (currentStep < STEPS.length) {
+            handleNext();
+          } else if (!isSubmitting) {
+            handleSubmit();
+          }
+        }
+      }
+      
+      // Backspace - go to previous step (only when not in input field)
+      if (e.key === 'Backspace' && !isInputField) {
+        e.preventDefault();
+        if (currentStep > 1) {
+          handlePrevious();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentStep, isSubmitting]);
+
+  // Auto-focus first input when step changes
+  useEffect(() => {
+    if (currentStep === 1) {
+      setTimeout(() => {
+        const firstInput = document.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+          `.${styles.wizardContent} input:not([type="checkbox"]):not([type="radio"]), .${styles.wizardContent} textarea, .${styles.wizardContent} select`
+        );
+        if (firstInput) {
+          firstInput.focus();
+        }
+      }, 100);
+    }
+  }, [currentStep]);
 
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -128,6 +173,9 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
           newErrors.clientEmail = 'Client email is required';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.clientEmail)) {
           newErrors.clientEmail = 'Invalid email format';
+        }
+        if (!formData.clientPhone?.trim()) {
+          newErrors.clientPhone = 'Client phone is required';
         }
         if (!formData.projectName.trim()) {
           newErrors.projectName = 'Project name is required';
@@ -257,13 +305,21 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
         {/* Navigation Buttons */}
         <div className={styles.wizardActions}>
           <button
-            onClick={currentStep === 1 ? onBack : handlePrevious}
-            className={`${styles.button} ${currentStep === 1 ? styles.cancelButton : styles.backButton}`}
+            onClick={onBack}
+            className={`${styles.button} ${styles.cancelButton}`}
           >
-            {currentStep === 1 ? 'Cancel' : 'Previous'}
+            Cancel
           </button>
           
           <div className={styles.buttonGroup}>
+            {currentStep > 1 && (
+              <button
+                onClick={handlePrevious}
+                className={`${styles.button} ${styles.backButton}`}
+              >
+                Previous
+              </button>
+            )}
             {currentStep < STEPS.length ? (
               <button
                 onClick={handleNext}

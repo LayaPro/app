@@ -17,7 +17,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
           <h3>Basic Details</h3>
-          <Button onClick={() => onEdit(1)} variant="ghost" size="sm">
+          <Button onClick={() => onEdit(1)} variant="secondary" size="sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </Button>
         </div>
@@ -59,7 +62,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
           <h3>Events</h3>
-          <Button onClick={() => onEdit(2)} variant="ghost" size="sm">
+          <Button onClick={() => onEdit(2)} variant="secondary" size="sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </Button>
         </div>
@@ -68,8 +74,8 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
             <p className={styles.emptyText}>No events added</p>
           ) : (
             formData.events.map((event, index) => (
-              <div key={event?.eventId || index} className={styles.eventItem}>
-                <h4>Event {index + 1}</h4>
+              <div key={event?.eventId || index} className={styles.eventItem} style={{ marginBottom: index < formData.events.length - 1 ? '24px' : '0' }}>
+                <h4 style={{ marginBottom: '12px' }}>Event {index + 1}</h4>
                 <div className={styles.reviewItem}>
                   <span className={styles.reviewLabel}>Name:</span>
                   <span className={styles.reviewValue}>{String(event?.eventName || 'Not specified')}</span>
@@ -83,21 +89,23 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
                   <span className={styles.reviewValue}>{String(event?.venue || 'Not specified')}</span>
                 </div>
                 
-                {event.photographyServices && event.photographyServices.length > 0 && (
+                {((event.photographyServices && event.photographyServices.length > 0) || (event.videographyServices && event.videographyServices.length > 0)) && (
                   <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Photography:</span>
-                    <span className={styles.reviewValue}>
-                      {event.photographyServices.map((s, i) => `${String(s?.label || 'Service')} (${String(s?.count || 0)})`).join(', ')}
-                    </span>
-                  </div>
-                )}
-                
-                {event.videographyServices && event.videographyServices.length > 0 && (
-                  <div className={styles.reviewItem}>
-                    <span className={styles.reviewLabel}>Videography:</span>
-                    <span className={styles.reviewValue}>
-                      {event.videographyServices.map((s, i) => `${String(s?.label || 'Service')} (${String(s?.count || 0)})`).join(', ')}
-                    </span>
+                    <span className={styles.reviewLabel}>Services:</span>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                      {event.photographyServices?.map((service: any, idx: number) => (
+                        <div key={`photo-${idx}`} className={styles.serviceChip}>
+                          <span className={styles.serviceType}>{service.label}</span>
+                          <span className={styles.serviceCount}>{service.count}</span>
+                        </div>
+                      ))}
+                      {event.videographyServices?.map((service: any, idx: number) => (
+                        <div key={`video-${idx}`} className={styles.serviceChip}>
+                          <span className={styles.serviceType}>{service.label}</span>
+                          <span className={styles.serviceCount}>{service.count}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -110,27 +118,42 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
           <h3>Terms & Policies</h3>
-          <Button onClick={() => onEdit(3)} variant="ghost" size="sm">
+          <Button onClick={() => onEdit(3)} variant="secondary" size="sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </Button>
         </div>
         <div className={styles.reviewContent}>
           {formData.termsOfService && (
-            <div className={styles.reviewItem}>
-              <span className={styles.reviewLabel}>Terms of Service:</span>
-              <span className={styles.reviewValue} style={{ whiteSpace: 'pre-line' }}>{formData.termsOfService}</span>
+            <div style={{ marginBottom: '16px' }}>
+              <div className={styles.reviewLabel} style={{ marginBottom: '8px' }}>Terms of Service:</div>
+              <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)' }}>
+                {formData.termsOfService.split('\n').filter(line => line.trim()).map((line, index) => (
+                  <li key={index} style={{ marginBottom: '4px' }}>{line.trim()}</li>
+                ))}
+              </ul>
             </div>
           )}
           {formData.paymentTerms && (
-            <div className={styles.reviewItem}>
-              <span className={styles.reviewLabel}>Terms of Payment:</span>
-              <span className={styles.reviewValue} style={{ whiteSpace: 'pre-line' }}>{formData.paymentTerms}</span>
+            <div style={{ marginBottom: '16px' }}>
+              <div className={styles.reviewLabel} style={{ marginBottom: '8px' }}>Terms of Payment:</div>
+              <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)' }}>
+                {formData.paymentTerms.split('\n').filter(line => line.trim()).map((line, index) => (
+                  <li key={index} style={{ marginBottom: '4px' }}>{line.trim()}</li>
+                ))}
+              </ul>
             </div>
           )}
           {formData.deliverables && (
-            <div className={styles.reviewItem}>
-              <span className={styles.reviewLabel}>Deliverables:</span>
-              <span className={styles.reviewValue} style={{ whiteSpace: 'pre-line' }}>{formData.deliverables}</span>
+            <div style={{ marginBottom: '16px' }}>
+              <div className={styles.reviewLabel} style={{ marginBottom: '8px' }}>Deliverables:</div>
+              <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)' }}>
+                {formData.deliverables.split('\n').filter(line => line.trim()).map((line, index) => (
+                  <li key={index} style={{ marginBottom: '4px' }}>{line.trim()}</li>
+                ))}
+              </ul>
             </div>
           )}
           {!formData.termsOfService && !formData.paymentTerms && !formData.deliverables && (
@@ -139,29 +162,25 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
         </div>
       </div>
 
-      {/* Add-ons */}
+      {/* Deliverables */}
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
-          <h3>Add-ons</h3>
-          <Button onClick={() => onEdit(4)} variant="ghost" size="sm">
+          <h3>Deliverables</h3>
+          <Button onClick={() => onEdit(4)} variant="secondary" size="sm">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
             Edit
           </Button>
         </div>
         <div className={styles.reviewContent}>
           {formData.addOns.length === 0 ? (
-            <p className={styles.emptyText}>No add-ons</p>
+            <p className={styles.emptyText}>No deliverables</p>
           ) : (
             formData.addOns.map((addOn, index) => (
-              <div key={index} className={styles.addOnItem}>
-                <div className={styles.reviewItem}>
-                  <span className={styles.reviewLabel}>{String(addOn?.name || 'Item')}:</span>
-                  <span className={styles.reviewValue}>
-                    {addOn?.price ? `₹${Number(addOn.price).toLocaleString()}` : 'Price not set'}
-                  </span>
-                </div>
-                {addOn?.description && (
-                  <p className={styles.addOnDescription}>{String(addOn.description)}</p>
-                )}
+              <div key={index} className={styles.reviewItem}>
+                <span className={styles.reviewLabel}>{String(addOn?.name || 'Item')}:</span>
+                <span className={styles.reviewValue}>{String(addOn?.description || '')}</span>
               </div>
             ))
           )}
@@ -177,31 +196,29 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
           <div className={styles.formGroup}>
             <AmountInput
               label="Final Quotation Price"
-              value={formData.totalAmount?.toString() || ''}
-              onChange={(value) => updateFormData('totalAmount', parseFloat(value) || 0)}
-              placeholder="0"
+              value={formData.totalAmount ? formData.totalAmount.toString() : ''}
+              onChange={(value) => updateFormData('totalAmount', value ? parseFloat(value) : null)}
+              placeholder="Enter amount"
               required
               info="Total amount to be quoted to the client"
             />
           </div>
-          {formData.totalAmount && formData.totalAmount > 0 && (
-            <div style={{ 
-              marginTop: '16px', 
-              padding: '16px', 
-              backgroundColor: 'var(--background-secondary)', 
-              borderRadius: '8px',
-              border: '1px solid var(--border-color)'
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-secondary)' }}>
-                  Amount:
-                </span>
-                <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-primary)' }}>
-                  ₹{formatIndianAmount(formData.totalAmount)}
-                </span>
-              </div>
+          <div style={{ 
+            marginTop: '16px', 
+            padding: '16px', 
+            backgroundColor: 'var(--background-secondary)', 
+            borderRadius: '8px',
+            border: '1px solid var(--border-color)'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+                Amount:
+              </span>
+              <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-primary)' }}>
+                {formData.totalAmount && formData.totalAmount > 0 ? `₹${formatIndianAmount(formData.totalAmount)}` : '—'}
+              </span>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
