@@ -50,7 +50,14 @@ export const CustomerPortal = () => {
     return segments[0] || '';
   };
 
+  const getRouteFromUrl = () => {
+    const path = window.location.pathname;
+    const segments = path.split('/').filter(Boolean);
+    return segments[1] || ''; // Second segment is the route (e.g., 'proposal')
+  };
+
   const accessCode = getAccessCodeFromUrl();
+  const currentRoute = getRouteFromUrl();
 
   // Check for existing auth cookie on mount
   useEffect(() => {
@@ -132,6 +139,21 @@ export const CustomerPortal = () => {
     return <LoadingCurtain />;
   }
 
+  // If user is on /proposal route, always show the proposal
+  if (currentRoute === 'proposal') {
+    return (
+      <Proposal 
+        proposalData={portalData.proposal}
+        organizationData={portalData.organization}
+        accessCode={accessCode}
+        onAcceptSuccess={() => {
+          // Navigate back to main portal
+          window.location.href = `/${accessCode}`;
+        }}
+      />
+    );
+  }
+
   // Render based on portal stage
   switch (portalData.portalStage) {
     case 'gallery':
@@ -153,6 +175,7 @@ export const CustomerPortal = () => {
           events={portalData.events || []}
           projectName={portalData.project?.projectName || portalData.proposal?.projectName}
           acceptedAt={portalData.proposal?.acceptedAt}
+          accessCode={accessCode}
         />
       );
 
@@ -162,6 +185,7 @@ export const CustomerPortal = () => {
         <AcceptedView 
           projectName={portalData.proposal?.projectName}
           organizationName={portalData.organization?.companyName}
+          accessCode={accessCode}
         />
       );
 
@@ -173,6 +197,18 @@ export const CustomerPortal = () => {
           proposalData={portalData.proposal}
           organizationData={portalData.organization}
           accessCode={accessCode}
+          onAcceptSuccess={() => {
+            // Update portal data to show accepted view
+            setPortalData({
+              ...portalData,
+              portalStage: 'accepted',
+              proposal: {
+                ...portalData.proposal,
+                status: 'accepted',
+                acceptedAt: new Date().toISOString()
+              }
+            });
+          }}
         />
       );
   }

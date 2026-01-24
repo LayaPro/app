@@ -4,22 +4,24 @@ import { proposalApi } from '../../services/api';
 import './CTA.css';
 
 export const CTA = () => {
-    const { proposal } = useProposal();
+    const { proposal, onAcceptSuccess } = useProposal();
     const [isAccepting, setIsAccepting] = useState(false);
-    const [acceptMessage, setAcceptMessage] = useState('');
 
     const handleAcceptQuotation = async () => {
         if (!proposal?._id) return;
         
         setIsAccepting(true);
-        setAcceptMessage('');
 
         try {
             await proposalApi.updateProposalStatus(proposal._id, 'accepted');
-            setAcceptMessage('Quotation accepted successfully! We will contact you soon.');
+            
+            // Immediately transition to accepted view
+            if (onAcceptSuccess) {
+                onAcceptSuccess();
+            }
         } catch (error: any) {
-            setAcceptMessage(error.message || 'Failed to accept quotation. Please try again.');
-        } finally {
+            // Handle error silently or show minimal error feedback
+            console.error('Failed to accept quotation:', error);
             setIsAccepting(false);
         }
     };
@@ -28,6 +30,10 @@ export const CTA = () => {
         window.print();
     };
 
+    // Check if quotation is already accepted (either 'accepted' or 'project_created' status)
+    const isQuotationAccepted = proposal?.status === 'accepted' || proposal?.status === 'project_created';
+    const canAcceptQuotation = proposal?.status === 'sent';
+
     return (
         <section className="cta">
             <div className="cta-content">
@@ -35,25 +41,14 @@ export const CTA = () => {
                 <p className="reveal" style={{ transitionDelay: '0.4s' }}>
                     Ready to preserve your special moments forever? Let's discuss your vision and create something extraordinary.
                 </p>
-                {acceptMessage && (
-                    <div className="accept-message" style={{ 
-                        padding: '15px', 
-                        marginBottom: '20px', 
-                        borderRadius: '8px',
-                        background: acceptMessage.includes('success') ? 'rgba(76, 175, 80, 0.2)' : 'rgba(244, 67, 54, 0.2)',
-                        color: 'white',
-                        textAlign: 'center'
-                    }}>
-                        {acceptMessage}
-                    </div>
-                )}
                 <div className="cta-buttons reveal" style={{ transitionDelay: '0.6s' }}>
                     <button 
                         onClick={handleAcceptQuotation} 
                         className="btn btn-primary"
-                        disabled={isAccepting || proposal?.status === 'accepted'}
+                        disabled={isAccepting || !canAcceptQuotation}
+                        {...(proposal?.status === 'draft' && { 'data-tooltip': 'Quotation can be accepted by customer once it is sent' })}
                     >
-                        {isAccepting ? 'Accepting...' : proposal?.status === 'accepted' ? 'Quotation Accepted' : 'Accept Quotation'}
+                        {isAccepting ? 'Accepting...' : isQuotationAccepted ? 'Quotation Accepted' : 'Accept Quotation'}
                     </button>
                     <button onClick={handleDownloadPDF} className="btn btn-secondary">Download Quotation PDF</button>
                 </div>

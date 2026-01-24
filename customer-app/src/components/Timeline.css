@@ -439,6 +439,33 @@
   margin-bottom: 20px;
 }
 
+.timeline-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.timeline-view-quotation-link {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #C9A961;
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  border: 1px solid rgba(201, 169, 97, 0.3);
+  background: rgba(201, 169, 97, 0.05);
+}
+
+.timeline-view-quotation-link:hover {
+  background: rgba(201, 169, 97, 0.15);
+  color: #D4A373;
+  border-color: rgba(201, 169, 97, 0.5);
+  transform: translateY(-1px);
+}
+
 .timeline-event-name {
   font-family: 'Playfair Display', serif;
   font-size: 1.75rem;

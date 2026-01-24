@@ -20,9 +20,10 @@ interface TimelineProps {
   events: Event[];
   projectName: string;
   acceptedAt?: string;
+  accessCode: string;
 }
 
-export const Timeline: React.FC<TimelineProps> = ({ events, projectName, acceptedAt }) => {
+export const Timeline: React.FC<TimelineProps> = ({ events, projectName, acceptedAt, accessCode }) => {
   // Helper to format date
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
@@ -106,7 +107,17 @@ export const Timeline: React.FC<TimelineProps> = ({ events, projectName, accepte
             <div className="timeline-card completed">
               <div className="timeline-card-header">
                 <h3 className="timeline-event-name">Quotation Accepted</h3>
-                <span className="timeline-status-badge completed">Completed</span>
+                <div className="timeline-card-header-right">
+                  <a 
+                    href={`/${accessCode}/proposal`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="timeline-view-quotation-link"
+                  >
+                    View Quotation
+                  </a>
+                  <span className="timeline-status-badge completed">Completed</span>
+                </div>
               </div>
               {acceptedAt && (
                 <p className="timeline-date">{formatDate(acceptedAt)}</p>
@@ -122,10 +133,21 @@ export const Timeline: React.FC<TimelineProps> = ({ events, projectName, accepte
         {events.map((event, index) => {
           // Check status based on statusCode
           const isCompleted = event.statusCode === 'DELIVERED' || event.statusCode === 'COMPLETED';
+          
+          // All statuses with activity should show as in-progress (solid styling)
           const isInProgress = event.statusCode === 'SHOOT_IN_PROGRESS' || 
                                event.statusCode === 'AWAITING_EDITING' || 
-                               event.statusCode === 'IN_EDITING' || 
-                               event.statusCode === 'AWAITING_CLIENT_APPROVAL';
+                               event.statusCode === 'IN_EDITING' ||
+                               event.statusCode === 'EDITING_ONGOING' ||
+                               event.statusCode === 'AWAITING_CLIENT_APPROVAL' ||
+                               event.statusCode === 'PUBLISHED' ||
+                               event.statusCode === 'CLIENT_SELECTION_DONE' ||
+                               event.statusCode === 'ALBUM_DESIGN_ONGOING' ||
+                               event.statusCode === 'ALBUM_DESIGN_COMPLETE' ||
+                               event.statusCode === 'ALBUM_PRINTING';
+          
+          // Only truly upcoming events with no status should be pending
+          const isPending = !isCompleted && !isInProgress;
 
           // Determine status label to display
           let statusLabel = 'Upcoming';
@@ -146,13 +168,13 @@ export const Timeline: React.FC<TimelineProps> = ({ events, projectName, accepte
           return (
             <motion.div 
               key={event.eventId}
-              className={`timeline-item ${isCompleted ? 'completed' : isInProgress ? 'in-progress' : 'pending'}`}
+              className={`timeline-item ${isCompleted ? 'completed' : isPending ? 'pending' : 'in-progress'}`}
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.4 + (index * 0.1), duration: 0.6 }}
             >
               <div className="timeline-marker">
-                <div className={`timeline-dot ${isCompleted ? 'completed' : isInProgress ? 'in-progress' : 'pending'}`}>
+                <div className={`timeline-dot ${isCompleted ? 'completed' : isPending ? 'pending' : 'in-progress'}`}>
                   {isCompleted ? (
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
                       <path 
@@ -170,7 +192,7 @@ export const Timeline: React.FC<TimelineProps> = ({ events, projectName, accepte
                 {index < events.length - 1 && <div className="timeline-line"></div>}
               </div>
               <div className="timeline-content">
-                <div className={`timeline-card ${isCompleted ? 'completed' : isInProgress ? 'in-progress' : 'pending'}`}>
+                <div className={`timeline-card ${isCompleted ? 'completed' : isPending ? 'pending' : 'in-progress'}`}>
                   <div className="timeline-card-header">
                     <h3 className="timeline-event-name">{event.eventName}</h3>
                   </div>

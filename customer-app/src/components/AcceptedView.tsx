@@ -4,11 +4,17 @@ import './AcceptedView.css';
 interface AcceptedViewProps {
   projectName: string;
   organizationName?: string;
+  accessCode: string;
 }
 
-export const AcceptedView: React.FC<AcceptedViewProps> = ({ projectName, organizationName }) => {
+export const AcceptedView: React.FC<AcceptedViewProps> = ({ projectName, organizationName, accessCode }) => {
   return (
-    <div className="accepted-container">
+    <motion.div 
+      className="accepted-container"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+    >
       {/* Floating Particles Background */}
       <div className="accepted-floating-particles">
         {[...Array(40)].map((_, i) => (
@@ -94,31 +100,28 @@ export const AcceptedView: React.FC<AcceptedViewProps> = ({ projectName, organiz
           </p>
         </motion.div>
 
-        <motion.div 
-          className="accepted-loader"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.1, duration: 0.8 }}
-        >
-          <div className="loader-dots">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-          <p className="loader-text">Preparing your timeline...</p>
-        </motion.div>
-
         {organizationName && (
           <motion.p 
             className="accepted-signature"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.3, duration: 0.8 }}
+            transition={{ delay: 1.1, duration: 0.8 }}
           >
             — Team {organizationName}
           </motion.p>
         )}
+
+        <motion.a
+          href={`/${accessCode}/proposal`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="accepted-view-quotation-btn"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 1.3, duration: 0.8 }}
+        >
+          View Quotation
+        </motion.a>
       </div>
 
       {/* Decorative Corner Elements */}
@@ -126,6 +129,6 @@ export const AcceptedView: React.FC<AcceptedViewProps> = ({ projectName, organiz
       <div className="accepted-corner accepted-corner-tr"></div>
       <div className="accepted-corner accepted-corner-bl"></div>
       <div className="accepted-corner accepted-corner-br"></div>
-    </div>
+    </motion.div>
   );
 };

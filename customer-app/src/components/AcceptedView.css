@@ -139,7 +139,7 @@
 
 /* Message */
 .accepted-message {
-  margin: 0 0 50px 0;
+  margin: 0 0 30px 0;
 }
 
 .accepted-message-main {
@@ -225,8 +225,39 @@
   font-family: 'Dancing Script', cursive;
   font-size: 1.5rem;
   color: #C9A961;
-  margin: 0;
+  margin: 0 0 30px 0;
   font-weight: 500;
+}
+
+/* View Quotation Button */
+.accepted-view-quotation-btn {
+  display: inline-block;
+  padding: 16px 40px;
+  font-family: 'Raleway', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: white;
+  background: linear-gradient(135deg, #C9A961, #D4A373);
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 24px rgba(201, 169, 97, 0.3);
+  margin-top: 20px;
+  margin-bottom: 0;
+  will-change: transform;
+}
+
+.accepted-view-quotation-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 32px rgba(201, 169, 97, 0.5);
+}
+
+.accepted-view-quotation-btn:active {
+  transform: translateY(-1px);
 }
 
 /* Decorative Corners */

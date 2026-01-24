@@ -3,6 +3,7 @@ import { createContext, useContext, ReactNode } from 'react';
 interface ProposalContextType {
   proposal: any;
   organization: any;
+  onAcceptSuccess?: () => void;
 }
 
 const ProposalContext = createContext<ProposalContextType | undefined>(undefined);
@@ -10,14 +11,16 @@ const ProposalContext = createContext<ProposalContextType | undefined>(undefined
 export const ProposalProvider = ({ 
   children, 
   proposal, 
-  organization 
+  organization,
+  onAcceptSuccess
 }: { 
   children: ReactNode; 
   proposal: any; 
   organization: any;
+  onAcceptSuccess?: () => void;
 }) => {
   return (
-    <ProposalContext.Provider value={{ proposal, organization }}>
+    <ProposalContext.Provider value={{ proposal, organization, onAcceptSuccess }}>
       {children}
     </ProposalContext.Provider>
   );

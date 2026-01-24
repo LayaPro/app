@@ -20,9 +20,10 @@ interface ProposalProps {
   proposalData: any;
   organizationData: any;
   accessCode: string;
+  onAcceptSuccess?: () => void;
 }
 
-export const Proposal: React.FC<ProposalProps> = ({ proposalData, organizationData }) => {
+export const Proposal: React.FC<ProposalProps> = ({ proposalData, organizationData, onAcceptSuccess }) => {
   useEffect(() => {
     // Intersection Observer for reveal animations
     const revealObserver = new IntersectionObserver((entries) => {
@@ -63,7 +64,7 @@ export const Proposal: React.FC<ProposalProps> = ({ proposalData, organizationDa
   }, []);
 
   return (
-    <ProposalProvider proposal={proposalData} organization={organizationData}>
+    <ProposalProvider proposal={proposalData} organization={organizationData} onAcceptSuccess={onAcceptSuccess}>
       <div className="proposal-container">
         <PageTransition />
         <ScrollProgress />
