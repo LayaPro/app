@@ -8,9 +8,16 @@ import styles from '../Page.module.css';
 
 const Proposals = () => {
   const [showWizard, setShowWizard] = useState(false);
+  const [editingProposal, setEditingProposal] = useState<any>(null);
   const { showToast } = useToast();
 
   const handleCreateProposal = () => {
+    setEditingProposal(null);
+    setShowWizard(true);
+  };
+
+  const handleEditProposal = (proposal: any) => {
+    setEditingProposal(proposal);
     setShowWizard(true);
   };
 
@@ -42,12 +49,20 @@ const Proposals = () => {
         validUntil: proposalData.validUntil,
       };
 
-      await proposalApi.create(payload);
-      showToast('success', 'Proposal created successfully');
+      if (editingProposal) {
+        // Update existing proposal
+        await proposalApi.update(editingProposal.proposalId, payload);
+        showToast('success', 'Proposal updated successfully');
+      } else {
+        // Create new proposal
+        await proposalApi.create(payload);
+        showToast('success', 'Proposal created successfully');
+      }
       setShowWizard(false);
+      setEditingProposal(null);
     } catch (error: any) {
-      console.error('Error creating proposal:', error);
-      showToast('error', error.message || 'Failed to create proposal');
+      console.error('Error saving proposal:', error);
+      showToast('error', error.message || 'Failed to save proposal');
     }
   };
 
@@ -56,6 +71,7 @@ const Proposals = () => {
       <ProposalWizard
         onBack={handleBack}
         onSubmit={handleSubmit}
+        initialData={editingProposal}
       />
     );
   }
@@ -108,7 +124,7 @@ const Proposals = () => {
         </Button>
       </div>
 
-      <ProposalsTable />
+      <ProposalsTable onEdit={handleEditProposal} />
     </div>
   );
 };

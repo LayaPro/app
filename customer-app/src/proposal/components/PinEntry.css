@@ -1,12 +1,51 @@
 .pin-entry-overlay {
   position: fixed;
   inset: 0;
-  background: linear-gradient(135deg, #FAF8F5 0%, #F5F0E8 100%);
+  background: linear-gradient(135deg, #2C2420 0%, #3D2F28 50%, #2C2420 100%);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 9999;
   animation: fadeIn 0.4s ease-out;
+  overflow: hidden;
+}
+
+/* Floating Particles */
+.pin-entry-floating-particles {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 1;
+}
+
+.pin-entry-particle {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background: radial-gradient(circle, rgba(201, 169, 97, 0.7), transparent);
+  border-radius: 50%;
+  animation: pinEntryParticleFloat var(--duration) ease-in-out infinite;
+  animation-delay: var(--delay);
+  opacity: 0;
+}
+
+@keyframes pinEntryParticleFloat {
+  0% {
+    opacity: 0.3;
+    transform: translate(0, 0) scale(0.4);
+  }
+  10% {
+    opacity: 0.9;
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--x) * 0.4), -150px) scale(1.2);
+  }
 }
 
 @keyframes fadeIn {

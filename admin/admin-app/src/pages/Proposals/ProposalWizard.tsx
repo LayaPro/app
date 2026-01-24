@@ -11,6 +11,7 @@ import pageStyles from '../Page.module.css';
 interface ProposalWizardProps {
   onBack: () => void;
   onSubmit: (data: ProposalFormData) => void;
+  initialData?: any;
 }
 
 export interface ProposalFormData {
@@ -66,23 +67,29 @@ const STEPS = [
   { id: 5, label: 'Review' },
 ];
 
-export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit }) => {
+export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit, initialData }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState<ProposalFormData>({
-    clientName: '',
-    clientEmail: '',
-    clientPhone: '',
-    projectName: '',
-    weddingDate: '',
-    venue: '',
-    events: [],
-    termsOfService: '',
-    paymentTerms: '',
-    deliverables: '',
-    addOns: [],
-    totalAmount: 0,
-    validUntil: '',
+    clientName: initialData?.clientName || '',
+    clientEmail: initialData?.clientEmail || '',
+    clientPhone: initialData?.clientPhone || '',
+    projectName: initialData?.projectName || '',
+    weddingDate: initialData?.weddingDate || '',
+    venue: initialData?.venue || '',
+    events: initialData?.events || [],
+    termsOfService: initialData?.termsOfService || '',
+    paymentTerms: initialData?.paymentTerms || '',
+    deliverables: typeof initialData?.deliverables === 'string' ? initialData.deliverables : '',
+    addOns: Array.isArray(initialData?.deliverables) 
+      ? initialData.deliverables.map((d: any) => ({
+          name: d?.name || '',
+          description: d?.description || '',
+          price: Number(d?.price) || 0
+        }))
+      : [],
+    totalAmount: initialData?.totalAmount || 0,
+    validUntil: initialData?.validUntil || '',
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -270,7 +277,7 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
                 disabled={isSubmitting}
                 className={`${styles.button} ${styles.submitButton}`}
               >
-                {isSubmitting ? 'Creating...' : 'Create Proposal'}
+                {isSubmitting ? (initialData ? 'Updating...' : 'Creating...') : (initialData ? 'Update Proposal' : 'Create Proposal')}
               </button>
             )}
           </div>

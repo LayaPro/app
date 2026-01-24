@@ -68,26 +68,26 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
             <p className={styles.emptyText}>No events added</p>
           ) : (
             formData.events.map((event, index) => (
-              <div key={event.eventId} className={styles.eventItem}>
+              <div key={event?.eventId || index} className={styles.eventItem}>
                 <h4>Event {index + 1}</h4>
                 <div className={styles.reviewItem}>
                   <span className={styles.reviewLabel}>Name:</span>
-                  <span className={styles.reviewValue}>{event.eventName || 'Not specified'}</span>
+                  <span className={styles.reviewValue}>{String(event?.eventName || 'Not specified')}</span>
                 </div>
                 <div className={styles.reviewItem}>
                   <span className={styles.reviewLabel}>Date:</span>
-                  <span className={styles.reviewValue}>{event.date || 'Not specified'}</span>
+                  <span className={styles.reviewValue}>{String(event?.date || 'Not specified')}</span>
                 </div>
                 <div className={styles.reviewItem}>
                   <span className={styles.reviewLabel}>Venue:</span>
-                  <span className={styles.reviewValue}>{event.venue || 'Not specified'}</span>
+                  <span className={styles.reviewValue}>{String(event?.venue || 'Not specified')}</span>
                 </div>
                 
                 {event.photographyServices && event.photographyServices.length > 0 && (
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Photography:</span>
                     <span className={styles.reviewValue}>
-                      {event.photographyServices.map(s => `${s.label} (${s.count})`).join(', ')}
+                      {event.photographyServices.map((s, i) => `${String(s?.label || 'Service')} (${String(s?.count || 0)})`).join(', ')}
                     </span>
                   </div>
                 )}
@@ -96,7 +96,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
                   <div className={styles.reviewItem}>
                     <span className={styles.reviewLabel}>Videography:</span>
                     <span className={styles.reviewValue}>
-                      {event.videographyServices.map(s => `${s.label} (${s.count})`).join(', ')}
+                      {event.videographyServices.map((s, i) => `${String(s?.label || 'Service')} (${String(s?.count || 0)})`).join(', ')}
                     </span>
                   </div>
                 )}
@@ -154,11 +154,13 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
             formData.addOns.map((addOn, index) => (
               <div key={index} className={styles.addOnItem}>
                 <div className={styles.reviewItem}>
-                  <span className={styles.reviewLabel}>{addOn.name}:</span>
-                  <span className={styles.reviewValue}>₹{addOn.price.toLocaleString()}</span>
+                  <span className={styles.reviewLabel}>{String(addOn?.name || 'Item')}:</span>
+                  <span className={styles.reviewValue}>
+                    {addOn?.price ? `₹${Number(addOn.price).toLocaleString()}` : 'Price not set'}
+                  </span>
                 </div>
-                {addOn.description && (
-                  <p className={styles.addOnDescription}>{addOn.description}</p>
+                {addOn?.description && (
+                  <p className={styles.addOnDescription}>{String(addOn.description)}</p>
                 )}
               </div>
             ))

@@ -65,6 +65,23 @@ export const PinEntry = ({ onSubmit, isLoading = false, error }: PinEntryProps) 
 
   return (
     <div className="pin-entry-overlay">
+      {/* Floating Particles Background */}
+      <div className="pin-entry-floating-particles">
+        {[...Array(40)].map((_, i) => (
+          <div 
+            key={i} 
+            className="pin-entry-particle"
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              '--delay': `${Math.random() * 2}s`,
+              '--duration': `${6 + Math.random() * 8}s`,
+              '--x': `${(Math.random() - 0.5) * 150}px`,
+            } as any}
+          ></div>
+        ))}
+      </div>
+
       <div className="pin-entry-container">
         <div className="pin-entry-card">
           <div className="pin-entry-header">

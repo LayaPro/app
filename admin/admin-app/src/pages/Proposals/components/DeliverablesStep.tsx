@@ -97,9 +97,9 @@ export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
               <div key={index} className={styles.eventCard}>
                 <div className={styles.eventHeader}>
                   <div className={styles.eventInfo}>
-                    <div className={styles.eventName}>{deliverable.name}</div>
+                    <div className={styles.eventName}>{String(deliverable.name || 'Deliverable')}</div>
                     {deliverable.description && (
-                      <div className={styles.eventSummary}>{deliverable.description}</div>
+                      <div className={styles.eventSummary}>{String(deliverable.description)}</div>
                     )}
                   </div>
                   <Button

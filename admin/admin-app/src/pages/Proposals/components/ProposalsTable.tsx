@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { Modal } from '../../../components/ui/Modal';
+import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
+import { ViewProposalModal } from './ViewProposalModal';
 import { useToast } from '../../../context/ToastContext';
 import { proposalApi } from '../../../services/api';
 import { useAppDispatch } from '../../../store/index';
@@ -30,14 +32,22 @@ interface Proposal {
   }>;
 }
 
-export const ProposalsTable = () => {
+interface ProposalsTableProps {
+  onEdit: (proposal: Proposal) => void;
+}
+
+export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [viewProposal, setViewProposal] = useState<Proposal | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
+  const [proposalToDelete, setProposalToDelete] = useState<Proposal | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
   const navigate = useNavigate();
@@ -114,14 +124,41 @@ export const ProposalsTable = () => {
     window.open(previewUrl, '_blank');
   };
 
-  const handleView = (proposal: Proposal) => {
-    console.log('View proposal:', proposal);
-    showToast('info', 'View proposal feature coming soon');
+  const handleView = async (proposal: Proposal) => {
+    try {
+      // Fetch full proposal details
+      const response = await proposalApi.getById(proposal.proposalId);
+      const fullProposal = response.proposal;
+      
+      setViewProposal(fullProposal);
+      setIsViewModalOpen(true);
+      setOpenActionDropdown(null);
+    } catch (error) {
+      console.error('Error fetching proposal details:', error);
+      showToast('error', 'Failed to load proposal details');
+    }
   };
 
-  const handleEdit = (proposal: Proposal) => {
-    console.log('Edit proposal:', proposal);
-    showToast('info', 'Edit proposal feature coming soon');
+  const handleEditFromView = () => {
+    if (viewProposal) {
+      setIsViewModalOpen(false);
+      onEdit(viewProposal);
+    }
+  };
+
+  const handleEdit = async (proposal: Proposal) => {
+    try {
+      // Fetch full proposal details
+      const response = await proposalApi.getById(proposal.proposalId);
+      const fullProposal = response.proposal;
+      
+      // Pass to parent component
+      setOpenActionDropdown(null);
+      onEdit(fullProposal);
+    } catch (error) {
+      console.error('Error fetching proposal details:', error);
+      showToast('error', 'Failed to load proposal details');
+    }
   };
 
   const handleSend = (proposal: Proposal) => {
@@ -148,8 +185,25 @@ export const ProposalsTable = () => {
   };
 
   const handleDelete = (proposal: Proposal) => {
-    console.log('Delete proposal:', proposal);
-    showToast('info', 'Delete proposal feature coming soon');
+    setProposalToDelete(proposal);
+    setOpenActionDropdown(null);
+  };
+
+  const confirmDelete = async () => {
+    if (!proposalToDelete) return;
+
+    try {
+      setIsDeleting(true);
+      await proposalApi.delete(proposalToDelete.proposalId);
+      showToast('success', 'Proposal deleted successfully');
+      setProposalToDelete(null);
+      fetchProposals(); // Refresh the list
+    } catch (error: any) {
+      console.error('Error deleting proposal:', error);
+      showToast('error', error.message || 'Failed to delete proposal');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   const handleCreateProject = async (proposal: Proposal) => {
@@ -326,32 +380,35 @@ export const ProposalsTable = () => {
                 </svg>
                 Preview Quotation
               </button>
-              <button 
-                className={styles.actionsDropdownItem}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleEdit(proposal);
-                  setOpenActionDropdown(null);
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit
-              </button>
-              <button 
-                className={styles.actionsDropdownItem}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleSend(proposal);
-                  setOpenActionDropdown(null);
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                </svg>
-                Send
-              </button>
+              {(proposal.status === 'draft' || proposal.status === 'sent') && (
+                <button 
+                  className={styles.actionsDropdownItem}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEdit(proposal);
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                  </svg>
+                  Edit
+                </button>
+              )}
+              {(proposal.status === 'draft' || proposal.status === 'sent') && (
+                <button 
+                  className={styles.actionsDropdownItem}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleSend(proposal);
+                    setOpenActionDropdown(null);
+                  }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                  Send
+                </button>
+              )}
               {proposal.status === 'accepted' && (
                 <>
                   <div className={styles.actionsDropdownDivider} />
@@ -369,20 +426,23 @@ export const ProposalsTable = () => {
                   </button>
                 </>
               )}
-              <div className={styles.actionsDropdownDivider} />
-              <button 
-                className={`${styles.actionsDropdownItem} ${styles.actionsDropdownItemDanger}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDelete(proposal);
-                  setOpenActionDropdown(null);
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Delete
-              </button>
+              {(proposal.status !== 'accepted' && proposal.status !== 'project_created') && (
+                <>
+                  <div className={styles.actionsDropdownDivider} />
+                  <button 
+                    className={`${styles.actionsDropdownItem} ${styles.actionsDropdownItemDanger}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(proposal);
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                    Delete
+                  </button>
+                </>
+              )}
             </div>
             </>
           )}
@@ -472,6 +532,25 @@ export const ProposalsTable = () => {
           </div>
         </div>
       </Modal>
+
+      <ConfirmationModal
+        isOpen={!!proposalToDelete}
+        onClose={() => setProposalToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Proposal"
+        message={`Are you sure you want to delete the proposal "${proposalToDelete?.projectName}" for ${proposalToDelete?.clientName}? This action cannot be undone.`}
+        confirmText="Delete"
+        variant="danger"
+        isLoading={isDeleting}
+      />
+
+      <ViewProposalModal
+        isOpen={isViewModalOpen}
+        onClose={() => setIsViewModalOpen(false)}
+        onEdit={handleEditFromView}
+        onPreview={() => viewProposal && handlePreview(viewProposal)}
+        proposal={viewProposal}
+      />
     </>
   );
 };

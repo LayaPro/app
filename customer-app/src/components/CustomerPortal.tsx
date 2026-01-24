@@ -4,6 +4,7 @@ import { LoadingCurtain } from '../proposal/components/LoadingCurtain';
 import { Proposal } from '../proposal/components/Proposal';
 import { Timeline } from './Timeline';
 import { AcceptedView } from './AcceptedView';
+import { PortalNotFound } from './PortalNotFound';
 import Gallery from './Gallery';
 import { customerPortalApi } from '../services/api';
 
@@ -40,6 +41,7 @@ export const CustomerPortal = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notFound, setNotFound] = useState(false);
   const [portalData, setPortalData] = useState<PortalData | null>(null);
 
   // Get access code from URL path - anything after the domain
@@ -79,10 +81,18 @@ export const CustomerPortal = () => {
           const response = await customerPortalApi.getPortalData(accessCode, savedPin);
           setPortalData(response);
           setIsAuthenticated(true);
-        } catch (err) {
-          // Invalid or expired PIN in cookie, clear it
-          document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
-          customerPortalApi.clearPin();
+        } catch (err: any) {
+          // Check if it's a 404 (portal not found)
+          const status = err.response?.status;
+          const message = err.response?.data?.message || err.message || '';
+          
+          if (status === 404 || message.toLowerCase().includes('not found')) {
+            setNotFound(true);
+          } else {
+            // Invalid or expired PIN in cookie, clear it
+            document.cookie = `${cookieName}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+            customerPortalApi.clearPin();
+          }
         }
       }
       setIsLoading(false);
@@ -114,15 +124,28 @@ export const CustomerPortal = () => {
       setIsAuthenticated(true);
       setIsLoading(false);
     } catch (err: any) {
-      setError(err.message || 'Invalid PIN. Please try again.');
+      // Check if it's a 404 (portal not found)
+      const status = err.response?.status;
+      const message = err.response?.data?.message || err.message || '';
+      
+      if (status === 404 || message.toLowerCase().includes('not found')) {
+        setNotFound(true);
+      } else {
+        setError(message || 'Invalid PIN. Please try again.');
+      }
       customerPortalApi.clearPin();
       setIsLoading(false);
     }
   };
 
   // Show loading on initial check
-  if (isLoading && !error) {
+  if (isLoading && !error && !notFound) {
     return <LoadingCurtain />;
+  }
+
+  // Show not found page if portal doesn't exist
+  if (notFound) {
+    return <PortalNotFound />;
   }
 
   if (!isAuthenticated) {
