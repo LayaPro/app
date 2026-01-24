@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Breadcrumb, Button } from '../../components/ui/index.js';
 import { ProposalsTable } from './components/ProposalsTable';
 import { ProposalWizard } from './ProposalWizard';
+import { ProposalStats } from './components/ProposalStats';
 import { proposalApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import styles from '../Page.module.css';
@@ -83,32 +84,17 @@ const Proposals = () => {
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between',
-        alignItems: 'center',
+        alignItems: 'flex-start',
+        gap: '24px',
         marginBottom: '24px',
-        flexWrap: 'wrap',
-        gap: '16px'
+        flexWrap: 'wrap'
       }}>
-        <div>
-          <h1 style={{ 
-            margin: 0, 
-            fontSize: 'clamp(20px, 4vw, 28px)', 
-            fontWeight: 700, 
-            color: 'var(--text-primary)' 
-          }}>
-            Proposals
-          </h1>
-          <p style={{ 
-            margin: '4px 0 0 0', 
-            fontSize: '14px', 
-            color: 'var(--text-secondary)' 
-          }}>
-            Manage and send proposals to potential clients
-          </p>
-        </div>
+        <ProposalStats />
         
         <Button
           variant="primary"
           onClick={handleCreateProposal}
+          style={{ flexShrink: 0 }}
         >
           <svg 
             width="20" 
