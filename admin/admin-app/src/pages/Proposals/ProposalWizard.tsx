@@ -70,6 +70,7 @@ const STEPS = [
 export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit, initialData }) => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [formData, setFormData] = useState<ProposalFormData>({
     clientName: initialData?.clientName || '',
     clientEmail: initialData?.clientEmail || '',
@@ -153,11 +154,13 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
+      setDirection('forward');
       setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
     }
   };
 
   const handlePrevious = () => {
+    setDirection('backward');
     setCurrentStep((prev) => Math.max(prev - 1, 1));
   };
 
@@ -176,6 +179,8 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
         }
         if (!formData.clientPhone?.trim()) {
           newErrors.clientPhone = 'Client phone is required';
+        } else if (formData.clientPhone.length < 12) {
+          newErrors.clientPhone = 'Invalid phone number';
         }
         if (!formData.projectName.trim()) {
           newErrors.projectName = 'Project name is required';
@@ -245,7 +250,10 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
           <ReviewStep
             formData={formData}
             updateFormData={updateFormData}
-            onEdit={(step: number) => setCurrentStep(step)}
+            onEdit={(step: number) => {
+              setDirection(step < currentStep ? 'backward' : 'forward');
+              setCurrentStep(step);
+            }}
           />
         );
       default:
@@ -298,7 +306,7 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
         </div>
 
         {/* Step Content */}
-        <div className={styles.wizardContent}>
+        <div className={`${styles.wizardContent} ${direction === 'forward' ? styles.slideLeft : styles.slideRight}`} key={currentStep}>
           {renderStep()}
         </div>
 

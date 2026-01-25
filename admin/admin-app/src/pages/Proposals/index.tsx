@@ -10,6 +10,7 @@ import styles from '../Page.module.css';
 const Proposals = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [editingProposal, setEditingProposal] = useState<any>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { showToast } = useToast();
 
   const handleCreateProposal = () => {
@@ -61,6 +62,7 @@ const Proposals = () => {
       }
       setShowWizard(false);
       setEditingProposal(null);
+      setRefreshKey(prev => prev + 1);
     } catch (error: any) {
       console.error('Error saving proposal:', error);
       showToast('error', error.message || 'Failed to save proposal');
@@ -89,7 +91,7 @@ const Proposals = () => {
         marginBottom: '24px',
         flexWrap: 'wrap'
       }}>
-        <ProposalStats />
+        <ProposalStats refreshTrigger={refreshKey} />
         
         <Button
           variant="primary"
@@ -110,7 +112,7 @@ const Proposals = () => {
         </Button>
       </div>
 
-      <ProposalsTable onEdit={handleEditProposal} />
+      <ProposalsTable onEdit={handleEditProposal} onDataChange={() => setRefreshKey(prev => prev + 1)} />
     </div>
   );
 };

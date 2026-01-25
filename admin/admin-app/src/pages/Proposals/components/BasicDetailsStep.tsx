@@ -13,6 +13,19 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
   updateFormData,
   errors,
 }) => {
+  const capitalizeWords = (text: string) => {
+    return text
+      .split(' ')
+      .map(word => {
+        const lower = word.toLowerCase();
+        if (lower === 'and' || lower === '&') {
+          return lower;
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(' ');
+  };
+
   return (
     <div className={styles.form}>
       <div className={styles.formSection}>
@@ -21,7 +34,7 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
             <Input
               label="Project Name"
               value={formData.projectName}
-              onChange={(e) => updateFormData('projectName', e.target.value)}
+              onChange={(e) => updateFormData('projectName', capitalizeWords(e.target.value))}
               error={errors.projectName}
               placeholder="e.g., Rahul & Priya Wedding"
               required
@@ -35,7 +48,7 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({
             <Input
               label="Client Name"
               value={formData.clientName}
-              onChange={(e) => updateFormData('clientName', e.target.value)}
+              onChange={(e) => updateFormData('clientName', capitalizeWords(e.target.value))}
               error={errors.clientName}
               placeholder="Enter client name"
               required

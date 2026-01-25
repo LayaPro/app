@@ -149,3 +149,17 @@
   flex-shrink: 0;
   stroke-width: 2;
 }
+
+.statusFilterSelect {
+  min-width: 200px;
+}
+
+.statusFilterSelect :global(button) {
+  height: 36px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.statusFilterSelect :global(.selectLabel) {
+  display: none;
+}

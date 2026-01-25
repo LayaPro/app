@@ -1,19 +1,22 @@
 import { useState, useEffect } from 'react';
 import { proposalApi } from '../../../services/api';
 
-export const ProposalStats = () => {
+interface ProposalStatsProps {
+  refreshTrigger?: number;
+}
+
+export const ProposalStats: React.FC<ProposalStatsProps> = ({ refreshTrigger }) => {
   const [stats, setStats] = useState({
     total: 0,
     draft: 0,
     sent: 0,
     accepted: 0,
-    totalValue: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchStats();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchStats = async () => {
     try {
@@ -26,9 +29,6 @@ export const ProposalStats = () => {
         draft: proposals.filter((p: any) => p.status === 'draft').length,
         sent: proposals.filter((p: any) => p.status === 'sent').length,
         accepted: proposals.filter((p: any) => p.status === 'accepted' || p.status === 'project_created').length,
-        totalValue: proposals
-          .filter((p: any) => p.status === 'accepted' || p.status === 'project_created')
-          .reduce((sum: number, p: any) => sum + (p.totalAmount || 0), 0),
       };
 
       setStats(calculated);
@@ -37,10 +37,6 @@ export const ProposalStats = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const formatAmount = (amount: number) => {
-    return `₹${amount.toLocaleString('en-IN')}`;
   };
 
   if (isLoading) {
@@ -53,7 +49,7 @@ export const ProposalStats = () => {
         minWidth: 'min(100%, 600px)',
         maxWidth: 'calc(100% - 180px)'
       }}>
-        {[...Array(5)].map((_, i) => (
+        {[...Array(4)].map((_, i) => (
           <div key={i} style={{
             padding: 'clamp(10px, 3vw, 16px)',
             background: 'var(--bg-primary)',
@@ -153,24 +149,6 @@ export const ProposalStats = () => {
         <div>
           <p style={{ margin: 0, fontSize: 'clamp(9px, 2vw, 12px)', color: 'var(--text-secondary)', fontWeight: 500 }}>Total Proposals</p>
           <p style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>{stats.total}</p>
-        </div>
-      </div>
-
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 'clamp(8px, 2vw, 12px)',
-        padding: 'clamp(10px, 3vw, 16px)',
-        background: 'var(--bg-primary)',
-        border: '1px solid var(--border-color)',
-        borderRadius: '12px'
-      }}>
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(28px, 7vw, 36px)', height: 'clamp(28px, 7vw, 36px)', strokeWidth: 1.5, color: '#f59e0b', flexShrink: 0 }}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <p style={{ margin: 0, fontSize: 'clamp(9px, 2vw, 12px)', color: 'var(--text-secondary)', fontWeight: 500 }}>Total Value</p>
-          <p style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>{formatAmount(stats.totalValue)}</p>
         </div>
       </div>
     </div>
