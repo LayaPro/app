@@ -4,7 +4,6 @@ import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { Modal } from '../../../components/ui/Modal';
 import { Select } from '../../../components/ui/Select';
-import type { SelectOption } from '../../../components/ui/Select';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { ViewProposalModal } from './ViewProposalModal';
 import { useToast } from '../../../context/ToastContext';
