@@ -5,6 +5,7 @@ import type { Column } from '../../../components/ui/DataTable';
 import { Modal } from '../../../components/ui/Modal';
 import { Select } from '../../../components/ui/Select';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
+import { TableSkeleton } from '../../../components/ui/TableSkeleton';
 import { ViewProposalModal } from './ViewProposalModal';
 import { useToast } from '../../../context/ToastContext';
 import { proposalApi } from '../../../services/api';
@@ -521,35 +522,31 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
   ];
 
   if (isLoading) {
-    return (
-      <div style={{ padding: '48px', textAlign: 'center', color: '#6b7280' }}>
-        Loading proposals...
-      </div>
-    );
+    return <TableSkeleton rows={10} columns={7} showFilters={true} />;
   }
 
   return (
     <>
       <DataTable
-        data={filteredProposals}
-        columns={columns}
-        emptyMessage="No proposals yet"
-        itemsPerPage={10}
-        customFilters={
-          <Select
-            value={statusFilter}
-            onChange={setStatusFilter}
-            options={[
-              { value: 'all', label: 'All Statuses' },
-              { value: 'draft', label: 'Draft' },
-              { value: 'sent', label: 'Sent' },
-              { value: 'accepted', label: 'Accepted' },
-              { value: 'project_created', label: 'Project Created' }
-            ]}
-            placeholder="Filter by status"
-            className={styles.statusFilterSelect}
-          />
-        }
+          data={filteredProposals}
+          columns={columns}
+          emptyMessage="No proposals yet"
+          itemsPerPage={10}
+          customFilters={
+            <Select
+              value={statusFilter}
+              onChange={setStatusFilter}
+              options={[
+                { value: 'all', label: 'All Statuses' },
+                { value: 'draft', label: 'Draft' },
+                { value: 'sent', label: 'Sent' },
+                { value: 'accepted', label: 'Accepted' },
+                { value: 'project_created', label: 'Project Created' }
+              ]}
+              placeholder="Filter by status"
+              className={styles.statusFilterSelect}
+            />
+          }
       />
 
       <Modal

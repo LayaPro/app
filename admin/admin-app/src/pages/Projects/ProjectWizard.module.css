@@ -1028,3 +1028,34 @@
     justify-content: center;
   }
 }
+
+/* Swipe Animations */
+.slideInFromRight {
+  animation: slideInFromRight 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.slideInFromLeft {
+  animation: slideInFromLeft 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

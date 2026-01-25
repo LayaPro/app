@@ -63,6 +63,7 @@ const STEPS = [
 
 export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }) => {
   const [currentStep, setCurrentStep] = useState(1);
+  const [direction, setDirection] = useState<'forward' | 'backward'>('forward');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [events, setEvents] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
@@ -182,7 +183,11 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
     if (step === 1) {
       if (!formData.projectName?.trim()) newErrors.projectName = 'Project name is required';
       if (!formData.contactPerson?.trim()) newErrors.contactPerson = 'Contact person is required';
-      if (!formData.phoneNumber?.trim()) newErrors.phoneNumber = 'Phone number is required';
+      if (!formData.phoneNumber?.trim()) {
+        newErrors.phoneNumber = 'Phone number is required';
+      } else if (formData.phoneNumber.length < 12) {
+        newErrors.phoneNumber = 'Invalid phone number';
+      }
       if (!formData.email?.trim()) {
         newErrors.email = 'Email is required';
       } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
@@ -212,16 +217,19 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
 
   const handleNext = () => {
     if (validateStep(currentStep)) {
+      setDirection('forward');
       setCurrentStep(prev => Math.min(prev + 1, STEPS.length));
     }
   };
 
   const handleBack = () => {
+    setDirection('backward');
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
   const handleStepClick = (stepId: number) => {
     if (stepId < currentStep) {
+      setDirection('backward');
       setCurrentStep(stepId);
     }
   };
@@ -316,18 +324,29 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       );
     }
 
-    switch (currentStep) {
-      case 1:
-        return <BasicDetailsStep formData={formData} onChange={handleChange} errors={errors} />;
-      case 2:
-        return <EventsStep formData={formData} onChange={handleChange} errors={errors} events={events} teamMembers={teamMembers} />;
-      case 3:
-        return <PaymentStep formData={formData} onChange={handleChange} errors={errors} />;
-      case 4:
-        return <ReviewStep formData={formData} onEdit={setCurrentStep} />;
-      default:
-        return null;
-    }
+    const stepContent = (() => {
+      switch (currentStep) {
+        case 1:
+          return <BasicDetailsStep formData={formData} onChange={handleChange} errors={errors} isFromProposal={!!editingProject?.proposalId} />;
+        case 2:
+          return <EventsStep formData={formData} onChange={handleChange} errors={errors} events={events} teamMembers={teamMembers} />;
+        case 3:
+          return <PaymentStep formData={formData} onChange={handleChange} errors={errors} />;
+        case 4:
+          return <ReviewStep formData={formData} onEdit={setCurrentStep} />;
+        default:
+          return null;
+      }
+    })();
+
+    return (
+      <div 
+        key={currentStep}
+        className={direction === 'forward' ? styles.slideInFromRight : styles.slideInFromLeft}
+      >
+        {stepContent}
+      </div>
+    );
   };
 
   return (
@@ -400,7 +419,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
                 onClick={handleBack}
                 disabled={isSubmitting}
               >
-                ← Back
+                ← Previous
               </button>
             )}
             
