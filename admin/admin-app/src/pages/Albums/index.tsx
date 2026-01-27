@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AlbumPdfUploadManager, Breadcrumb, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
 import type { AlbumPdfUploadManagerHandle } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
@@ -15,6 +16,7 @@ import styles from './Albums.module.css';
 import { AlbumPdfInfo, EventMenuDropdown, EventDateTime, VideosCard, VideosView } from './components';
 
 const Albums = () => {
+  const [searchParams] = useSearchParams();
   const { showToast } = useToast();
   const { isAdmin } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
@@ -128,7 +130,16 @@ const Albums = () => {
   const albumPdfUploadManagerRef = useRef<AlbumPdfUploadManagerHandle>(null);
 
   useEffect(() => {
-    fetchProjects();
+    const urlProjectId = searchParams.get('projectId');
+    
+    if (urlProjectId) {
+      // If URL has projectId, skip showing projects view and load project directly
+      fetchProjectsAndSelectOne(urlProjectId);
+    } else {
+      // Normal flow - show projects view
+      fetchProjects();
+    }
+    
     fetchEventTypes();
     fetchEventDeliveryStatuses();
     fetchAllEvents();
@@ -180,6 +191,39 @@ const Albums = () => {
       setProjects(response.projects || []);
       // Delay showing content to ensure smooth animation
       setTimeout(() => setShowContent(true), 150);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchProjectsAndSelectOne = async (projectId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await projectApi.getAll();
+      const allProjects = response.projects || [];
+      setProjects(allProjects);
+      
+      const project = allProjects.find((p: Project) => p.projectId === projectId);
+      if (project) {
+        // Directly set selected project without transitions
+        setSelectedProject(project);
+        setShowVideosView(false);
+        setSearchTerm('');
+        setCurrentPage(1);
+        
+        // Fetch events for the project
+        const eventsResponse = await clientEventApi.getAll();
+        const projectEvents = (eventsResponse.clientEvents || []).filter(
+          (event: ClientEvent) => event.projectId === projectId
+        );
+        setEvents(projectEvents);
+        setShowContent(true);
+      } else {
+        // If project not found, show projects view
+        setTimeout(() => setShowContent(true), 150);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {

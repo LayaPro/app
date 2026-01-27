@@ -15,6 +15,7 @@ interface ListViewProps {
   eventDeliveryStatuses: Map<string, { statusCode: string; statusDescription: string; step: number }>;
   onEventClick: (event: ClientEvent) => void;
   onStatusChange?: () => void;
+  initialProjectFilter?: string;
 }
 
 export const ListView: React.FC<ListViewProps> = ({
@@ -24,10 +25,11 @@ export const ListView: React.FC<ListViewProps> = ({
   eventDeliveryStatuses,
   onEventClick,
   onStatusChange,
+  initialProjectFilter = '',
 }) => {
   const [searchTerm] = useState('');
   const [selectedPeople] = useState<string[]>([]);
-  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedProject, setSelectedProject] = useState(initialProjectFilter);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('');

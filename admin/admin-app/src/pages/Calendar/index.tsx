@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Breadcrumb } from '../../components/ui/index.js';
 import { CalendarHeader } from './components/CalendarHeader';
 import { MonthView } from './components/MonthView';
@@ -21,8 +22,14 @@ import styles from '../Page.module.css';
 import calendarStyles from './Calendar.module.css';
 
 const Calendar = () => {
+  const [searchParams] = useSearchParams();
+  
+  // Get URL parameters
+  const urlProjectId = searchParams.get('projectId');
+  const urlView = searchParams.get('view') as CalendarView | null;
+  
   // State
-  const [currentView, setCurrentView] = useState<CalendarView>('month');
+  const [currentView, setCurrentView] = useState<CalendarView>(urlView && ['month', 'week', 'day', 'list'].includes(urlView) ? urlView : 'month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekStart, setWeekStart] = useState(getWeekStart(new Date()));
   const [events, setEvents] = useState<ClientEvent[]>([]);
@@ -300,6 +307,7 @@ const Calendar = () => {
             eventDeliveryStatuses={statuses}
             onEventClick={handleEventClick}
             onStatusChange={fetchData}
+            initialProjectFilter={urlProjectId || ''}
           />
         )}
       </div>
