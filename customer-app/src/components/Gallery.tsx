@@ -37,9 +37,12 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const [showEventMenu, setShowEventMenu] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState(false);
-  const [columns, setColumns] = useState<AlbumImage[][]>([[], [], [], [], []]);
+  const [columnCount, setColumnCount] = useState(5); // Dynamic column count
+  const [columns, setColumns] = useState<AlbumImage[][]>(() => Array(5).fill(null).map(() => []));
   const [loadedCount, setLoadedCount] = useState(30);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [isInitialLoad, setIsInitialLoad] = useState(true); // Track initial page load
+  const [hasScrolled, setHasScrolled] = useState(false); // Track if user has scrolled
   const imagesPerLoad = 30;
 
   // Get current event data
@@ -73,6 +76,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const eventMenuRef = useRef<HTMLDivElement>(null);
   const optionsMenuRef = useRef<HTMLDivElement>(null);
   const eventHeadingRef = useRef<HTMLDivElement>(null);
+  const menuJustClosedRef = useRef(false);
 
   // Scroll to event heading when event changes
   const scrollToEventHeading = () => {
@@ -80,13 +84,9 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
     setTimeout(() => {
       const hero = document.querySelector('.gallery-hero') as HTMLElement;
       const heroHeight = hero ? hero.offsetHeight : window.innerHeight;
-      const currentScroll = window.scrollY;
       
-      // If we're currently viewing the cover (scrolled less than hero height),
-      // always scroll past it completely
-      if (currentScroll < heroHeight) {
-        window.scrollTo({ top: heroHeight, behavior: 'smooth' });
-      }
+      // Always scroll to just past the hero to show the event heading
+      window.scrollTo({ top: heroHeight, behavior: 'smooth' });
     }, 100);
   };
 
@@ -105,6 +105,37 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
     };
   }, [displayCover]);
 
+  // Ensure page starts at top on initial load
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Responsive column count based on screen width
+  useEffect(() => {
+    const updateColumnCount = () => {
+      const width = window.innerWidth;
+      if (width <= 640) {
+        // Phone: 2 columns
+        setColumnCount(2);
+      } else if (width <= 1024) {
+        // Tablet: 3 columns
+        setColumnCount(3);
+      } else {
+        // Desktop: 5 columns
+        setColumnCount(5);
+      }
+    };
+
+    updateColumnCount();
+    window.addEventListener('resize', updateColumnCount);
+    return () => window.removeEventListener('resize', updateColumnCount);
+  }, []);
+
+  // Reinitialize columns when column count changes
+  useEffect(() => {
+    setColumns(Array(columnCount).fill(null).map(() => []));
+  }, [columnCount]);
+
   // Initialize liked images from backend data
   useEffect(() => {
     const selectedImages = new Set(
@@ -116,9 +147,15 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   // Reset loaded count when event changes
   useEffect(() => {
     setLoadedCount(30);
-    setColumns([[], [], [], [], []]);
-    scrollToEventHeading();
-  }, [selectedEvent]);
+    setColumns(Array(columnCount).fill(null).map(() => []));
+    
+    // Only scroll to event heading if this is not the initial load
+    if (!isInitialLoad) {
+      scrollToEventHeading();
+    } else {
+      setIsInitialLoad(false);
+    }
+  }, [selectedEvent, columnCount]);
 
   // Load images based on loadedCount
   useEffect(() => {
@@ -155,9 +192,9 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
       const loadedImages = await Promise.all(loadPromises);
 
       // Distribute to columns using shortest-column algorithm
-      const newCols: AlbumImage[][] = [[], [], [], [], []];
+      const newCols: AlbumImage[][] = Array(columnCount).fill(null).map(() => []);
       const GAP_HEIGHT = 8;
-      const columnHeights = [0, 0, 0, 0, 0];
+      const columnHeights = Array(columnCount).fill(0);
 
       loadedImages.forEach(({ image, width, height, index }) => {
         const shortestCol = columnHeights.indexOf(Math.min(...columnHeights));
@@ -232,7 +269,15 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   // Show dock on scroll - appears when cover is 50% scrolled past
   useEffect(() => {
     const handleScroll = () => {
-      const scrolled = window.scrollY > window.innerHeight * 0.5;
+      const scrollY = window.scrollY;
+      
+      // Hide arrow as soon as any scrolling starts
+      if (scrollY > 0) {
+        setHasScrolled(true);
+      }
+      
+      // Show dock when scrolled past 50% of viewport
+      const scrolled = scrollY > window.innerHeight * 0.5;
       setShowDock(scrolled);
     };
 
@@ -269,11 +314,23 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   // Close event menu on click outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      let menuWasClosed = false;
       if (eventMenuRef.current && !eventMenuRef.current.contains(event.target as Node)) {
         setShowEventMenu(false);
+        menuWasClosed = true;
       }
       if (optionsMenuRef.current && !optionsMenuRef.current.contains(event.target as Node)) {
         setShowOptionsMenu(false);
+        menuWasClosed = true;
+      }
+      
+      // Set flag if a menu was closed
+      if (menuWasClosed) {
+        menuJustClosedRef.current = true;
+        // Reset flag after a short delay
+        setTimeout(() => {
+          menuJustClosedRef.current = false;
+        }, 100);
       }
     };
 
@@ -325,17 +382,18 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
           <img src={displayCover} alt={projectName} className="gallery-hero-image" />
           <div className="gallery-hero-overlay"></div>
           
-          <div className="gallery-hero-scroll" onClick={scrollToGallery}>
-            <span>Scroll to view gallery</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </div>
+          {!hasScrolled && (
+            <div className="gallery-hero-scroll" onClick={scrollToGallery}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#C9A961" strokeWidth="2">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </div>
+          )}
         </div>
 
-      {/* macOS Style Floating Dock */}
-      <div className={`gallery-dock ${showDock ? 'show' : ''}`}>
-        <div className="gallery-dock-content">
+        {/* macOS Style Floating Dock */}
+        <div className={`gallery-dock ${showDock ? 'show' : ''}`}>
+          <div className="gallery-dock-content">
           {/* Project Name */}
           <div className="gallery-dock-project-name">
             {projectName}
@@ -500,9 +558,9 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
             )}
           </div>
         </div>
-      </div>
+        </div>
 
-      {/* Event Heading Section */}
+        {/* Event Heading Section */}
       <div className="gallery-event-heading" ref={eventHeadingRef}>
         <div className="gallery-event-heading-content">
           <div className="gallery-event-heading-line"></div>
@@ -610,7 +668,13 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
               <div 
                 key={image.imageId} 
                 className="gallery-grid-item"
-                onClick={() => setSelectedImage(image)}
+                onClick={() => {
+                  // If a menu was just closed, don't open lightbox
+                  if (menuJustClosedRef.current) {
+                    return;
+                  }
+                  setSelectedImage(image);
+                }}
               >
                 <img 
                   src={image.thumbnailUrl || image.compressedUrl} 
@@ -647,79 +711,97 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
             ))}
           </div>
         ))}
-      </div>
+        </div>
       )}
 
       {/* Load More Button */}
-      {hasMore && currentEventImages.length > 0 && (
+      {currentEventImages.length > 0 && (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           padding: '60px 20px 80px',
-          gap: '16px'
+          gap: '20px'
         }}>
-          <div style={{
-            fontSize: '14px',
-            fontWeight: '500',
-            color: '#6B6355',
-            letterSpacing: '0.5px',
-            textTransform: 'uppercase',
-            marginBottom: '8px'
-          }}>
-            {currentEventImages.length - loadedCount} more photos
-          </div>
-          
           <button
             onClick={loadMoreImages}
             style={{
               position: 'relative',
-              padding: '18px 48px',
-              fontSize: '15px',
-              fontWeight: '600',
-              color: '#FAF8F5',
-              background: 'linear-gradient(135deg, #C9A961 0%, #D4A373 100%)',
-              border: 'none',
-              borderRadius: '16px',
+              padding: '12px 32px',
+              fontSize: '14px',
+              fontWeight: '500',
+              color: '#5C4C44',
+              background: 'rgba(255, 255, 255, 0.8)',
+              border: '1.5px solid rgba(201, 169, 97, 0.5)',
+              borderRadius: '50px',
               cursor: 'pointer',
-              boxShadow: '0 8px 24px -4px rgba(201, 169, 97, 0.4), 0 0 0 1px rgba(255,255,255,0.2) inset',
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+              transition: 'all 0.5s ease',
               fontFamily: 'inherit',
-              overflow: 'hidden',
-              backdropFilter: 'blur(10px)'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              letterSpacing: '0.3px',
+              boxShadow: '0 2px 8px rgba(201, 169, 97, 0.15)',
+              opacity: hasMore ? 1 : 0,
+              transform: hasMore ? 'translateY(0)' : 'translateY(20px)',
+              pointerEvents: hasMore ? 'auto' : 'none',
+              visibility: hasMore ? 'visible' : 'hidden'
             }}
             onMouseOver={(e) => {
-              e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
-              e.currentTarget.style.boxShadow = '0 16px 32px -8px rgba(201, 169, 97, 0.5), 0 0 0 1px rgba(255,255,255,0.3) inset';
-              e.currentTarget.style.background = 'linear-gradient(135deg, #D4A373 0%, #E8D4A8 100%)';
+              if (hasMore) {
+                e.currentTarget.style.borderColor = '#C9A961';
+                e.currentTarget.style.background = 'rgba(201, 169, 97, 0.1)';
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 4px 16px rgba(201, 169, 97, 0.25)';
+              }
             }}
             onMouseOut={(e) => {
-              e.currentTarget.style.transform = 'translateY(0) scale(1)';
-              e.currentTarget.style.boxShadow = '0 8px 24px -4px rgba(201, 169, 97, 0.4), 0 0 0 1px rgba(255,255,255,0.2) inset';
-              e.currentTarget.style.background = 'linear-gradient(135deg, #C9A961 0%, #D4A373 100%)';
-            }}
-            onMouseDown={(e) => {
-              e.currentTarget.style.transform = 'translateY(-1px) scale(0.98)';
-            }}
-            onMouseUp={(e) => {
-              e.currentTarget.style.transform = 'translateY(-3px) scale(1.02)';
+              if (hasMore) {
+                e.currentTarget.style.borderColor = 'rgba(201, 169, 97, 0.5)';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)';
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = '0 2px 8px rgba(201, 169, 97, 0.15)';
+              }
             }}
           >
-            <span style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <span>Load More</span>
+            <span style={{ 
+              display: 'flex', 
+              flexDirection: 'column',
+              gap: '0px',
+              animation: 'bounceArrows 1.5s ease-in-out infinite',
+              marginTop: '2px'
+            }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
-              Load More
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: '-6px' }}>
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
             </span>
           </button>
           
+          <style>{`
+            @keyframes bounceArrows {
+              0%, 100% {
+                transform: translateY(0);
+                opacity: 1;
+              }
+              50% {
+                transform: translateY(3px);
+                opacity: 0.6;
+              }
+            }
+          `}</style>
+          
           <div style={{
             fontSize: '13px',
-            color: '#8B7355',
-            fontWeight: '400'
+            color: '#A89B8F',
+            fontWeight: '400',
+            opacity: hasMore ? 1 : 0,
+            transform: hasMore ? 'translateY(0)' : 'translateY(20px)',
+            transition: 'all 0.5s ease',
+            visibility: hasMore ? 'visible' : 'hidden'
           }}>
             Showing {loadedCount} of {currentEventImages.length}
           </div>
@@ -760,6 +842,20 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
             <span>{toast.message}</span>
           </div>
         </div>
+      )}
+
+      {/* Footer - Only show when all images are loaded */}
+      {!hasMore && currentEventImages.length > 0 && (
+        <footer className="gallery-footer" style={{
+          animation: 'slideUpFadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1)'
+        }}>
+          <div className="gallery-footer-content">
+            <div className="gallery-footer-line"></div>
+            <div className="gallery-footer-text">Laya Productions</div>
+            <div className="gallery-footer-line"></div>
+          </div>
+          <div className="gallery-footer-tagline">Crafting Timeless Memories</div>
+        </footer>
       )}
       </div>
     </div>

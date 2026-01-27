@@ -237,9 +237,33 @@
   opacity: 1;
 }
 
+/* Hide tooltip when button is clicked/active or when menu is open */
+.gallery-dock-button[data-tooltip]:active::before,
+.gallery-dock-button[data-tooltip]:active::after {
+  opacity: 0 !important;
+  display: none;
+}
+
+/* Hide tooltip when dropdown menu is open */
+.gallery-dock-item:has(.gallery-event-menu) .gallery-dock-button[data-tooltip]::before,
+.gallery-dock-item:has(.gallery-event-menu) .gallery-dock-button[data-tooltip]::after {
+  opacity: 0 !important;
+  display: none;
+}
+
 .gallery-dock-button[data-tooltip]:disabled:hover::before,
 .gallery-dock-button[data-tooltip]:disabled:hover::after {
   opacity: 1;
+}
+
+/* Hide tooltips on touch devices (tablets and phones) */
+@media (max-width: 1024px) {
+  .gallery-dock-button[data-tooltip]::before,
+  .gallery-dock-button[data-tooltip]::after,
+  .gallery-dock-button[data-tooltip]:hover::before,
+  .gallery-dock-button[data-tooltip]:hover::after {
+    display: none !important;
+  }
 }
 
 /* Project Name in Dock */
@@ -412,32 +436,76 @@
 
 @media (max-width: 768px) {
   .gallery-dock {
-    bottom: 12px;
-    right: 12px;
+    bottom: 10px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%) translateY(80px);
   }
 
   .gallery-dock.show {
-    transform: translateX(0);
+    transform: translateX(-50%) translateY(0);
   }
 
   .gallery-dock-content {
-    gap: 4px;
-    padding: 6px 12px;
-    border-radius: 20px;
+    gap: 3px;
+    padding: 6px 10px;
+    border-radius: 18px;
+  }
+  
+  .gallery-dock-project-name {
+    font-size: 0.9rem;
+    padding: 0 8px 0 4px;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .gallery-dock-button {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
   }
 
   .gallery-dock-button:hover {
-    transform: translateY(-8px) scale(1.1);
+    transform: translateY(-6px) scale(1.08);
   }
 
   .gallery-dock-button svg {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
+  }
+  
+  .gallery-dock-divider {
+    height: 24px;
+    margin: 0 2px;
+  }
+  
+  .gallery-dock-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+    top: -3px;
+    right: -3px;
+  }
+  
+  /* Make dropdowns smaller on mobile */
+  .gallery-event-menu {
+    min-width: 140px;
+    max-width: 170px;
+    bottom: calc(100% + 8px);
+    border-radius: 10px;
+    padding: 5px;
+  }
+  
+  .gallery-event-option {
+    padding: 8px 10px;
+    font-size: 0.8rem;
+    border-radius: 6px;
+    margin-bottom: 2px;
+  }
+  
+  .gallery-event-option:hover {
+    transform: translateX(2px);
   }
 }
 
@@ -552,6 +620,17 @@
   from {
     opacity: 0;
     transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -776,22 +855,44 @@
   transform: scale(1.05);
 }
 
-/* Mobile: Always show action buttons */
-@media (max-width: 768px) {
+/* Mobile and Tablet: More subtle action buttons (no hover available) */
+@media (max-width: 1024px) {
   .gallery-image-actions {
     opacity: 1;
     transform: translateY(0);
     pointer-events: all;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+  }
+  
+  /* Override desktop behavior - always show both buttons on mobile/tablet */
+  .gallery-image-actions .gallery-download-btn,
+  .gallery-image-actions:has(.gallery-like-btn.liked) .gallery-download-btn {
+    opacity: 0.4 !important;
+    pointer-events: all !important;
+  }
+  
+  /* Show like button, make it smaller and more subtle */
+  .gallery-image-actions .gallery-like-btn {
+    opacity: 0.5;
+    pointer-events: all;
+  }
+  
+  .gallery-image-actions .gallery-like-btn.liked {
+    opacity: 1;
   }
   
   .gallery-action-btn {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   }
   
   .gallery-action-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
   }
 }
 
@@ -904,5 +1005,66 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* Footer */
+.gallery-footer {
+  text-align: center;
+  padding: 80px 20px 60px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: transparent;
+}
+
+.gallery-footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 12px;
+}
+
+.gallery-footer-line {
+  flex: 1;
+  max-width: 200px;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(201, 169, 97, 0.5), transparent);
+}
+
+.gallery-footer-text {
+  font-family: 'Dancing Script', cursive;
+  font-size: 2rem;
+  font-weight: 600;
+  color: #5C4C44;
+  letter-spacing: 1px;
+  white-space: nowrap;
+}
+
+.gallery-footer-tagline {
+  font-family: 'Raleway', sans-serif;
+  font-size: 0.85rem;
+  color: rgba(92, 76, 68, 0.5);
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+@media (max-width: 768px) {
+  .gallery-footer {
+    padding: 60px 20px 40px;
+  }
+  
+  .gallery-footer-text {
+    font-size: 1.5rem;
+  }
+  
+  .gallery-footer-line {
+    max-width: 80px;
+  }
+  
+  .gallery-footer-tagline {
+    font-size: 0.75rem;
+    letter-spacing: 1.5px;
   }
 }
