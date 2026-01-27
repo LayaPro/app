@@ -57,27 +57,6 @@ export const EventsStep: React.FC<EventsStepProps> = ({
 
   return (
     <div className={styles.form}>
-      {errors.events && (
-        <div style={{
-          display: 'flex',
-          alignItems: 'flex-start',
-          gap: '12px',
-          padding: '14px 18px',
-          backgroundColor: 'rgba(239, 68, 68, 0.08)',
-          border: '1px solid rgba(239, 68, 68, 0.25)',
-          borderRadius: '8px',
-          marginBottom: '20px',
-          color: '#dc2626',
-          fontSize: '14px',
-          lineHeight: '1.6'
-        }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span>{errors.events}</span>
-        </div>
-      )}
-
       <div className={styles.formSection}>
         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
           <Button 
@@ -91,6 +70,27 @@ export const EventsStep: React.FC<EventsStepProps> = ({
             Add Event
           </Button>
         </div>
+
+        {errors.events && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            padding: '14px 18px',
+            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            color: '#dc2626',
+            fontSize: '14px',
+            lineHeight: '1.6'
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>{errors.events}</span>
+          </div>
+        )}
 
         {formData.events.map((event, index) => (
           <div key={event.eventId} className={styles.eventCard}>

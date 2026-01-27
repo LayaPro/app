@@ -8,6 +8,7 @@ export interface IClientEvent extends Document {
   eventDeliveryStatusId?: string; // Reference to EventDeliveryStatus
   fromDatetime?: Date;
   toDatetime?: Date;
+  duration?: number; // Duration in hours
   venue?: string;
   venueMapUrl?: string;
   city?: string;
@@ -33,6 +34,7 @@ const ClientEventSchema = new Schema<IClientEvent>(
     eventDeliveryStatusId: { type: String, index: true }, // Reference to EventDeliveryStatus
     fromDatetime: { type: Date },
     toDatetime: { type: Date },
+    duration: { type: Number, min: 0, max: 24 }, // Duration in hours (0-24)
     venue: { type: String },
     venueMapUrl: { type: String },
     city: { type: String },

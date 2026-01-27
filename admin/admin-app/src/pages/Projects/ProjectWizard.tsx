@@ -209,6 +209,14 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
 
     if (step === 3) {
       if (!formData.totalBudget) newErrors.totalBudget = 'Total budget is required';
+      
+      // Validate advance received doesn't exceed total budget
+      const totalBudget = parseFloat(formData.totalBudget?.toString() || '0') || 0;
+      const receivedAmount = parseFloat(formData.receivedAmount?.toString() || '0') || 0;
+      
+      if (receivedAmount > totalBudget) {
+        newErrors.receivedAmount = 'Advance received cannot exceed total budget';
+      }
     }
 
     setErrors(newErrors);

@@ -84,17 +84,17 @@ export const EventCard: React.FC<EventCardProps> = ({ event, index, teamMemberOp
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
           <span className={styles.metaText}>
-            <strong>From:</strong> {event.fromDate ? `${formatEventDate(event.fromDate)}${event.fromTime ? `, ${formatEventTime(event.fromTime)}` : ''}` : <span className={styles.missingInfo}>Click Edit to add date & time</span>}
+            <strong>Date & Time:</strong> {event.fromDate ? `${formatEventDate(event.fromDate)}${event.fromTime ? `, ${formatEventTime(event.fromTime)}` : ''}` : <span className={styles.missingInfo}>Click Edit to add date & time</span>}
           </span>
         </div>
 
-        {(event.toDate || event.toTime) && (
+        {event.duration && (
           <div className={styles.eventMetaItem}>
             <svg className={styles.metaIcon} width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className={styles.metaText}>
-              <strong>To:</strong> {event.toDate ? formatEventDate(event.toDate) : formatEventDate(event.fromDate)}{event.toTime && `, ${formatEventTime(event.toTime)}`}
+              <strong>Duration:</strong> {event.duration} {event.duration === 1 ? 'hour' : 'hours'}
             </span>
           </div>
         )}

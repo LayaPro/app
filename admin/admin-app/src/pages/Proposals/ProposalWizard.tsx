@@ -325,7 +325,7 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
                 onClick={handlePrevious}
                 className={`${styles.button} ${styles.backButton}`}
               >
-                Previous
+                ← Previous
               </button>
             )}
             {currentStep < STEPS.length ? (
@@ -333,7 +333,7 @@ export const ProposalWizard: React.FC<ProposalWizardProps> = ({ onBack, onSubmit
                 onClick={handleNext}
                 className={`${styles.button} ${styles.nextButton}`}
               >
-                Next
+                Next →
               </button>
             ) : (
               <button

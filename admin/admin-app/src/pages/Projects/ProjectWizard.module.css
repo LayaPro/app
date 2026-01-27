@@ -1,8 +1,7 @@
 .wizardContainer {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 140px);
-  max-height: calc(100vh - 140px);
+  height: calc(100vh - 170px);
   width: 100%;
   background: var(--bg-primary-neutral);
   border-radius: var(--radius-lg);
@@ -11,10 +10,17 @@
   box-shadow: var(--shadow-md);
 }
 
+@media (max-width: 639px) {
+  .wizardContainer {
+    height: calc(100vh - 145px);
+  }
+}
+
 .progressContainer {
   padding: 32px 32px 24px;
   background: var(--bg-primary-neutral);
   flex-shrink: 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .stepIndicator {
@@ -513,25 +519,29 @@
 }
 
 .eventCard {
-  background: var(--bg-primary-neutral);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.95));
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  padding: 20px;
-  transition: all var(--transition-base);
-  box-shadow: var(--shadow-sm);
+  border-radius: 16px;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  position: relative;
+  overflow: hidden;
 }
 
 .eventCard:hover {
-  border-color: var(--color-primary);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+[data-theme="dark"] .eventCard {
+  background: linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.95));
 }
 
 .eventHeader {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 8px;
+  margin-bottom: 16px;
 }
 
 .eventInfo {
@@ -544,28 +554,30 @@
 .eventName {
   font-weight: 700;
   color: var(--text-primary);
-  font-size: 17px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  font-size: 18px;
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
   letter-spacing: 0.01em;
+  display: inline-block;
 }
 
 .eventMeta {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .eventMetaItem {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .metaIcon {
-  color: var(--text-secondary);
+  color: var(--color-primary);
   flex-shrink: 0;
 }
 
@@ -573,6 +585,13 @@
   font-size: 14px;
   color: var(--text-primary);
   font-weight: 500;
+  flex: 1;
+}
+
+.metaText strong {
+  color: var(--text-secondary);
+  font-weight: 600;
+  margin-right: 6px;
 }
 
 .eventDetails {
@@ -597,21 +616,29 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  transition: all var(--transition-fast);
+  padding: 6px 12px;
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 8px;
+  transition: all 0.2s ease;
   margin-top: 4px;
+  border: 1px solid transparent;
 }
 
 .mapLink:hover {
-  text-decoration: underline;
+  background: rgba(99, 102, 241, 0.15);
+  border-color: var(--color-primary);
   gap: 8px;
+  transform: translateX(2px);
 }
 
 .eventTeamMembers {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-top: 12px;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--border-color);
 }
 
 .teamMembersLabel {
@@ -621,18 +648,26 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
+  margin-right: 4px;
 }
 
 .teamMemberChip {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 6px 12px;
   background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-md);
-  font-size: 12px;
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  border-radius: 20px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.teamMemberChip:hover {
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(139, 92, 246, 0.15));
+  border-color: var(--color-primary);
+  transform: scale(1.05);
 }
 
 .removeButton {
@@ -657,24 +692,28 @@
 }
 
 .editButton {
-  background: var(--bg-primary-neutral);
-  color: #3b82f6;
-  border: 1px solid var(--border-color);
-  padding: 8px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-base);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  background-color: #ffffff;
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
   flex-shrink: 0;
 }
 
 .editButton:hover {
-  background: #3b82f6;
-  color: white;
-  border-color: #3b82f6;
-  transform: scale(1.05);
+  background-color: var(--bg-tertiary);
+}
+
+[data-theme="dark"] .editButton {
+  background-color: #1f2937;
 }
 
 .fromProposalBadge {

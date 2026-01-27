@@ -5,16 +5,82 @@
   position: relative;
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .label {
   font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0.01em;
+  display: inline-flex;
+  align-items: center;
 }
 
 .required {
-  color: #dc2626;
-  margin-left: 4px;
+  color: var(--color-danger, #dc3545);
+}
+
+.infoWrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.infoButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 2px;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.infoButton:hover {
+  color: var(--color-primary);
+  background: var(--bg-hover);
+}
+
+.infoButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary-light);
+}
+
+.infoTooltip {
+  position: absolute;
+  left: 0;
+  top: calc(100% + 8px);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  line-height: 1.5;
+  min-width: 250px;
+  max-width: 350px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dateButton {
@@ -207,6 +273,27 @@
   padding-top: 12px;
 }
 
+.timeSection.timeError {
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
+.timeErrorMessage {
+  color: #dc2626;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding: 6px 12px;
+  background: rgba(220, 38, 38, 0.1);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid #dc2626;
+}
+
 .timeSeparator {
   width: 100%;
   height: 1px;
@@ -226,6 +313,52 @@
 .timeIcon {
   color: var(--text-secondary);
   flex-shrink: 0;
+}
+
+.timeSelectors {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.timeSelect {
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  outline: none;
+  transition: all var(--transition-fast);
+}
+
+.timeSelect:hover {
+  border-color: var(--color-primary);
+}
+
+.timeSelect:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.timeSelect.timeSelectError {
+  border-color: #dc2626;
+  background: rgba(220, 38, 38, 0.05);
+}
+
+.timeSelect.timeSelectError:focus {
+  border-color: #dc2626;
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+}
+
+.timeSeparatorText {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 16px;
 }
 
 .timeInput {
@@ -261,11 +394,6 @@
 .setButton:hover:not(:disabled) {
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
-}
-
-.setButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
 }
 
 .errorText {

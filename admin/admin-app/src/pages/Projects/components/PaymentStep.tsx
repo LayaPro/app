@@ -1,4 +1,4 @@
-import { Input } from '../../../components/ui/Input';
+import { AmountInput } from '../../../components/ui/AmountInput';
 import { DatePicker } from '../../../components/ui/DatePicker';
 import type { ProjectFormData } from '../ProjectWizard';
 import styles from '../ProjectWizard.module.css';
@@ -10,29 +10,43 @@ interface PaymentStepProps {
 }
 
 export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, errors }) => {
+  const handleReceivedAmountChange = (value: string) => {
+    const receivedAmount = parseFloat(value) || 0;
+    const totalBudget = parseFloat(formData.totalBudget?.toString() || '0') || 0;
+    
+    if (receivedAmount > totalBudget) {
+      onChange('receivedAmount', value);
+      // Set error through the parent's error handling
+      // The parent will validate this on next/submit
+    } else {
+      onChange('receivedAmount', value);
+    }
+  };
+
   return (
     <div className={styles.form}>
       <div className={styles.formSection}>
         <div className={styles.formRow3Col}>
           <div className={styles.formGroup}>
-            <Input
+            <AmountInput
               label="Total Budget"
-              type="number"
-              value={formData.totalBudget}
-              onChange={(e) => onChange('totalBudget', e.target.value)}
+              value={formData.totalBudget?.toString() || ''}
+              onChange={(value) => onChange('totalBudget', value)}
               error={errors.totalBudget}
-              placeholder="e.g., 150000"
+              placeholder="e.g., 1,50,000"
+              info="Total project budget amount in INR"
               required
             />
           </div>
           
           <div className={styles.formGroup}>
-            <Input
+            <AmountInput
               label="Advance Received"
-              type="number"
-              value={formData.receivedAmount}
-              onChange={(e) => onChange('receivedAmount', e.target.value)}
-              placeholder="e.g., 50000"
+              value={formData.receivedAmount?.toString() || ''}
+              onChange={handleReceivedAmountChange}
+              placeholder="0"
+              info="Amount received as advance payment"
+              error={errors.receivedAmount}
             />
           </div>
 
@@ -42,28 +56,8 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, er
               value={formData.receivedDate || ''}
               onChange={(value) => onChange('receivedDate', value)}
               placeholder="Select date"
+              info="Date when the advance payment was received"
               includeTime={false}
-            />
-          </div>
-        </div>
-
-        <div className={styles.formRow3Col}>
-          <div className={styles.formGroup}>
-            <DatePicker
-              label="Next Payment Date"
-              value={formData.nextDueDate || ''}
-              onChange={(value) => onChange('nextDueDate', value)}
-              placeholder="Select date"
-              includeTime={false}
-            />
-          </div>
-
-          <div className={styles.formGroup}>
-            <Input
-              label="Payment Terms"
-              value={formData.paymentTerms}
-              onChange={(e) => onChange('paymentTerms', e.target.value)}
-              placeholder="e.g., 50% advance, 50% on delivery"
             />
           </div>
         </div>

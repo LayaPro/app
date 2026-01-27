@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
@@ -75,11 +76,21 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
       }
     };
 
+    const handleScroll = () => {
+      if (openActionDropdown) {
+        setOpenActionDropdown(null);
+      }
+    };
+
     if (openActionDropdown) {
       setTimeout(() => {
         document.addEventListener('click', handleClickOutside);
+        window.addEventListener('scroll', handleScroll, true);
       }, 0);
-      return () => document.removeEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
     }
   }, [openActionDropdown]);
 
@@ -412,7 +423,7 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
             </svg>
           </button>
           
-          {openActionDropdown === proposal.proposalId && (
+          {openActionDropdown === proposal.proposalId && createPortal(
             <>
               <div 
                 className={styles.dropdownBackdrop}
@@ -514,7 +525,8 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
                 </>
               )}
             </div>
-            </>
+            </>,
+            document.body
           )}
         </div>
       ),

@@ -21,12 +21,12 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
   const [newEvent, setNewEvent] = useState({
     eventType: '',
     fromDate: '',
-    toDate: '',
     fromTime: '',
-    toTime: '',
+    duration: 4, // Default 4 hours
     venue: '',
     venueLocation: '',
     teamMembers: [] as string[],
@@ -48,17 +48,33 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
   ];
 
   const handleAddEvent = () => {
-    if (!newEvent.eventType || !newEvent.fromDate || !newEvent.venue) {
+    // Validate required fields
+    const errors: Record<string, string> = {};
+    if (!newEvent.eventType) errors.eventType = 'Event type is required';
+    if (!newEvent.fromDate) errors.fromDate = 'Date is required';
+    if (!newEvent.fromTime) errors.fromTime = 'Time is required';
+    if (!newEvent.venue) errors.venue = 'Venue is required';
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
+
+    // Calculate toDate and toTime based on duration
+    const fromDateTime = new Date(`${newEvent.fromDate}T${newEvent.fromTime || '00:00'}`);
+    const toDateTime = new Date(fromDateTime.getTime() + newEvent.duration * 60 * 60 * 1000);
+    
+    const toDate = toDateTime.toISOString().split('T')[0];
+    const toTime = toDateTime.toTimeString().slice(0, 5);
 
     const event = {
       eventId: newEvent.eventType, // Use the selected event ID from dropdown
       eventName: eventTypeOptions.find(opt => opt.value === newEvent.eventType)?.label || '',
       fromDate: newEvent.fromDate,
-      toDate: newEvent.toDate || newEvent.fromDate,
+      toDate: toDate,
       fromTime: newEvent.fromTime,
-      toTime: newEvent.toTime,
+      toTime: toTime,
+      duration: newEvent.duration,
       venue: newEvent.venue,
       venueLocation: newEvent.venueLocation,
       teamMembers: newEvent.teamMembers,
@@ -74,12 +90,12 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
     
     // Reset form and close modal
     setIsAddModalOpen(false);
+    setValidationErrors({});
     setNewEvent({
       eventType: '',
       fromDate: '',
-      toDate: '',
       fromTime: '',
-      toTime: '',
+      duration: 4,
       venue: '',
       venueLocation: '',
       teamMembers: [],
@@ -87,17 +103,18 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
   };
 
   const handleOpenAddModal = () => {
+    setValidationErrors({});
     setIsAddModalOpen(true);
   };
 
   const handleCancelAdd = () => {
     setIsAddModalOpen(false);
+    setValidationErrors({});
     setNewEvent({
       eventType: '',
       fromDate: '',
-      toDate: '',
       fromTime: '',
-      toTime: '',
+      duration: 4,
       venue: '',
       venueLocation: '',
       teamMembers: [],
@@ -112,13 +129,21 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
   const handleEditEvent = (index: number) => {
     const eventToEdit = formData.events[index];
     
+    // Calculate duration from existing dates if available
+    let duration = eventToEdit.duration || 4;
+    if (eventToEdit.fromDate && eventToEdit.toDate && eventToEdit.fromTime && eventToEdit.toTime) {
+      const from = new Date(`${eventToEdit.fromDate}T${eventToEdit.fromTime}`);
+      const to = new Date(`${eventToEdit.toDate}T${eventToEdit.toTime}`);
+      duration = Math.round((to.getTime() - from.getTime()) / (60 * 60 * 1000));
+    }
+    
     setEditingIndex(index);
+    setValidationErrors({});
     setNewEvent({
       eventType: String(eventToEdit.eventId || ''),
       fromDate: eventToEdit.fromDate || '',
-      toDate: eventToEdit.toDate || '',
       fromTime: eventToEdit.fromTime || '',
-      toTime: eventToEdit.toTime || '',
+      duration: duration,
       venue: eventToEdit.venue || '',
       venueLocation: eventToEdit.venueLocation || '',
       teamMembers: eventToEdit.teamMembers || [],
@@ -128,18 +153,35 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
 
   const handleUpdateEvent = () => {
     if (editingIndex === null) return;
-    if (!newEvent.eventType || !newEvent.fromDate || !newEvent.venue) {
+    
+    // Validate required fields
+    const errors: Record<string, string> = {};
+    if (!newEvent.eventType) errors.eventType = 'Event type is required';
+    if (!newEvent.fromDate) errors.fromDate = 'Date is required';
+    if (!newEvent.fromTime) errors.fromTime = 'Time is required';
+    if (!newEvent.venue) errors.venue = 'Venue is required';
+    
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
       return;
     }
+
+    // Calculate toDate and toTime based on duration
+    const fromDateTime = new Date(`${newEvent.fromDate}T${newEvent.fromTime || '00:00'}`);
+    const toDateTime = new Date(fromDateTime.getTime() + newEvent.duration * 60 * 60 * 1000);
+    
+    const toDate = toDateTime.toISOString().split('T')[0];
+    const toTime = toDateTime.toTimeString().slice(0, 5);
 
     const updatedEvent = {
       ...formData.events[editingIndex],
       eventId: newEvent.eventType,
       eventName: eventTypeOptions.find(opt => opt.value === newEvent.eventType)?.label || '',
       fromDate: newEvent.fromDate,
-      toDate: newEvent.toDate || newEvent.fromDate,
+      toDate: toDate,
       fromTime: newEvent.fromTime,
-      toTime: newEvent.toTime,
+      toTime: toTime,
+      duration: newEvent.duration,
       venue: newEvent.venue,
       venueLocation: newEvent.venueLocation,
       teamMembers: newEvent.teamMembers,
@@ -161,12 +203,12 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
     // Reset form and close modal
     setEditingIndex(null);
     setIsEditModalOpen(false);
+    setValidationErrors({});
     setNewEvent({
       eventType: '',
       fromDate: '',
-      toDate: '',
       fromTime: '',
-      toTime: '',
+      duration: 4,
       venue: '',
       venueLocation: '',
       teamMembers: [],
@@ -176,12 +218,12 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
   const handleCancelEdit = () => {
     setEditingIndex(null);
     setIsEditModalOpen(false);
+    setValidationErrors({});
     setNewEvent({
       eventType: '',
       fromDate: '',
-      toDate: '',
       fromTime: '',
-      toTime: '',
+      duration: 4,
       venue: '',
       venueLocation: '',
       teamMembers: [],
@@ -192,7 +234,7 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
     <>
       <div className={styles.form}>
         {/* Add New Event Button */}
-        <div style={{ display: 'flex', justifyContent: 'flex-start', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
           <button
             type="button"
             className={styles.addEventButton}
@@ -207,8 +249,23 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
 
         {/* Validation Error */}
         {errors.events && (
-          <div style={{ color: '#dc2626', fontSize: '14px', marginBottom: '16px' }}>
-            {errors.events}
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '12px',
+            padding: '14px 18px',
+            backgroundColor: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            color: '#dc2626',
+            fontSize: '14px',
+            lineHeight: '1.6'
+          }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ flexShrink: 0, marginTop: '2px' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span>All events must have date and time information. Please edit events from proposal to add date/time.</span>
           </div>
         )}
 
@@ -249,6 +306,8 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
               onChange={(value) => setNewEvent({ ...newEvent, eventType: value })}
               options={eventTypeOptions}
               placeholder="Search event type..."
+              info="Select the type of event (e.g., Wedding, Reception, Pre-wedding shoot)"
+              error={validationErrors.eventType}
               required
             />
           </div>
@@ -261,19 +320,35 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
               includeTime={true}
               timeValue={newEvent.fromTime}
               onTimeChange={(value) => setNewEvent({ ...newEvent, fromTime: value })}
+              info="Select the start date and time for this event"
+              error={validationErrors.fromDate || validationErrors.fromTime}
               required
             />
           </div>
           
           <div className={styles.formGroup}>
-            <DatePicker
-              label="To Date & Time"
-              value={newEvent.toDate}
-              onChange={(value) => setNewEvent({ ...newEvent, toDate: value })}
-              minDate={newEvent.fromDate}
-              includeTime={true}
-              timeValue={newEvent.toTime}
-              onTimeChange={(value) => setNewEvent({ ...newEvent, toTime: value })}
+            <Input
+              label="Duration (hours)"
+              type="number"
+              min="0.5"
+              max="24"
+              step="0.5"
+              value={String(newEvent.duration)}
+              onChange={(e) => {
+                const value = parseFloat(e.target.value);
+                if (isNaN(value)) {
+                  setNewEvent({ ...newEvent, duration: 0 });
+                } else if (value > 24) {
+                  setNewEvent({ ...newEvent, duration: 24 });
+                } else if (value < 0) {
+                  setNewEvent({ ...newEvent, duration: 0 });
+                } else {
+                  setNewEvent({ ...newEvent, duration: value });
+                }
+              }}
+              placeholder="Enter duration in hours (max 24)"
+              info="Expected duration of the event (0.5 to 24 hours)"
+              required
             />
           </div>
 
@@ -281,8 +356,17 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
             <Textarea
               label="Venue"
               value={newEvent.venue}
-              onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.length <= 500) {
+                  setNewEvent({ ...newEvent, venue: value });
+                }
+              }}
               placeholder="Enter venue name and address"
+              info="Full venue name and address where the event will take place"
+              maxLength={500}
+              showCharCount={true}
+              error={validationErrors.venue}
               required
               rows={3}
             />
@@ -292,8 +376,16 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
             <Input
               label="Location (Map Link)"
               value={newEvent.venueLocation}
-              onChange={(e) => setNewEvent({ ...newEvent, venueLocation: e.target.value })}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value.length <= 500) {
+                  setNewEvent({ ...newEvent, venueLocation: value });
+                }
+              }}
               placeholder="https://maps.google.com/..."
+              info="Google Maps or other map service link to the venue location"
+              maxLength={500}
+              showCharCount={true}
             />
           </div>
           
@@ -304,6 +396,7 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
               onChange={(value) => setNewEvent({ ...newEvent, teamMembers: value })}
               options={teamMemberOptions}
               placeholder="Select team members..."
+              info="Select team members who will be working on this event"
             />
           </div>
 
@@ -319,7 +412,6 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
               type="button"
               className={styles.addEventButton}
               onClick={handleAddEvent}
-              disabled={!newEvent.eventType || !newEvent.fromDate || !newEvent.venue}
             >
               <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -346,6 +438,8 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
                 onChange={(value) => setNewEvent({ ...newEvent, eventType: value })}
                 options={eventTypeOptions}
                 placeholder="Search event type..."
+                info="Select the type of event (e.g., Wedding, Reception, Pre-wedding shoot)"
+                error={validationErrors.eventType}
                 required
               />
             </div>
@@ -358,19 +452,35 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
                 includeTime={true}
                 timeValue={newEvent.fromTime}
                 onTimeChange={(value) => setNewEvent({ ...newEvent, fromTime: value })}
+                info="Select the start date and time for this event"
+                error={validationErrors.fromDate || validationErrors.fromTime}
                 required
               />
             </div>
             
             <div className={styles.formGroup}>
-              <DatePicker
-                label="To Date & Time"
-                value={newEvent.toDate}
-                onChange={(value) => setNewEvent({ ...newEvent, toDate: value })}
-                minDate={newEvent.fromDate}
-                includeTime={true}
-                timeValue={newEvent.toTime}
-                onTimeChange={(value) => setNewEvent({ ...newEvent, toTime: value })}
+              <Input
+                label="Duration (hours)"
+                type="number"
+                min="0.5"
+                max="24"
+                step="0.5"
+                value={String(newEvent.duration)}
+                onChange={(e) => {
+                  const value = parseFloat(e.target.value);
+                  if (isNaN(value)) {
+                    setNewEvent({ ...newEvent, duration: 0 });
+                  } else if (value > 24) {
+                    setNewEvent({ ...newEvent, duration: 24 });
+                  } else if (value < 0) {
+                    setNewEvent({ ...newEvent, duration: 0 });
+                  } else {
+                    setNewEvent({ ...newEvent, duration: value });
+                  }
+                }}
+                placeholder="Enter duration in hours (max 24)"
+                info="Expected duration of the event (0.5 to 24 hours)"
+                required
               />
             </div>
 
@@ -378,8 +488,17 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
               <Textarea
                 label="Venue"
                 value={newEvent.venue}
-                onChange={(e) => setNewEvent({ ...newEvent, venue: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length <= 500) {
+                    setNewEvent({ ...newEvent, venue: value });
+                  }
+                }}
                 placeholder="Enter venue name and address"
+                info="Full venue name and address where the event will take place"
+                maxLength={500}
+                showCharCount={true}
+                error={validationErrors.venue}
                 required
                 rows={3}
               />
@@ -389,8 +508,16 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
               <Input
                 label="Location (Map Link)"
                 value={newEvent.venueLocation}
-                onChange={(e) => setNewEvent({ ...newEvent, venueLocation: e.target.value })}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value.length <= 500) {
+                    setNewEvent({ ...newEvent, venueLocation: value });
+                  }
+                }}
                 placeholder="https://maps.google.com/..."
+                info="Google Maps or other map service link to the venue location"
+                maxLength={500}
+                showCharCount={true}
               />
             </div>
             
@@ -401,6 +528,7 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
                 onChange={(value) => setNewEvent({ ...newEvent, teamMembers: value })}
                 options={teamMemberOptions}
                 placeholder="Select team members..."
+                info="Select team members who will be working on this event"
               />
             </div>
 
@@ -416,7 +544,6 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
                 type="button"
                 className={styles.addEventButton}
                 onClick={handleUpdateEvent}
-                disabled={!newEvent.eventType || !newEvent.fromDate || !newEvent.venue}
               >
                 <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
