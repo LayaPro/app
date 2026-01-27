@@ -31,6 +31,8 @@ interface GalleryProps {
 
 const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, albumImages, events = [] }) => {
   const [selectedImage, setSelectedImage] = useState<AlbumImage | null>(null);
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
+  const [isInitialOpen, setIsInitialOpen] = useState(true);
   const [selectedEvent, setSelectedEvent] = useState(events.length > 0 ? events[0].eventId : '');
   const [likedImages, setLikedImages] = useState<Set<string>>(new Set());
   const [showDock, setShowDock] = useState(false);
@@ -673,6 +675,8 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
                   if (menuJustClosedRef.current) {
                     return;
                   }
+                  setIsInitialOpen(true);
+                  setSlideDirection(null);
                   setSelectedImage(image);
                 }}
               >
@@ -809,20 +813,98 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
       )}
 
       {/* Lightbox */}
-      {selectedImage && (
-        <div className="gallery-lightbox" onClick={() => setSelectedImage(null)}>
-          <div className="gallery-lightbox-content" onClick={(e) => e.stopPropagation()}>
-            <button className="gallery-lightbox-close" onClick={() => setSelectedImage(null)}>
-              ×
+      {selectedImage && (() => {
+        const currentImages = columns.flat();
+        const currentIndex = currentImages.findIndex(img => img.imageId === selectedImage.imageId);
+        const hasPrev = currentIndex > 0;
+        const hasNext = currentIndex < currentImages.length - 1;
+
+        const handlePrev = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (hasPrev) {
+            setIsInitialOpen(false);
+            setSlideDirection('right');
+            setTimeout(() => {
+              setSelectedImage(currentImages[currentIndex - 1]);
+            }, 50);
+          }
+        };
+
+        const handleNext = (e: React.MouseEvent) => {
+          e.stopPropagation();
+          if (hasNext) {
+            setIsInitialOpen(false);
+            setSlideDirection('left');
+            setTimeout(() => {
+              setSelectedImage(currentImages[currentIndex + 1]);
+            }, 50);
+          }
+        };
+
+        const handleKeyDown = (e: React.KeyboardEvent) => {
+          if (e.key === 'ArrowLeft') handlePrev();
+          if (e.key === 'ArrowRight') handleNext();
+          if (e.key === 'Escape') setSelectedImage(null);
+        };
+
+        return (
+          <div 
+            className="gallery-lightbox" 
+            onClick={() => setSelectedImage(null)}
+            onKeyDown={handleKeyDown}
+            tabIndex={0}
+            style={{ outline: 'none' }}
+          >
+            <button 
+              className="gallery-lightbox-close" 
+              onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
+              aria-label="Close"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
             </button>
-            <img 
-              src={selectedImage.compressedUrl || selectedImage.originalUrl} 
-              alt="Full size"
-              className="gallery-lightbox-image"
-            />
+
+            {hasPrev && (
+              <button 
+                className="gallery-lightbox-nav gallery-lightbox-prev"
+                onClick={handlePrev}
+                aria-label="Previous image"
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+              </button>
+            )}
+
+            {hasNext && (
+              <button 
+                className="gallery-lightbox-nav gallery-lightbox-next"
+                onClick={handleNext}
+                aria-label="Next image"
+              >
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </button>
+            )}
+
+            <div className="gallery-lightbox-content" onClick={(e) => e.stopPropagation()}>
+              <img 
+                key={selectedImage.imageId}
+                src={selectedImage.compressedUrl || selectedImage.originalUrl} 
+                alt="Full size"
+                className={`gallery-lightbox-image ${isInitialOpen ? 'zoom-in' : `slide-${slideDirection}`}`}
+              />
+            </div>
+
+            <div className="gallery-lightbox-counter">
+              {currentIndex + 1} / {currentImages.length}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Toast Notification */}
       {toast && (
