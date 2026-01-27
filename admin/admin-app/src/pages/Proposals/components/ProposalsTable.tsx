@@ -302,7 +302,7 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
   const columns: Column<Proposal>[] = [
     {
       key: 'projectName',
-      header: 'Project',
+      header: 'Customer',
       sortable: true,
       render: (proposal) => {
         const getInitials = (name: string) => {
@@ -336,21 +336,13 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
             }}>
               {getInitials(proposal.projectName)}
             </div>
-            <span className={styles.projectName}>{proposal.projectName}</span>
+            <div>
+              <div className={styles.clientName}>{proposal.projectName}</div>
+              <div className={styles.clientEmail}>{proposal.clientName}</div>
+            </div>
           </div>
         );
       },
-    },
-    {
-      key: 'clientName',
-      header: 'Client',
-      sortable: true,
-      render: (proposal) => (
-        <div>
-          <div className={styles.clientName}>{proposal.clientName}</div>
-          <div className={styles.clientEmail}>{proposal.clientEmail}</div>
-        </div>
-      ),
     },
     {
       key: 'clientPhone',
@@ -405,7 +397,7 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
       header: 'Actions',
       sortable: false,
       render: (proposal) => (
-        <div className={styles.actionsCell}>
+        <div className={styles.actionsCell} onClick={(e) => e.stopPropagation()}>
           <button 
             className={styles.actionsDropdownButton}
             onClick={(e) => {
@@ -544,6 +536,10 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
           columns={columns}
           emptyMessage="No proposals yet"
           itemsPerPage={10}
+          onRowClick={(proposal) => {
+            setViewProposal(proposal);
+            setIsViewModalOpen(true);
+          }}
           customFilters={
             <Select
               value={statusFilter}

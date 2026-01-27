@@ -4,6 +4,8 @@ export interface IProject extends Document {
   projectId: string;
   tenantId: string;
   projectName: string;
+  contactPerson?: string;
+  email?: string;
   brideFirstName?: string;
   groomFirstName?: string;
   brideLastName?: string;
@@ -11,6 +13,7 @@ export interface IProject extends Document {
   phoneNumber?: string;
   budget?: number;
   address?: string;
+  city?: string;
   referredBy?: string;
   projectDeliveryStatusId?: string; // Reference to ProjectDeliveryStatus
   proposalId?: string; // Reference to the proposal this project was created from
@@ -27,6 +30,8 @@ const ProjectSchema = new Schema<IProject>(
     projectId: { type: String, required: true, unique: true },
     tenantId: { type: String, required: true, index: true },
     projectName: { type: String, required: true, trim: true },
+    contactPerson: { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true },
     brideFirstName: { type: String, trim: true },
     groomFirstName: { type: String, trim: true },
     brideLastName: { type: String, trim: true },
@@ -34,6 +39,7 @@ const ProjectSchema = new Schema<IProject>(
     phoneNumber: { type: String, trim: true },
     budget: { type: Number },
     address: { type: String },
+    city: { type: String, trim: true },
     referredBy: { type: String, trim: true },
     projectDeliveryStatusId: { type: String, index: true }, // Reference to ProjectDeliveryStatus
     proposalId: { type: String, index: true }, // Reference to the proposal this project was created from

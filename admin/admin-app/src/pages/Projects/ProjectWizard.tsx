@@ -98,14 +98,54 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
     if (isEditing && editingProject) {
       console.log('Editing project data:', editingProject);
       
-      // Extract contact person and email - might be stored in different fields
-      const contactPerson = editingProject.contactPerson || 
-                          editingProject.brideFirstName || 
-                          editingProject.groomFirstName || 
-                          '';
-      const email = editingProject.email || editingProject.contactEmail || '';
+      // Extract contact person - use contactPerson field if exists, otherwise derive from bride/groom names
+      let contactPerson = editingProject.contactPerson || '';
+      if (!contactPerson) {
+        // Try to create a contact person from bride and groom first names
+        if (editingProject.brideFirstName && editingProject.groomFirstName) {
+          contactPerson = `${editingProject.brideFirstName} & ${editingProject.groomFirstName}`;
+        } else if (editingProject.brideFirstName) {
+          contactPerson = editingProject.brideFirstName;
+        } else if (editingProject.groomFirstName) {
+          contactPerson = editingProject.groomFirstName;
+        }
+      }
       
-      setFormData({
+      // Email might not exist in old projects, leave empty for user to fill
+      const email = editingProject.email || '';
+      
+      // Map events with proper field handling
+      const mappedEvents = (editingProject.events || []).map((e: any) => {
+        // Handle datetime fields - check multiple possible field names
+        const fromDatetime = e.fromDatetime || e.startDate || e.date;
+        const toDatetime = e.toDatetime || e.endDate;
+        
+        return {
+          clientEventId: e.clientEventId,
+          eventId: e.eventId,
+          eventName: e.eventTitle || e.eventName || e.eventCode || '',
+          fromDate: fromDatetime ? new Date(fromDatetime).toISOString().split('T')[0] : '',
+          toDate: toDatetime ? new Date(toDatetime).toISOString().split('T')[0] : '',
+          fromTime: fromDatetime ? new Date(fromDatetime).toTimeString().slice(0, 5) : '',
+          toTime: toDatetime ? new Date(toDatetime).toTimeString().slice(0, 5) : '',
+          venue: e.venue || '',
+          venueLocation: e.venueLocation || e.venue || '',
+          venueMapUrl: e.venueMapUrl || '',
+          city: e.city || '',
+          teamMembers: e.teamMembersAssigned || e.teamMembers || [],
+          notes: e.notes || '',
+        };
+      });
+      
+      // Handle finance data - check nested finance object and top-level fields
+      const finance = editingProject.finance || {};
+      const totalBudget = editingProject.totalBudget || finance.totalBudget || editingProject.budget || 0;
+      const receivedAmount = editingProject.receivedAmount || finance.receivedAmount || 0;
+      const receivedDate = editingProject.receivedDate || finance.receivedDate;
+      const nextDueDate = editingProject.nextDueDate || finance.nextDueDate;
+      const paymentTerms = editingProject.paymentTerms || finance.paymentTerms || '';
+      
+      const newFormData = {
         projectName: editingProject.projectName || '',
         brideFirstName: editingProject.brideFirstName || '',
         brideLastName: editingProject.brideLastName || '',
@@ -119,33 +159,16 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
         referredBy: editingProject.referredBy || '',
         displayPic: editingProject.displayPic || undefined,
         coverPhoto: editingProject.coverPhoto || undefined,
-        events: editingProject.events?.map((e: any) => ({
-          clientEventId: e.clientEventId,
-          eventId: e.eventId,
-          eventName: e.eventTitle || e.eventName || e.eventCode,
-          fromDate: e.fromDatetime ? new Date(e.fromDatetime).toISOString().split('T')[0] : '',
-          toDate: e.toDatetime ? new Date(e.toDatetime).toISOString().split('T')[0] : '',
-          fromTime: e.fromDatetime ? new Date(e.fromDatetime).toTimeString().slice(0, 5) : '',
-          toTime: e.toDatetime ? new Date(e.toDatetime).toTimeString().slice(0, 5) : '',
-          venue: e.venue || '',
-          venueLocation: e.venue || '',
-          venueMapUrl: e.venueMapUrl || '',
-          city: e.city || '',
-          teamMembers: e.teamMembersAssigned || [],
-          notes: e.notes || '',
-        })) || [],
-        totalBudget: editingProject.totalBudget || editingProject.finance?.totalBudget || editingProject.budget || 0,
-        receivedAmount: editingProject.finance?.receivedAmount || 0,
-        receivedDate: editingProject.finance?.receivedDate ? new Date(editingProject.finance.receivedDate).toISOString().split('T')[0] : undefined,
-        nextDueDate: editingProject.finance?.nextDueDate ? new Date(editingProject.finance.nextDueDate).toISOString().split('T')[0] : undefined,
-        paymentTerms: editingProject.finance?.paymentTerms || '',
-      });
+        events: mappedEvents,
+        totalBudget: totalBudget,
+        receivedAmount: receivedAmount,
+        receivedDate: receivedDate ? new Date(receivedDate).toISOString().split('T')[0] : undefined,
+        nextDueDate: nextDueDate ? new Date(nextDueDate).toISOString().split('T')[0] : undefined,
+        paymentTerms: paymentTerms,
+      };
       
-      console.log('Form data after mapping:', {
-        brideFirstName: editingProject.brideFirstName,
-        contactPerson,
-        email,
-      });
+      console.log('Setting form data:', newFormData);
+      setFormData(newFormData);
     }
   }, [isEditing, editingProject]);
 
@@ -252,12 +275,15 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       // Transform form data to API format
       const projectData = {
         projectName: formData.projectName,
+        contactPerson: formData.contactPerson,
+        email: formData.email,
         brideFirstName: formData.brideFirstName,
         brideLastName: formData.brideLastName,
         groomFirstName: formData.groomFirstName,
         groomLastName: formData.groomLastName,
         phoneNumber: formData.phoneNumber,
         address: formData.address,
+        city: formData.city,
         referredBy: formData.referredBy,
         displayPic: formData.displayPic,
         coverPhoto: formData.coverPhoto,
@@ -447,7 +473,10 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
                 onClick={handleSubmit}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Creating...' : 'Create Project'}
+                {isSubmitting 
+                  ? (isEditing ? 'Updating...' : 'Creating...') 
+                  : (isEditing ? 'Update Project' : 'Create Project')
+                }
               </button>
             )}
           </div>

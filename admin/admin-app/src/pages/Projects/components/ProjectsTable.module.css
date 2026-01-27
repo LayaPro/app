@@ -105,13 +105,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 14px;
   flex-shrink: 0;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  letterSpacing: 0.5px;
 }
 
 .customerName {
@@ -258,14 +256,21 @@
 .actionsDropdownMenu {
   position: fixed;
   background: var(--bg-primary);
+  background-color: #ffffff;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   min-width: 180px;
-  z-index: 10000;
+  z-index: 999999;
   overflow: hidden;
   animation: slideDown 0.2s ease-out;
   transform-origin: top;
+  isolation: isolate;
+  will-change: transform;
+}
+
+[data-theme="dark"] .actionsDropdownMenu {
+  background-color: #1f2937;
 }
 
 @keyframes slideDown {

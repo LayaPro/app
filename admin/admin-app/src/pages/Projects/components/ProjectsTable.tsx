@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { projectApi, eventDeliveryStatusApi } from '../../../services/api';
+import { createPortal } from 'react-dom';
+import { projectApi, eventDeliveryStatusApi, proposalApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { DatePicker } from '../../../components/ui/DatePicker';
+import { Modal } from '../../../components/ui/Modal';
 import { useAppDispatch } from '../../../store/index.js';
 import { setEditingProject } from '../../../store/slices/projectSlice.js';
 import { formatIndianAmount } from '../../../utils/formatAmount';
@@ -45,9 +47,13 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
-  const [totalStatuses, setTotalStatuses] = useState(13); // Will be fetched from DB
+  const [eventDeliveryStatuses, setEventDeliveryStatuses] = useState<Map<string, any>>(new Map());
+  const [totalStatuses, setTotalStatuses] = useState(0);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
   const dateRangeRef = useRef<HTMLDivElement>(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const assignEditorModalRef = useRef<AssignEditorModalHandle>(null);
   const assignDesignerModalRef = useRef<AssignDesignerModalHandle>(null);
   const dispatch = useAppDispatch();
@@ -61,11 +67,18 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const fetchStatuses = async () => {
     try {
       const response = await eventDeliveryStatusApi.getAll();
-      const statuses = response?.statuses || [];
+      const statuses = response?.eventDeliveryStatuses || response?.statuses || [];
+      
+      // Create a map for easy lookup: statusId -> status object
+      const statusMap = new Map(
+        statuses.map((status: any) => [status.statusId, status])
+      );
+      
+      setEventDeliveryStatuses(statusMap);
       setTotalStatuses(statuses.length);
     } catch (error) {
       console.error('Error fetching statuses:', error);
-      setTotalStatuses(13); // Fallback to default
+      setTotalStatuses(0);
     }
   };
 
@@ -91,12 +104,22 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       }
     };
 
+    const handleScroll = () => {
+      if (openActionDropdown) {
+        setOpenActionDropdown(null);
+      }
+    };
+
     if (openActionDropdown || isExportOpen || isDateRangeOpen) {
       // Use timeout to allow click events to fire first
       setTimeout(() => {
         document.addEventListener('click', handleClickOutside);
+        window.addEventListener('scroll', handleScroll, true);
       }, 0);
-      return () => document.removeEventListener('click', handleClickOutside);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
     }
   }, [openActionDropdown, isExportOpen, isDateRangeOpen]);
 
@@ -120,38 +143,38 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   };
 
   const getInitials = (project: Project) => {
-    const bride = project.brideFirstName?.[0] || '';
-    const groom = project.groomFirstName?.[0] || '';
-    return (bride + groom) || project.projectName.substring(0, 2).toUpperCase();
+    return project.projectName
+      .split(' ')
+      .filter(word => word.toLowerCase() !== '&' && word.toLowerCase() !== 'and')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
   };
 
-  const getAvatarGradient = (name: string) => {
-    const gradients = [
-      'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)', // indigo to purple
-      'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', // blue
-      'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)', // green
-      'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)', // amber
-      'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)', // red
-      'linear-gradient(135deg, #ec4899 0%, #db2777 100%)', // pink
-      'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)', // cyan
-      'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)', // teal
-      'linear-gradient(135deg, #f97316 0%, #ea580c 100%)', // orange
-      'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)', // violet
-      'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)', // yellow
-      'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)', // purple to indigo
-      'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)', // sky blue
-      'linear-gradient(135deg, #10b981 0%, #059669 100%)', // emerald
-      'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)', // rose
-      'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)', // purple to violet
+  const getAvatarColors = (name: string) => {
+    const colors = [
+      { bg: 'rgba(99, 102, 241, 0.1)', text: '#4f46e5', border: 'rgba(99, 102, 241, 0.2)' },    // indigo
+      { bg: 'rgba(59, 130, 246, 0.1)', text: '#2563eb', border: 'rgba(59, 130, 246, 0.2)' },    // blue
+      { bg: 'rgba(34, 197, 94, 0.1)', text: '#16a34a', border: 'rgba(34, 197, 94, 0.2)' },      // green
+      { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706', border: 'rgba(245, 158, 11, 0.2)' },    // amber
+      { bg: 'rgba(239, 68, 68, 0.1)', text: '#dc2626', border: 'rgba(239, 68, 68, 0.2)' },      // red
+      { bg: 'rgba(236, 72, 153, 0.1)', text: '#db2777', border: 'rgba(236, 72, 153, 0.2)' },    // pink
+      { bg: 'rgba(6, 182, 212, 0.1)', text: '#0891b2', border: 'rgba(6, 182, 212, 0.2)' },      // cyan
+      { bg: 'rgba(20, 184, 166, 0.1)', text: '#0d9488', border: 'rgba(20, 184, 166, 0.2)' },    // teal
+      { bg: 'rgba(249, 115, 22, 0.1)', text: '#ea580c', border: 'rgba(249, 115, 22, 0.2)' },    // orange
+      { bg: 'rgba(168, 85, 247, 0.1)', text: '#9333ea', border: 'rgba(168, 85, 247, 0.2)' },    // violet
+      { bg: 'rgba(234, 179, 8, 0.1)', text: '#ca8a04', border: 'rgba(234, 179, 8, 0.2)' },      // yellow
+      { bg: 'rgba(14, 165, 233, 0.1)', text: '#0284c7', border: 'rgba(14, 165, 233, 0.2)' },    // sky
+      { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', border: 'rgba(16, 185, 129, 0.2)' },    // emerald
+      { bg: 'rgba(244, 63, 94, 0.1)', text: '#e11d48', border: 'rgba(244, 63, 94, 0.2)' },      // rose
     ];
     
-    // Better hash function for more even distribution
     let hash = 0;
     for (let i = 0; i < (name?.length || 0); i++) {
       hash = ((hash << 5) - hash) + name.charCodeAt(i);
       hash = hash & hash;
     }
-    return gradients[Math.abs(hash) % gradients.length];
+    return colors[Math.abs(hash) % colors.length];
   };
 
   const formatDate = (dateString: string | undefined) => {
@@ -202,29 +225,36 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       key: 'projectName',
       header: 'Customer',
       sortable: true,
-      render: (project) => (
-        <div className={styles.customerCell}>
-          {project.displayPic ? (
-            <img 
-              src={project.displayPic} 
-              alt="Profile"
-              className={styles.avatar}
-              style={{ objectFit: 'cover' }}
-            />
-          ) : (
-            <div 
-              className={styles.avatar}
-              style={{ background: getAvatarGradient(project.projectName) }}
-            >
-              {getInitials(project)}
+      render: (project) => {
+        const colors = getAvatarColors(project.projectName);
+        return (
+          <div className={styles.customerCell}>
+            {project.displayPic ? (
+              <img 
+                src={project.displayPic} 
+                alt="Profile"
+                className={styles.avatar}
+                style={{ objectFit: 'cover' }}
+              />
+            ) : (
+              <div 
+                className={styles.avatar}
+                style={{ 
+                  backgroundColor: colors.bg,
+                  border: `1.5px solid ${colors.border}`,
+                  color: colors.text
+                }}
+              >
+                {getInitials(project)}
+              </div>
+            )}
+            <div>
+              <div className={styles.customerName}>{project.projectName}</div>
+              <div className={styles.customerSubtext}>{project.contactPerson || getCustomerName(project)}</div>
             </div>
-          )}
-          <div>
-            <div className={styles.customerName}>{getCustomerName(project)}</div>
-            <div className={styles.customerSubtext}>{project.projectName}</div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'phoneNumber',
@@ -296,8 +326,9 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
         
         // Calculate completed tasks: sum of step numbers of current status for each event
         const completedTasks = project.events?.reduce((count, event: any) => {
-          // Use the step number of the current status
-          const step = event.statusStep || 0;
+          // Look up the status to get the step number
+          const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId);
+          const step = status?.step || 0;
           return count + step;
         }, 0) || 0;
         
@@ -328,21 +359,6 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       },
     },
     {
-      key: 'createdAt',
-      header: 'Created',
-      sortable: true,
-      render: (project) => (
-        <div className={styles.dateWithIcon}>
-          <svg className={styles.calendarIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-          </svg>
-          <span className={styles.dateText}>
-            {formatDate(project.createdAt)}
-          </span>
-        </div>
-      ),
-    },
-    {
       key: 'actions',
       header: 'Actions',
       render: (project) => {
@@ -364,7 +380,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
         };
 
         return (
-          <div className={styles.actionsCell}>
+          <div className={styles.actionsCell} onClick={(e) => e.stopPropagation()}>
             <div className={styles.actionsDropdownContainer}>
               <button 
                 className={styles.actionsDropdownButton}
@@ -374,19 +390,35 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
-              {openActionDropdown === project.projectId && dropdownPosition && (
+              {openActionDropdown === project.projectId && dropdownPosition && createPortal(
               <>
                 <div 
                   className={styles.dropdownBackdrop}
                   onClick={() => setOpenActionDropdown(null)}
                 />
                 <div 
+                  ref={dropdownRef}
                   className={styles.actionsDropdownMenu}
                   style={{
                     top: `${dropdownPosition.top}px`,
                     right: `${dropdownPosition.right}px`
                   }}
                 >
+                  <button 
+                    className={styles.actionsDropdownItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedProject(project);
+                      setViewModalOpen(true);
+                      setOpenActionDropdown(null);
+                    }}
+                  >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    View
+                  </button>
                   <button 
                     className={styles.actionsDropdownItem}
                     onClick={(e) => {
@@ -401,7 +433,13 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                   </svg>
                   Edit
                 </button>
-                <button className={styles.actionsDropdownItem}>
+                <button 
+                  className={styles.actionsDropdownItem}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleVisitPortal(project);
+                  }}
+                >
                   <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
                   </svg>
@@ -457,7 +495,8 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                   Delete
                 </button>
                 </div>
-              </>
+              </>,
+              document.body
               )}
           </div>
         </div>
@@ -467,8 +506,55 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   ];
 
   const getEventStatus = (event: any) => {
-    // Use the status set by the user, default to 'Scheduled' if not set
-    return event.status || 'Scheduled';
+    // Look up the status from eventDeliveryStatuses map
+    const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId);
+    return status || null;
+  };
+
+  const getStatusColor = (step: number, totalSteps: number) => {
+    if (totalSteps === 0) return { bg: 'rgba(148, 163, 184, 0.1)', text: '#94a3b8' }; // gray
+    
+    const progress = step / totalSteps;
+    
+    if (progress === 1) {
+      // Completed
+      return { bg: 'rgba(34, 197, 94, 0.1)', text: '#22c55e' }; // green
+    } else if (progress >= 0.7) {
+      // Near completion
+      return { bg: 'rgba(59, 130, 246, 0.1)', text: '#3b82f6' }; // blue
+    } else if (progress >= 0.4) {
+      // In progress
+      return { bg: 'rgba(245, 158, 11, 0.1)', text: '#f59e0b' }; // amber
+    } else {
+      // Early stage
+      return { bg: 'rgba(99, 102, 241, 0.1)', text: '#6366f1' }; // indigo
+    }
+  };
+
+  const handleVisitPortal = async (project: Project) => {
+    try {
+      if (!project.proposalId) {
+        showToast('error', 'This project was not created from a proposal');
+        return;
+      }
+
+      // Fetch proposal details to get access code
+      const proposalData = await proposalApi.getById(project.proposalId);
+      const accessCode = proposalData?.proposal?.accessCode;
+
+      if (!accessCode) {
+        showToast('error', 'No portal access code found');
+        return;
+      }
+
+      const customerAppUrl = import.meta.env.VITE_CUSTOMER_APP_URL || 'http://localhost:5174';
+      const portalUrl = `${customerAppUrl}/${accessCode}`;
+      window.open(portalUrl, '_blank');
+      setOpenActionDropdown(null);
+    } catch (error) {
+      console.error('Error opening portal:', error);
+      showToast('error', 'Failed to open customer portal');
+    }
   };
 
   const renderExpandedRow = (project: Project) => {
@@ -492,21 +578,31 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
         <div className={styles.eventsGrid}>
           {sortedEvents.map((event: any, idx: number) => {
             const status = getEventStatus(event);
-            console.log('Event data:', event);
+            const statusColors = getStatusColor(status?.step || 0, totalStatuses);
+            
             return (
               <div key={idx} className={styles.eventCard}>
                 <div className={styles.eventCardHeader}>
-                  <div className={styles.eventTitleRow}>
-                    <svg className={styles.eventCardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <h4 className={styles.eventCardTitle}>
-                      {event.eventTitle || 'Untitled Event'}
-                    </h4>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
+                    <div className={styles.eventTitleRow}>
+                      <svg className={styles.eventCardIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <h4 className={styles.eventCardTitle}>
+                        {event.eventTitle || 'Untitled Event'}
+                      </h4>
+                    </div>
+                    <span 
+                      className={styles.eventStatusBadge}
+                      style={{
+                        backgroundColor: statusColors.bg,
+                        color: statusColors.text,
+                        alignSelf: 'flex-start'
+                      }}
+                    >
+                      {status?.statusDescription || 'No Status'}
+                    </span>
                   </div>
-                  <span className={`${styles.eventStatusBadge} ${styles[`status${status}`]}`}>
-                    {status}
-                  </span>
                 </div>
                 <div className={styles.eventCardBody}>
                   <div className={styles.eventCardRow}>
@@ -554,6 +650,25 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                       </span>
                     </div>
                   )}
+                  
+                  {/* Progress Bar */}
+                  <div className={styles.eventCardRow} style={{ marginTop: '8px' }}>
+                    <div className={styles.eventCardLabel}>Progress:</div>
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div className={styles.progressBar} style={{ flex: 1 }}>
+                        <div 
+                          className={styles.progressFill}
+                          style={{ 
+                            width: `${totalStatuses > 0 ? ((status?.step || 0) / totalStatuses) * 100 : 0}%`,
+                            backgroundColor: statusColors.text
+                          }}
+                        />
+                      </div>
+                      <span className={styles.eventCardValue} style={{ minWidth: 'fit-content' }}>
+                        {status?.step || 0}/{totalStatuses}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
             );
@@ -661,11 +776,15 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       <DataTable
         columns={columns}
         data={filteredProjects}
-      renderExpandedRow={renderExpandedRow}
-      getRowKey={(project) => project.projectId}
-      emptyMessage="No projects found"
-      itemsPerPage={8}
-      customFilters={
+        renderExpandedRow={renderExpandedRow}
+        getRowKey={(project) => project.projectId}
+        emptyMessage="No projects found"
+        itemsPerPage={8}
+        onRowClick={(project) => {
+          setSelectedProject(project);
+          setViewModalOpen(true);
+        }}
+        customFilters={
         <>
           {/* Date Range Filter */}
           <div className={styles.dateRangeContainer} ref={dateRangeRef}>
@@ -808,6 +927,277 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
           fetchProjects();
         }}
       />
+
+      <Modal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        title="Project Details"
+        size="large"
+      >
+        {selectedProject && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Customer Header with Avatar */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              {selectedProject.displayPic ? (
+                <img 
+                  src={selectedProject.displayPic} 
+                  alt="Profile"
+                  style={{ 
+                    width: '56px', 
+                    height: '56px', 
+                    borderRadius: '50%', 
+                    objectFit: 'cover' 
+                  }}
+                />
+              ) : (
+                <div 
+                  style={{ 
+                    width: '56px', 
+                    height: '56px', 
+                    borderRadius: '50%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    fontWeight: '600',
+                    fontSize: '18px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    backgroundColor: getAvatarColors(selectedProject.projectName).bg,
+                    border: `1.5px solid ${getAvatarColors(selectedProject.projectName).border}`,
+                    color: getAvatarColors(selectedProject.projectName).text
+                  }}
+                >
+                  {selectedProject.projectName
+                    .split(' ')
+                    .filter(word => word.toLowerCase() !== '&' && word.toLowerCase() !== 'and')
+                    .map(word => word.charAt(0).toUpperCase())
+                    .slice(0, 2)
+                    .join('')}
+                </div>
+              )}
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                  {selectedProject.contactPerson || 
+                   (selectedProject.brideFirstName && selectedProject.groomFirstName 
+                     ? `${selectedProject.brideFirstName} & ${selectedProject.groomFirstName}`
+                     : selectedProject.projectName)}
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                  {selectedProject.projectName}
+                </div>
+              </div>
+            </div>
+
+            {/* Basic Information */}
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                {selectedProject.phoneNumber && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Phone</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>{selectedProject.phoneNumber}</div>
+                  </div>
+                )}
+                {selectedProject.email && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Email</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>{selectedProject.email}</div>
+                  </div>
+                )}
+                {(selectedProject.groomFirstName || selectedProject.groomLastName) && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Groom</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>
+                      {[selectedProject.groomFirstName, selectedProject.groomLastName].filter(Boolean).join(' ')}
+                    </div>
+                  </div>
+                )}
+                {(selectedProject.brideFirstName || selectedProject.brideLastName) && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Bride</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>
+                      {[selectedProject.brideFirstName, selectedProject.brideLastName].filter(Boolean).join(' ')}
+                    </div>
+                  </div>
+                )}
+                {selectedProject.address && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Address</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>{selectedProject.address}</div>
+                  </div>
+                )}
+                {selectedProject.city && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>City</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>{selectedProject.city}</div>
+                  </div>
+                )}
+                {selectedProject.referredBy && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Referral Source</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>{selectedProject.referredBy}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Events */}
+            {selectedProject.events && selectedProject.events.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: 'var(--text-primary)' }}>
+                  Events ({selectedProject.events.length})
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {selectedProject.events.map((event: any, index: number) => (
+                    <div 
+                      key={index}
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(139, 92, 246, 0.03))',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        padding: '12px'
+                      }}
+                    >
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
+                        {event.eventTitle || event.eventName || `Event ${index + 1}`}
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>
+                        {event.fromDatetime && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <strong>From:</strong> {new Date(event.fromDatetime).toLocaleString('en-US', { 
+                              month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true 
+                            })}
+                          </div>
+                        )}
+                        {event.toDatetime && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <strong>To:</strong> {new Date(event.toDatetime).toLocaleString('en-US', { 
+                              month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true 
+                            })}
+                          </div>
+                        )}
+                        {event.duration && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <strong>Duration:</strong> {event.duration}h
+                          </div>
+                        )}
+                        {event.venue && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexBasis: '100%' }}>
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                            </svg>
+                            {event.venue}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Financial Information */}
+            {selectedProject.finance && (
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: 'var(--text-primary)' }}>
+                  Financial Information
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                  {selectedProject.finance.totalBudget && (
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Total Budget</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>
+                        ₹{formatIndianAmount(selectedProject.finance.totalBudget)}
+                      </div>
+                    </div>
+                  )}
+                  {selectedProject.finance.receivedAmount !== undefined && (
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Advance Received</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '600' }}>
+                        ₹{formatIndianAmount(selectedProject.finance.receivedAmount)}
+                      </div>
+                    </div>
+                  )}
+                  {selectedProject.finance.receivedDate && (
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Advance Date</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>
+                        {new Date(selectedProject.finance.receivedDate).toLocaleDateString('en-US', { 
+                          month: 'short', day: 'numeric', year: 'numeric' 
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Images */}
+            {(selectedProject.displayPic || selectedProject.coverPhoto) && (
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '16px', color: 'var(--text-primary)' }}>
+                  Photos
+                </h3>
+                <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+                  {selectedProject.displayPic && (
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Display Picture</div>
+                      <img 
+                        src={selectedProject.displayPic} 
+                        alt="Display" 
+                        style={{ 
+                          width: '120px', 
+                          height: '120px', 
+                          objectFit: 'cover', 
+                          borderRadius: '8px',
+                          border: '2px solid var(--border-color)'
+                        }} 
+                      />
+                    </div>
+                  )}
+                  {selectedProject.coverPhoto && (
+                    <div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '8px' }}>Cover Photo</div>
+                      <img 
+                        src={selectedProject.coverPhoto} 
+                        alt="Cover" 
+                        style={{ 
+                          width: '200px', 
+                          height: '120px', 
+                          objectFit: 'cover', 
+                          borderRadius: '8px',
+                          border: '2px solid var(--border-color)'
+                        }} 
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Created Date */}
+            {selectedProject.createdAt && (
+              <div style={{ paddingTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  Created on {new Date(selectedProject.createdAt).toLocaleDateString('en-US', { 
+                    month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true 
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </Modal>
     </>
   );
 };

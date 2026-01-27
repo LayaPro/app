@@ -45,6 +45,43 @@ export const ViewProposalModal: React.FC<ViewProposalModalProps> = ({
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
 
+  const getAvatarColors = (name: string) => {
+    const colors = [
+      { bg: 'rgba(99, 102, 241, 0.1)', text: '#4f46e5', border: 'rgba(99, 102, 241, 0.2)' },
+      { bg: 'rgba(59, 130, 246, 0.1)', text: '#2563eb', border: 'rgba(59, 130, 246, 0.2)' },
+      { bg: 'rgba(34, 197, 94, 0.1)', text: '#16a34a', border: 'rgba(34, 197, 94, 0.2)' },
+      { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706', border: 'rgba(245, 158, 11, 0.2)' },
+      { bg: 'rgba(239, 68, 68, 0.1)', text: '#dc2626', border: 'rgba(239, 68, 68, 0.2)' },
+      { bg: 'rgba(236, 72, 153, 0.1)', text: '#db2777', border: 'rgba(236, 72, 153, 0.2)' },
+      { bg: 'rgba(6, 182, 212, 0.1)', text: '#0891b2', border: 'rgba(6, 182, 212, 0.2)' },
+      { bg: 'rgba(20, 184, 166, 0.1)', text: '#0d9488', border: 'rgba(20, 184, 166, 0.2)' },
+      { bg: 'rgba(249, 115, 22, 0.1)', text: '#ea580c', border: 'rgba(249, 115, 22, 0.2)' },
+      { bg: 'rgba(168, 85, 247, 0.1)', text: '#9333ea', border: 'rgba(168, 85, 247, 0.2)' },
+      { bg: 'rgba(234, 179, 8, 0.1)', text: '#ca8a04', border: 'rgba(234, 179, 8, 0.2)' },
+      { bg: 'rgba(14, 165, 233, 0.1)', text: '#0284c7', border: 'rgba(14, 165, 233, 0.2)' },
+      { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', border: 'rgba(16, 185, 129, 0.2)' },
+      { bg: 'rgba(244, 63, 94, 0.1)', text: '#e11d48', border: 'rgba(244, 63, 94, 0.2)' },
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < (name?.length || 0); i++) {
+      hash = ((hash << 5) - hash) + name.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .filter(word => word.toLowerCase() !== '&' && word.toLowerCase() !== 'and')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
+  };
+
+  const colors = getAvatarColors(proposal.projectName);
+
   return (
     <Modal 
       key={proposal.proposalId} 
@@ -56,30 +93,51 @@ export const ViewProposalModal: React.FC<ViewProposalModalProps> = ({
       <div className={styles.container}>
         {/* Header Section */}
         <div className={styles.header}>
-          <div className={styles.projectInfo}>
-            <h2 className={styles.projectName}>{proposal.projectName}</h2>
-            <span 
-              className={styles.statusBadge}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div 
               style={{ 
-                backgroundColor: `${getStatusColor(proposal.status)}15`,
-                color: getStatusColor(proposal.status)
+                width: '56px', 
+                height: '56px', 
+                borderRadius: '50%', 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                fontWeight: '600',
+                fontSize: '18px',
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px',
+                backgroundColor: colors.bg,
+                border: `1.5px solid ${colors.border}`,
+                color: colors.text,
+                flexShrink: 0
               }}
             >
-              {getStatusLabel(proposal.status)}
-            </span>
+              {getInitials(proposal.clientName)}
+            </div>
+            <div className={styles.projectInfo}>
+              <h2 className={styles.projectName}>{proposal.projectName}</h2>
+              <span 
+                className={styles.statusBadge}
+                style={{ 
+                  backgroundColor: `${getStatusColor(proposal.status)}15`,
+                  color: getStatusColor(proposal.status)
+                }}
+              >
+                {getStatusLabel(proposal.status)}
+              </span>
+            </div>
           </div>
           <div className={styles.amount}>₹{proposal.totalAmount.toLocaleString('en-IN')}</div>
         </div>
 
         {/* Client Details */}
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Client Information</h3>
           <div className={styles.details}>
             <div className={styles.field}>
               <label>Client Name</label>
               <div className={styles.value}>{proposal.clientName}</div>
             </div>
-            
+
             <div className={styles.field}>
               <label>Email</label>
               <div className={styles.value}>{proposal.clientEmail}</div>
@@ -115,47 +173,8 @@ export const ViewProposalModal: React.FC<ViewProposalModalProps> = ({
           </div>
         )}
 
-        {/* Events List */}
-        {proposal.events && proposal.events.length > 0 && (
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Events ({proposal.events.length})</h3>
-            <div className={styles.eventsList}>
-              {proposal.events.map((event: any, index: number) => (
-                <div key={event.eventId || index} className={styles.eventCard}>
-                  <div className={styles.eventName}>{event.eventName}</div>
-                  {event.date && (
-                    <div className={styles.eventDate}>{formatDate(event.date)}</div>
-                  )}
-                  {event.venue && (
-                    <div className={styles.eventVenue}>{event.venue}</div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Deliverables */}
-        {proposal.deliverables && proposal.deliverables.length > 0 && (
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Deliverables</h3>
-            <div className={styles.deliverablesList}>
-              {proposal.deliverables.map((item: any, index: number) => (
-                <div key={index} className={styles.deliverableItem}>
-                  <div className={styles.deliverableName}>{item.name}</div>
-                  {item.description && (
-                    <div className={styles.deliverableDesc}>{item.description}</div>
-                  )}
-                  <div className={styles.deliverablePrice}>₹{item.price.toLocaleString('en-IN')}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {/* Access Details */}
         <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Access Information</h3>
           <div className={styles.details}>
             <div className={styles.field}>
               <label>Access Code</label>
@@ -187,6 +206,79 @@ export const ViewProposalModal: React.FC<ViewProposalModalProps> = ({
             )}
           </div>
         </div>
+
+        {/* Events List */}
+        {proposal.events && proposal.events.length > 0 && (
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Events ({proposal.events.length})</h3>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+              {proposal.events.map((event: any, index: number) => (
+                <div 
+                  key={event.eventId || index}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(139, 92, 246, 0.03))',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    minWidth: 'fit-content'
+                  }}
+                >
+                  <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '6px', whiteSpace: 'nowrap' }}>
+                    {event.eventName}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {event.date && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {formatDate(event.date)}
+                      </div>
+                    )}
+                    {event.venue && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        {event.venue}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Deliverables */}
+        {proposal.deliverables && proposal.deliverables.length > 0 && (
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Deliverables</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {proposal.deliverables.map((item: any, index: number) => (
+                <div 
+                  key={index}
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.03), rgba(139, 92, 246, 0.03))',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '8px',
+                    padding: '16px'
+                  }}
+                >
+                  <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: item.description ? '8px' : '0' }}>
+                    {item.name}
+                  </div>
+                  {item.description && (
+                    <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                      {item.description}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Footer Actions */}
         <div className={styles.footer}>

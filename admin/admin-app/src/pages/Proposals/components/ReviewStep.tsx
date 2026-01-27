@@ -1,4 +1,3 @@
-import { Button } from '../../../components/ui/index.js';
 import { AmountInput } from '../../../components/ui/AmountInput.js';
 import { formatIndianAmount } from '../../../utils/formatAmount.js';
 import type { ProposalFormData } from '../ProposalWizard';
@@ -17,12 +16,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
           <h3>Basic Details</h3>
-          <Button onClick={() => onEdit(1)} variant="secondary" size="sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <button className={styles.editButton} onClick={() => onEdit(1)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Edit
-          </Button>
+          </button>
         </div>
         <div className={styles.reviewContent}>
           <div className={styles.reviewItem}>
@@ -62,12 +61,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
           <h3>Events</h3>
-          <Button onClick={() => onEdit(2)} variant="secondary" size="sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <button className={styles.editButton} onClick={() => onEdit(2)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Edit
-          </Button>
+          </button>
         </div>
         <div className={styles.reviewContent}>
           {formData.events.length === 0 ? (
@@ -118,12 +117,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
           <h3>Terms & Policies</h3>
-          <Button onClick={() => onEdit(3)} variant="secondary" size="sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <button className={styles.editButton} onClick={() => onEdit(3)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Edit
-          </Button>
+          </button>
         </div>
         <div className={styles.reviewContent}>
           {formData.termsOfService && (
@@ -166,12 +165,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
       <div className={styles.reviewSection}>
         <div className={styles.reviewHeader}>
           <h3>Deliverables</h3>
-          <Button onClick={() => onEdit(4)} variant="secondary" size="sm">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          <button className={styles.editButton} onClick={() => onEdit(4)}>
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
             </svg>
             Edit
-          </Button>
+          </button>
         </div>
         <div className={styles.reviewContent}>
           {formData.addOns.length === 0 ? (
