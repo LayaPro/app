@@ -942,7 +942,11 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
           if (zoomScale > 1) {
             e.preventDefault();
             setIsDragging(true);
-            setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+            // Store the starting position accounting for current image position
+            setDragStart({ 
+              x: e.clientX, 
+              y: e.clientY 
+            });
           }
         };
 
@@ -950,9 +954,17 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
           if (isDragging && zoomScale > 1) {
             e.preventDefault();
             
-            // Calculate new position
-            const newX = e.clientX - dragStart.x;
-            const newY = e.clientY - dragStart.y;
+            // Calculate movement delta with reduced sensitivity
+            const sensitivity = 0.5; // Reduce drag speed to 50%
+            const deltaX = (e.clientX - dragStart.x) * sensitivity;
+            const deltaY = (e.clientY - dragStart.y) * sensitivity;
+            
+            // Calculate new position relative to previous position
+            const newX = imagePosition.x + deltaX;
+            const newY = imagePosition.y + deltaY;
+            
+            // Update drag start for next move
+            setDragStart({ x: e.clientX, y: e.clientY });
             
             // Get container dimensions
             const rect = e.currentTarget.getBoundingClientRect();
@@ -960,7 +972,6 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
             const containerHeight = rect.height;
             
             // Calculate strict boundaries - limit drag to 20% of container edge
-            // This keeps most of the image visible at all times
             const maxOffset = Math.min(containerWidth, containerHeight) * 0.2;
             const maxX = maxOffset;
             const maxY = maxOffset;
