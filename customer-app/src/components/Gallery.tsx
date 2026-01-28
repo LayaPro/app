@@ -91,14 +91,20 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
 
   // Scroll to event heading when event changes
   const scrollToEventHeading = () => {
-    // Use a small delay to ensure DOM is ready
+    // Use a delay to ensure DOM is fully rendered with new content
     setTimeout(() => {
-      const hero = document.querySelector('.gallery-hero') as HTMLElement;
-      const heroHeight = hero ? hero.offsetHeight : window.innerHeight;
-      
-      // Always scroll to just past the hero to show the event heading
-      window.scrollTo({ top: heroHeight, behavior: 'smooth' });
-    }, 100);
+      if (eventHeadingRef.current) {
+        // Get element position and calculate scroll target
+        const rect = eventHeadingRef.current.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const targetPosition = rect.top + scrollTop - 10; // Small 10px offset from top
+        
+        window.scrollTo({
+          top: targetPosition,
+          behavior: 'smooth'
+        });
+      }
+    }, 150);
   };
 
   // Random cover photo for now
@@ -167,7 +173,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
     setLikedImages(selectedImages);
   }, [albumImages]);
 
-  // Reset loaded count when event changes
+  // Reset loaded count and columns when event changes
   useEffect(() => {
     setLoadedCount(30);
     setColumns(Array(columnCount).fill(null).map(() => []));
@@ -178,7 +184,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
     } else {
       setIsInitialLoad(false);
     }
-  }, [selectedEvent, columnCount]);
+  }, [selectedEvent]); // Only depend on selectedEvent, not columnCount
 
   // Load images based on loadedCount
   useEffect(() => {
@@ -289,7 +295,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
     document.body.removeChild(link);
   };
 
-  // Show dock on scroll - appears when cover is 50% scrolled past
+  // Show dock on scroll - appears when scrolled past threshold
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = window.scrollY;
@@ -299,9 +305,14 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
         setHasScrolled(true);
       }
       
-      // Show dock when scrolled past 50% of viewport
-      const scrolled = scrollY > window.innerHeight * 0.5;
+      // Show dock after scrolling just 100px for early and consistent appearance
+      const scrolled = scrollY > 100;
       setShowDock(scrolled);
+      
+      // Debug logging for tablet issues
+      if (scrollY > 100 && scrollY < 200) {
+        console.log('Dock should show. ScrollY:', scrollY, 'ShowDock:', scrolled, 'Window width:', window.innerWidth);
+      }
     };
 
     window.addEventListener('scroll', handleScroll);
