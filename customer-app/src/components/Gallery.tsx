@@ -33,6 +33,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const [selectedImage, setSelectedImage] = useState<AlbumImage | null>(null);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isInitialOpen, setIsInitialOpen] = useState(true);
+  const [isClosing, setIsClosing] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState(events.length > 0 ? events[0].eventId : '');
   const [likedImages, setLikedImages] = useState<Set<string>>(new Set());
   const [showDock, setShowDock] = useState(false);
@@ -45,6 +46,13 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // Track initial page load
   const [hasScrolled, setHasScrolled] = useState(false); // Track if user has scrolled
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [showSwipeHint, setShowSwipeHint] = useState(false);
+  const [zoomScale, setZoomScale] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const imagesPerLoad = 30;
 
   // Get current event data
@@ -111,6 +119,18 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  // Lock body scroll when lightbox is open
+  useEffect(() => {
+    if (selectedImage) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [selectedImage]);
 
   // Responsive column count based on screen width
   useEffect(() => {
@@ -678,6 +698,11 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
                   setIsInitialOpen(true);
                   setSlideDirection(null);
                   setSelectedImage(image);
+                  // Show swipe hint on mobile when opening image
+                  if (window.innerWidth <= 768) {
+                    setShowSwipeHint(true);
+                    setTimeout(() => setShowSwipeHint(false), 3100);
+                  }
                 }}
               >
                 <img 
@@ -814,50 +839,166 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
 
       {/* Lightbox */}
       {selectedImage && (() => {
-        const currentImages = columns.flat();
+        // Use original API order (sliced to loadedCount) instead of flattened columns
+        const currentImages = currentEventImages.slice(0, loadedCount);
         const currentIndex = currentImages.findIndex(img => img.imageId === selectedImage.imageId);
         const hasPrev = currentIndex > 0;
         const hasNext = currentIndex < currentImages.length - 1;
 
-        const handlePrev = (e: React.MouseEvent) => {
-          e.stopPropagation();
+        const handlePrev = (e?: React.MouseEvent) => {
+          e?.stopPropagation();
           if (hasPrev) {
             setIsInitialOpen(false);
             setSlideDirection('right');
+            setZoomScale(1);
+            setImagePosition({ x: 0, y: 0 });
             setTimeout(() => {
               setSelectedImage(currentImages[currentIndex - 1]);
             }, 50);
           }
         };
 
-        const handleNext = (e: React.MouseEvent) => {
-          e.stopPropagation();
+        const handleNext = (e?: React.MouseEvent) => {
+          e?.stopPropagation();
           if (hasNext) {
             setIsInitialOpen(false);
             setSlideDirection('left');
+            setZoomScale(1);
+            setImagePosition({ x: 0, y: 0 });
             setTimeout(() => {
               setSelectedImage(currentImages[currentIndex + 1]);
             }, 50);
           }
         };
 
+        const minSwipeDistance = 50;
+
+        const onTouchStart = (e: React.TouchEvent) => {
+          setTouchEnd(null);
+          setTouchStart(e.targetTouches[0].clientX);
+        };
+
+        const onTouchMove = (e: React.TouchEvent) => {
+          setTouchEnd(e.targetTouches[0].clientX);
+        };
+
+        const onTouchEnd = () => {
+          if (!touchStart || !touchEnd) return;
+          const distance = touchStart - touchEnd;
+          const isLeftSwipe = distance > minSwipeDistance;
+          const isRightSwipe = distance < -minSwipeDistance;
+          if (isLeftSwipe && hasNext) {
+            handleNext();
+            setShowSwipeHint(false);
+          }
+          if (isRightSwipe && hasPrev) {
+            handlePrev();
+            setShowSwipeHint(false);
+          }
+        };
+
+        const handleClose = () => {
+          setIsClosing(true);
+          setZoomScale(1);
+          setImagePosition({ x: 0, y: 0 });
+          setTimeout(() => {
+            setSelectedImage(null);
+            setIsClosing(false);
+            setIsInitialOpen(true);
+          }, 300);
+        };
+
+        const handleWheel = (e: React.WheelEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          
+          const delta = e.deltaY * -0.001;
+          const newScale = Math.min(Math.max(1, zoomScale + delta), 5);
+          
+          if (newScale !== zoomScale) {
+            // Get mouse position relative to image container
+            const rect = e.currentTarget.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left - rect.width / 2;
+            const mouseY = e.clientY - rect.top - rect.height / 2;
+            
+            // Calculate new position to zoom towards cursor
+            const scaleChange = newScale / zoomScale;
+            const newX = imagePosition.x - mouseX * (scaleChange - 1) / newScale;
+            const newY = imagePosition.y - mouseY * (scaleChange - 1) / newScale;
+            
+            setZoomScale(newScale);
+            
+            // Reset position if zoomed out to 1x
+            if (newScale === 1) {
+              setImagePosition({ x: 0, y: 0 });
+            } else {
+              setImagePosition({ x: newX, y: newY });
+            }
+          }
+        };
+
+        const handleMouseDown = (e: React.MouseEvent) => {
+          if (zoomScale > 1) {
+            e.preventDefault();
+            setIsDragging(true);
+            setDragStart({ x: e.clientX - imagePosition.x, y: e.clientY - imagePosition.y });
+          }
+        };
+
+        const handleMouseMove = (e: React.MouseEvent) => {
+          if (isDragging && zoomScale > 1) {
+            e.preventDefault();
+            
+            // Calculate new position
+            const newX = e.clientX - dragStart.x;
+            const newY = e.clientY - dragStart.y;
+            
+            // Get container dimensions
+            const rect = e.currentTarget.getBoundingClientRect();
+            const containerWidth = rect.width;
+            const containerHeight = rect.height;
+            
+            // Calculate strict boundaries - limit drag to 20% of container edge
+            // This keeps most of the image visible at all times
+            const maxOffset = Math.min(containerWidth, containerHeight) * 0.2;
+            const maxX = maxOffset;
+            const maxY = maxOffset;
+            
+            // Constrain position to boundaries
+            const constrainedX = Math.max(-maxX, Math.min(maxX, newX));
+            const constrainedY = Math.max(-maxY, Math.min(maxY, newY));
+            
+            setImagePosition({
+              x: constrainedX,
+              y: constrainedY
+            });
+          }
+        };
+
+        const handleMouseUp = () => {
+          setIsDragging(false);
+        };
+
         const handleKeyDown = (e: React.KeyboardEvent) => {
           if (e.key === 'ArrowLeft') handlePrev();
           if (e.key === 'ArrowRight') handleNext();
-          if (e.key === 'Escape') setSelectedImage(null);
+          if (e.key === 'Escape') handleClose();
         };
 
         return (
           <div 
             className="gallery-lightbox" 
-            onClick={() => setSelectedImage(null)}
+            onClick={handleClose}
             onKeyDown={handleKeyDown}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
             tabIndex={0}
             style={{ outline: 'none' }}
           >
             <button 
               className="gallery-lightbox-close" 
-              onClick={(e) => { e.stopPropagation(); setSelectedImage(null); }}
+              onClick={(e) => { e.stopPropagation(); handleClose(); }}
               aria-label="Close"
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -865,6 +1006,48 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
                 <line x1="6" y1="6" x2="18" y2="18"></line>
               </svg>
             </button>
+
+            {showSwipeHint && (
+              <div className="gallery-swipe-hint">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                <span>Swipe to navigate</span>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            )}
+
+            {/* Download and Like buttons */}
+            <div className="gallery-lightbox-actions">
+              <button
+                className="gallery-lightbox-action-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const link = document.createElement('a');
+                  link.href = selectedImage.originalUrl;
+                  link.download = `image-${selectedImage.imageId}.jpg`;
+                  link.click();
+                }}
+                aria-label="Download image"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+              </button>
+              <button
+                className={`gallery-lightbox-action-btn ${likedImages.has(selectedImage.imageId) ? 'liked' : ''}`}
+                onClick={(e) => toggleLike(selectedImage.imageId, e)}
+                aria-label={likedImages.has(selectedImage.imageId) ? "Unlike image" : "Like image"}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill={likedImages.has(selectedImage.imageId) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                </svg>
+              </button>
+            </div>
 
             {hasPrev && (
               <button 
@@ -890,12 +1073,33 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
               </button>
             )}
 
-            <div className="gallery-lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <div 
+              className="gallery-lightbox-content" 
+              onClick={(e) => e.stopPropagation()}
+              onWheel={handleWheel}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              style={{ 
+                cursor: zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
+                userSelect: 'none'
+              }}
+            >
               <img 
                 key={selectedImage.imageId}
                 src={selectedImage.compressedUrl || selectedImage.originalUrl} 
                 alt="Full size"
-                className={`gallery-lightbox-image ${isInitialOpen ? 'zoom-in' : `slide-${slideDirection}`}`}
+                className={`gallery-lightbox-image ${
+                  isClosing ? 'zoom-out' :
+                  isInitialOpen ? 'zoom-in' : `slide-${slideDirection}`
+                }`}
+                style={{
+                  transform: `scale(${zoomScale}) translate(${imagePosition.x}px, ${imagePosition.y}px)`,
+                  transition: isInitialOpen || isClosing || slideDirection ? 'transform 0.3s ease' : 'none',
+                  pointerEvents: 'none'
+                }}
+                draggable={false}
               />
             </div>
 

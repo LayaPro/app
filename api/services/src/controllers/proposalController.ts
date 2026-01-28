@@ -695,14 +695,27 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'CLIENT_SELECTED status not found' });
     }
 
+    // Get APPROVED status ID for deselection
+    const approvedStatus = await ImageStatus.findOne({ 
+      statusCode: 'APPROVED',
+      tenantId: project.tenantId 
+    });
+
+    if (!approvedStatus && !selected) {
+      console.log('[Customer Portal] APPROVED status not found');
+      return res.status(404).json({ message: 'APPROVED status not found' });
+    }
+
     // Update images with both selectedByClient flag and imageStatusId
     console.log('[Customer Portal] Updating images:', { imageIds, tenantId: project.tenantId, selected });
     const updateData: any = { selectedByClient: selected };
     
     // If selecting, set status to CLIENT_SELECTED
-    // If deselecting, you might want to set it back to a default status or leave it
+    // If deselecting, set it back to APPROVED
     if (selected && clientSelectedStatus) {
       updateData.imageStatusId = clientSelectedStatus.statusId;
+    } else if (!selected && approvedStatus) {
+      updateData.imageStatusId = approvedStatus.statusId;
     }
 
     const result = await Image.updateMany(

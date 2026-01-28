@@ -177,6 +177,12 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
 
         const finance = await ProjectFinance.findOne({ projectId: project.projectId }).lean();
         
+        // Get proposal for this project to retrieve access pin (using proposalId from project)
+        let proposal = null;
+        if (project.proposalId) {
+          proposal = await Proposal.findOne({ proposalId: project.proposalId }).lean();
+        }
+        
         // Populate event descriptions
         const eventsWithDetails = await Promise.all(
           clientEvents.map(async (ce) => {
@@ -192,7 +198,9 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
         return {
           ...project,
           events: eventsWithDetails,
-          finance
+          finance,
+          accessPin: proposal?.accessPin || null,
+          accessCode: proposal?.accessCode || null
         };
       })
     );

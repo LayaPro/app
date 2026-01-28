@@ -27,6 +27,8 @@ interface Project {
   createdAt?: string;
   events?: any[];
   finance?: any;
+  accessPin?: string;
+  accessCode?: string;
 }
 
 interface ProjectsTableProps {
@@ -262,6 +264,13 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       sortable: true,
       render: (project) => (
         <span className={styles.phoneText}>{project.phoneNumber || '—'}</span>
+      ),
+    },
+    {
+      key: 'accessPin',
+      header: 'PIN',
+      render: (project) => (
+        <span className={styles.pinText}>{project.accessPin || '—'}</span>
       ),
     },
     {
