@@ -200,7 +200,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const isToday = todayStr === dateStr;
     
-    const isDisabled = !!(minDate && dateStr < minDate);
+    // Disable past dates and dates before minDate
+    const isDisabled = dateStr < todayStr || !!(minDate && dateStr < minDate);
 
     days.push(
       <button

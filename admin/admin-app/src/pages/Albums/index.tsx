@@ -131,8 +131,12 @@ const Albums = () => {
 
   useEffect(() => {
     const urlProjectId = searchParams.get('projectId');
+    const urlEventId = searchParams.get('eventId');
     
-    if (urlProjectId) {
+    if (urlEventId) {
+      // If URL has eventId, load project and select event directly
+      fetchProjectsAndSelectEvent(urlEventId);
+    } else if (urlProjectId) {
       // If URL has projectId, skip showing projects view and load project directly
       fetchProjectsAndSelectOne(urlProjectId);
     } else {
@@ -226,6 +230,60 @@ const Albums = () => {
       }
     } catch (error) {
       console.error('Error fetching projects:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const fetchProjectsAndSelectEvent = async (eventId: string) => {
+    setIsLoading(true);
+    try {
+      const response = await projectApi.getAll();
+      const allProjects = response.projects || [];
+      setProjects(allProjects);
+      
+      // Fetch all events
+      const eventsResponse = await clientEventApi.getAll();
+      const allClientEvents = eventsResponse.clientEvents || [];
+      
+      // Find the event
+      const event = allClientEvents.find((e: ClientEvent) => e.clientEventId === eventId);
+      if (event) {
+        // Find the project for this event
+        const project = allProjects.find((p: Project) => p.projectId === event.projectId);
+        if (project) {
+          // Set project and event
+          setSelectedProject(project);
+          setShowVideosView(false);
+          setSearchTerm('');
+          setCurrentPage(1);
+          
+          // Filter events for this project
+          const projectEvents = allClientEvents.filter(
+            (e: ClientEvent) => e.projectId === event.projectId
+          );
+          setEvents(projectEvents);
+          
+          // Select the specific event
+          setSelectedEvent(event);
+          setIsUploadExpanded(false);
+          setUploadedImages([]);
+          setGalleryImages([]);
+          
+          // Load images for the event
+          await fetchGalleryImages(event.clientEventId);
+          
+          setShowContent(true);
+        } else {
+          // If project not found, show projects view
+          setTimeout(() => setShowContent(true), 150);
+        }
+      } else {
+        // If event not found, show projects view
+        setTimeout(() => setShowContent(true), 150);
+      }
+    } catch (error) {
+      console.error('Error fetching projects and event:', error);
     } finally {
       setIsLoading(false);
     }

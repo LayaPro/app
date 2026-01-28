@@ -13,6 +13,15 @@ import { AssignDesignerModal, type AssignDesignerModalHandle } from './AssignDes
 import { useToast } from '../../../context/ToastContext';
 import styles from './ProjectsTable.module.css';
 
+// Project Status Constants
+export const PROJECT_STATUS = {
+  ACTIVE: 'Active',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled'
+} as const;
+
+export type ProjectStatus = typeof PROJECT_STATUS[keyof typeof PROJECT_STATUS];
+
 interface Project {
   projectId: string;
   projectName: string;
@@ -20,7 +29,12 @@ interface Project {
   groomFirstName?: string;
   brideLastName?: string;
   groomLastName?: string;
+  contactPerson?: string;
   phoneNumber?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  referredBy?: string;
   budget?: number;
   displayPic?: string;
   coverPhoto?: string;
@@ -29,6 +43,8 @@ interface Project {
   finance?: any;
   accessPin?: string;
   accessCode?: string;
+  proposalId?: string;
+  status?: ProjectStatus;
 }
 
 interface ProjectsTableProps {
@@ -72,8 +88,8 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       const statuses = response?.eventDeliveryStatuses || response?.statuses || [];
       
       // Create a map for easy lookup: statusId -> status object
-      const statusMap = new Map(
-        statuses.map((status: any) => [status.statusId, status])
+      const statusMap = new Map<string, any>(
+        statuses.map((status: any) => [status.statusId as string, status])
       );
       
       setEventDeliveryStatuses(statusMap);
@@ -279,7 +295,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       sortable: true,
       render: (project) => (
         <span className={styles.statusBadge}>
-          {(project as any).status || 'Active'}
+          {project.status || PROJECT_STATUS.ACTIVE}
         </span>
       ),
     },
@@ -719,8 +735,8 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   // Calculate and update stats whenever filteredProjects changes
   useEffect(() => {
     if (onStatsUpdate && !loading) {
-      const active = filteredProjects.filter(p => (p as any).status !== 'Completed').length;
-      const completed = filteredProjects.filter(p => (p as any).status === 'Completed').length;
+      const active = filteredProjects.filter(p => p.status !== PROJECT_STATUS.COMPLETED).length;
+      const completed = filteredProjects.filter(p => p.status === PROJECT_STATUS.COMPLETED).length;
       const revenue = filteredProjects.reduce((sum, p) => sum + (p.finance?.totalBudget || p.budget || 0), 0);
       const dueSoon = filteredProjects.filter(p => {
         const endDate = getLatestEventDate(p);
@@ -757,7 +773,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
     const csvData = filteredProjects.map(project => ({
       Customer: getCustomerName(project),
       Phone: project.phoneNumber || '',
-      Status: (project as any).status || 'Active',
+      Status: project.status || PROJECT_STATUS.ACTIVE,
       'Start Date': formatDate(getEarliestEventDate(project) || undefined),
       'End Date': formatDate(getLatestEventDate(project) || undefined),
       Events: project.events?.length || 0,

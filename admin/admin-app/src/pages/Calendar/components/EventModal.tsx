@@ -33,8 +33,7 @@ export const EventModal: React.FC<EventModalProps> = ({
     eventDeliveryStatusId: '',
     fromDate: '',
     fromTime: '',
-    toDate: '',
-    toTime: '',
+    duration: 4,
     venue: '',
     venueMapUrl: '',
     city: '',
@@ -51,14 +50,19 @@ export const EventModal: React.FC<EventModalProps> = ({
       const fromDate = event.fromDatetime ? new Date(event.fromDatetime) : null;
       const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
 
+      // Calculate duration from existing dates if available
+      let duration = 4;
+      if (fromDate && toDate) {
+        duration = Math.round((toDate.getTime() - fromDate.getTime()) / (60 * 60 * 1000));
+      }
+
       setFormData({
         projectId: event.projectId || '',
         eventId: event.eventId || '',
         eventDeliveryStatusId: event.eventDeliveryStatusId || '',
         fromDate: fromDate ? fromDate.toISOString().split('T')[0] : '',
         fromTime: fromDate ? fromDate.toTimeString().slice(0, 5) : '',
-        toDate: toDate ? toDate.toISOString().split('T')[0] : '',
-        toTime: toDate ? toDate.toTimeString().slice(0, 5) : '',
+        duration: duration,
         venue: event.venue || '',
         venueMapUrl: event.venueMapUrl || '',
         city: event.city || '',
@@ -73,8 +77,7 @@ export const EventModal: React.FC<EventModalProps> = ({
         eventDeliveryStatusId: '',
         fromDate: '',
         fromTime: '',
-        toDate: '',
-        toTime: '',
+        duration: 4,
         venue: '',
         venueMapUrl: '',
         city: '',
@@ -89,9 +92,7 @@ export const EventModal: React.FC<EventModalProps> = ({
 
     if (!formData.projectId) newErrors.projectId = 'Project is required';
     if (!formData.eventId) newErrors.eventId = 'Event type is required';
-    if (!formData.eventDeliveryStatusId) newErrors.eventDeliveryStatusId = 'Status is required';
     if (!formData.fromDate) newErrors.fromDate = 'From date is required';
-    if (!formData.toDate) newErrors.toDate = 'To date is required';
     if (!formData.venue?.trim()) newErrors.venue = 'Venue is required';
 
     setErrors(newErrors);
@@ -115,20 +116,16 @@ export const EventModal: React.FC<EventModalProps> = ({
     setIsLoading(true);
 
     try {
-      // Combine date and time into datetime
-      const fromDatetime = formData.fromDate && formData.fromTime
-        ? new Date(`${formData.fromDate}T${formData.fromTime}:00`)
-        : undefined;
-      const toDatetime = formData.toDate && formData.toTime
-        ? new Date(`${formData.toDate}T${formData.toTime}:00`)
-        : undefined;
+      // Calculate toDate and toTime based on duration
+      const fromDateTime = new Date(`${formData.fromDate}T${formData.fromTime || '00:00'}:00`);
+      const toDateTime = new Date(fromDateTime.getTime() + formData.duration * 60 * 60 * 1000);
 
       const eventData = {
         projectId: formData.projectId,
         eventId: formData.eventId,
         eventDeliveryStatusId: formData.eventDeliveryStatusId || undefined,
-        fromDatetime,
-        toDatetime,
+        fromDatetime: fromDateTime,
+        toDatetime: toDateTime,
         venue: formData.venue || undefined,
         venueMapUrl: formData.venueMapUrl || undefined,
         city: formData.city || undefined,
@@ -194,7 +191,7 @@ export const EventModal: React.FC<EventModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title={event ? 'Event Details' : 'New Event'}
-      size="large"
+      size="medium"
     >
       <form onSubmit={handleSubmit} className={styles.form}>
         <div className={styles.formGrid}>
@@ -208,6 +205,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               placeholder="Select Project"
               error={errors.projectId}
               required
+              info="Select the project this event belongs to"
             />
           </div>
 
@@ -221,19 +219,7 @@ export const EventModal: React.FC<EventModalProps> = ({
               placeholder="Select Event Type"
               error={errors.eventId}
               required
-            />
-          </div>
-
-          {/* Status */}
-          <div className={styles.fullWidth}>
-            <SearchableSelect
-              label="Status"
-              value={formData.eventDeliveryStatusId}
-              onChange={(value) => handleChange('eventDeliveryStatusId', value)}
-              options={statusOptions}
-              placeholder="Select Status"
-              error={errors.eventDeliveryStatusId}
-              required
+              info="Choose the type of event (e.g., Wedding, Reception, Engagement)"
             />
           </div>
 
@@ -249,61 +235,44 @@ export const EventModal: React.FC<EventModalProps> = ({
               onTimeChange={(value) => handleChange('fromTime', value)}
               error={errors.fromDate}
               required
+              info="Event start date and time"
             />
           </div>
 
           <div className={styles.dateTimeGroup}>
-            <DatePicker
-              label="To Date"
-              value={formData.toDate}
-              onChange={(value) => handleChange('toDate', value)}
-              placeholder="Select date"
-              includeTime={true}
-              timeValue={formData.toTime}
-              onTimeChange={(value) => handleChange('toTime', value)}
-              error={errors.toDate}
+            <Input
+              label="Duration (hours)"
+              type="number"
+              min="0.5"
+              max="24"
+              step="0.5"
+              value={formData.duration === 0 ? '' : String(formData.duration || 4)}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '') {
+                  handleChange('duration', 0); // Temporarily allow empty
+                } else {
+                  const numValue = parseFloat(value);
+                  if (!isNaN(numValue)) {
+                    if (numValue > 24) {
+                      handleChange('duration', 24);
+                    } else {
+                      handleChange('duration', numValue);
+                    }
+                  }
+                }
+              }}
+              onBlur={() => {
+                // On blur, enforce minimum or set to default
+                if (formData.duration === 0 || formData.duration < 0.5) {
+                  handleChange('duration', 4);
+                } else if (formData.duration < 0.5) {
+                  handleChange('duration', 0.5);
+                }
+              }}
+              placeholder="4"
+              info="Expected duration of the event (0.5 to 24 hours)"
               required
-            />
-          </div>
-
-          {/* Venue */}
-          <div className={styles.fullWidth}>
-            <Input
-              type="text"
-              label="Venue"
-              value={formData.venue}
-              onChange={(e) => handleChange('venue', e.target.value)}
-              placeholder="Event venue"
-              error={errors.venue}
-              required
-              icon={
-                <svg style={{ width: '1rem', height: '1rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
-              }
-            />
-          </div>
-
-          {/* Venue Map URL */}
-          <div className={styles.fullWidth}>
-            <Input
-              type="url"
-              label="Venue Map URL"
-              value={formData.venueMapUrl}
-              onChange={(e) => handleChange('venueMapUrl', e.target.value)}
-              placeholder="Google Maps link"
-            />
-          </div>
-
-          {/* City */}
-          <div className={styles.fullWidth}>
-            <Input
-              type="text"
-              label="City"
-              value={formData.city}
-              onChange={(e) => handleChange('city', e.target.value)}
-              placeholder="City"
             />
           </div>
 
@@ -315,6 +284,50 @@ export const EventModal: React.FC<EventModalProps> = ({
               onChange={(values) => handleChange('teamMembersAssigned', values)}
               options={teamMemberOptions}
               placeholder="Select team members"
+              info="Team members who will be working on this event"
+            />
+          </div>
+
+          {/* Venue */}
+          <div className={styles.fullWidth}>
+            <Textarea
+              label="Venue"
+              value={formData.venue}
+              onChange={(e) => handleChange('venue', e.target.value)}
+              placeholder="Event venue"
+              error={errors.venue}
+              required
+              info="Name of the venue where the event will take place"
+              maxLength={200}
+              showCharCount
+            />
+          </div>
+
+          {/* City */}
+          <div className={styles.fullWidth}>
+            <Input
+              type="text"
+              label="City"
+              value={formData.city}
+              onChange={(e) => handleChange('city', e.target.value)}
+              placeholder="City"
+              info="City where the event will be held"
+              maxLength={50}
+              showCharCount
+            />
+          </div>
+
+          {/* Venue Map URL */}
+          <div className={styles.fullWidth}>
+            <Input
+              type="url"
+              label="Venue Map URL"
+              value={formData.venueMapUrl}
+              onChange={(e) => handleChange('venueMapUrl', e.target.value)}
+              placeholder="Google Maps link"
+              info="Link to the venue location on Google Maps for easy navigation"
+              maxLength={200}
+              showCharCount
             />
           </div>
 
@@ -326,34 +339,30 @@ export const EventModal: React.FC<EventModalProps> = ({
               onChange={(e) => handleChange('notes', e.target.value)}
               placeholder="Add notes about this event..."
               rows={4}
+              info="Additional notes or special instructions for this event"
+              maxLength={200}
+              showCharCount
             />
           </div>
         </div>
 
         {/* Actions */}
         <div className={styles.actions}>
-          <Button
+          <button
             type="submit"
-            variant="primary"
-            isLoading={isLoading}
-            fullWidth
+            disabled={isLoading}
+            className={styles.submitButton}
           >
-            {isLoading ? 'Saving...' : 'Save Changes'}
-          </Button>
-          {event && onDelete && (
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleDelete}
-              disabled={isLoading}
-              style={{ background: '#ef4444', color: 'white' }}
-            >
-              <svg style={{ width: '1.25rem', height: '1.25rem', marginRight: '0.5rem' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Delete
-            </Button>
-          )}
+            {isLoading ? 'Saving...' : (event ? 'Update Event' : 'Create Event')}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isLoading}
+            className={styles.cancelButton}
+          >
+            Cancel
+          </button>
         </div>
       </form>
     </Modal>

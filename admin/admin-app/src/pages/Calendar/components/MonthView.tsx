@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import type { ClientEvent } from '@/types/shared';
 import {
   DAY_NAMES,
@@ -19,6 +19,9 @@ interface MonthViewProps {
   projects: Map<string, { projectName: string }>;
   onEventClick: (event: ClientEvent) => void;
   onDayClick: (date: Date) => void;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
+  onMonthChange?: (date: Date) => void;
 }
 
 interface DayEvents {
@@ -32,15 +35,43 @@ export const MonthView: React.FC<MonthViewProps> = ({
   projects,
   onEventClick,
   onDayClick,
+  onPrevMonth,
+  onNextMonth,
+  onMonthChange,
 }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDayEvents, setSelectedDayEvents] = useState<ClientEvent[]>([]);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  const prevDateRef = useRef<Date>(currentDate);
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const firstDay = getFirstDayOfMonth(year, month);
   const daysInMonth = getDaysInMonth(year, month);
   const prevMonthDays = getDaysInMonth(year, month - 1);
+
+  // Track animation direction based on currentDate changes
+  useEffect(() => {
+    const prevDate = prevDateRef.current;
+    if (prevDate.getTime() !== currentDate.getTime()) {
+      // Determine animation direction
+      if (currentDate > prevDate) {
+        setAnimationDirection('right'); // Next month - slide from right
+      } else {
+        setAnimationDirection('left'); // Prev month - slide from left
+      }
+      
+      // Reset animation after it completes
+      const timer = setTimeout(() => {
+        setAnimationDirection(null);
+      }, 400);
+      
+      prevDateRef.current = currentDate;
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentDate]);
 
   const handleShowAllEvents = (date: Date, dayEvents: ClientEvent[], e: React.MouseEvent) => {
     e.stopPropagation();
@@ -60,6 +91,15 @@ export const MonthView: React.FC<MonthViewProps> = ({
       }
       eventsByDate[dateStr].push(event);
     }
+  });
+
+  // Sort events within each day by start datetime
+  Object.keys(eventsByDate).forEach((dateStr) => {
+    eventsByDate[dateStr].sort((a, b) => {
+      const timeA = a.fromDatetime ? new Date(a.fromDatetime).getTime() : 0;
+      const timeB = b.fromDatetime ? new Date(b.fromDatetime).getTime() : 0;
+      return timeA - timeB;
+    });
   });
 
   // Build calendar cells
@@ -84,10 +124,13 @@ export const MonthView: React.FC<MonthViewProps> = ({
     const dayEvents = eventsByDate[dateStr] || [];
     const isTodayCell = isToday(cellDate);
 
+    const animationClass = animationDirection === 'left' ? styles.slideFromLeft : 
+                           animationDirection === 'right' ? styles.slideFromRight : '';
+    
     cells.push(
       <div
         key={`current-${day}`}
-        className={`${styles.monthCell} ${isTodayCell ? styles.today : ''}`}
+        className={`${styles.monthCell} ${isTodayCell ? styles.today : ''} ${animationClass}`}
         onClick={() => onDayClick(cellDate)}
       >
         <div className={styles.cellHeader}>
@@ -145,16 +188,84 @@ export const MonthView: React.FC<MonthViewProps> = ({
   return (
     <>
       <div className={styles.monthView}>
-        {/* Day headers */}
+        {/* Month Navigation Header */}
+        {(onPrevMonth || onNextMonth || onMonthChange) && (
+          <div className={styles.desktopMonthHeader}>
+            {onPrevMonth && (
+              <button 
+                className={styles.desktopNavButton}
+                onClick={onPrevMonth}
+                aria-label="Previous month"
+              >
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            )}
+            <div style={{ position: 'relative', flex: 1 }}>
+              <h2 
+                className={styles.desktopMonthTitle}
+                onClick={() => onMonthChange && setShowDatePicker(!showDatePicker)}
+                style={{ cursor: onMonthChange ? 'pointer' : 'default' }}
+              >
+                {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+              </h2>
+              {showDatePicker && onMonthChange && (
+                <input
+                  type="month"
+                  value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      const [year, month] = e.target.value.split('-');
+                      onMonthChange(new Date(parseInt(year), parseInt(month) - 1, 1));
+                      setShowDatePicker(false);
+                    }
+                  }}
+                  onBlur={() => setShowDatePicker(false)}
+                  autoFocus
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    marginTop: '8px',
+                    padding: '8px 12px',
+                    border: '1px solid var(--color-primary)',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                    fontSize: '16px',
+                    cursor: 'pointer',
+                    zIndex: 100
+                  }}
+                />
+              )}
+            </div>
+            {onNextMonth && (
+              <button 
+                className={styles.desktopNavButton}
+                onClick={onNextMonth}
+                aria-label="Next month"
+              >
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+        
+        {/* Calendar Grid - Headers and Cells in one grid */}
         <div className={styles.monthGrid}>
+          {/* Day headers */}
           {DAY_NAMES.map((dayName) => (
             <div key={dayName} className={styles.dayHeader}>
               {dayName}
             </div>
           ))}
+          {/* Calendar cells */}
+          {cells}
         </div>
-        {/* Calendar cells */}
-        <div className={styles.monthGrid}>{cells}</div>
       </div>
 
       <DayEventsModal

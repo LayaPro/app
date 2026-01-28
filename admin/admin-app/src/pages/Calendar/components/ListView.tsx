@@ -1,4 +1,5 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { ClientEvent } from '@/types/shared';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
@@ -22,6 +23,7 @@ export const ListView: React.FC<ListViewProps> = ({
   events,
   eventTypes,
   projects,
+  teamMembers,
   eventDeliveryStatuses,
   onEventClick,
   onStatusChange,
@@ -35,6 +37,9 @@ export const ListView: React.FC<ListViewProps> = ({
   const [selectedEventType, setSelectedEventType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedEventForView, setSelectedEventForView] = useState<ClientEvent | null>(null);
   const [isChangeStatusModalOpen, setIsChangeStatusModalOpen] = useState(false);
   const [selectedEventForStatus, setSelectedEventForStatus] = useState<ClientEvent | null>(null);
   const [newStatusId, setNewStatusId] = useState('');
@@ -42,25 +47,23 @@ export const ListView: React.FC<ListViewProps> = ({
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Get avatar gradient based on project name
-  const getAvatarGradient = (name: string) => {
-    const gradients = [
-      'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-      'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
-      'linear-gradient(135deg, #22c55e 0%, #16a34a 100%)',
-      'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-      'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
-      'linear-gradient(135deg, #ec4899 0%, #db2777 100%)',
-      'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
-      'linear-gradient(135deg, #14b8a6 0%, #0d9488 100%)',
-      'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
-      'linear-gradient(135deg, #a855f7 0%, #9333ea 100%)',
-      'linear-gradient(135deg, #eab308 0%, #ca8a04 100%)',
-      'linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%)',
-      'linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%)',
-      'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-      'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
-      'linear-gradient(135deg, #8b5cf6 0%, #a855f7 100%)',
+  // Get avatar colors based on project name
+  const getAvatarColors = (name: string) => {
+    const colors = [
+      { bg: 'rgba(99, 102, 241, 0.1)', text: '#4f46e5', border: 'rgba(99, 102, 241, 0.2)' },    // indigo
+      { bg: 'rgba(59, 130, 246, 0.1)', text: '#2563eb', border: 'rgba(59, 130, 246, 0.2)' },    // blue
+      { bg: 'rgba(34, 197, 94, 0.1)', text: '#16a34a', border: 'rgba(34, 197, 94, 0.2)' },      // green
+      { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706', border: 'rgba(245, 158, 11, 0.2)' },    // amber
+      { bg: 'rgba(239, 68, 68, 0.1)', text: '#dc2626', border: 'rgba(239, 68, 68, 0.2)' },      // red
+      { bg: 'rgba(236, 72, 153, 0.1)', text: '#db2777', border: 'rgba(236, 72, 153, 0.2)' },    // pink
+      { bg: 'rgba(6, 182, 212, 0.1)', text: '#0891b2', border: 'rgba(6, 182, 212, 0.2)' },      // cyan
+      { bg: 'rgba(20, 184, 166, 0.1)', text: '#0d9488', border: 'rgba(20, 184, 166, 0.2)' },    // teal
+      { bg: 'rgba(249, 115, 22, 0.1)', text: '#ea580c', border: 'rgba(249, 115, 22, 0.2)' },    // orange
+      { bg: 'rgba(168, 85, 247, 0.1)', text: '#9333ea', border: 'rgba(168, 85, 247, 0.2)' },    // violet
+      { bg: 'rgba(234, 179, 8, 0.1)', text: '#ca8a04', border: 'rgba(234, 179, 8, 0.2)' },      // yellow
+      { bg: 'rgba(14, 165, 233, 0.1)', text: '#0284c7', border: 'rgba(14, 165, 233, 0.2)' },    // sky
+      { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', border: 'rgba(16, 185, 129, 0.2)' },    // emerald
+      { bg: 'rgba(244, 63, 94, 0.1)', text: '#e11d48', border: 'rgba(244, 63, 94, 0.2)' },      // rose
     ];
     
     let hash = 0;
@@ -68,35 +71,10 @@ export const ListView: React.FC<ListViewProps> = ({
       hash = ((hash << 5) - hash) + name.charCodeAt(i);
       hash = hash & hash;
     }
-    return gradients[Math.abs(hash) % gradients.length];
+    return colors[Math.abs(hash) % colors.length];
   };
 
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as HTMLElement;
-      
-      // Don't close if clicking on a dropdown button or menu item
-      if (target.closest('button[class*="actionsDropdownButton"]') || 
-          target.closest('button[class*="actionsDropdownItem"]')) {
-        return;
-      }
-      
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setOpenActionDropdown(null);
-      }
-    };
 
-    if (openActionDropdown) {
-      setTimeout(() => {
-        document.addEventListener('mousedown', handleClickOutside);
-      }, 0);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [openActionDropdown]);
 
   // Filter events
   const filteredEvents = useMemo(() => {
@@ -197,7 +175,13 @@ export const ListView: React.FC<ListViewProps> = ({
       render: (event) => {
         const project = projects.get(event.projectId);
         const projectName = project?.projectName || 'Unknown Project';
-        const initials = projectName.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+        const initials = projectName
+          .split(' ')
+          .filter(word => word.toLowerCase() !== '&' && word.toLowerCase() !== 'and')
+          .map(word => word.charAt(0).toUpperCase())
+          .slice(0, 2)
+          .join('');
+        const colors = getAvatarColors(projectName);
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {project?.displayPic ? (
@@ -205,12 +189,15 @@ export const ListView: React.FC<ListViewProps> = ({
                 src={project.displayPic}
                 alt="Project"
                 className={styles.projectAvatar}
+                style={{ objectFit: 'cover' }}
               />
             ) : (
               <div
                 className={styles.projectAvatar}
                 style={{
-                  background: getAvatarGradient(projectName)
+                  backgroundColor: colors.bg,
+                  border: `1.5px solid ${colors.border}`,
+                  color: colors.text
                 }}
               >
                 {initials}
@@ -363,14 +350,24 @@ export const ListView: React.FC<ListViewProps> = ({
       render: (event) => {
         const handleDropdownClick = (e: React.MouseEvent<HTMLButtonElement>) => {
           e.stopPropagation();
-          setOpenActionDropdown(
-            openActionDropdown === event.clientEventId ? null : event.clientEventId
-          );
+          const button = e.currentTarget;
+          const rect = button.getBoundingClientRect();
+          
+          if (openActionDropdown === event.clientEventId) {
+            setOpenActionDropdown(null);
+            setDropdownPosition(null);
+          } else {
+            setOpenActionDropdown(event.clientEventId);
+            setDropdownPosition({
+              top: rect.bottom + 4,
+              right: window.innerWidth - rect.right
+            });
+          }
         };
 
         return (
-          <div className={styles.actionsCell}>
-            <div className={styles.actionsDropdownContainer} ref={dropdownRef}>
+          <div className={styles.actionsCell} onClick={(e) => e.stopPropagation()}>
+            <div className={styles.actionsDropdownContainer}>
               <button 
                 className={styles.actionsDropdownButton}
                 onClick={handleDropdownClick}
@@ -379,8 +376,20 @@ export const ListView: React.FC<ListViewProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                 </svg>
               </button>
-              {openActionDropdown === event.clientEventId && (
-              <div className={styles.actionsDropdownMenu}>
+              {openActionDropdown === event.clientEventId && dropdownPosition && createPortal(
+              <>
+                <div 
+                  className={styles.dropdownBackdrop}
+                  onClick={() => setOpenActionDropdown(null)}
+                />
+                <div 
+                  ref={dropdownRef}
+                  className={styles.actionsDropdownMenu}
+                  style={{
+                    top: `${dropdownPosition.top}px`,
+                    right: `${dropdownPosition.right}px`
+                  }}
+                >
                 <button 
                   className={styles.actionsDropdownItem}
                   onClick={(e) => {
@@ -392,6 +401,21 @@ export const ListView: React.FC<ListViewProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   Change status
+                </button>
+                <button 
+                  className={styles.actionsDropdownItem}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedEventForView(event);
+                    setViewModalOpen(true);
+                    setOpenActionDropdown(null);
+                  }}
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  View
                 </button>
                 <button 
                   className={styles.actionsDropdownItem}
@@ -410,8 +434,8 @@ export const ListView: React.FC<ListViewProps> = ({
                   className={styles.actionsDropdownItem}
                   onClick={(e) => {
                     e.stopPropagation();
-                    // TODO: Implement visit album
-                    console.log('Visit album for event:', event);
+                    // Open album page in new tab
+                    window.open(`/albums?eventId=${event.clientEventId}`, '_blank');
                     setOpenActionDropdown(null);
                   }}
                 >
@@ -420,23 +444,10 @@ export const ListView: React.FC<ListViewProps> = ({
                   </svg>
                   Visit album
                 </button>
-                <button 
-                  className={styles.actionsDropdownItem}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // TODO: Implement see on map
-                    console.log('See on map for event:', event);
-                    setOpenActionDropdown(null);
-                  }}
-                >
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  See on map
-                </button>
-              </div>
-            )}
+                </div>
+              </>,
+              document.body
+              )}
           </div>
         </div>
         );
@@ -529,6 +540,10 @@ export const ListView: React.FC<ListViewProps> = ({
         itemsPerPage={15}
         emptyMessage="No events found matching your filters"
         getRowKey={(event) => event.clientEventId}
+        onRowClick={(event) => {
+          setSelectedEventForView(event);
+          setViewModalOpen(true);
+        }}
         customFilters={
           <div className={styles.listFilters}>
             <div className={styles.filterField}>
@@ -728,6 +743,245 @@ export const ListView: React.FC<ListViewProps> = ({
             </>
           )}
         </div>
+      </Modal>
+
+      {/* View Event Details Modal */}
+      <Modal
+        isOpen={viewModalOpen}
+        onClose={() => setViewModalOpen(false)}
+        title="Event Details"
+        size="large"
+      >
+        {selectedEventForView && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* Event Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>
+              <div style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'white',
+                fontSize: '20px'
+              }}>
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                  {eventTypes.get(selectedEventForView.eventId)?.eventDesc || 'Event'}
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>
+                  {projects.get(selectedEventForView.projectId)?.projectName || 'Unknown Project'}
+                </div>
+              </div>
+            </div>
+
+            {/* Event Information */}
+            <div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
+                {/* Start Date & Time */}
+                {selectedEventForView.fromDatetime && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      Start Date & Time
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>
+                      {new Date(selectedEventForView.fromDatetime).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* End Date & Time */}
+                {selectedEventForView.toDatetime && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      End Date & Time
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>
+                      {new Date(selectedEventForView.toDatetime).toLocaleString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Status */}
+                {selectedEventForView.eventDeliveryStatusId && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>Status</div>
+                    <div>
+                      <span style={{
+                        display: 'inline-block',
+                        padding: '4px 12px',
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        color: '#6366f1'
+                      }}>
+                        {eventDeliveryStatuses.get(selectedEventForView.eventDeliveryStatusId)?.statusDescription || 'No Status'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Venue */}
+                {selectedEventForView.venue && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                      Venue
+                    </div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {selectedEventForView.venue}
+                      {(selectedEventForView.venueMapUrl || selectedEventForView.venue) && (
+                        <a
+                          href={selectedEventForView.venueMapUrl || `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${selectedEventForView.venue || ''} ${selectedEventForView.city || ''}`.trim())}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            color: '#6366f1',
+                            textDecoration: 'none',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontSize: '13px'
+                          }}
+                        >
+                          <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                          View on map
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* City */}
+                {selectedEventForView.city && (
+                  <div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginBottom: '4px' }}>City</div>
+                    <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontWeight: '500' }}>{selectedEventForView.city}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Team Members */}
+            {selectedEventForView.teamMembersAssigned && selectedEventForView.teamMembersAssigned.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: 'var(--text-primary)' }}>
+                  Team Members ({selectedEventForView.teamMembersAssigned.length})
+                </h3>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {selectedEventForView.teamMembersAssigned.map((memberId) => {
+                    const member = teamMembers.get(memberId);
+                    return member ? (
+                      <div
+                        key={memberId}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          fontSize: '14px'
+                        }}
+                      >
+                        <div style={{
+                          width: '24px',
+                          height: '24px',
+                          borderRadius: '50%',
+                          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'white',
+                          fontSize: '10px',
+                          fontWeight: '600'
+                        }}>
+                          {member.firstName?.[0]}{member.lastName?.[0]}
+                        </div>
+                        <span>{member.firstName} {member.lastName}</span>
+                      </div>
+                    ) : null;
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            {selectedEventForView.notes && (
+              <div>
+                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', color: 'var(--text-primary)' }}>Notes</h3>
+                <div style={{
+                  padding: '12px',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  color: 'var(--text-secondary)',
+                  whiteSpace: 'pre-wrap'
+                }}>
+                  {selectedEventForView.notes}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div style={{ display: 'flex', gap: '12px', paddingTop: '16px', borderTop: '1px solid var(--border-color)', justifyContent: 'flex-end' }}>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setViewModalOpen(false);
+                  onEventClick(selectedEventForView);
+                }}
+                style={{ padding: '8px 16px', fontSize: '14px' }}
+              >
+                <svg style={{ width: '14px', height: '14px', marginRight: '6px' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit Event
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => setViewModalOpen(false)}
+                style={{ padding: '8px 16px', fontSize: '14px' }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
