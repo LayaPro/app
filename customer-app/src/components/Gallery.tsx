@@ -53,6 +53,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
   const imagesPerLoad = 30;
 
   // Get current event data
@@ -979,6 +980,43 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
           setIsDragging(false);
         };
 
+        const getTouchDistance = (touches: React.TouchList) => {
+          if (touches.length < 2) return 0;
+          const touch1 = touches[0];
+          const touch2 = touches[1];
+          const dx = touch2.clientX - touch1.clientX;
+          const dy = touch2.clientY - touch1.clientY;
+          return Math.sqrt(dx * dx + dy * dy);
+        };
+
+        const handleTouchStart = (e: React.TouchEvent) => {
+          if (e.touches.length === 2) {
+            e.preventDefault();
+            const distance = getTouchDistance(e.touches);
+            setLastTouchDistance(distance);
+          }
+        };
+
+        const handleTouchMove = (e: React.TouchEvent) => {
+          if (e.touches.length === 2 && lastTouchDistance) {
+            e.preventDefault();
+            const distance = getTouchDistance(e.touches);
+            const scale = distance / lastTouchDistance;
+            const newScale = Math.min(Math.max(1, zoomScale * scale), 5);
+            
+            setZoomScale(newScale);
+            setLastTouchDistance(distance);
+            
+            if (newScale === 1) {
+              setImagePosition({ x: 0, y: 0 });
+            }
+          }
+        };
+
+        const handleTouchEnd = () => {
+          setLastTouchDistance(null);
+        };
+
         const handleKeyDown = (e: React.KeyboardEvent) => {
           if (e.key === 'ArrowLeft') handlePrev();
           if (e.key === 'ArrowRight') handleNext();
@@ -1081,6 +1119,9 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
               style={{ 
                 cursor: zoomScale > 1 ? (isDragging ? 'grabbing' : 'grab') : 'default',
                 userSelect: 'none'
