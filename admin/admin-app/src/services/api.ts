@@ -786,13 +786,14 @@ export const imageApi = {
     return handleResponse(response);
   },
 
-  uploadBatch: async (formData: FormData) => {
+  uploadBatch: async (formData: FormData, signal?: AbortSignal) => {
     const response = await fetch(`${API_BASE_URL}/upload-batch-images`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
       },
       body: formData,
+      signal,
     });
     return handleResponse(response);
   },

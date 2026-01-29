@@ -654,22 +654,109 @@
   gap: 1rem;
 }
 
+.uploadingIndicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.uploadIconWrapper {
+  position: relative;
+  width: 4rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+  100% {
+    box-shadow: 0 0 0 20px rgba(99, 102, 241, 0);
+  }
+}
+
+.uploadingIcon {
+  width: 2rem;
+  height: 2rem;
+  color: #6366f1;
+  animation: uploadFloat 2s ease-in-out infinite;
+}
+
+@keyframes uploadFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.uploadingTextWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.uploadingText {
+  color: var(--text-primary);
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.uploadingSubtext {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
 .uploadProgressBar {
   width: 100%;
-  max-width: 400px;
-  height: 8px;
+  max-width: 500px;
+  height: 12px;
   background: var(--border-color);
   border-radius: 999px;
   overflow: hidden;
   position: relative;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .uploadProgressFill {
   height: 100%;
-  background: linear-gradient(90deg, #10b981, #059669);
+  background: var(--gradient-primary);
   border-radius: 999px;
   transition: width 0.3s ease;
-  animation: progressPulse 1.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.uploadProgressFill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
 }
 
 @keyframes progressPulse {
@@ -696,6 +783,30 @@
   overflow: hidden;
   background: var(--bg-secondary);
   border: 2px solid var(--border-color);
+  animation: fadeInScale 0.4s ease-out forwards;
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+@keyframes fadeInScale {
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.uploadPreviewItem img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.uploadPreviewItem img.imageLoaded {
+  opacity: 1;
+  visibility: visible;
 }
 
 .uploadPreviewItem img {
@@ -799,7 +910,7 @@
   justify-content: center;
   flex-wrap: wrap;
   margin-top: 0;
-  padding-top: 0.5rem;
+  padding: 0.5rem 1rem 0 1rem;
 }
 
 .saveButton {
@@ -807,7 +918,7 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  background: #10b981;
+  background: var(--gradient-primary);
   color: white;
   border: none;
   border-radius: 12px;
@@ -815,11 +926,12 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .saveButton:hover {
-  background: #059669;
   transform: scale(1.05);
+  box-shadow: 0 8px 15px rgba(99, 102, 241, 0.3);
 }
 
 .saveButton svg {
@@ -842,6 +954,25 @@
 .cancelButton:hover {
   background: var(--bg-secondary);
   border-color: var(--text-secondary);
+}
+
+.abortButton {
+  padding: 0.75rem 1.5rem;
+  background: #dc2626;
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
+}
+
+.abortButton:hover {
+  background: #b91c1c;
+  box-shadow: 0 4px 8px rgba(220, 38, 38, 0.3);
+  transform: scale(1.02);
 }
 
 .addMoreButton {
@@ -1456,6 +1587,65 @@
   height: 18px;
 }
 
+/* Skeleton Loaders */
+.imageItemSkeleton {
+  position: relative;
+  aspect-ratio: 4/3;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+  cursor: default;
+  animation: fadeIn 0.3s ease-in;
+  display: flex;
+  flex-direction: column;
+}
+
+.skeletonImage {
+  flex: 1;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+
+.skeletonName {
+  width: 70%;
+  height: 0.875rem;
+  margin: 0.625rem auto;
+  background: linear-gradient(
+    90deg,
+    var(--bg-secondary) 0%,
+    var(--bg-tertiary) 50%,
+    var(--bg-secondary) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+@keyframes skeletonShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 /* Image Grid Updates */
 .imageItem {
   position: relative;
@@ -1942,6 +2132,391 @@
     width: 100%;
     justify-content: center;
   }
+
+  /* Mobile: Smaller back button */
+  .backButton {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8125rem;
+    gap: 0.35rem;
+  }
+
+  .backButton svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .backButton span {
+    display: none;
+  }
+
+  .backButton::after {
+    content: 'Back';
+  }
+
+  /* Mobile: Compact album PDF info */
+  .albumPdfInfo {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.35rem;
+  }
+
+  .albumPdfInfo svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .albumPdfInfoLabel {
+    font-size: 0.75rem;
+  }
+
+  .albumPdfInfoLink {
+    font-size: 0.75rem;
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .albumPdfInfoPlaceholder {
+    font-size: 0.7rem;
+  }
+
+  /* Mobile: Smaller bulk actions button */
+  .bulkActionsButton {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    gap: 0.4rem;
+    border-radius: 8px;
+  }
+
+  .bulkActionsButton svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  /* Mobile: Smaller sort and status buttons */
+  .sortButton,
+  .statusButton {
+    padding: 0.45rem 0.85rem;
+    font-size: 0.75rem;
+    gap: 0.35rem;
+    border-radius: 8px;
+  }
+
+  .sortButton svg,
+  .statusButton svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  /* Mobile: Align status and sort to the left */
+  .actionsRight {
+    margin-left: 0;
+    order: -1;
+    width: 100%;
+    flex-wrap: nowrap;
+  }
+
+  /* Mobile: Prevent wrapping in actions left */
+  .actionsLeft {
+    flex-wrap: nowrap;
+  }
+
+  /* Mobile: Smaller select all button */
+  .selectAllButton {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+
+  /* Mobile: Smaller refresh button */
+  .refreshButton {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .refreshButton svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  /* Mobile: Smaller save sort button */
+  .saveSortButton {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.75rem;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+
+  .saveSortButton svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  /* Mobile: Smaller status icon badges */
+  .statusIconBadge {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .statusIconBadge svg {
+    width: 0.625rem;
+    height: 0.625rem;
+  }
+
+  /* Mobile: Fix dropdown position to prevent overflow */
+  .dropdown {
+    left: 0;
+    right: auto;
+    min-width: 12rem;
+    max-width: calc(100vw - 2rem);
+  }
+
+  .sortContainer .dropdown,
+  .statusContainer .dropdown {
+    left: 0;
+    right: auto;
+    transform-origin: top left;
+  }
+
+  /* Mobile: Compact gallery actions bar */
+  .galleryActionsBar {
+    margin-bottom: 1rem;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .galleryActionsRight {
+    gap: 0.5rem;
+  }
+
+  /* Mobile: Smaller upload section */
+  .uploadContainer {
+    margin-bottom: 1rem;
+  }
+
+  .uploadHeader {
+    padding: 0.75rem;
+  }
+
+  .uploadHeaderLeft {
+    gap: 0.5rem;
+  }
+
+  .uploadChevron {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .uploadHeaderIcon {
+    padding: 0.4rem;
+    border-radius: 6px;
+  }
+
+  .uploadHeaderIcon svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .uploadHeaderText h3 {
+    font-size: 0.875rem;
+  }
+
+  .uploadHeaderText p {
+    font-size: 0.75rem;
+  }
+
+  .uploadContent {
+    padding: 1rem;
+    padding-top: 0;
+  }
+
+  .uploadIcon {
+    display: none;
+  }
+
+  .uploadTitle,
+  .uploadDescription {
+    display: none;
+  }
+
+  .chooseFilesButton {
+    padding: 0.5rem 1.25rem;
+    font-size: 0.8125rem;
+    border-radius: 8px;
+  }
+
+  .uploadHint {
+    font-size: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .chooseFilesButton svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .uploadPreview {
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 0.4rem;
+    padding: 0.4rem;
+  }
+
+  .uploadProgressContainer {
+    padding: 2rem 1rem;
+  }
+
+  .uploadIconWrapper {
+    width: 3rem;
+    height: 3rem;
+  }
+
+  .uploadingIcon {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  /* Mobile: Compact images header/title section */
+  .imagesHeader {
+    margin-bottom: 1rem;
+    gap: 0.75rem;
+  }
+
+  .imagesTitle {
+    font-size: 1rem;
+    gap: 0.35rem;
+  }
+
+  .imagesTitleCount {
+    font-size: 0.875rem;
+  }
+
+  .imagesHeaderLeft {
+    min-width: auto;
+  }
+
+  .imagesHeaderRight {
+    gap: 0.5rem;
+  }
+
+  /* Mobile: Compact event cards */
+  .card {
+    border-radius: 0.75rem;
+  }
+
+  .cardImage {
+    border-top-left-radius: 0.75rem;
+    border-top-right-radius: 0.75rem;
+    padding-top: 60%;
+  }
+
+  .cardContent {
+    padding: 0.875rem;
+  }
+
+  .cardMenu {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+
+  .menuButton {
+    padding: 0.375rem;
+  }
+
+  .menuButton svg {
+    width: 1rem;
+    height: 1rem;
+  }
+
+  .cardTitle {
+    font-size: 0.9375rem;
+    margin-bottom: 0.2rem;
+  }
+
+  .cardSubtitle {
+    font-size: 0.8125rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .cardStats {
+    font-size: 0.8125rem;
+  }
+
+  .statItem svg {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .timeAgo {
+    font-size: 0.6875rem;
+  }
+
+  .timeAgo svg {
+    width: 0.6875rem;
+    height: 0.6875rem;
+  }
+
+  .eventsGrid {
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Mobile: Upload section internal content */
+  .uploadingText {
+    font-size: 0.9375rem;
+  }
+
+  .uploadingSubtext {
+    font-size: 0.75rem;
+  }
+
+  .uploadProgressBar {
+    max-width: 100%;
+    height: 10px;
+  }
+
+  .removeImageButton {
+    width: 24px;
+    height: 24px;
+    font-size: 16px;
+  }
+
+  .failedImagesHeader {
+    padding: 0.625rem 0.75rem;
+    font-size: 0.8125rem;
+  }
+
+  .failedImagesHeader svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .failedImagesList {
+    font-size: 0.75rem;
+  }
+
+  .uploadActions {
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem 0 0.75rem;
+  }
+
+  .saveButton,
+  .cancelButton,
+  .abortButton,
+  .addMoreButton {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+    border-radius: 8px;
+  }
+
+  .saveButton svg,
+  .addMoreButton svg {
+    width: 0.9375rem;
+    height: 0.9375rem;
+  }
 }
 
 /* Pagination */
@@ -2098,7 +2673,7 @@
 .imagePropertiesButton {
   position: absolute;
   top: 0.5rem;
-  right: 3rem;
+  right: 0.5rem;
   z-index: 10;
   display: flex;
   align-items: center;

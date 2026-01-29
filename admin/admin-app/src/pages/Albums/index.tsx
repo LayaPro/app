@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { AlbumPdfUploadManager, Breadcrumb, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
 import type { AlbumPdfUploadManagerHandle } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
+import { DotLoader } from '../../components/ui/DotLoader.js';
 import { StatusBadge } from '../../components/ui/StatusBadge.js';
 import { CommentModal } from '../../components/ui/CommentModal.js';
 import ReuploadModal from '../../components/ui/ReuploadModal';
@@ -40,6 +41,7 @@ const Albums = () => {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; url: string; file?: File }>>([]);
+  const [loadedUploadImages, setLoadedUploadImages] = useState<Set<string>>(new Set());
   const [isUploadExpanded, setIsUploadExpanded] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);
@@ -92,6 +94,11 @@ const Albums = () => {
   const [publishError, setPublishError] = useState('');
   const [approvedPhotosCount, setApprovedPhotosCount] = useState(0);
   const [showStatusLegend, setShowStatusLegend] = useState(false);
+  const [focusedImageIndex, setFocusedImageIndex] = useState<number>(-1);
+  const [isPreparingImages, setIsPreparingImages] = useState(false);
+  const preparingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const uploadAbortRef = useRef(false);
+  const uploadAbortControllerRef = useRef<AbortController | null>(null);
   const publishStateStepNumber = useMemo(() => {
     for (const status of eventDeliveryStatuses.values()) {
       if (status.statusCode === 'PUBLISHED') {
@@ -193,6 +200,94 @@ const Albums = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [openMenuId, showBulkActions, showSortDropdown, showStatusDropdown, showStatusLegend]);
+
+  // Handle Ctrl+A / Cmd+A for selecting all images in gallery
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle Ctrl+A / Cmd+A when in gallery view
+      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && selectedEvent && galleryImages.length > 0) {
+        e.preventDefault();
+        selectAllImages();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedEvent, galleryImages, selectedImages]);
+
+  // Handle arrow key navigation in gallery
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Only handle arrow keys when in gallery view
+      if (!selectedEvent || galleryImages.length === 0) return;
+
+      const sortedImages = getSortedImages(galleryImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus));
+      if (sortedImages.length === 0) return;
+
+      // Arrow key navigation
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        e.preventDefault();
+
+        let newIndex = focusedImageIndex;
+
+        // Calculate columns based on grid layout (approximate)
+        const gridElement = document.querySelector(`.${styles.imageGrid}`);
+        if (!gridElement) return;
+
+        const gridWidth = gridElement.clientWidth;
+        const imageItemWidth = 200; // approximate min width from grid
+        const columnsPerRow = Math.floor(gridWidth / imageItemWidth);
+
+        switch (e.key) {
+          case 'ArrowRight':
+            newIndex = Math.min(focusedImageIndex + 1, sortedImages.length - 1);
+            break;
+          case 'ArrowLeft':
+            newIndex = Math.max(focusedImageIndex - 1, 0);
+            break;
+          case 'ArrowDown':
+            newIndex = Math.min(focusedImageIndex + columnsPerRow, sortedImages.length - 1);
+            break;
+          case 'ArrowUp':
+            newIndex = Math.max(focusedImageIndex - columnsPerRow, 0);
+            break;
+        }
+
+        // Update focused index
+        setFocusedImageIndex(newIndex);
+
+        // Focus the element
+        const imageElements = document.querySelectorAll(`.${styles.imageItem}`);
+        if (imageElements[newIndex]) {
+          (imageElements[newIndex] as HTMLElement).focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedEvent, galleryImages, selectedImages, focusedImageIndex, selectedStatus]);
+
+  // Hide preparing state when images are added
+  useEffect(() => {
+    console.log('uploadedImages changed:', uploadedImages.length, 'isPreparingImages:', isPreparingImages);
+    if (uploadedImages.length > 0 && isPreparingImages) {
+      console.log('Hiding preparing state - images are ready');
+      setIsPreparingImages(false);
+      if (preparingTimerRef.current) {
+        clearTimeout(preparingTimerRef.current);
+        preparingTimerRef.current = null;
+      }
+    }
+    // Reset loaded images when upload images change
+    if (uploadedImages.length === 0) {
+      setLoadedUploadImages(new Set());
+    }
+  }, [uploadedImages.length, isPreparingImages]);
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -417,7 +512,21 @@ const Albums = () => {
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (!files || files.length === 0) return;
+    
+    console.log('handleFileSelect called, files:', files?.length);
+    
+    // Clear timer if files are selected
+    if (preparingTimerRef.current) {
+      console.log('Clearing preparing timer');
+      clearTimeout(preparingTimerRef.current);
+      preparingTimerRef.current = null;
+    }
+    
+    if (!files || files.length === 0) {
+      console.log('No files, hiding preparing');
+      setIsPreparingImages(false);
+      return;
+    }
 
     const newImages = Array.from(files).map((file) => {
       // Validate file type
@@ -434,6 +543,7 @@ const Albums = () => {
       };
     }).filter((img): img is { id: string; url: string; file: File } => img !== null);
 
+    console.log('Created', newImages.length, 'image previews, adding to state');
     setUploadedImages((prev) => [...prev, ...newImages]);
     // Reset input
     e.target.value = '';
@@ -447,6 +557,15 @@ const Albums = () => {
       }
       return prev.filter((img) => img.id !== id);
     });
+    setLoadedUploadImages((prev) => {
+      const newSet = new Set(prev);
+      newSet.delete(id);
+      return newSet;
+    });
+  };
+
+  const handleUploadImageLoad = (imageId: string) => {
+    setLoadedUploadImages((prev) => new Set(prev).add(imageId));
   };
 
   const fetchGalleryImages = async (clientEventId: string) => {
@@ -464,6 +583,16 @@ const Albums = () => {
       setGalleryImages([]);
     } finally {
       setIsLoadingGallery(false);
+    }
+  };
+
+  // Silent refresh - updates gallery without showing loading states
+  const refreshGallerySilently = async (clientEventId: string) => {
+    try {
+      const data = await imageApi.getByClientEvent(clientEventId);
+      setGalleryImages(data.images || []);
+    } catch (error) {
+      console.error('Error refreshing gallery images:', error);
     }
   };
 
@@ -837,7 +966,7 @@ const Albums = () => {
       
       // Refresh gallery
       if (selectedEvent) {
-        fetchGalleryImages(selectedEvent.clientEventId);
+        refreshGallerySilently(selectedEvent.clientEventId);
       }
     } catch (error) {
       console.error('Error requesting re-edit:', error);
@@ -892,7 +1021,7 @@ const Albums = () => {
         
         // Refresh gallery
         if (selectedEvent) {
-          fetchGalleryImages(selectedEvent.clientEventId);
+          refreshGallerySilently(selectedEvent.clientEventId);
         }
       }
       
@@ -902,7 +1031,7 @@ const Albums = () => {
         
         // Refresh gallery even with partial success
         if (selectedEvent) {
-          fetchGalleryImages(selectedEvent.clientEventId);
+          refreshGallerySilently(selectedEvent.clientEventId);
         }
       }
       
@@ -951,9 +1080,14 @@ const Albums = () => {
       setShowApproveModal(false);
       setPublishAfterApprove(false);
       
-      // Refresh gallery
+      // Ensure body scroll is restored (fix for modal overflow issue)
+      setTimeout(() => {
+        document.body.style.overflow = 'unset';
+      }, 100);
+      
+      // Refresh gallery silently without showing loading states
       if (selectedEvent) {
-        fetchGalleryImages(selectedEvent.clientEventId);
+        await refreshGallerySilently(selectedEvent.clientEventId);
       }
 
       // Optionally publish album immediately
@@ -1135,7 +1269,7 @@ const Albums = () => {
       
       // Refresh gallery
       if (selectedEvent) {
-        fetchGalleryImages(selectedEvent.clientEventId);
+        refreshGallerySilently(selectedEvent.clientEventId);
       }
     } catch (error) {
       console.error('Error deleting images:', error);
@@ -1171,6 +1305,8 @@ const Albums = () => {
     setUploadedCount(0);
     setFailedImages(new Set());
     const failedImageIds = new Set<string>();
+    uploadAbortRef.current = false; // Reset abort flag
+    uploadAbortControllerRef.current = new AbortController(); // Create abort controller
 
     try {
       const token = localStorage.getItem('token') || sessionStorage.getItem('token');
@@ -1183,9 +1319,18 @@ const Albums = () => {
       }
 
       let successCount = 0;
+      let wasAborted = false;
 
       // Upload images one at a time for accurate progress tracking
       for (let i = 0; i < uploadedImages.length; i++) {
+        // Check if upload was cancelled
+        if (uploadAbortRef.current) {
+          console.log('Upload cancelled by user');
+          wasAborted = true;
+          showToast('info', `Upload aborted. ${successCount} of ${uploadedImages.length} images uploaded.`);
+          break;
+        }
+
         const img = uploadedImages[i];
         
         if (!img.file) continue;
@@ -1196,7 +1341,7 @@ const Albums = () => {
         formData.append('images', img.file);
 
         try {
-          const result = await imageApi.uploadBatch(formData);
+          const result = await imageApi.uploadBatch(formData, uploadAbortControllerRef.current?.signal);
           
           if (result.stats.successful > 0) {
             successCount++;
@@ -1205,6 +1350,14 @@ const Albums = () => {
             failedImageIds.add(img.id);
           }
         } catch (error) {
+          // Check if error is due to abort
+          if (error instanceof Error && error.name === 'AbortError') {
+            console.log('Request aborted');
+            wasAborted = true;
+            showToast('info', `Upload aborted. ${successCount} of ${uploadedImages.length} images uploaded.`);
+            // Don't add to failed images if aborted
+            break;
+          }
           console.error('Upload error:', error);
           failedImageIds.add(img.id);
         }
@@ -1213,10 +1366,14 @@ const Albums = () => {
       // Update failed images state
       setFailedImages(failedImageIds);
 
-      if (successCount > 0) {
+      // Only show success message if not aborted
+      if (successCount > 0 && !wasAborted) {
         // Show success toast
         showToast('success', `Successfully uploaded ${successCount} image${successCount !== 1 ? 's' : ''}!${failedImageIds.size > 0 ? ` (${failedImageIds.size} failed - see below)` : ''}`);
-        
+      }
+      
+      // Clean up and refresh regardless of abort status (for successful uploads)
+      if (successCount > 0) {
         // Clean up blob URLs for successful uploads
         uploadedImages.forEach((img) => {
           if (!failedImageIds.has(img.id) && img.url.startsWith('blob:')) {
@@ -1227,14 +1384,14 @@ const Albums = () => {
         // Remove successful images, keep failed ones
         setUploadedImages(prev => prev.filter(img => failedImageIds.has(img.id)));
         
-        // Collapse upload section if all succeeded
-        if (failedImageIds.size === 0) {
+        // Collapse upload section if all succeeded and not aborted
+        if (failedImageIds.size === 0 && !wasAborted) {
           setIsUploadExpanded(false);
         }
 
         // Refresh gallery images
         if (selectedEvent) {
-          fetchGalleryImages(selectedEvent.clientEventId);
+          refreshGallerySilently(selectedEvent.clientEventId);
         }
       }
     } catch (error) {
@@ -1242,6 +1399,7 @@ const Albums = () => {
     } finally {
       setIsUploading(false);
       setUploadedCount(0);
+      uploadAbortControllerRef.current = null; // Clean up
     }
   };
 
@@ -1495,14 +1653,37 @@ const Albums = () => {
           </button>
 
           {/* Upload Area (Collapsible) */}
+          <style>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
           <div
             className={`${styles.uploadSection} ${isUploadExpanded ? styles.uploadSectionExpanded : ''}`}
           >
             <div className={styles.uploadSectionInner}>
               <div className={styles.uploadContent}>
                 <div className={styles.uploadContentInner}>
+                  {/* Hidden file input - always present */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={handleFileSelect}
+                    style={{ display: 'none' }}
+                  />
+                  
+                  {/* Preparing Images State */}
+                  {isPreparingImages && uploadedImages.length === 0 && (
+                    <div style={{ padding: '2rem' }}>
+                      <DotLoader text="Preparing images..." />
+                    </div>
+                  )}
+                  
                   {/* Initial Upload UI */}
-                  {uploadedImages.length === 0 && (
+                  {!isPreparingImages && uploadedImages.length === 0 && (
                     <div>
                       <svg
                         className={styles.uploadIcon}
@@ -1523,16 +1704,21 @@ const Albums = () => {
                       <p className={styles.uploadDescription}>
                         or click to browse from your computer
                       </p>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/*"
-                        multiple
-                        onChange={handleFileSelect}
-                        style={{ display: 'none' }}
-                      />
                       <button
-                        onClick={() => fileInputRef.current?.click()}
+                        onClick={() => {
+                          // Clear any existing timer
+                          if (preparingTimerRef.current) {
+                            clearTimeout(preparingTimerRef.current);
+                          }
+                          
+                          // Show preparing state after 2 seconds
+                          preparingTimerRef.current = setTimeout(() => {
+                            setIsUploadExpanded(true);
+                            setIsPreparingImages(true);
+                          }, 2000);
+                          
+                          fileInputRef.current?.click();
+                        }}
                         className={styles.chooseFilesButton}
                       >
                         <svg
@@ -1577,9 +1763,34 @@ const Albums = () => {
                               </div>
                             </div>
                           )}
-                          <div className={styles.uploadPreview}>
+                          {/* Hidden preloader images */}
+                          <div style={{ display: 'none' }}>
                             {uploadedImages.map((image) => (
-                              <div key={image.id} className={`${styles.uploadPreviewItem} ${failedImages.has(image.id) ? styles.failedImage : ''}`}>
+                              <img 
+                                key={`preload-${image.id}`}
+                                src={image.url} 
+                                alt=""
+                                onLoad={() => handleUploadImageLoad(image.id)}
+                              />
+                            ))}
+                          </div>
+                          
+                          {/* Visible preview grid - only show loaded images */}
+                          <div className={styles.uploadPreview}>
+                            {uploadedImages
+                              .filter(image => loadedUploadImages.has(image.id) || failedImages.has(image.id))
+                              .map((image, index) => (
+                              <div 
+                                key={image.id} 
+                                className={`${styles.uploadPreviewItem} ${failedImages.has(image.id) ? styles.failedImage : ''}`}
+                                style={{ animationDelay: `${index * 0.05}s` }}
+                              >
+                                <img 
+                                  src={image.url} 
+                                  alt="Upload preview"
+                                  className={styles.imageLoaded}
+                                />
+                                
                                 {failedImages.has(image.id) && (
                                   <div className={styles.failedBadge}>
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1588,7 +1799,7 @@ const Albums = () => {
                                     Failed
                                   </div>
                                 )}
-                                <img src={image.url} alt="Upload preview" />
+                                
                                 <button
                                 className={styles.removeImageButton}
                                 onClick={() => handleRemoveImage(image.id)}
@@ -1601,33 +1812,60 @@ const Albums = () => {
                         </div>
                         </>
                       ) : (
-                        <div className={styles.uploadProgressContainer}>
-                          <div className={styles.uploadProgressBar}>
-                            <div 
-                              className={styles.uploadProgressFill}
-                              style={{ width: `${(uploadedCount / uploadedImages.length) * 100}%` }}
-                            />
+                        <>
+                          <div className={styles.uploadProgressContainer}>
+                            <div className={styles.uploadingIndicator}>
+                              <div className={styles.uploadIconWrapper}>
+                                <svg className={styles.uploadingIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                </svg>
+                              </div>
+                              <div className={styles.uploadingTextWrapper}>
+                                <span className={styles.uploadingText}>Uploading your images</span>
+                                <span className={styles.uploadingSubtext}>Please wait...</span>
+                              </div>
+                            </div>
+                            <div className={styles.uploadProgressBar}>
+                              <div 
+                                className={styles.uploadProgressFill}
+                                style={{ width: `${(uploadedCount / uploadedImages.length) * 100}%` }}
+                              />
+                            </div>
+                            <p className={styles.uploadProgressText}>
+                              Uploaded {uploadedCount} of {uploadedImages.length} {uploadedImages.length === 1 ? 'image' : 'images'}
+                            </p>
                           </div>
-                          <p className={styles.uploadProgressText}>
-                            Uploaded {uploadedCount} of {uploadedImages.length} {uploadedImages.length === 1 ? 'image' : 'images'}
-                          </p>
-                        </div>
+                          <div className={styles.uploadActions}>
+                            <button
+                              className={styles.abortButton}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                uploadAbortRef.current = true;
+                                uploadAbortControllerRef.current?.abort();
+                              }}
+                            >
+                              Abort
+                            </button>
+                          </div>
+                        </>
                       )}
 
+                      {!isUploading && (loadedUploadImages.size > 0 || failedImages.size > 0) && (
                       <div className={styles.uploadActions}>
                         <button 
                           className={styles.saveButton}
                           onClick={handleUploadImages}
-                          disabled={isUploading}
                         >
                           <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                           </svg>
-                          {isUploading ? 'Uploading...' : `Save ${uploadedImages.length} ${uploadedImages.length === 1 ? 'Image' : 'Images'}`}
+                          Upload {uploadedImages.length} {uploadedImages.length === 1 ? 'Image' : 'Images'}
                         </button>
                         <button
                           className={styles.cancelButton}
                           onClick={() => {
+                            // Just close if not uploading
                             uploadedImages.forEach((img) => {
                               if (img.url.startsWith('blob:')) {
                                 URL.revokeObjectURL(img.url);
@@ -1635,6 +1873,7 @@ const Albums = () => {
                             });
                             setUploadedImages([]);
                             setFailedImages(new Set());
+                            setIsUploadExpanded(false);
                           }}
                         >
                           Cancel
@@ -1649,6 +1888,7 @@ const Albums = () => {
                           Add More
                         </button>
                       </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -1668,6 +1908,7 @@ const Albums = () => {
                 className={`${styles.bulkActionsButton} ${selectedImages.size === 0 ? styles.disabled : ''}`}
                 onClick={toggleBulkActions}
                 disabled={selectedImages.size === 0}
+                tabIndex={-1}
               >
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -1763,6 +2004,7 @@ const Albums = () => {
               onClick={handleSaveSortOrder}
               disabled={!hasUnsavedOrder || isSavingOrder}
               title={hasUnsavedOrder ? "Save custom image order" : "No changes to save"}
+              tabIndex={-1}
             >
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -1774,7 +2016,7 @@ const Albums = () => {
           <div className={styles.actionsRight}>
             {/* Status Filter Dropdown */}
             <div className={styles.statusContainer} ref={statusDropdownRef}>
-              <button className={styles.statusButton} onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
+              <button className={styles.statusButton} onClick={() => setShowStatusDropdown(!showStatusDropdown)} tabIndex={-1}>
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
@@ -1893,7 +2135,7 @@ const Albums = () => {
 
             {/* Sort Dropdown */}
             <div className={styles.sortContainer} ref={sortDropdownRef}>
-              <button className={styles.sortButton} onClick={toggleSortDropdown}>
+              <button className={styles.sortButton} onClick={toggleSortDropdown} tabIndex={-1}>
                 <span>
                   {sortBy === 'default' ? 'Default' : sortBy === 'name' ? 'Name' : sortBy === 'date-latest' ? 'Date - Latest first' : 'Date - Oldest first'}
                 </span>
@@ -1947,37 +2189,13 @@ const Albums = () => {
           </div>
           
           <div className={styles.imagesHeaderRight}>
-            {/* Refresh Button */}
-            <button 
-              className={styles.refreshButton} 
-              onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
-              disabled={isLoadingGallery}
-              title="Refresh gallery"
-              aria-label="Refresh gallery"
-            >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-
-            {/* Select All Button with Counter */}
-            <button className={styles.selectAllButton} onClick={selectAllImages}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '1.125rem', height: '1.125rem', color: '#6366f1' }}>
-                {selectedImages.size === galleryImages.length ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                ) : (
-                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
-                )}
-              </svg>
-              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'} ({selectedImages.size}/{galleryImages.length})
-            </button>
-            
             {/* Status Legend Help Icon */}
             <div className={styles.statusLegendContainer} ref={statusLegendRef}>
               <button 
                 className={styles.statusLegendButton}
                 onClick={() => setShowStatusLegend(!showStatusLegend)}
                 title="View status icons legend"
+                tabIndex={-1}
               >
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -2036,15 +2254,45 @@ const Albums = () => {
               </div>
             )}
             </div>
+
+            {/* Refresh Button */}
+            <button 
+              className={styles.refreshButton} 
+              onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
+              disabled={isLoadingGallery}
+              title="Refresh gallery"
+              aria-label="Refresh gallery"
+              tabIndex={-1}
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+
+            {/* Select All Button with Counter */}
+            <button className={styles.selectAllButton} onClick={selectAllImages} tabIndex={-1}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '1.125rem', height: '1.125rem', color: '#6366f1' }}>
+                {selectedImages.size === galleryImages.length ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                ) : (
+                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                )}
+              </svg>
+              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'} ({selectedImages.size}/{galleryImages.length})
+            </button>
           </div>
         </div>
 
         <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
           {isLoadingGallery ? (
-            <div className={styles.galleryLoading}>
-              <Loading />
-              <p>Loading images...</p>
-            </div>
+            <>
+              {Array.from({ length: 12 }).map((_, index) => (
+                <div key={`skeleton-${index}`} className={styles.imageItemSkeleton}>
+                  <div className={styles.skeletonImage}></div>
+                  <div className={styles.skeletonName}></div>
+                </div>
+              ))}
+            </>
           ) : eventImages.length === 0 ? (
             <div className={styles.emptyGallery}>
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2054,18 +2302,12 @@ const Albums = () => {
             </div>
           ) : isLoadingGalleryPreviews ? (
             <>
-              <div className={styles.galleryLoading}>
-                <Loading />
-                <div className={styles.loadingProgress}>
-                  <div className={styles.uploadProgressBar}>
-                    <div 
-                      className={styles.uploadProgressFill}
-                      style={{ width: `${(loadedGalleryImages.size / eventImages.length) * 100}%` }}
-                    />
-                  </div>
-                  <p>Loading previews: {loadedGalleryImages.size} of {eventImages.length} images</p>
+              {eventImages.map((image) => (
+                <div key={image.imageId} className={styles.imageItemSkeleton}>
+                  <div className={styles.skeletonImage}></div>
+                  <div className={styles.skeletonName}></div>
                 </div>
-              </div>
+              ))}
               <div style={{ display: 'none' }}>
                 {eventImages.map((image) => (
                   <img 
@@ -2084,6 +2326,9 @@ const Albums = () => {
                 key={image.imageId} 
                 className={`${styles.imageItem} ${selectedImages.has(image.imageId) ? styles.selectedImage : ''} ${dragOverIndex === index ? styles.dragOver : ''} ${draggedImageId === image.imageId ? styles.dragging : ''}`}
                 draggable={sortBy === 'default'}
+                tabIndex={0}
+                role="button"
+                aria-label={`${image.fileName || 'Image'}, ${selectedImages.has(image.imageId) ? 'selected' : 'not selected'}`}
                 onDragStart={(e) => handleDragStart(e, image.imageId)}
                 onDragOver={(e) => handleDragOver(e, index)}
                 onDragLeave={handleDragLeave}
@@ -2091,9 +2336,21 @@ const Albums = () => {
                 onDragEnd={handleDragEnd}
                 onClick={() => handleSelectImage(image.imageId)}
                 onDoubleClick={() => handleOpenViewer(index)}
+                onFocus={() => setFocusedImageIndex(index)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    handleSelectImage(image.imageId);
+                  } else if (e.key === ' ') {
+                    e.preventDefault();
+                    // Shift+Space or just Space both toggle selection
+                    handleSelectImage(image.imageId);
+                  }
+                }}
               >
                 <button 
                   className={styles.imageDownloadButton}
+                  tabIndex={-1}
                   onClick={async (e) => {
                     e.stopPropagation();
                     try {
@@ -2111,6 +2368,7 @@ const Albums = () => {
                 </button>
                 <button 
                   className={styles.imagePropertiesButton}
+                  tabIndex={-1}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleShowProperties(image.imageId);
@@ -2251,7 +2509,7 @@ const Albums = () => {
             confirmText="Approve"
             cancelText="Cancel"
             isLoading={isApprovingImages}
-            variant="info"
+            variant="primary"
           >
             {canPublishAfterApprove && (
               <label

@@ -648,35 +648,65 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
             eventFolderName
           );
 
-          // Create database record
-          const imageId = `image_${nanoid()}`;
-          const image = await Image.create({
-            imageId,
-            tenantId,
-            projectId,
+          // Check if image with same filename already exists for this event
+          const existingImage = await Image.findOne({
             clientEventId,
-            originalUrl: uploadResult.originalUrl,
-            compressedUrl: uploadResult.compressedUrl,
-            fileName: file.originalname,
-            fileSize: file.size,
-            mimeType: file.mimetype,
-            width: originalMetadata.width,
-            height: originalMetadata.height,
-            capturedAt: capturedAt,
-            editedAt: editedAt,
-            uploadStatus: 'completed',
-            eventDeliveryStatusId,
-            imageStatusId,
-            sortOrder: currentSortOrder,
-            uploadedBy: userId,
-            uploadedAt: new Date(),
+            tenantId,
+            fileName: file.originalname
           });
+
+          let image;
+          if (existingImage) {
+            // Update existing image record
+            console.log(`↻ Updating existing: ${file.originalname}`);
+            image = await Image.findOneAndUpdate(
+              { imageId: existingImage.imageId },
+              {
+                originalUrl: uploadResult.originalUrl,
+                compressedUrl: uploadResult.compressedUrl,
+                fileSize: file.size,
+                mimeType: file.mimetype,
+                width: originalMetadata.width,
+                height: originalMetadata.height,
+                capturedAt: capturedAt,
+                editedAt: editedAt,
+                uploadStatus: 'completed',
+                uploadedBy: userId,
+                uploadedAt: new Date(),
+              },
+              { new: true }
+            );
+          } else {
+            // Create new database record
+            const imageId = `image_${nanoid()}`;
+            image = await Image.create({
+              imageId,
+              tenantId,
+              projectId,
+              clientEventId,
+              originalUrl: uploadResult.originalUrl,
+              compressedUrl: uploadResult.compressedUrl,
+              fileName: file.originalname,
+              fileSize: file.size,
+              mimeType: file.mimetype,
+              width: originalMetadata.width,
+              height: originalMetadata.height,
+              capturedAt: capturedAt,
+              editedAt: editedAt,
+              uploadStatus: 'completed',
+              eventDeliveryStatusId,
+              imageStatusId,
+              sortOrder: currentSortOrder,
+              uploadedBy: userId,
+              uploadedAt: new Date(),
+            });
+          }
 
           console.log(`✓ Uploaded: ${file.originalname}`);
 
           return {
             success: true,
-            imageId: image.imageId,
+            imageId: image?.imageId,
             fileName: file.originalname,
             originalUrl: uploadResult.originalUrl,
             compressedUrl: uploadResult.compressedUrl,
