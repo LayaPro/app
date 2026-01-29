@@ -91,6 +91,7 @@ const Albums = () => {
   const [publishConfirmed, setPublishConfirmed] = useState(true);
   const [publishError, setPublishError] = useState('');
   const [approvedPhotosCount, setApprovedPhotosCount] = useState(0);
+  const [showStatusLegend, setShowStatusLegend] = useState(false);
   const publishStateStepNumber = useMemo(() => {
     for (const status of eventDeliveryStatuses.values()) {
       if (status.statusCode === 'PUBLISHED') {
@@ -127,6 +128,7 @@ const Albums = () => {
   const bulkActionsRef = useRef<HTMLDivElement>(null);
   const sortDropdownRef = useRef<HTMLDivElement>(null);
   const statusDropdownRef = useRef<HTMLDivElement>(null);
+  const statusLegendRef = useRef<HTMLDivElement>(null);
   const albumPdfUploadManagerRef = useRef<AlbumPdfUploadManagerHandle>(null);
 
   useEffect(() => {
@@ -174,9 +176,14 @@ const Albums = () => {
       if (statusDropdownRef.current && !statusDropdownRef.current.contains(target)) {
         setShowStatusDropdown(false);
       }
+      
+      // Close status legend popover
+      if (statusLegendRef.current && !statusLegendRef.current.contains(target)) {
+        setShowStatusLegend(false);
+      }
     };
 
-    if (openMenuId || showBulkActions || showSortDropdown || showStatusDropdown) {
+    if (openMenuId || showBulkActions || showSortDropdown || showStatusDropdown || showStatusLegend) {
       setTimeout(() => {
         document.addEventListener('mousedown', handleClickOutside);
       }, 0);
@@ -185,7 +192,7 @@ const Albums = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [openMenuId, showBulkActions, showSortDropdown, showStatusDropdown]);
+  }, [openMenuId, showBulkActions, showSortDropdown, showStatusDropdown, showStatusLegend]);
 
   const fetchProjects = async () => {
     setIsLoading(true);
@@ -1418,6 +1425,25 @@ const Albums = () => {
           ]}
         />
 
+        {/* Gallery Actions Bar */}
+        <div className={styles.galleryActionsBar}>
+          <button
+            className={styles.backButton}
+            onClick={handleCloseAlbum}
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            <span>Back to Events</span>
+          </button>
+          <div className={styles.galleryActionsRight}>
+            <AlbumPdfInfo
+              albumPdfUrl={currentAlbumPdf?.albumPdfUrl}
+              albumPdfFileName={currentAlbumPdf?.albumPdfFileName}
+            />
+          </div>
+        </div>
+
         {/* Collapsible Upload Section */}
         <div 
           className={`${
@@ -1731,6 +1757,21 @@ const Albums = () => {
               )}
             </div>
 
+            {/* Save Sort Order Button */}
+            <button 
+              className={styles.saveSortButton} 
+              onClick={handleSaveSortOrder}
+              disabled={!hasUnsavedOrder || isSavingOrder}
+              title={hasUnsavedOrder ? "Save custom image order" : "No changes to save"}
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+              {isSavingOrder ? 'Saving...' : 'Save Sorting'}
+            </button>
+          </div>
+
+          <div className={styles.actionsRight}>
             {/* Status Filter Dropdown */}
             <div className={styles.statusContainer} ref={statusDropdownRef}>
               <button className={styles.statusButton} onClick={() => setShowStatusDropdown(!showStatusDropdown)}>
@@ -1850,50 +1891,6 @@ const Albums = () => {
               )}
             </div>
 
-            {/* Save Sort Order Button */}
-            <button 
-              className={styles.saveSortButton} 
-              onClick={handleSaveSortOrder}
-              disabled={!hasUnsavedOrder || isSavingOrder}
-              title={hasUnsavedOrder ? "Save custom image order" : "No changes to save"}
-            >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-              </svg>
-              {isSavingOrder ? 'Saving...' : 'Save Sort Order'}
-            </button>
-          </div>
-
-          <div className={styles.actionsRight}>
-            <AlbumPdfInfo
-              albumPdfUrl={currentAlbumPdf?.albumPdfUrl}
-              albumPdfFileName={currentAlbumPdf?.albumPdfFileName}
-              className={styles.albumPdfToolbarTag}
-            />
-
-            {/* Selection Counter */}
-            <div className={styles.selectionCounter}>
-              <span>{selectedImages.size}</span> / <span>{galleryImages.length}</span> selected
-            </div>
-
-            {/* Select All Button */}
-            <button className={styles.selectAllButton} onClick={selectAllImages}>
-              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'}
-            </button>
-
-            {/* Refresh Button */}
-            <button 
-              className={styles.refreshButton} 
-              onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
-              disabled={isLoadingGallery}
-              title="Refresh gallery"
-              aria-label="Refresh gallery"
-            >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-
             {/* Sort Dropdown */}
             <div className={styles.sortContainer} ref={sortDropdownRef}>
               <button className={styles.sortButton} onClick={toggleSortDropdown}>
@@ -1949,49 +1946,95 @@ const Albums = () => {
             </h2>
           </div>
           
-          {/* Icon Legend */}
-          <div className={styles.iconLegend}>
-            <span className={styles.legendTitle}>Status Icons:</span>
-            <div className={styles.legendItem}>
-              <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+          <div className={styles.imagesHeaderRight}>
+            {/* Refresh Button */}
+            <button 
+              className={styles.refreshButton} 
+              onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
+              disabled={isLoadingGallery}
+              title="Refresh gallery"
+              aria-label="Refresh gallery"
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+
+            {/* Select All Button with Counter */}
+            <button className={styles.selectAllButton} onClick={selectAllImages}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '1.125rem', height: '1.125rem', color: '#6366f1' }}>
+                {selectedImages.size === galleryImages.length ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                ) : (
+                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                )}
+              </svg>
+              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'} ({selectedImages.size}/{galleryImages.length})
+            </button>
+            
+            {/* Status Legend Help Icon */}
+            <div className={styles.statusLegendContainer} ref={statusLegendRef}>
+              <button 
+                className={styles.statusLegendButton}
+                onClick={() => setShowStatusLegend(!showStatusLegend)}
+                title="View status icons legend"
+              >
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-              </span>
-              <span className={styles.legendLabel}>Review Pending</span>
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendIcon} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                </svg>
-              </span>
-              <span className={styles.legendLabel}>Re-edit Requested</span>
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendIcon} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                </svg>
-              </span>
-              <span className={styles.legendLabel}>Re-edit Done</span>
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendIcon} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
-                <svg fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                </svg>
-              </span>
-              <span className={styles.legendLabel}>Approved</span>
-            </div>
-            <div className={styles.legendItem}>
-              <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
-                <svg fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z" />
-                </svg>
-              </span>
-              <span className={styles.legendLabel}>Client Selected</span>
+                <span>Status Icons</span>
+              </button>
+              
+              {showStatusLegend && (
+              <div className={styles.statusLegendPopover}>
+                <div className={styles.legendPopoverHeader}>
+                  <span>Status Icons Legend</span>
+                </div>
+                <div className={styles.legendPopoverContent}>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </span>
+                    <span className={styles.legendLabel}>Review Pending</span>
+                  </div>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendIcon} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                    </span>
+                    <span className={styles.legendLabel}>Re-edit Requested</span>
+                  </div>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendIcon} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                      </svg>
+                    </span>
+                    <span className={styles.legendLabel}>Re-edit Done</span>
+                  </div>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendIcon} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
+                      <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                      </svg>
+                    </span>
+                    <span className={styles.legendLabel}>Approved</span>
+                  </div>
+                  <div className={styles.legendItem}>
+                    <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
+                      <svg fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z" />
+                      </svg>
+                    </span>
+                    <span className={styles.legendLabel}>Client Selected</span>
+                  </div>
+                </div>
+              </div>
+            )}
             </div>
           </div>
         </div>
@@ -2401,10 +2444,10 @@ const Albums = () => {
               </button>
             )}
             {/* Search */}
-            {!showVideosView && (
+            {!showVideosView && !selectedProject && (
               <Input
                 type="text"
-                placeholder={selectedProject ? 'Search events...' : 'Search projects...'}
+                placeholder={'Search projects...'}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 icon={
@@ -2999,7 +3042,7 @@ const Albums = () => {
                   padding: '0.5rem 1rem',
                   border: 'none',
                   borderRadius: '0.375rem',
-                  background: '#3b82f6',
+                  background: '#6366f1',
                   color: 'white',
                   cursor: (isPublishing || !publishConfirmed || approvedPhotosCount === 0) ? 'not-allowed' : 'pointer',
                   fontSize: '0.875rem',
