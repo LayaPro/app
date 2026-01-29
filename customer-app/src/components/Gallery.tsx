@@ -24,12 +24,15 @@ interface EventInfo {
 interface GalleryProps {
   projectName: string;
   coverPhoto: string;
+  mobileCoverUrl?: string;
+  tabletCoverUrl?: string;
+  desktopCoverUrl?: string;
   clientName: string;
   albumImages: AlbumImage[];
   events?: EventInfo[];
 }
 
-const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, albumImages, events = [] }) => {
+const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverUrl, tabletCoverUrl, desktopCoverUrl, clientName, albumImages, events = [] }) => {
   const [selectedImage, setSelectedImage] = useState<AlbumImage | null>(null);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isInitialOpen, setIsInitialOpen] = useState(true);
@@ -107,8 +110,18 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, clientName, 
     }, 150);
   };
 
-  // Random cover photo for now
-  const displayCover = coverPhoto || albumImages[0]?.compressedUrl || albumImages[0]?.originalUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1920';
+  // Get device-specific cover photo (memoized)
+  const displayCover = useMemo(() => {
+    const width = window.innerWidth;
+    if (width <= 640 && mobileCoverUrl) {
+      return mobileCoverUrl;
+    } else if (width <= 1024 && tabletCoverUrl) {
+      return tabletCoverUrl;
+    } else if (desktopCoverUrl) {
+      return desktopCoverUrl;
+    }
+    return coverPhoto || albumImages[0]?.compressedUrl || albumImages[0]?.originalUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1920';
+  }, [mobileCoverUrl, tabletCoverUrl, desktopCoverUrl, coverPhoto, albumImages]);
 
   // Preload cover image
   useEffect(() => {

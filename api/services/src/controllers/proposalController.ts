@@ -524,6 +524,9 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
           galleryData = {
             projectName: project.projectName,
             coverPhoto: project.coverPhoto || project.displayPic,
+            mobileCoverUrl: project.mobileCoverUrl,
+            tabletCoverUrl: project.tabletCoverUrl,
+            desktopCoverUrl: project.desktopCoverUrl,
             clientName: proposal.clientName,
             albumImages: imagesWithEventId
           };

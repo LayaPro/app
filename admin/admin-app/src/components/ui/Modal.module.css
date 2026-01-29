@@ -68,7 +68,8 @@
 
 .modal.large {
   width: 100%;
-  max-width: 900px;
+  max-width: 1400px;
+  max-height: 95vh;
 }
 
 .header {
@@ -166,7 +167,14 @@
 .content {
   padding: 24px;
   overflow-y: auto;
+  overflow-x: hidden;
   flex: 1;
+  min-height: 0;
+}
+
+.content.noHeader {
+  padding: 0;
+  overflow: hidden;
 }
 
 /* Scrollbar styling */

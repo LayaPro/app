@@ -20,6 +20,9 @@ export interface IProject extends Document {
   s3BucketName?: string;
   displayPic?: string;
   coverPhoto?: string;
+  mobileCoverUrl?: string; // Mobile cover image URL
+  tabletCoverUrl?: string; // Tablet cover image URL
+  desktopCoverUrl?: string; // Desktop cover image URL
   videoUrls?: string[]; // YouTube video URLs
   createdAt: Date;
   updatedAt: Date;
@@ -46,6 +49,9 @@ const ProjectSchema = new Schema<IProject>(
     s3BucketName: { type: String, unique: true, sparse: true },
     displayPic: { type: String },
     coverPhoto: { type: String },
+    mobileCoverUrl: { type: String },
+    tabletCoverUrl: { type: String },
+    desktopCoverUrl: { type: String },
     videoUrls: { type: [String], default: [] } // YouTube video URLs
   },
   { timestamps: true }

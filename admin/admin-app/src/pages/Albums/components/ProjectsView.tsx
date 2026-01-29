@@ -46,7 +46,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         >
           <div className={styles.cardImage}>
             <img
-              src={project.coverPhoto || project.displayPic || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=500&h=400&fit=crop'}
+              src={project.desktopCoverUrl || project.coverPhoto || project.displayPic || 'https://images.unsplash.com/photo-1492691527719-9d1e07e534b4?w=500&h=400&fit=crop'}
               alt={project.projectName}
             />
           </div>

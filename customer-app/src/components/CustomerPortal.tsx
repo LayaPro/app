@@ -185,6 +185,9 @@ export const CustomerPortal = () => {
         <Gallery 
           projectName={portalData.gallery?.projectName || portalData.project?.projectName}
           coverPhoto={portalData.gallery?.coverPhoto}
+          mobileCoverUrl={portalData.gallery?.mobileCoverUrl}
+          tabletCoverUrl={portalData.gallery?.tabletCoverUrl}
+          desktopCoverUrl={portalData.gallery?.desktopCoverUrl}
           clientName={portalData.gallery?.clientName}
           albumImages={portalData.gallery?.albumImages || []}
           events={portalData.events || []}

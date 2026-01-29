@@ -5,6 +5,9 @@ export interface Project {
   displayPic?: string;
   startDate?: string;
   createdAt?: string;
+  mobileCoverUrl?: string;
+  tabletCoverUrl?: string;
+  desktopCoverUrl?: string;
 }
 
 export interface ClientEvent {
@@ -14,6 +17,9 @@ export interface ClientEvent {
   fromDatetime?: string;
   createdAt?: string;
   coverImage?: string;
+  mobileCoverUrl?: string;
+  tabletCoverUrl?: string;
+  desktopCoverUrl?: string;
 }
 
 export interface ImageData {

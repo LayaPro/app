@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlbumPdfUploadManager, Breadcrumb, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
 import type { AlbumPdfUploadManagerHandle } from '../../components/ui/index.js';
@@ -95,6 +95,9 @@ const Albums = () => {
   const [approvedPhotosCount, setApprovedPhotosCount] = useState(0);
   const [showStatusLegend, setShowStatusLegend] = useState(false);
   const [focusedImageIndex, setFocusedImageIndex] = useState<number>(-1);
+  const [showCoverPreviewModal, setShowCoverPreviewModal] = useState(false);
+  const [selectedCoverDevice, setSelectedCoverDevice] = useState<'mobile' | 'tablet' | 'desktop' | null>(null);
+  const [isSettingCover, setIsSettingCover] = useState(false);
   const [isPreparingImages, setIsPreparingImages] = useState(false);
   const preparingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const uploadAbortRef = useRef(false);
@@ -200,77 +203,6 @@ const Albums = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [openMenuId, showBulkActions, showSortDropdown, showStatusDropdown, showStatusLegend]);
-
-  // Handle Ctrl+A / Cmd+A for selecting all images in gallery
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle Ctrl+A / Cmd+A when in gallery view
-      if ((e.ctrlKey || e.metaKey) && e.key === 'a' && selectedEvent && galleryImages.length > 0) {
-        e.preventDefault();
-        selectAllImages();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedEvent, galleryImages, selectedImages]);
-
-  // Handle arrow key navigation in gallery
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Only handle arrow keys when in gallery view
-      if (!selectedEvent || galleryImages.length === 0) return;
-
-      const sortedImages = getSortedImages(galleryImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus));
-      if (sortedImages.length === 0) return;
-
-      // Arrow key navigation
-      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
-        e.preventDefault();
-
-        let newIndex = focusedImageIndex;
-
-        // Calculate columns based on grid layout (approximate)
-        const gridElement = document.querySelector(`.${styles.imageGrid}`);
-        if (!gridElement) return;
-
-        const gridWidth = gridElement.clientWidth;
-        const imageItemWidth = 200; // approximate min width from grid
-        const columnsPerRow = Math.floor(gridWidth / imageItemWidth);
-
-        switch (e.key) {
-          case 'ArrowRight':
-            newIndex = Math.min(focusedImageIndex + 1, sortedImages.length - 1);
-            break;
-          case 'ArrowLeft':
-            newIndex = Math.max(focusedImageIndex - 1, 0);
-            break;
-          case 'ArrowDown':
-            newIndex = Math.min(focusedImageIndex + columnsPerRow, sortedImages.length - 1);
-            break;
-          case 'ArrowUp':
-            newIndex = Math.max(focusedImageIndex - columnsPerRow, 0);
-            break;
-        }
-
-        // Update focused index
-        setFocusedImageIndex(newIndex);
-
-        // Focus the element
-        const imageElements = document.querySelectorAll(`.${styles.imageItem}`);
-        if (imageElements[newIndex]) {
-          (imageElements[newIndex] as HTMLElement).focus();
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selectedEvent, galleryImages, selectedImages, focusedImageIndex, selectedStatus]);
 
   // Hide preparing state when images are added
   useEffect(() => {
@@ -983,6 +915,59 @@ const Albums = () => {
     setShowBulkActions(false);
   };
 
+  const handleSetCover = (device: 'mobile' | 'tablet' | 'desktop') => {
+    if (selectedImages.size !== 1) return;
+    setSelectedCoverDevice(device);
+    setShowCoverPreviewModal(true);
+    setShowBulkActions(false);
+  };
+
+  const confirmSetCover = async () => {
+    if (!selectedProject || !selectedCoverDevice || selectedImages.size !== 1) return;
+    
+    setIsSettingCover(true);
+    try {
+      const imageId = Array.from(selectedImages)[0];
+      const image = galleryImages.find(img => img.imageId === imageId);
+      if (!image) throw new Error('Image not found');
+
+      const coverUrl = image.originalUrl;
+      const fieldMap = {
+        mobile: 'mobileCoverUrl',
+        tablet: 'tabletCoverUrl',
+        desktop: 'desktopCoverUrl'
+      };
+
+      await projectApi.update(selectedProject.projectId, {
+        [fieldMap[selectedCoverDevice]]: coverUrl
+      });
+
+      // Update the local project state with the new cover URL
+      setProjects(prevProjects => 
+        prevProjects.map(p => 
+          p.projectId === selectedProject.projectId
+            ? { ...p, [fieldMap[selectedCoverDevice]]: coverUrl }
+            : p
+        )
+      );
+
+      // Update the selected project state as well
+      setSelectedProject(prev => 
+        prev ? { ...prev, [fieldMap[selectedCoverDevice]]: coverUrl } : prev
+      );
+      
+      showToast('success', `${selectedCoverDevice.charAt(0).toUpperCase() + selectedCoverDevice.slice(1)} cover image set successfully`);
+      setShowCoverPreviewModal(false);
+      setSelectedCoverDevice(null);
+      setSelectedImages(new Set());
+    } catch (error) {
+      console.error('Error setting cover:', error);
+      showToast('error', 'Failed to set cover image');
+    } finally {
+      setIsSettingCover(false);
+    }
+  };
+
   const handleViewComment = (comment: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setViewingComment(comment || 'No comment provided');
@@ -1403,24 +1388,26 @@ const Albums = () => {
     }
   };
 
-  const handleSelectImage = (imageId: string) => {
-    const newSelected = new Set(selectedImages);
-    if (newSelected.has(imageId)) {
-      newSelected.delete(imageId);
-    } else {
-      newSelected.add(imageId);
-    }
-    setSelectedImages(newSelected);
-  };
+  const handleSelectImage = useCallback((imageId: string) => {
+    setSelectedImages(prev => {
+      const newSelected = new Set(prev);
+      if (newSelected.has(imageId)) {
+        newSelected.delete(imageId);
+      } else {
+        newSelected.add(imageId);
+      }
+      return newSelected;
+    });
+  }, []);
 
-  const selectAllImages = () => {
+  const selectAllImages = useCallback(() => {
     const eventImages = galleryImages;
     if (selectedImages.size === eventImages.length) {
       setSelectedImages(new Set());
     } else {
       setSelectedImages(new Set(eventImages.map(img => img.imageId)));
     }
-  };
+  }, [galleryImages, selectedImages.size]);
 
   const filteredItems = useMemo(() => {
     const items = selectedProject ? events : projects;
@@ -1492,6 +1479,11 @@ const Albums = () => {
 
   const getEventImageCount = (clientEventId: string) => {
     return allImages.filter(image => image.clientEventId === clientEventId).length;
+  };
+
+  const getFirstEventImage = (clientEventId: string) => {
+    const eventImages = allImages.filter(image => image.clientEventId === clientEventId);
+    return eventImages.length > 0 ? eventImages[0] : null;
   };
 
   const getTimeAgo = (date: string | undefined) => {
@@ -1949,6 +1941,66 @@ const Albums = () => {
                     </button>
                   )}
                   
+                  {/* Set Cover with Submenu */}
+                  {selectedImages.size === 1 && (
+                    <div className={styles.setCoverContainer}>
+                      <button 
+                        className={styles.dropdownItem}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        <span>Set Cover</span>
+                        <svg style={{ marginLeft: 'auto' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </button>
+
+                      {/* Submenu - shows on hover */}
+                      <div className={styles.submenu}>
+                        <button
+                          className={styles.submenuItem}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetCover('mobile');
+                          }}
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          Mobile
+                        </button>
+                        <button
+                          className={styles.submenuItem}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetCover('tablet');
+                          }}
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                          </svg>
+                          Tablet
+                        </button>
+                        <button
+                          className={styles.submenuItem}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSetCover('desktop');
+                          }}
+                        >
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                          </svg>
+                          Desktop
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   <button 
                     className={styles.dropdownItem}
                     onClick={(e) => {
@@ -2285,14 +2337,9 @@ const Albums = () => {
 
         <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
           {isLoadingGallery ? (
-            <>
-              {Array.from({ length: 12 }).map((_, index) => (
-                <div key={`skeleton-${index}`} className={styles.imageItemSkeleton}>
-                  <div className={styles.skeletonImage}></div>
-                  <div className={styles.skeletonName}></div>
-                </div>
-              ))}
-            </>
+            <div style={{ gridColumn: '1 / -1', padding: '3rem', display: 'flex', justifyContent: 'center' }}>
+              <DotLoader text="Loading gallery..." />
+            </div>
           ) : eventImages.length === 0 ? (
             <div className={styles.emptyGallery}>
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2302,12 +2349,9 @@ const Albums = () => {
             </div>
           ) : isLoadingGalleryPreviews ? (
             <>
-              {eventImages.map((image) => (
-                <div key={image.imageId} className={styles.imageItemSkeleton}>
-                  <div className={styles.skeletonImage}></div>
-                  <div className={styles.skeletonName}></div>
-                </div>
-              ))}
+              <div style={{ gridColumn: '1 / -1', padding: '3rem', display: 'flex', justifyContent: 'center' }}>
+                <DotLoader text="Loading gallery..." />
+              </div>
               <div style={{ display: 'none' }}>
                 {eventImages.map((image) => (
                   <img 
@@ -2336,17 +2380,6 @@ const Albums = () => {
                 onDragEnd={handleDragEnd}
                 onClick={() => handleSelectImage(image.imageId)}
                 onDoubleClick={() => handleOpenViewer(index)}
-                onFocus={() => setFocusedImageIndex(index)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleSelectImage(image.imageId);
-                  } else if (e.key === ' ') {
-                    e.preventDefault();
-                    // Shift+Space or just Space both toggle selection
-                    handleSelectImage(image.imageId);
-                  }
-                }}
               >
                 <button 
                   className={styles.imageDownloadButton}
@@ -2669,6 +2702,78 @@ const Albums = () => {
             </div>
           </div>
         )}
+
+        {/* Cover Preview Modal */}
+        {showCoverPreviewModal && (() => {
+          const imageId = Array.from(selectedImages)[0];
+          const image = galleryImages.find(img => img.imageId === imageId);
+          const imageUrl = image?.originalUrl || '';
+          
+          return imageUrl ? (
+            <Modal
+              isOpen={showCoverPreviewModal}
+              onClose={() => {
+                setShowCoverPreviewModal(false);
+                setSelectedCoverDevice(null);
+              }}
+              title={`Set ${selectedCoverDevice?.charAt(0).toUpperCase()}${selectedCoverDevice?.slice(1)} Cover`}
+              size="large"
+            >
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'center', 
+                  alignItems: 'center',
+                  maxHeight: '70vh',
+                  overflow: 'hidden'
+                }}>
+                  <img 
+                    src={imageUrl} 
+                    alt="Cover preview" 
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: '70vh', 
+                      objectFit: 'contain'
+                    }} 
+                  />
+                </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                  <button
+                    onClick={() => {
+                      setShowCoverPreviewModal(false);
+                      setSelectedCoverDevice(null);
+                    }}
+                    style={{
+                      padding: '8px 16px',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '6px',
+                      background: 'var(--bg-secondary)',
+                      color: 'var(--text-primary)',
+                      cursor: 'pointer'
+                    }}
+                    disabled={isSettingCover}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmSetCover}
+                    style={{
+                      padding: '8px 16px',
+                      border: 'none',
+                      borderRadius: '6px',
+                      background: 'var(--color-primary)',
+                      color: 'white',
+                      cursor: 'pointer'
+                    }}
+                    disabled={isSettingCover}
+                  >
+                    {isSettingCover ? 'Setting...' : 'Confirm'}
+                  </button>
+                </div>
+              </div>
+            </Modal>
+          ) : null;
+        })()}
       </div>
     );
   }
@@ -2790,7 +2895,7 @@ const Albums = () => {
                   >
                     <div className={styles.cardImage} onClick={() => handleProjectClick(project)}>
                       <img
-                        src={project.coverPhoto || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
+                        src={project.desktopCoverUrl || project.coverPhoto || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
                         alt={project.projectName}
                         onLoad={(e) => e.currentTarget.classList.add('loaded')}
                       />
@@ -2951,7 +3056,10 @@ const Albums = () => {
                   >
                     <div className={styles.cardImage}>
                       <img
-                        src={eventItem.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
+                        src={
+                          getFirstEventImage(eventItem.clientEventId)?.compressedUrl || 
+                          'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'
+                        }
                         alt={eventTypes.get(eventItem.eventId)?.eventDesc || 'Event'}
                         onLoad={(e) => e.currentTarget.classList.add('loaded')}
                       />

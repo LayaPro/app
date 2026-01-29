@@ -60,7 +60,7 @@ export const EventsView: React.FC<EventsViewProps> = ({
           >
           <div className={styles.cardImage}>
             <img
-              src={event.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
+              src={event.desktopCoverUrl || event.coverImage || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
               alt={eventTypes.get(event.eventId)?.eventDesc || 'Event'}
             />
           </div>
