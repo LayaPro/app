@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import type { ClientEvent } from '@/types/shared';
 import {
   DAY_NAMES,
@@ -6,6 +7,7 @@ import {
   isToday,
   getEventColor,
 } from '../../../utils/calendar';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import styles from '../Calendar.module.css';
 
 interface WeekViewProps {
@@ -13,8 +15,9 @@ interface WeekViewProps {
   events: ClientEvent[];
   eventTypes: Map<string, { eventDesc: string; eventAlias?: string }>;
   projects: Map<string, { projectName: string }>;
-  onEventClick: (event: ClientEvent) => void;
-}
+  onEventClick: (event: ClientEvent) => void;  onPrevWeek?: () => void;
+  onNextWeek?: () => void;
+  onDateChange?: (date: Date) => void;}
 
 interface EventWithPosition extends ClientEvent {
   top: number;
@@ -31,9 +34,54 @@ export const WeekView: React.FC<WeekViewProps> = ({
   eventTypes,
   projects,
   onEventClick,
+  onPrevWeek,
+  onNextWeek,
+  onDateChange,
 }) => {
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState('');
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  const prevWeekRef = useRef<Date>(weekStart);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const HOUR_HEIGHT = 64; // pixels per hour
   const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+  // Handle click outside to close date picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+        setDatePickerValue('');
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDatePicker]);
+
+  // Track animation direction based on weekStart changes
+  useEffect(() => {
+    const prevWeek = prevWeekRef.current;
+    if (prevWeek.getTime() !== weekStart.getTime()) {
+      // Determine animation direction
+      if (weekStart > prevWeek) {
+        setAnimationDirection('right'); // Next week - slide from right
+      } else {
+        setAnimationDirection('left'); // Prev week - slide from left
+      }
+      
+      prevWeekRef.current = weekStart;
+      
+      // Reset animation after it completes
+      const timer = setTimeout(() => {
+        setAnimationDirection(null);
+      }, 400);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [weekStart]);
 
   // Get events for each day of the week with column positioning for overlaps
   const getEventsForDay = (dayIndex: number): EventWithPosition[] => {
@@ -124,6 +172,67 @@ export const WeekView: React.FC<WeekViewProps> = ({
 
   return (
     <div className={styles.weekView}>
+      {/* Week Navigation Header */}
+      {(onPrevWeek || onNextWeek || onDateChange) && (
+        <div className={styles.desktopMonthHeader}>
+          {onPrevWeek && (
+            <button 
+              className={styles.desktopNavButton}
+              onClick={onPrevWeek}
+              aria-label="Previous week"
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div style={{ position: 'relative', flex: 1 }}>
+            <h2 
+              className={styles.desktopMonthTitle}
+              onClick={() => onDateChange && setShowDatePicker(!showDatePicker)}
+              style={{ cursor: onDateChange ? 'pointer' : 'default' }}
+            >
+              {weekStart.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })} - {addDays(weekStart, 6).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+            </h2>
+            {showDatePicker && onDateChange && (
+              <div ref={datePickerRef} style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: '8px',
+                zIndex: 1000,
+                minWidth: '300px',
+              }}>
+                <DatePicker
+                  value={datePickerValue}
+                  onChange={(value) => {
+                    if (value) {
+                      onDateChange(new Date(value));
+                      setShowDatePicker(false);
+                      setDatePickerValue('');
+                    }
+                  }}
+                  placeholder="Select date to navigate"
+                  allowPast={true}
+                />
+              </div>
+            )}
+          </div>
+          {onNextWeek && (
+            <button 
+              className={styles.desktopNavButton}
+              onClick={onNextWeek}
+              aria-label="Next week"
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header with day names and dates */}
       <div className={styles.weekHeader}>
         <div className={styles.weekTimeLabel}>TIME</div>
@@ -132,10 +241,12 @@ export const WeekView: React.FC<WeekViewProps> = ({
             const dayDate = addDays(weekStart, dayIndex);
             const isTodayCell = isToday(dayDate);
             const dayEventCount = getEventsForDay(dayIndex).length;
+            const animationClass = animationDirection === 'left' ? styles.slideFromLeft : 
+                                   animationDirection === 'right' ? styles.slideFromRight : '';
             return (
               <div
                 key={dayIndex}
-                className={`${styles.weekDayHeader} ${isTodayCell ? styles.today : ''}`}
+                className={`${styles.weekDayHeader} ${isTodayCell ? styles.today : ''} ${animationClass}`}
               >
                 <span className={styles.weekDayName}>
                   {DAY_NAMES[dayDate.getDay()]}
@@ -167,9 +278,11 @@ export const WeekView: React.FC<WeekViewProps> = ({
             const dayEvents = getEventsForDay(dayIndex);
             const maxColumns = Math.max(...dayEvents.map(e => e.totalColumns), 1);
             const needsScroll = maxColumns > 1;
+            const animationClass = animationDirection === 'left' ? styles.slideFromLeft : 
+                                   animationDirection === 'right' ? styles.slideFromRight : '';
 
             return (
-              <div key={dayIndex} className={styles.weekDayColumn} style={{ 
+              <div key={dayIndex} className={`${styles.weekDayColumn} ${animationClass}`} style={{ 
                 overflowX: needsScroll ? 'auto' : 'visible',
                 overflowY: 'visible'
               }}>

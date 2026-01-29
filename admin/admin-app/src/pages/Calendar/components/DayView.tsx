@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from 'react';
 import type { ClientEvent } from '@/types/shared';
 import {
   formatDateString,
@@ -5,6 +6,7 @@ import {
   MONTH_NAMES,
   getEventColor,
 } from '../../../utils/calendar';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import styles from '../Calendar.module.css';
 
 interface DayViewProps {
@@ -12,8 +14,9 @@ interface DayViewProps {
   events: ClientEvent[];
   eventTypes: Map<string, { eventDesc: string; eventAlias?: string }>;
   projects: Map<string, { projectName: string }>;
-  onEventClick: (event: ClientEvent) => void;
-}
+  onEventClick: (event: ClientEvent) => void;  onPrevDay?: () => void;
+  onNextDay?: () => void;
+  onDateChange?: (date: Date) => void;}
 
 interface EventWithPosition extends ClientEvent {
   top: number;
@@ -30,9 +33,54 @@ export const DayView: React.FC<DayViewProps> = ({
   eventTypes,
   projects,
   onEventClick,
+  onPrevDay,
+  onNextDay,
+  onDateChange,
 }) => {
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState('');
+  const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
+  const prevDateRef = useRef<Date>(currentDate);
+  const datePickerRef = useRef<HTMLDivElement>(null);
   const HOUR_HEIGHT = 64; // pixels per hour
   const HOURS = Array.from({ length: 24 }, (_, i) => i);
+
+  // Handle click outside to close date picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+        setDatePickerValue('');
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDatePicker]);
+
+  // Track animation direction based on currentDate changes
+  useEffect(() => {
+    const prevDate = prevDateRef.current;
+    if (prevDate.getTime() !== currentDate.getTime()) {
+      // Determine animation direction
+      if (currentDate > prevDate) {
+        setAnimationDirection('right'); // Next day - slide from right
+      } else {
+        setAnimationDirection('left'); // Prev day - slide from left
+      }
+      
+      prevDateRef.current = currentDate;
+      
+      // Reset animation after it completes
+      const timer = setTimeout(() => {
+        setAnimationDirection(null);
+      }, 400);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [currentDate]);
 
   // Get events for the current day with overlap detection
   const getEventsWithPosition = (): EventWithPosition[] => {
@@ -128,10 +176,71 @@ export const DayView: React.FC<DayViewProps> = ({
 
   return (
     <div className={styles.dayView}>
+      {/* Day Navigation Header */}
+      {(onPrevDay || onNextDay || onDateChange) && (
+        <div className={styles.desktopMonthHeader}>
+          {onPrevDay && (
+            <button 
+              className={styles.desktopNavButton}
+              onClick={onPrevDay}
+              aria-label="Previous day"
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          <div style={{ position: 'relative', flex: 1 }}>
+            <h2 
+              className={styles.desktopMonthTitle}
+              onClick={() => onDateChange && setShowDatePicker(!showDatePicker)}
+              style={{ cursor: onDateChange ? 'pointer' : 'default' }}
+            >
+              {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getDate()}, {currentDate.getFullYear()}
+            </h2>
+            {showDatePicker && onDateChange && (
+              <div ref={datePickerRef} style={{
+                position: 'absolute',
+                top: '100%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                marginTop: '8px',
+                zIndex: 1000,
+                minWidth: '300px',
+              }}>
+                <DatePicker
+                  value={datePickerValue}
+                  onChange={(value) => {
+                    if (value) {
+                      onDateChange(new Date(value));
+                      setShowDatePicker(false);
+                      setDatePickerValue('');
+                    }
+                  }}
+                  placeholder="Select date to navigate"
+                  allowPast={true}
+                />
+              </div>
+            )}
+          </div>
+          {onNextDay && (
+            <button 
+              className={styles.desktopNavButton}
+              onClick={onNextDay}
+              aria-label="Next day"
+            >
+              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Header with date */}
       <div className={styles.dayHeader}>
         <div className={styles.weekTimeLabel}>TIME</div>
-        <div className={styles.dayViewDateHeader}>
+        <div className={`${styles.dayViewDateHeader} ${animationDirection === 'left' ? styles.slideFromLeft : animationDirection === 'right' ? styles.slideFromRight : ''}`}>
           <div className={styles.dayViewDate}>
             {MONTH_NAMES[currentDate.getMonth()]} {currentDate.getDate()}, {currentDate.getFullYear()}
           </div>
@@ -156,7 +265,7 @@ export const DayView: React.FC<DayViewProps> = ({
         </div>
 
         {/* Day column */}
-        <div className={styles.dayGrid}>
+        <div className={`${styles.dayGrid} ${animationDirection === 'left' ? styles.slideFromLeft : animationDirection === 'right' ? styles.slideFromRight : ''}`}>
           <div style={{ 
             minWidth: needsScroll ? `${maxColumns * 200}px` : '100%',
             position: 'relative'

@@ -218,7 +218,7 @@
 .modeButtonActive {
   border-color: #6366f1;
   background: rgba(99, 102, 241, 0.08);
-  color: #111827;
+  color: var(--text-primary);
 }
 
 .perEventSection {

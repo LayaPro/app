@@ -2388,6 +2388,18 @@ const Albums = () => {
       <div className={styles.header}>
         <div className={styles.filterSection}>
           <div className={styles.filtersLeft}>
+            {/* Back button when viewing events */}
+            {selectedProject && !selectedEvent && !showVideosView && (
+              <button
+                className={styles.backButton}
+                onClick={handleBackToProjects}
+              >
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+                <span>Back to Projects</span>
+              </button>
+            )}
             {/* Search */}
             {!showVideosView && (
               <Input

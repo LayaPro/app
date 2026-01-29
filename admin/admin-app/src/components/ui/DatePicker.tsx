@@ -13,6 +13,7 @@ interface DatePickerProps {
   timeValue?: string;
   onTimeChange?: (value: string) => void;
   info?: string;
+  allowPast?: boolean;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -27,6 +28,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   timeValue = '',
   onTimeChange,
   info,
+  allowPast = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -200,8 +202,8 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
     const isToday = todayStr === dateStr;
     
-    // Disable past dates and dates before minDate
-    const isDisabled = dateStr < todayStr || !!(minDate && dateStr < minDate);
+    // Disable past dates (if allowPast is false) and dates before minDate
+    const isDisabled = (!allowPast && dateStr < todayStr) || !!(minDate && dateStr < minDate);
 
     days.push(
       <button

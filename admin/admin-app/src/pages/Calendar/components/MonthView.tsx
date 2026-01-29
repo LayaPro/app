@@ -10,6 +10,7 @@ import {
   formatTimeString,
 } from '../../../utils/calendar';
 import { DayEventsModal } from './DayEventsModal';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import styles from '../Calendar.module.css';
 
 interface MonthViewProps {
@@ -43,34 +44,64 @@ export const MonthView: React.FC<MonthViewProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedDayEvents, setSelectedDayEvents] = useState<ClientEvent[]>([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [datePickerValue, setDatePickerValue] = useState('');
   const [animationDirection, setAnimationDirection] = useState<'left' | 'right' | null>(null);
   const prevDateRef = useRef<Date>(currentDate);
+  const datePickerRef = useRef<HTMLDivElement>(null);
+  const isAnimatingRef = useRef(false);
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
   const firstDay = getFirstDayOfMonth(year, month);
   const daysInMonth = getDaysInMonth(year, month);
   const prevMonthDays = getDaysInMonth(year, month - 1);
 
+  // Handle click outside to close date picker
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+        setDatePickerValue('');
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showDatePicker]);
+
   // Track animation direction based on currentDate changes
   useEffect(() => {
     const prevDate = prevDateRef.current;
-    if (prevDate.getTime() !== currentDate.getTime()) {
-      // Determine animation direction
-      if (currentDate > prevDate) {
-        setAnimationDirection('right'); // Next month - slide from right
-      } else {
-        setAnimationDirection('left'); // Prev month - slide from left
-      }
-      
-      // Reset animation after it completes
-      const timer = setTimeout(() => {
-        setAnimationDirection(null);
-      }, 400);
-      
+    const dateChanged = prevDate.getTime() !== currentDate.getTime();
+    
+    if (!dateChanged) return;
+    
+    // If already animating, just update the ref and skip animation
+    if (isAnimatingRef.current) {
       prevDateRef.current = currentDate;
-      
-      return () => clearTimeout(timer);
+      return;
     }
+    
+    // Start animation
+    isAnimatingRef.current = true;
+    
+    // Determine animation direction
+    if (currentDate > prevDate) {
+      setAnimationDirection('right');
+    } else {
+      setAnimationDirection('left');
+    }
+    
+    prevDateRef.current = currentDate;
+    
+    // Reset animation after it completes
+    const timer = setTimeout(() => {
+      setAnimationDirection(null);
+      isAnimatingRef.current = false;
+    }, 400);
+    
+    return () => clearTimeout(timer);
   }, [currentDate]);
 
   const handleShowAllEvents = (date: Date, dayEvents: ClientEvent[], e: React.MouseEvent) => {
@@ -211,34 +242,29 @@ export const MonthView: React.FC<MonthViewProps> = ({
                 {currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </h2>
               {showDatePicker && onMonthChange && (
-                <input
-                  type="month"
-                  value={`${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}`}
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      const [year, month] = e.target.value.split('-');
-                      onMonthChange(new Date(parseInt(year), parseInt(month) - 1, 1));
-                      setShowDatePicker(false);
-                    }
-                  }}
-                  onBlur={() => setShowDatePicker(false)}
-                  autoFocus
-                  style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    marginTop: '8px',
-                    padding: '8px 12px',
-                    border: '1px solid var(--color-primary)',
-                    borderRadius: '8px',
-                    backgroundColor: 'var(--bg-primary)',
-                    color: 'var(--text-primary)',
-                    fontSize: '16px',
-                    cursor: 'pointer',
-                    zIndex: 100
-                  }}
-                />
+                <div ref={datePickerRef} style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  marginTop: '8px',
+                  zIndex: 1000,
+                  minWidth: '300px',
+                }}>
+                  <DatePicker
+                    value={datePickerValue}
+                    onChange={(value) => {
+                      if (value) {
+                        const selectedDate = new Date(value);
+                        onMonthChange(new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
+                        setShowDatePicker(false);
+                        setDatePickerValue('');
+                      }
+                    }}
+                    placeholder="Select date to navigate"
+                    allowPast={true}
+                  />
+                </div>
               )}
             </div>
             {onNextMonth && (

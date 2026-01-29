@@ -4,6 +4,7 @@ import type { ClientEvent } from '@/types/shared';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { SearchableSelect, DatePicker, Modal, Button } from '../../../components/ui';
+import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { getEventColor } from '../../../utils/calendar';
 import { clientEventApi } from '../../../services/api';
 import styles from '../Calendar.module.css';
@@ -15,6 +16,7 @@ interface ListViewProps {
   teamMembers: Map<string, { firstName: string; lastName: string }>;
   eventDeliveryStatuses: Map<string, { statusCode: string; statusDescription: string; step: number }>;
   onEventClick: (event: ClientEvent) => void;
+  onEventDelete?: (eventId: string) => void;
   onStatusChange?: () => void;
   initialProjectFilter?: string;
 }
@@ -26,6 +28,7 @@ export const ListView: React.FC<ListViewProps> = ({
   teamMembers,
   eventDeliveryStatuses,
   onEventClick,
+  onEventDelete,
   onStatusChange,
   initialProjectFilter = '',
 }) => {
@@ -45,6 +48,8 @@ export const ListView: React.FC<ListViewProps> = ({
   const [newStatusId, setNewStatusId] = useState('');
   const [statusError, setStatusError] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<ClientEvent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Get avatar colors based on project name
@@ -74,7 +79,19 @@ export const ListView: React.FC<ListViewProps> = ({
     return colors[Math.abs(hash) % colors.length];
   };
 
+  const confirmDelete = async () => {
+    if (!eventToDelete || !onEventDelete) return;
 
+    try {
+      setIsDeleting(true);
+      onEventDelete(eventToDelete.clientEventId);
+      setEventToDelete(null);
+    } catch (error) {
+      console.error('Error deleting event:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   // Filter events
   const filteredEvents = useMemo(() => {
@@ -444,6 +461,26 @@ export const ListView: React.FC<ListViewProps> = ({
                   </svg>
                   Visit album
                 </button>
+                {/* Only show delete for scheduled status */}
+                {(() => {
+                  const eventStatus = eventDeliveryStatuses.get(event.eventDeliveryStatusId);
+                  const isScheduled = eventStatus?.statusCode?.toLowerCase() === 'scheduled';
+                  return isScheduled && onEventDelete ? (
+                    <button 
+                      className={`${styles.actionsDropdownItem} ${styles.actionsDropdownItemDanger}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEventToDelete(event);
+                        setOpenActionDropdown(null);
+                      }}
+                    >
+                      <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                      Delete
+                    </button>
+                  ) : null;
+                })()}
                 </div>
               </>,
               document.body
@@ -597,6 +634,7 @@ export const ListView: React.FC<ListViewProps> = ({
                 onChange={setDateFrom}
                 placeholder="From Date"
                 includeTime={false}
+                allowPast={true}
               />
             </div>
 
@@ -606,6 +644,7 @@ export const ListView: React.FC<ListViewProps> = ({
                 onChange={setDateTo}
                 placeholder="To Date"
                 includeTime={false}
+                allowPast={true}
               />
             </div>
 
@@ -983,6 +1022,23 @@ export const ListView: React.FC<ListViewProps> = ({
           </div>
         )}
       </Modal>
+
+      <ConfirmationModal
+        isOpen={!!eventToDelete}
+        onClose={() => setEventToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Event"
+        message={
+          eventToDelete ? (
+            <>
+              Are you sure you want to delete <strong>{eventTypes.get(eventToDelete.eventId)?.eventDesc || 'this event'}</strong> for <strong>{projects.get(eventToDelete.projectId)?.projectName || 'Unknown Project'}</strong>? This action cannot be undone.
+            </>
+          ) : null
+        }
+        confirmText="Delete"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 };

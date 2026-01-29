@@ -260,18 +260,18 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                 return (
                   <div key={mapping.id} style={{
                     padding: '0.875rem',
-                    border: '2px solid #e5e7eb',
+                    border: '2px solid var(--border-color)',
                     borderRadius: '0.5rem',
                     marginBottom: '0.75rem',
-                    background: '#fafafa',
+                    background: 'var(--bg-secondary)',
                     transition: 'all 0.2s ease',
-                    boxShadow: '0 1px 2px rgba(0,0,0,0.04)'
+                    boxShadow: 'var(--shadow-sm)'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem' }}>
                       <div style={{ 
                         fontWeight: 700, 
                         fontSize: '0.875rem',
-                        color: '#1f2937',
+                        color: 'var(--text-primary)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '0.375rem'
@@ -294,7 +294,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                             fontSize: '0.8rem',
                             border: '1.5px solid #ef4444',
                             borderRadius: '0.375rem',
-                            background: 'white',
+                            background: 'var(--bg-primary)',
                             color: '#ef4444',
                             cursor: isUploading || isChecking ? 'not-allowed' : 'pointer',
                             fontWeight: 600,
@@ -308,7 +308,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                             }
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.background = 'white';
+                            e.currentTarget.style.background = 'var(--bg-primary)';
                             e.currentTarget.style.color = '#ef4444';
                           }}
                         >
@@ -323,7 +323,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                         marginBottom: '0.4rem', 
                         fontWeight: 600, 
                         fontSize: '0.8rem',
-                        color: '#374151'
+                        color: 'var(--text-primary)'
                       }}>
                         Select Events
                       </label>
@@ -341,7 +341,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                         marginBottom: '0.4rem', 
                         fontWeight: 600, 
                         fontSize: '0.8rem',
-                        color: '#374151'
+                        color: 'var(--text-primary)'
                       }}>
                         Upload PDF File
                       </label>
@@ -362,9 +362,9 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                             justifyContent: 'center',
                             gap: '0.5rem',
                             padding: '0.625rem',
-                            border: mapping.file ? '2px solid #10b981' : '2px dashed #d1d5db',
+                            border: mapping.file ? '2px solid #10b981' : '2px dashed var(--border-color)',
                             borderRadius: '0.375rem',
-                            background: mapping.file ? '#f0fdf4' : 'white',
+                            background: mapping.file ? 'rgba(16, 185, 129, 0.1)' : 'var(--bg-primary)',
                             cursor: isUploading || isChecking ? 'not-allowed' : 'pointer',
                             transition: 'all 0.2s ease',
                             opacity: isUploading || isChecking ? 0.6 : 1
@@ -372,13 +372,13 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                           onMouseEnter={(e) => {
                             if (!isUploading && !isChecking && !mapping.file) {
                               e.currentTarget.style.borderColor = '#6366f1';
-                              e.currentTarget.style.background = '#f5f3ff';
+                              e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)';
                             }
                           }}
                           onMouseLeave={(e) => {
                             if (!mapping.file) {
-                              e.currentTarget.style.borderColor = '#d1d5db';
-                              e.currentTarget.style.background = 'white';
+                              e.currentTarget.style.borderColor = 'var(--border-color)';
+                              e.currentTarget.style.background = 'var(--bg-primary)';
                             }
                           }}
                         >
@@ -390,10 +390,10 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                                 <path d="M9 15l2 2 4-4"></path>
                               </svg>
                               <div style={{ flex: 1, textAlign: 'left' }}>
-                                <div style={{ fontWeight: 600, color: '#047857', fontSize: '0.8rem' }}>
+                                <div style={{ fontWeight: 600, color: '#10b981', fontSize: '0.8rem' }}>
                                   {mapping.file.name}
                                 </div>
-                                <div style={{ fontSize: '0.7rem', color: '#6b7280', marginTop: '0.125rem' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '0.125rem' }}>
                                   {(mapping.file.size / (1024 * 1024)).toFixed(2)} MB
                                 </div>
                               </div>
@@ -403,16 +403,16 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                             </>
                           ) : (
                             <>
-                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ color: 'var(--text-tertiary)' }}>
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                                 <polyline points="17 8 12 3 7 8"></polyline>
                                 <line x1="12" y1="3" x2="12" y2="15"></line>
                               </svg>
                               <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontWeight: 600, color: '#6b7280', fontSize: '0.8rem' }}>
+                                <div style={{ fontWeight: 600, color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
                                   Click to browse or drag file here
                                 </div>
-                                <div style={{ fontSize: '0.7rem', color: '#9ca3af', marginTop: '0.125rem' }}>
+                                <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '0.125rem' }}>
                                   PDF files only, max {MAX_SIZE_MB}MB
                                 </div>
                               </div>
@@ -456,7 +456,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                 padding: '0.625rem',
                 border: '2px solid #6366f1',
                 borderRadius: '0.5rem',
-                background: 'linear-gradient(to right, #f5f3ff, #faf5ff)',
+                background: 'transparent',
                 color: '#6366f1',
                 cursor: (isUploading || isChecking || pdfMappings.flatMap(m => m.eventIds).length >= events.length) ? 'not-allowed' : 'pointer',
                 width: '100%',
@@ -472,14 +472,14 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
               }}
               onMouseEnter={(e) => {
                 if (!isUploading && !isChecking && pdfMappings.flatMap(m => m.eventIds).length < events.length) {
-                  e.currentTarget.style.background = 'linear-gradient(to right, #eef2ff, #f5f3ff)';
+                  e.currentTarget.style.background = 'rgba(99, 102, 241, 0.08)';
                   e.currentTarget.style.borderColor = '#4f46e5';
                   e.currentTarget.style.transform = 'translateY(-1px)';
                   e.currentTarget.style.boxShadow = '0 2px 8px rgba(99, 102, 241, 0.15)';
                 }
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'linear-gradient(to right, #f5f3ff, #faf5ff)';
+                e.currentTarget.style.background = 'transparent';
                 e.currentTarget.style.borderColor = '#6366f1';
                 e.currentTarget.style.transform = 'translateY(0)';
                 e.currentTarget.style.boxShadow = 'none';
@@ -497,10 +497,10 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                 disabled={isUploading || isChecking}
                 style={{
                   padding: '0.5rem 1rem',
-                  border: '2px solid #d1d5db',
+                  border: '2px solid var(--border-color)',
                   borderRadius: '0.375rem',
-                  background: 'white',
-                  color: '#374151',
+                  background: 'var(--bg-primary)',
+                  color: 'var(--text-primary)',
                   fontWeight: 600,
                   fontSize: '0.825rem',
                   cursor: (isUploading || isChecking) ? 'not-allowed' : 'pointer',
@@ -509,13 +509,13 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                 }}
                 onMouseEnter={(e) => {
                   if (!isUploading && !isChecking) {
-                    e.currentTarget.style.background = '#f9fafb';
-                    e.currentTarget.style.borderColor = '#9ca3af';
+                    e.currentTarget.style.background = 'var(--bg-hover)';
+                    e.currentTarget.style.borderColor = 'var(--text-tertiary)';
                   }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                  e.currentTarget.style.borderColor = '#d1d5db';
+                  e.currentTarget.style.background = 'var(--bg-primary)';
+                  e.currentTarget.style.borderColor = 'var(--border-color)';
                 }}
               >
                 Cancel
@@ -527,7 +527,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
                   padding: '0.5rem 1rem',
                   borderRadius: '0.375rem',
                   border: 'none',
-                  background: isUploading || isChecking ? '#9ca3af' : 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                  background: isUploading || isChecking ? 'var(--text-tertiary)' : 'var(--gradient-primary)',
                   color: 'white',
                   fontWeight: 700,
                   fontSize: '0.825rem',
@@ -594,7 +594,7 @@ export const AlbumPdfUploadManager = forwardRef<AlbumPdfUploadManagerHandle, Alb
               onClick={openModal} 
               disabled={isUploading || isChecking}
               style={{
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                background: 'var(--gradient-primary)',
                 boxShadow: '0 4px 14px rgba(99, 102, 241, 0.3)'
               }}
             >

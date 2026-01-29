@@ -214,6 +214,17 @@ const Calendar = () => {
     setIsModalOpen(true);
   };
 
+  const handleDeleteEvent = async (eventId: string) => {
+    try {
+      await clientEventApi.delete(eventId);
+      // Refresh events
+      await fetchData();
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      alert('Failed to delete event. Please try again.');
+    }
+  };
+
   const handleSaveEvent = async (eventData: any) => {
     try {
       if (selectedEvent) {
@@ -229,18 +240,6 @@ const Calendar = () => {
       setSelectedEvent(null);
     } catch (error) {
       console.error('Error saving event:', error);
-      throw error;
-    }
-  };
-
-  const handleDeleteEvent = async (eventId: string) => {
-    try {
-      await clientEventApi.delete(eventId);
-      await fetchData();
-      setIsModalOpen(false);
-      setSelectedEvent(null);
-    } catch (error) {
-      console.error('Error deleting event:', error);
       throw error;
     }
   };
@@ -352,6 +351,9 @@ const Calendar = () => {
             eventTypes={eventTypes}
             projects={projectsMap}
             onEventClick={handleEventClick}
+            onPrevWeek={handlePrevious}
+            onNextWeek={handleNext}
+            onDateChange={handleMonthChange}
           />
         )}
 
@@ -362,6 +364,9 @@ const Calendar = () => {
             eventTypes={eventTypes}
             projects={projectsMap}
             onEventClick={handleEventClick}
+            onPrevDay={handlePrevious}
+            onNextDay={handleNext}
+            onDateChange={handleMonthChange}
           />
         )}
 
@@ -374,6 +379,7 @@ const Calendar = () => {
             eventDeliveryStatuses={statuses}
             onEventClick={handleEventClick}
             onStatusChange={fetchData}
+            onEventDelete={handleDeleteEvent}
             initialProjectFilter={urlProjectId || ''}
           />
         )}
