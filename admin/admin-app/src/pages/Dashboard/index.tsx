@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { dashboardStatsApi } from '../../services/api';
 import { ROUTES, API_BASE_URL } from '../../utils/constants';
+import { MonthlyRevenueChart } from '../../components/charts/MonthlyRevenueChart';
+import { QuickLinks } from '../../components/dashboard/QuickLinks';
 import styles from './Dashboard.module.css';
 import pageStyles from '../Page.module.css';
 
@@ -27,12 +29,18 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  const [monthlySales, setMonthlySales] = useState<any[]>([]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   useEffect(() => {
     fetchDashboardStats();
     fetchUpcomingEvents();
     fetchTeamAssignments();
   }, [location.pathname]); // Refetch when navigating back to dashboard
+
+  useEffect(() => {
+    fetchMonthlySales();
+  }, [selectedYear]);
 
   const fetchDashboardStats = async () => {
     try {
@@ -87,6 +95,28 @@ const Dashboard = () => {
       setTeamMembers(data.teamMembers || []);
     } catch (error) {
       console.error('Error fetching team assignments:', error);
+    }
+  };
+
+  const fetchMonthlySales = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard/monthly-sales?year=${selectedYear}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch monthly sales, status:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Monthly sales data received:', data);
+      setMonthlySales(data.monthlySales || []);
+    } catch (error) {
+      console.error('Error fetching monthly sales:', error);
     }
   };
 
@@ -261,6 +291,20 @@ const Dashboard = () => {
         ))}
       </div>
 
+      {/* Quick Links and Revenue Section */}
+      <div className={styles.bottomSection}>
+        {/* Monthly Revenue Chart */}
+        <div className={styles.revenueSection}>
+          <MonthlyRevenueChart 
+            data={monthlySales}
+            year={selectedYear}
+            onYearChange={setSelectedYear}
+          />
+        </div>
+
+        <QuickLinks />
+      </div>
+
       {/* Events and Upcoming Events Grid */}
       <div className={styles.contentGrid}>
         <div className={styles.eventsPlaceholder}>
@@ -291,7 +335,7 @@ const Dashboard = () => {
           </div>
           <div className={styles.eventsGrid}>
             {upcomingEvents.length > 0 ? (
-              upcomingEvents.map((event, index) => {
+              upcomingEvents.map((event) => {
                 const eventColor = getEventColor(event);
                 return (
                   <div 
@@ -413,7 +457,7 @@ const Dashboard = () => {
           </div>
           <div className={styles.teamGrid}>
             {teamMembers.length > 0 ? (
-              teamMembers.slice(0, 6).map((member, index) => {
+              teamMembers.slice(0, 6).map((member) => {
                 const getInitials = (firstName: string, lastName: string) => {
                   return `${firstName?.[0] || ''}${lastName?.[0] || ''}`;
                 };

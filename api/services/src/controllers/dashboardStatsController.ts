@@ -297,8 +297,86 @@ export const getTeamAssignments = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getMonthlySales = async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.user?.tenantId;
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    const { year } = req.query;
+    const selectedYear = year ? parseInt(year as string) : new Date().getFullYear();
+
+    console.log(`[Monthly Sales] Fetching sales for year ${selectedYear}, tenant: ${tenantId}`);
+
+    // Get all finance records with transactions
+    const finances = await ProjectFinance.find({ tenantId }).lean();
+    console.log(`[Monthly Sales] Found ${finances.length} finance records`);
+
+    // Initialize monthly sales array
+    const monthlySales = Array(12).fill(0).map((_, index) => ({
+      month: new Date(selectedYear, index).toLocaleString('default', { month: 'short' }),
+      revenue: 0,
+      projects: new Set<string>()
+    }));
+
+    let totalTransactionsProcessed = 0;
+
+    // Aggregate data by month from transactions
+    finances.forEach(finance => {
+      if (finance.transactions && finance.transactions.length > 0) {
+        console.log(`[Monthly Sales] Finance ${finance.financeId} has ${finance.transactions.length} transactions`);
+        finance.transactions.forEach(transaction => {
+          if (transaction.nature === 'received') {
+            totalTransactionsProcessed++;
+            const transactionDate = new Date(transaction.datetime);
+            const transactionYear = transactionDate.getFullYear();
+            
+            console.log(`[Monthly Sales] Transaction: ${transaction.transactionId}, amount: ${transaction.amount}, date: ${transactionDate.toISOString()}, year: ${transactionYear}`);
+            
+            if (transactionYear === selectedYear) {
+              const month = transactionDate.getMonth();
+              console.log(`[Monthly Sales] Adding ${transaction.amount} to month ${month} (${monthlySales[month].month})`);
+              monthlySales[month].revenue += transaction.amount || 0;
+              monthlySales[month].projects.add(finance.projectId);
+            }
+          }
+        });
+      }
+    });
+
+    console.log(`[Monthly Sales] Processed ${totalTransactionsProcessed} received transactions`);
+
+    // Convert project sets to counts
+    const finalMonthlySales = monthlySales.map(month => ({
+      month: month.month,
+      revenue: month.revenue,
+      projects: month.projects.size
+    }));
+
+    console.log('[Monthly Sales] Final monthly sales:', JSON.stringify(finalMonthlySales, null, 2));
+
+    // Calculate totals
+    const totalRevenue = finalMonthlySales.reduce((sum, m) => sum + m.revenue, 0);
+    const totalProjects = finalMonthlySales.reduce((sum, m) => sum + m.projects, 0);
+
+    console.log(`[Monthly Sales] Total revenue: ${totalRevenue}, Total projects: ${totalProjects}`);
+
+    return res.status(200).json({
+      year: selectedYear,
+      monthlySales: finalMonthlySales,
+      totalRevenue,
+      totalProjects
+    });
+  } catch (err: any) {
+    console.error('Get monthly sales error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export default {
   getDashboardStats,
   getUpcomingEvents,
-  getTeamAssignments
+  getTeamAssignments,
+  getMonthlySales
 };
