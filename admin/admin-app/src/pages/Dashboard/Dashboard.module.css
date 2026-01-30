@@ -230,6 +230,7 @@
   border: 1px solid var(--border-color);
   border-radius: 1rem;
   padding: 1.5rem;
+  min-height: 500px;
 }
 
 .sectionHeader {

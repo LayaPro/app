@@ -329,6 +329,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
         }
         
         return {
+          clientEventId: event.clientEventId, // Include clientEventId for existing events
           eventId: event.eventId,
           fromDatetime,
           toDatetime,

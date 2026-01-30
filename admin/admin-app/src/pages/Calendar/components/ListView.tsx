@@ -171,7 +171,18 @@ export const ListView: React.FC<ListViewProps> = ({
       sortable: true,
       render: (event) => {
         const eventType = eventTypes.get(event.eventId);
-        const color = getEventColor(new Date(event.fromDatetime!));
+        const eventStatus = eventDeliveryStatuses.get(event.eventDeliveryStatusId || '');
+        
+        // Determine color based on status code, not just date
+        let color: 'green' | 'blue' | 'purple' = 'purple';
+        if (eventStatus?.statusCode === 'SHOOT_IN_PROGRESS') {
+          color = 'blue'; // ongoing
+        } else if (eventStatus?.statusCode === 'SHOOT_COMPLETED' || eventStatus?.statusCode === 'AWAITING_EDITING' || eventStatus?.statusCode === 'DELIVERED') {
+          color = 'green'; // completed
+        } else {
+          color = 'purple'; // scheduled/future
+        }
+        
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{
@@ -231,14 +242,27 @@ export const ListView: React.FC<ListViewProps> = ({
       sortable: true,
       render: (event) => {
         const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId || '');
+        
+        // Determine color based on status code
+        let bgColor = 'rgba(139, 92, 246, 0.1)'; // purple (scheduled/future)
+        let textColor = '#8b5cf6';
+        
+        if (status?.statusCode === 'SHOOT_IN_PROGRESS') {
+          bgColor = 'rgba(59, 130, 246, 0.1)'; // blue (ongoing)
+          textColor = '#3b82f6';
+        } else if (status?.statusCode === 'SHOOT_COMPLETED' || status?.statusCode === 'AWAITING_EDITING' || status?.statusCode === 'DELIVERED') {
+          bgColor = 'rgba(16, 185, 129, 0.1)'; // green (completed)
+          textColor = '#10b981';
+        }
+        
         return (
           <span style={{
             padding: '4px 12px',
             borderRadius: '12px',
             fontSize: '0.75rem',
             fontWeight: 500,
-            backgroundColor: 'rgba(99, 102, 241, 0.1)',
-            color: '#6366f1'
+            backgroundColor: bgColor,
+            color: textColor
           }}>
             {status?.statusDescription || 'No Status'}
           </span>

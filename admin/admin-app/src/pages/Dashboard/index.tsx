@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { dashboardStatsApi, clientEventApi, projectApi } from '../../services/api';
 import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import styles from './Dashboard.module.css';
@@ -22,6 +22,7 @@ interface DashboardStats {
 }
 
 const Dashboard = () => {
+  const location = useLocation();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
@@ -29,7 +30,7 @@ const Dashboard = () => {
   useEffect(() => {
     fetchDashboardStats();
     fetchUpcomingEvents();
-  }, []);
+  }, [location.pathname]); // Refetch when navigating back to dashboard
 
   const fetchDashboardStats = async () => {
     try {
@@ -264,7 +265,7 @@ const Dashboard = () => {
                   d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <h2 className={styles.sectionTitle}>Upcoming Events</h2>
+              <h2 className={styles.sectionTitle}>Upcoming/Ongoing Events</h2>
             </div>
             <Link to={`${ROUTES.CALENDAR}?view=list`} className={styles.viewAllLink}>
               View All →
@@ -356,6 +357,11 @@ const Dashboard = () => {
               })
             ) : (
               <div className={styles.noEvents}>
+                <img 
+                  src="/nodata.svg" 
+                  alt="No events" 
+                  style={{ width: '120px', height: '120px', opacity: 0.5, marginBottom: '16px' }}
+                />
                 <p>No upcoming events in the next 30 days</p>
               </div>
             )}

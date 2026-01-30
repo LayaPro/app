@@ -404,23 +404,48 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       }
     }
 
-    // Get SCHEDULED status for new events
+    // Get event delivery statuses
     const scheduledStatus = await EventDeliveryStatus.findOne({
       tenantId,
       statusCode: 'SCHEDULED'
+    });
+    const shootInProgressStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'SHOOT_IN_PROGRESS'
+    });
+    const awaitingEditingStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'AWAITING_EDITING'
     });
 
     // Create events if provided
     const createdEvents = [];
     if (events && events.length > 0) {
+      const now = new Date();
+      
       for (const eventData of events) {
         const clientEventId = `clientevent_${nanoid()}`;
+        
+        // Determine the correct status based on datetime
+        let statusId = scheduledStatus?.statusId;
+        const fromDatetime = new Date(eventData.fromDatetime);
+        const toDatetime = new Date(eventData.toDatetime);
+        
+        if (toDatetime <= now) {
+          // Event has ended
+          statusId = awaitingEditingStatus?.statusId || scheduledStatus?.statusId;
+        } else if (fromDatetime <= now && toDatetime > now) {
+          // Event is currently in progress
+          statusId = shootInProgressStatus?.statusId || scheduledStatus?.statusId;
+        }
+        // else: Event hasn't started yet, keep SCHEDULED
+        
         const clientEvent = await ClientEvent.create({
           clientEventId,
           tenantId,
           projectId,
           eventId: eventData.eventId,
-          eventDeliveryStatusId: scheduledStatus?.statusId,
+          eventDeliveryStatusId: statusId,
           fromDatetime: eventData.fromDatetime,
           toDatetime: eventData.toDatetime,
           duration: eventData.duration,
@@ -487,34 +512,70 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
       { new: true, runValidators: true }
     );
 
-    // Get SCHEDULED status for new events
+    // Get event delivery statuses
     const scheduledStatus = await EventDeliveryStatus.findOne({
       tenantId,
       statusCode: 'SCHEDULED'
     });
 
-    // Delete existing events and create new ones
+    // Update/Create/Delete events intelligently
     if (events) {
-      await ClientEvent.deleteMany({ projectId });
-      const createdEvents = [];
+      const existingEvents = await ClientEvent.find({ projectId }).lean();
+      const processedEventIds = new Set();
+      
       for (const eventData of events) {
-        const clientEventId = `clientevent_${nanoid()}`;
-        const clientEvent = await ClientEvent.create({
-          clientEventId,
-          tenantId,
-          projectId,
-          eventId: eventData.eventId,
-          eventDeliveryStatusId: scheduledStatus?.statusId,
-          fromDatetime: eventData.fromDatetime,
-          toDatetime: eventData.toDatetime,
-          duration: eventData.duration,
-          venue: eventData.venue,
-          venueMapUrl: eventData.venueMapUrl,
-          city: eventData.city,
-          teamMembersAssigned: eventData.teamMembersAssigned || [],
-          updatedBy: userId,
+        if (eventData.clientEventId) {
+          // Update existing event (preserve its status)
+          processedEventIds.add(eventData.clientEventId);
+          
+          await ClientEvent.findOneAndUpdate(
+            { clientEventId: eventData.clientEventId },
+            {
+              $set: {
+                eventId: eventData.eventId,
+                fromDatetime: eventData.fromDatetime,
+                toDatetime: eventData.toDatetime,
+                duration: eventData.duration,
+                venue: eventData.venue,
+                venueMapUrl: eventData.venueMapUrl,
+                city: eventData.city,
+                teamMembersAssigned: eventData.teamMembersAssigned || [],
+                updatedBy: userId,
+              }
+            }
+          );
+        } else {
+          // Create new event with SCHEDULED status
+          const clientEventId = `clientevent_${nanoid()}`;
+          processedEventIds.add(clientEventId);
+          
+          await ClientEvent.create({
+            clientEventId,
+            tenantId,
+            projectId,
+            eventId: eventData.eventId,
+            eventDeliveryStatusId: scheduledStatus?.statusId,
+            fromDatetime: eventData.fromDatetime,
+            toDatetime: eventData.toDatetime,
+            duration: eventData.duration,
+            venue: eventData.venue,
+            venueMapUrl: eventData.venueMapUrl,
+            city: eventData.city,
+            teamMembersAssigned: eventData.teamMembersAssigned || [],
+            createdBy: userId,
+          });
+        }
+      }
+      
+      // Delete events that are no longer in the list
+      const eventIdsToDelete = existingEvents
+        .filter(e => !processedEventIds.has(e.clientEventId))
+        .map(e => e.clientEventId);
+      
+      if (eventIdsToDelete.length > 0) {
+        await ClientEvent.deleteMany({ 
+          clientEventId: { $in: eventIdsToDelete }
         });
-        createdEvents.push(clientEvent);
       }
     }
 
