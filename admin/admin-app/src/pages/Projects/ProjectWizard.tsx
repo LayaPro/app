@@ -3,6 +3,7 @@ import { Breadcrumb } from '../../components/ui/index.js';
 import { BasicDetailsStep } from './components/BasicDetailsStep';
 import { EventsStep } from './components/EventsStep';
 import { PaymentStep } from './components/PaymentStep';
+import { formatDateLocal, formatTimeLocal } from '../../utils/dateUtils';
 import { ReviewStep } from './components/ReviewStep';
 import { projectApi, eventApi, teamApi } from '../../services/api';
 import { useAppSelector } from '../../store/index.js';
@@ -139,10 +140,10 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
           clientEventId: e.clientEventId,
           eventId: e.eventId,
           eventName: e.eventTitle || e.eventName || e.eventCode || '',
-          fromDate: fromDatetime ? new Date(fromDatetime).toISOString().split('T')[0] : '',
-          toDate: toDatetime ? new Date(toDatetime).toISOString().split('T')[0] : '',
-          fromTime: fromDatetime ? new Date(fromDatetime).toTimeString().slice(0, 5) : '',
-          toTime: toDatetime ? new Date(toDatetime).toTimeString().slice(0, 5) : '',
+          fromDate: fromDatetime ? formatDateLocal(new Date(fromDatetime)) : '',
+          toDate: toDatetime ? formatDateLocal(new Date(toDatetime)) : '',
+          fromTime: fromDatetime ? formatTimeLocal(new Date(fromDatetime)) : '',
+          toTime: toDatetime ? formatTimeLocal(new Date(toDatetime)) : '',
           duration: duration,
           venue: e.venue || '',
           venueLocation: e.venueLocation || e.venue || '',

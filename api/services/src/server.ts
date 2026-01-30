@@ -213,6 +213,7 @@ app.delete('/delete-album-pdf/:albumId', authenticate, requireAdmin, albumPdfCon
 app.get('/dashboard/stats', authenticate, dashboardController.getStats);
 app.get('/dashboard/comparison-stats', authenticate, dashboardStatsController.getDashboardStats);
 app.get('/dashboard/upcoming-events', authenticate, dashboardStatsController.getUpcomingEvents);
+app.get('/dashboard/team-assignments', authenticate, dashboardStatsController.getTeamAssignments);
 app.get('/dashboard/revenue-summary', authenticate, requireAdmin, dashboardController.getRevenueSummary);
 app.get('/dashboard/project-status-counts', authenticate, dashboardController.getProjectStatusCounts);
 app.get('/dashboard/event-status-counts', authenticate, dashboardController.getEventStatusCounts);

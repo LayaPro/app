@@ -12,6 +12,7 @@ export const startEventStatusUpdater = () => {
     try {
       console.log('[EventStatusUpdater] Running status check...');
       const now = new Date();
+      console.log('[EventStatusUpdater] Current time:', now.toISOString());
 
       // Get all tenants' statuses
       const scheduledStatuses = await EventDeliveryStatus.find({ statusCode: 'SCHEDULED' }).lean();
@@ -26,11 +27,45 @@ export const startEventStatusUpdater = () => {
       let updatedToInProgress = 0;
       let updatedToAwaitingEditing = 0;
 
+      // Debug: Check all SCHEDULED events
+      for (const [tenantId, scheduledStatusId] of scheduledStatusMap.entries()) {
+        const allScheduledEvents = await ClientEvent.find({
+          tenantId,
+          eventDeliveryStatusId: scheduledStatusId
+        }).select('clientEventId fromDatetime toDatetime eventDeliveryStatusId').lean();
+        
+        if (allScheduledEvents.length > 0) {
+          console.log(`[EventStatusUpdater] Found ${allScheduledEvents.length} SCHEDULED events for tenant ${tenantId}:`);
+          allScheduledEvents.forEach(e => {
+            const fromDate = e.fromDatetime ? new Date(e.fromDatetime) : null;
+            const toDate = e.toDatetime ? new Date(e.toDatetime) : null;
+            const shouldStart = fromDate && fromDate <= now;
+            const shouldNotEnd = toDate && toDate > now;
+            console.log(`  - Event ${e.clientEventId}:`);
+            console.log(`    From: ${fromDate?.toISOString()} (should start: ${shouldStart})`);
+            console.log(`    To: ${toDate?.toISOString()} (should not end: ${shouldNotEnd})`);
+            console.log(`    Should update: ${shouldStart && shouldNotEnd}`);
+          });
+        }
+      }
+
       // 1. Update SCHEDULED → SHOOT_IN_PROGRESS
       // Criteria: status = SCHEDULED AND fromDatetime <= now AND toDatetime > now
       for (const [tenantId, scheduledStatusId] of scheduledStatusMap.entries()) {
         const shootInProgressStatusId = shootInProgressMap.get(tenantId);
         if (!shootInProgressStatusId) continue;
+
+        // Find events that should be updated (for debugging)
+        const eventsToUpdate = await ClientEvent.find({
+          tenantId,
+          eventDeliveryStatusId: scheduledStatusId,
+          fromDatetime: { $lte: now },
+          toDatetime: { $gt: now }
+        }).select('clientEventId fromDatetime toDatetime').lean();
+
+        if (eventsToUpdate.length > 0) {
+          console.log(`[EventStatusUpdater] Updating ${eventsToUpdate.length} events to SHOOT_IN_PROGRESS`);
+        }
 
         const result = await ClientEvent.updateMany(
           {

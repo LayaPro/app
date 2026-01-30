@@ -166,33 +166,42 @@ export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
     const now = new Date();
     const next30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
+    // Fetch statuses first to identify relevant status codes
+    const statuses = await EventDeliveryStatus.find({ tenantId }).select('statusId statusCode statusDescription').lean();
+    const scheduledStatusId = statuses.find(s => s.statusCode === 'SCHEDULED')?.statusId;
+    const ongoingStatusId = statuses.find(s => s.statusCode === 'SHOOT_IN_PROGRESS')?.statusId;
+
     // Fetch all data in parallel
-    const [clientEvents, projects, teamMembers, events, statuses] = await Promise.all([
-      // Fetch upcoming events (future dates)
-      ClientEvent.find({
+    const [scheduledEvents, ongoingEvents, projects, teamMembers, events] = await Promise.all([
+      // Fetch all scheduled events (filter by date later)
+      scheduledStatusId ? ClientEvent.find({
         tenantId,
-        fromDatetime: { $gte: now, $lte: next30Days }
-      }).sort({ fromDatetime: 1 }).lean(),
+        eventDeliveryStatusId: scheduledStatusId
+      }).sort({ fromDatetime: 1 }).lean() : [],
+      // Fetch ongoing events (shoot in progress status)
+      ongoingStatusId ? ClientEvent.find({
+        tenantId,
+        eventDeliveryStatusId: ongoingStatusId
+      }).lean() : [],
       Project.find({ tenantId }).select('projectId projectName displayPic').lean(),
       Team.find({ tenantId }).select('memberId firstName lastName profileIds').lean(),
-      Event.find({ tenantId }).select('eventId eventCode eventDesc eventAlias').lean(),
-      EventDeliveryStatus.find({ tenantId }).select('statusId statusCode statusDescription').lean()
+      Event.find({ tenantId }).select('eventId eventCode eventDesc eventAlias').lean()
     ]);
 
-    // Also fetch ongoing events (shoot in progress status)
-    const ongoingStatusId = Array.from(statuses).find(s => s.statusCode === 'SHOOT_IN_PROGRESS')?.statusId;
-    const ongoingEvents = ongoingStatusId ? await ClientEvent.find({
-      tenantId,
-      eventDeliveryStatusId: ongoingStatusId
-    }).lean() : [];
+    // Filter scheduled events to only show those within next 30 days
+    const filteredScheduledEvents = scheduledEvents.filter(event => {
+      if (!event.fromDatetime) return false;
+      const eventDate = new Date(event.fromDatetime);
+      return eventDate <= next30Days;
+    });
 
-    // Combine ongoing and upcoming events
-    const allEvents = [...ongoingEvents, ...clientEvents];
+    // Combine ongoing and filtered scheduled events
+    const allEvents = [...ongoingEvents, ...filteredScheduledEvents];
 
     // Create lookup maps
     const projectMap = new Map(projects.map(p => [p.projectId, p]));
     const teamMap = new Map(teamMembers.map(t => [t.memberId, t]));
-    const eventMap = new Map(events.map(e => [e.eventId, e]));
+    const eventTypeMap = new Map(events.map(e => [e.eventId, e]));
     const statusMap = new Map(statuses.map(s => [s.statusId, s]));
 
     // Enrich events with related data
@@ -203,7 +212,7 @@ export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
       return {
         ...event,
         projectName: projectMap.get(event.projectId)?.projectName,
-        eventType: eventMap.get(event.eventId)?.eventDesc,
+        eventType: eventTypeMap.get(event.eventId)?.eventDesc,
         statusDesc: status?.statusDescription,
         statusCode: status?.statusCode,
         isOngoing,
@@ -220,8 +229,8 @@ export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
       return aTime - bTime;
     });
 
-    // Limit to 4 events
-    const limitedEvents = enrichedEvents.slice(0, 4);
+    // Limit to 10 events
+    const limitedEvents = enrichedEvents.slice(0, 10);
 
     return res.status(200).json({
       message: 'Upcoming events retrieved successfully',
@@ -233,7 +242,63 @@ export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getTeamAssignments = async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Fetch all team members and events
+    const [teamMembers, clientEvents, projects] = await Promise.all([
+      Team.find({ tenantId }).select('memberId firstName lastName profileIds').lean(),
+      ClientEvent.find({ tenantId }).select('clientEventId projectId teamMembersAssigned').lean(),
+      Project.find({ tenantId }).select('projectId projectName').lean()
+    ]);
+
+    // Create project map for quick lookup
+    const projectMap = new Map(projects.map(p => [p.projectId, p.projectName]));
+
+    // Calculate assignments for each team member
+    const teamWithAssignments = teamMembers.map(member => {
+      // Find all events assigned to this member
+      const assignedEvents = clientEvents.filter(event => 
+        event.teamMembersAssigned?.includes(member.memberId)
+      );
+
+      // Get unique projects from assigned events
+      const uniqueProjects = new Set(assignedEvents.map(e => e.projectId));
+
+      return {
+        memberId: member.memberId,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        profileIds: member.profileIds,
+        eventsCount: assignedEvents.length,
+        projectsCount: uniqueProjects.size,
+        projects: Array.from(uniqueProjects).map(projectId => ({
+          projectId,
+          projectName: projectMap.get(projectId) || 'Unknown Project'
+        }))
+      };
+    });
+
+    // Sort by events count (most assigned on top)
+    teamWithAssignments.sort((a, b) => b.eventsCount - a.eventsCount);
+
+    return res.status(200).json({
+      message: 'Team assignments retrieved successfully',
+      teamMembers: teamWithAssignments
+    });
+  } catch (err: any) {
+    console.error('Get team assignments error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export default {
   getDashboardStats,
-  getUpcomingEvents
+  getUpcomingEvents,
+  getTeamAssignments
 };

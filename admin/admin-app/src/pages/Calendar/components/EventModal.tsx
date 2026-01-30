@@ -3,6 +3,7 @@ import type { ClientEvent } from '@/types/shared';
 import { Modal, Input, Textarea, SearchableSelect, Button, MultiSelect, DatePicker } from '../../../components/ui';
 import type { SelectOption } from '../../../components/ui';
 import styles from './EventModal.module.css';
+import { calculateEndDateTime, formatDateLocal, formatTimeLocal } from '../../../utils/dateUtils';
 
 interface EventModalProps {
   isOpen: boolean;
@@ -60,8 +61,8 @@ export const EventModal: React.FC<EventModalProps> = ({
         projectId: event.projectId || '',
         eventId: event.eventId || '',
         eventDeliveryStatusId: event.eventDeliveryStatusId || '',
-        fromDate: fromDate ? fromDate.toISOString().split('T')[0] : '',
-        fromTime: fromDate ? fromDate.toTimeString().slice(0, 5) : '',
+        fromDate: fromDate ? formatDateLocal(fromDate) : '',
+        fromTime: fromDate ? formatTimeLocal(fromDate) : '',
         duration: duration,
         venue: event.venue || '',
         venueMapUrl: event.venueMapUrl || '',
@@ -116,9 +117,14 @@ export const EventModal: React.FC<EventModalProps> = ({
     setIsLoading(true);
 
     try {
-      // Calculate toDate and toTime based on duration
+      // Calculate end datetime based on duration
       const fromDateTime = new Date(`${formData.fromDate}T${formData.fromTime || '00:00'}:00`);
-      const toDateTime = new Date(fromDateTime.getTime() + formData.duration * 60 * 60 * 1000);
+      const endDateTime = calculateEndDateTime(
+        formData.fromDate,
+        formData.fromTime || '00:00',
+        formData.duration
+      );
+      const toDateTime = new Date(`${endDateTime.toDate}T${endDateTime.toTime}:00`);
 
       const eventData = {
         projectId: formData.projectId,

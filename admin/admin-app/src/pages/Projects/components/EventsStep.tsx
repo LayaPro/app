@@ -3,6 +3,7 @@ import { Input } from '../../../components/ui/Input';
 import { Textarea } from '../../../components/ui/Textarea';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { MultiSelect } from '../../../components/ui/MultiSelect';
+import { calculateEndDateTime } from '../../../utils/dateUtils';
 import { DatePicker } from '../../../components/ui/DatePicker';
 import { Modal } from '../../../components/ui/Modal';
 import { EventCard } from './EventCard';
@@ -61,11 +62,11 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
     }
 
     // Calculate toDate and toTime based on duration
-    const fromDateTime = new Date(`${newEvent.fromDate}T${newEvent.fromTime || '00:00'}`);
-    const toDateTime = new Date(fromDateTime.getTime() + newEvent.duration * 60 * 60 * 1000);
-    
-    const toDate = toDateTime.toISOString().split('T')[0];
-    const toTime = toDateTime.toTimeString().slice(0, 5);
+    const { toDate, toTime } = calculateEndDateTime(
+      newEvent.fromDate,
+      newEvent.fromTime || '00:00',
+      newEvent.duration
+    );
 
     const event = {
       eventId: newEvent.eventType, // Use the selected event ID from dropdown
@@ -167,11 +168,11 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
     }
 
     // Calculate toDate and toTime based on duration
-    const fromDateTime = new Date(`${newEvent.fromDate}T${newEvent.fromTime || '00:00'}`);
-    const toDateTime = new Date(fromDateTime.getTime() + newEvent.duration * 60 * 60 * 1000);
-    
-    const toDate = toDateTime.toISOString().split('T')[0];
-    const toTime = toDateTime.toTimeString().slice(0, 5);
+    const { toDate, toTime } = calculateEndDateTime(
+      newEvent.fromDate,
+      newEvent.fromTime || '00:00',
+      newEvent.duration
+    );
 
     const updatedEvent = {
       ...formData.events[editingIndex],
