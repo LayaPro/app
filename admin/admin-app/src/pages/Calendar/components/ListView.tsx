@@ -8,6 +8,7 @@ import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { getEventColor } from '../../../utils/calendar';
 import { clientEventApi } from '../../../services/api';
 import styles from '../Calendar.module.css';
+import badgeStyles from './ListView.module.css';
 
 interface ListViewProps {
   events: ClientEvent[];
@@ -244,26 +245,32 @@ export const ListView: React.FC<ListViewProps> = ({
         const status = eventDeliveryStatuses.get(event.eventDeliveryStatusId || '');
         
         // Determine color based on status code
-        let bgColor = 'rgba(139, 92, 246, 0.1)'; // purple (scheduled/future)
+        let borderColor = '#8b5cf6'; // purple (scheduled/future)
         let textColor = '#8b5cf6';
+        let bgColor = 'rgba(139, 92, 246, 0.1)';
         
         if (status?.statusCode === 'SHOOT_IN_PROGRESS') {
-          bgColor = 'rgba(59, 130, 246, 0.1)'; // blue (ongoing)
+          borderColor = '#3b82f6'; // blue (ongoing)
           textColor = '#3b82f6';
+          bgColor = 'rgba(59, 130, 246, 0.1)';
         } else if (status?.statusCode === 'SHOOT_COMPLETED' || status?.statusCode === 'AWAITING_EDITING' || status?.statusCode === 'DELIVERED') {
-          bgColor = 'rgba(16, 185, 129, 0.1)'; // green (completed)
+          borderColor = '#10b981'; // green (completed)
           textColor = '#10b981';
+          bgColor = 'rgba(16, 185, 129, 0.1)';
         }
         
         return (
-          <span style={{
-            padding: '4px 12px',
-            borderRadius: '12px',
-            fontSize: '0.75rem',
-            fontWeight: 500,
-            backgroundColor: bgColor,
-            color: textColor
-          }}>
+          <span 
+            className={badgeStyles.statusBadge}
+            style={{
+              borderColor: borderColor,
+              color: textColor,
+              backgroundColor: bgColor
+            }}
+          >
+            {status?.statusCode === 'SHOOT_IN_PROGRESS' && (
+              <span className={badgeStyles.glowingDot}></span>
+            )}
             {status?.statusDescription || 'No Status'}
           </span>
         );

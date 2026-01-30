@@ -306,20 +306,18 @@ const Dashboard = () => {
                       <h3 className={styles.eventTitle}>
                         {event.eventType || 'Event'} - {event.projectName || 'Unnamed Project'}
                       </h3>
-                      <div className={styles.eventStatusWrapper}>
+                      <span 
+                        className={styles.eventStatus}
+                        style={{ 
+                          borderColor: event.statusCode ? getStatusColor(event.statusCode) : '#8b5cf6',
+                          color: event.statusCode ? getStatusColor(event.statusCode) : '#8b5cf6'
+                        }}
+                      >
                         {event.statusCode === 'SHOOT_IN_PROGRESS' && (
                           <span className={styles.glowingDot}></span>
                         )}
-                        <span 
-                          className={styles.eventStatus}
-                          style={{ 
-                            borderColor: event.statusCode ? getStatusColor(event.statusCode) : '#8b5cf6',
-                            color: event.statusCode ? getStatusColor(event.statusCode) : '#8b5cf6'
-                          }}
-                        >
-                          {event.statusDesc || 'Scheduled'}
-                        </span>
-                      </div>
+                        {event.statusDesc || 'Scheduled'}
+                      </span>
                     </div>
                     <p className={styles.eventDate}>
                       {formatEventDate(event)}
