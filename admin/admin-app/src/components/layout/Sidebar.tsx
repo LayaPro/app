@@ -177,9 +177,7 @@ export const Sidebar: React.FC = () => {
 
     if (isAdmin) {
       fetchCounts();
-      // Refresh counts every 30 seconds
-      const interval = setInterval(fetchCounts, 30000);
-      return () => clearInterval(interval);
+      // Removed auto-refresh polling - counts will update on navigation/refresh
     }
   }, [isAdmin]);
 

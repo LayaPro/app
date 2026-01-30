@@ -33,6 +33,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [timeError, setTimeError] = useState(false);
+  const [timeErrorMessage, setTimeErrorMessage] = useState('Please select a time');
   const [showInfo, setShowInfo] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLDivElement>(null);
@@ -146,7 +147,18 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     if (includeTime) {
       // Mark that date was selected and reset time components to force user selection
       dateSelectedRef.current = true;
-      setTimeComponents({ hour: '', minute: '', period: 'AM' });
+      
+      // If today is selected and allowPast is false, default to PM if it's currently PM
+      let defaultPeriod = 'AM';
+      if (!allowPast) {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        if (dateStr === todayStr && today.getHours() >= 12) {
+          defaultPeriod = 'PM';
+        }
+      }
+      
+      setTimeComponents({ hour: '', minute: '', period: defaultPeriod });
     } else {
       setIsOpen(false);
     }
@@ -159,6 +171,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     // Clear error when user starts selecting time
     if (timeError) {
       setTimeError(false);
+      setTimeErrorMessage('Please select a time');
     }
     
     // Only update parent if both hour and minute are selected
@@ -172,6 +185,26 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       }
       
       const timeStr = `${String(hour24).padStart(2, '0')}:${newComponents.minute.padStart(2, '0')}`;
+      
+      // Check if selected time is in the past (only if not allowing past)
+      if (!allowPast && value) {
+        const today = new Date();
+        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+        
+        if (value === todayStr) {
+          const now = new Date();
+          const currentHour = now.getHours();
+          const currentMinute = now.getMinutes();
+          const selectedMinute = parseInt(newComponents.minute);
+          
+          if (hour24 < currentHour || (hour24 === currentHour && selectedMinute < currentMinute)) {
+            setTimeError(true);
+            setTimeErrorMessage('Cannot select past time');
+            return;
+          }
+        }
+      }
+      
       onTimeChange?.(timeStr);
     }
   };
@@ -311,7 +344,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
               <div className={styles.timeSeparator}></div>
               {timeError && (
                 <div className={styles.timeErrorMessage}>
-                  Please select a time
+                  {timeErrorMessage}
                 </div>
               )}
               <div className={styles.timeInputWrapper}>
@@ -327,7 +360,23 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                     <option value="">--</option>
                     {[...Array(12)].map((_, i) => {
                       const hour = i + 1;
-                      return <option key={hour} value={hour}>{hour}</option>;
+                      // Disable past hours if today is selected and allowPast is false
+                      let isDisabled = false;
+                      if (!allowPast && value) {
+                        const today = new Date();
+                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                        if (value === todayStr) {
+                          const currentHour = today.getHours();
+                          let hour24 = hour;
+                          if (timeComponents.period === 'PM' && hour !== 12) {
+                            hour24 += 12;
+                          } else if (timeComponents.period === 'AM' && hour === 12) {
+                            hour24 = 0;
+                          }
+                          isDisabled = hour24 < currentHour;
+                        }
+                      }
+                      return <option key={hour} value={hour} disabled={isDisabled}>{hour}</option>;
                     })}
                   </select>
                   <span className={styles.timeSeparatorText}>:</span>
@@ -337,19 +386,45 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                     onChange={(e) => handleTimeChange('minute', e.target.value)}
                   >
                     <option value="">--</option>
-                    <option value="0">00</option>
-                    <option value="10">10</option>
-                    <option value="20">20</option>
-                    <option value="30">30</option>
-                    <option value="40">40</option>
-                    <option value="50">50</option>
+                    {['0', '10', '20', '30', '40', '50'].map((minute) => {
+                      // Disable past minutes if today is selected, same hour, and allowPast is false
+                      let isDisabled = false;
+                      if (!allowPast && value && timeComponents.hour) {
+                        const today = new Date();
+                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                        if (value === todayStr) {
+                          let hour24 = parseInt(timeComponents.hour);
+                          if (timeComponents.period === 'PM' && hour24 !== 12) {
+                            hour24 += 12;
+                          } else if (timeComponents.period === 'AM' && hour24 === 12) {
+                            hour24 = 0;
+                          }
+                          const currentHour = today.getHours();
+                          const currentMinute = today.getMinutes();
+                          if (hour24 === currentHour) {
+                            isDisabled = parseInt(minute) < currentMinute;
+                          }
+                        }
+                      }
+                      return <option key={minute} value={minute} disabled={isDisabled}>{minute.padStart(2, '0')}</option>;
+                    })}
                   </select>
                   <select
                     className={styles.timeSelect}
                     value={timeComponents.period}
                     onChange={(e) => handleTimeChange('period', e.target.value)}
                   >
-                    <option value="AM">AM</option>
+                    <option 
+                      value="AM" 
+                      disabled={!allowPast && value && (() => {
+                        const today = new Date();
+                        const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                        // Disable AM if it's currently PM (all AM times are in the past)
+                        return value === todayStr && today.getHours() >= 12;
+                      })()}
+                    >
+                      AM
+                    </option>
                     <option value="PM">PM</option>
                   </select>
                 </div>

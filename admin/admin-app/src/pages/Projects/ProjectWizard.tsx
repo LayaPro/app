@@ -507,8 +507,8 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
                 disabled={isSubmitting}
               >
                 {isSubmitting 
-                  ? (isEditing ? 'Updating...' : 'Creating...') 
-                  : (isEditing ? 'Update Project' : 'Create Project')
+                  ? (editingProject?.projectId ? 'Updating...' : 'Creating...') 
+                  : (editingProject?.projectId ? 'Update Project' : 'Create Project')
                 }
               </button>
             )}

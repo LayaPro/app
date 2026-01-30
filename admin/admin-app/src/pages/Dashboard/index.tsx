@@ -266,7 +266,7 @@ const Dashboard = () => {
               </svg>
               <h2 className={styles.sectionTitle}>Upcoming Events</h2>
             </div>
-            <Link to={ROUTES.CALENDAR} className={styles.viewAllLink}>
+            <Link to={`${ROUTES.CALENDAR}?view=list`} className={styles.viewAllLink}>
               View All →
             </Link>
           </div>
