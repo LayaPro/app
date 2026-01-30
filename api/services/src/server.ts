@@ -31,6 +31,7 @@ import projectFinanceController from './controllers/projectFinanceController';
 import teamFinanceController from './controllers/teamFinanceController';
 import imageController from './controllers/imageController';
 import dashboardController from './controllers/dashboardController';
+import dashboardStatsController from './controllers/dashboardStatsController';
 import financeStatsController from './controllers/financeStatsController';
 import searchController from './controllers/searchController';
 import userController from './controllers/userController';
@@ -210,6 +211,7 @@ app.delete('/delete-album-pdf/:albumId', authenticate, requireAdmin, albumPdfCon
 
 // ---------- Dashboard routes ----------
 app.get('/dashboard/stats', authenticate, dashboardController.getStats);
+app.get('/dashboard/comparison-stats', authenticate, dashboardStatsController.getDashboardStats);
 app.get('/dashboard/revenue-summary', authenticate, requireAdmin, dashboardController.getRevenueSummary);
 app.get('/dashboard/project-status-counts', authenticate, dashboardController.getProjectStatusCounts);
 app.get('/dashboard/event-status-counts', authenticate, dashboardController.getEventStatusCounts);

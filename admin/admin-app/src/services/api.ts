@@ -568,6 +568,18 @@ export const financeStatsApi = {
   },
 };
 
+export const dashboardStatsApi = {
+  getComparisonStats: async () => {
+    const response = await fetch(`${API_BASE_URL}/dashboard/comparison-stats`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
+
 // Client Event API (Calendar Events)
 export const clientEventApi = {
   getAll: async () => {
