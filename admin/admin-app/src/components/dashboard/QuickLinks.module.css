@@ -1,3 +1,14 @@
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .quickLinksCard {
   flex: 0 0 20%;
   min-width: 250px;
@@ -8,6 +19,7 @@
   height: 400px;
   display: flex;
   flex-direction: column;
+  animation: fadeInUp 0.5s ease-out both;
 }
 
 .sectionHeader {
