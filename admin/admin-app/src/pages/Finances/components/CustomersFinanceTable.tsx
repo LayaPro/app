@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { projectApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
@@ -9,6 +10,8 @@ import { Input } from '../../../components/ui/Input';
 import { DatePicker } from '../../../components/ui/DatePicker';
 import { Select } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
+import { AmountInput } from '../../../components/ui/AmountInput';
+import styles from './FinanceTables.module.css';
 
 interface Transaction {
   transactionId: string;
@@ -35,6 +38,7 @@ interface ProjectFinance {
 interface ProjectWithFinance {
   projectId: string;
   projectName: string;
+  contactPerson?: string;
   brideFirstName?: string;
   groomFirstName?: string;
   brideLastName?: string;
@@ -44,9 +48,16 @@ interface ProjectWithFinance {
   finance?: ProjectFinance;
 }
 
-export const CustomersFinanceTable = () => {
+interface CustomersFinanceTableProps {
+  onDataChange?: () => void;
+  initialCustomerFilter?: string | null;
+}
+
+export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ onDataChange, initialCustomerFilter }) => {
   const [projects, setProjects] = useState<ProjectWithFinance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [customerFilter, setCustomerFilter] = useState<string>('all');
+  const [dateRangeFilter, setDateRangeFilter] = useState<string>('all');
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<ProjectWithFinance | null>(null);
   const [transactionForm, setTransactionForm] = useState({
@@ -58,6 +69,7 @@ export const CustomersFinanceTable = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
@@ -66,14 +78,105 @@ export const CustomersFinanceTable = () => {
   }, []);
 
   useEffect(() => {
+    if (initialCustomerFilter && projects.length > 0) {
+      setCustomerFilter(initialCustomerFilter);
+    }
+  }, [initialCustomerFilter, projects]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      if (target.closest('button[class*="actionsDropdownButton"]') || 
+          target.closest('button[class*="actionsDropdownItem"]')) {
+        return;
+      }
+      
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenMenuId(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
+    const handleScroll = () => {
+      if (openMenuId) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+        window.addEventListener('scroll', handleScroll, true);
+      }, 0);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [openMenuId]);
+
+  const getCustomerName = (project: ProjectWithFinance) => {
+    const brideName = project.brideFirstName && project.brideLastName 
+      ? `${project.brideFirstName} ${project.brideLastName}` 
+      : project.brideFirstName || '';
+    const groomName = project.groomFirstName && project.groomLastName 
+      ? `${project.groomFirstName} ${project.groomLastName}` 
+      : project.groomFirstName || '';
+    
+    if (brideName && groomName) {
+      return `${brideName} & ${groomName}`;
+    }
+    return brideName || groomName || '';
+  };
+
+  const filteredProjects = useMemo(() => {
+    let filtered = projects;
+
+    // Filter by customer
+    if (customerFilter !== 'all') {
+      filtered = filtered.filter(project => project.projectId === customerFilter);
+    }
+
+    // Filter by date range
+    if (dateRangeFilter !== 'all') {
+      const now = new Date();
+      filtered = filtered.filter(project => {
+        const transactions = project.finance?.transactions || [];
+        if (transactions.length === 0) return false;
+
+        return transactions.some(transaction => {
+          const txDate = new Date(transaction.datetime);
+          const daysDiff = Math.floor((now.getTime() - txDate.getTime()) / (1000 * 60 * 60 * 24));
+
+          switch (dateRangeFilter) {
+            case 'today':
+              return daysDiff === 0;
+            case 'week':
+              return daysDiff <= 7;
+            case 'month':
+              return daysDiff <= 30;
+            case 'quarter':
+              return daysDiff <= 90;
+            default:
+              return true;
+          }
+        });
+      });
+    }
+
+    return filtered;
+  }, [projects, customerFilter, dateRangeFilter]);
+
+  const customerOptions = useMemo(() => {
+    const options = [{ value: 'all', label: 'All Customers' }];
+    projects.forEach(project => {
+      options.push({
+        value: project.projectId,
+        label: project.projectName
+      });
+    });
+    return options;
+  }, [projects]);
 
   const fetchProjectsWithFinances = async () => {
     try {
@@ -91,22 +194,43 @@ export const CustomersFinanceTable = () => {
     }
   };
 
-  const getCustomerName = (project: ProjectWithFinance) => {
-    const brideName = project.brideFirstName && project.brideLastName 
-      ? `${project.brideFirstName} ${project.brideLastName}` 
-      : project.brideFirstName || '';
-    const groomName = project.groomFirstName && project.groomLastName 
-      ? `${project.groomFirstName} ${project.groomLastName}` 
-      : project.groomFirstName || '';
-    
-    if (brideName && groomName) {
-      return `${brideName} & ${groomName}`;
-    }
-    return brideName || groomName || project.projectName;
-  };
-
   const formatAmount = (amount: number) => {
     return `₹${amount.toLocaleString('en-IN')}`;
+  };
+
+  const getAvatarColors = (name: string) => {
+    const colors = [
+      { bg: 'rgba(99, 102, 241, 0.1)', text: '#4f46e5', border: 'rgba(99, 102, 241, 0.2)' },    // indigo
+      { bg: 'rgba(59, 130, 246, 0.1)', text: '#2563eb', border: 'rgba(59, 130, 246, 0.2)' },    // blue
+      { bg: 'rgba(34, 197, 94, 0.1)', text: '#16a34a', border: 'rgba(34, 197, 94, 0.2)' },      // green
+      { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706', border: 'rgba(245, 158, 11, 0.2)' },    // amber
+      { bg: 'rgba(239, 68, 68, 0.1)', text: '#dc2626', border: 'rgba(239, 68, 68, 0.2)' },      // red
+      { bg: 'rgba(236, 72, 153, 0.1)', text: '#db2777', border: 'rgba(236, 72, 153, 0.2)' },    // pink
+      { bg: 'rgba(6, 182, 212, 0.1)', text: '#0891b2', border: 'rgba(6, 182, 212, 0.2)' },      // cyan
+      { bg: 'rgba(20, 184, 166, 0.1)', text: '#0d9488', border: 'rgba(20, 184, 166, 0.2)' },    // teal
+      { bg: 'rgba(249, 115, 22, 0.1)', text: '#ea580c', border: 'rgba(249, 115, 22, 0.2)' },    // orange
+      { bg: 'rgba(168, 85, 247, 0.1)', text: '#9333ea', border: 'rgba(168, 85, 247, 0.2)' },    // violet
+      { bg: 'rgba(234, 179, 8, 0.1)', text: '#ca8a04', border: 'rgba(234, 179, 8, 0.2)' },      // yellow
+      { bg: 'rgba(14, 165, 233, 0.1)', text: '#0284c7', border: 'rgba(14, 165, 233, 0.2)' },    // sky
+      { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', border: 'rgba(16, 185, 129, 0.2)' },    // emerald
+      { bg: 'rgba(244, 63, 94, 0.1)', text: '#e11d48', border: 'rgba(244, 63, 94, 0.2)' },      // rose
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < (name?.length || 0); i++) {
+      hash = ((hash << 5) - hash) + name.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .filter(word => word.toLowerCase() !== '&' && word.toLowerCase() !== 'and')
+      .map(word => word.charAt(0).toUpperCase())
+      .slice(0, 2)
+      .join('');
   };
 
   const handleAddPaymentClick = (project: ProjectWithFinance) => {
@@ -140,6 +264,19 @@ export const CustomersFinanceTable = () => {
       return;
     }
 
+    // Validate that received amount doesn't exceed pending amount
+    if (transactionForm.nature === 'received') {
+      const totalBudget = selectedProject.finance?.totalBudget || 0;
+      const receivedAmount = selectedProject.finance?.receivedAmount || 0;
+      const pendingAmount = totalBudget - receivedAmount;
+      const transactionAmount = parseFloat(transactionForm.amount);
+
+      if (transactionAmount > pendingAmount) {
+        showToast('error', `Amount received (₹${transactionAmount.toLocaleString('en-IN')}) cannot exceed pending amount (₹${pendingAmount.toLocaleString('en-IN')})`);
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       // Combine date and time
@@ -157,6 +294,7 @@ export const CustomersFinanceTable = () => {
       showToast('success', 'Transaction added successfully');
       handleCloseModal();
       fetchProjectsWithFinances(); // Refresh data
+      onDataChange?.(); // Refresh stats
     } catch (error: any) {
       console.error('Error adding transaction:', error);
       showToast('error', error.message || 'Failed to add transaction');
@@ -168,47 +306,58 @@ export const CustomersFinanceTable = () => {
   const columns: Column<ProjectWithFinance>[] = [
     {
       key: 'projectName',
-      header: 'Name',
+      header: 'Customer',
       sortable: true,
-      render: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {row.displayPic ? (
-            <img 
-              src={row.displayPic} 
-              alt="Profile"
-              style={{ 
-                width: '2.5rem', 
-                height: '2.5rem', 
+      render: (row) => {
+        const colors = getAvatarColors(row.projectName);
+        const clientName = row.contactPerson || getCustomerName(row);
+
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            {row.displayPic ? (
+              <img 
+                src={row.displayPic} 
+                alt="Profile"
+                style={{ 
+                  width: '40px', 
+                  height: '40px', 
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: `1.5px solid ${colors.border}`,
+                  flexShrink: 0
+                }}
+              />
+            ) : (
+              <div style={{ 
+                width: '40px', 
+                height: '40px', 
                 borderRadius: '50%',
-                objectFit: 'cover'
-              }}
-            />
-          ) : (
-            <div style={{ 
-              width: '2.5rem', 
-              height: '2.5rem', 
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'white',
-              fontWeight: 600,
-              fontSize: '0.875rem'
-            }}>
-              {getCustomerName(row).substring(0, 2).toUpperCase()}
-            </div>
-          )}
-          <div>
-            <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
-              {getCustomerName(row)}
-            </div>
-            <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
-              {row.projectName}
+                backgroundColor: colors.bg,
+                border: `1.5px solid ${colors.border}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '14px',
+                fontWeight: '600',
+                color: colors.text,
+                flexShrink: 0,
+                textTransform: 'uppercase',
+                letterSpacing: '0.5px'
+              }}>
+                {getInitials(row.projectName)}
+              </div>
+            )}
+            <div>
+              <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                {row.projectName}
+              </div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                {clientName}
+              </div>
             </div>
           </div>
-        </div>
-      ),
+        );
+      },
     },
     {
       key: 'finance',
@@ -249,137 +398,62 @@ export const CustomersFinanceTable = () => {
       key: 'projectId',
       header: 'Actions',
       render: (row) => (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
           <button
-            style={{
-              padding: '0.5rem',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.2s',
-            }}
+            className={styles.actionsDropdownButton}
             onClick={(e) => {
               e.stopPropagation();
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setDropdownPosition({
+                top: rect.bottom + 4,
+                left: rect.right - 160
+              });
               setOpenMenuId(openMenuId === row.projectId ? null : row.projectId);
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <circle cx="10" cy="4" r="1.5" />
-              <circle cx="10" cy="10" r="1.5" />
-              <circle cx="10" cy="16" r="1.5" />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
             </svg>
           </button>
-          {openMenuId === row.projectId && (
-            <div
-              ref={menuRef}
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: '100%',
-                marginTop: '0.25rem',
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '0.5rem',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                zIndex: 1000,
-                minWidth: '160px',
-                overflow: 'hidden'
-              }}
-            >
-              <button
+
+          {openMenuId === row.projectId && createPortal(
+            <>
+              <div
                 style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'background 0.2s'
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 999
                 }}
+                onClick={() => {
+                  setOpenMenuId(null);
+                  setDropdownPosition(null);
+                }}
+              />
+              <div 
+                ref={menuRef} 
+                className={styles.actionsDropdown}
+                style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
+              >
+              <button
+                className={styles.actionsDropdownItem}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleAddPaymentClick(row);
                   setOpenMenuId(null);
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Add Payment
               </button>
-              <button
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'background 0.2s'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: View details functionality
-                  setOpenMenuId(null);
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-                View Details
-              </button>
-              <button
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'background 0.2s'
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // TODO: Edit budget functionality
-                  setOpenMenuId(null);
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-              >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                Edit Budget
-              </button>
             </div>
-          )}
+          </>,
+          document.body
+        )}
         </div>
       ),
     },
@@ -568,11 +642,35 @@ export const CustomersFinanceTable = () => {
     <>
       <DataTable
         columns={columns}
-        data={projects}
+        data={filteredProjects}
         emptyMessage="No customer finance records found"
         renderExpandedRow={renderExpandedRow}
         getRowKey={(row) => row.projectId}
         itemsPerPage={5}
+        customFilters={
+          <div style={{ display: 'flex', gap: '0.75rem' }}>
+            <Select
+              value={customerFilter}
+              onChange={setCustomerFilter}
+              options={customerOptions}
+              placeholder="Filter by customer"
+              className={styles.statusFilterSelect}
+            />
+            <Select
+              value={dateRangeFilter}
+              onChange={setDateRangeFilter}
+              options={[
+                { value: 'all', label: 'All Time' },
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'Last 7 Days' },
+                { value: 'month', label: 'Last 30 Days' },
+                { value: 'quarter', label: 'Last 90 Days' }
+              ]}
+              placeholder="Filter by date"
+              className={styles.statusFilterSelect}
+            />
+          </div>
+        }
       />
 
       <Modal
@@ -582,30 +680,65 @@ export const CustomersFinanceTable = () => {
         size="small"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {selectedProject && transactionForm.nature === 'received' && (
+            <div style={{
+              padding: '0.75rem',
+              background: 'var(--bg-secondary)',
+              borderRadius: '0.5rem',
+              border: '1px solid var(--border-color)',
+              fontSize: '0.875rem'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Total Budget:</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                  {formatAmount(selectedProject.finance?.totalBudget || 0)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Received:</span>
+                <span style={{ fontWeight: 600, color: '#10b981' }}>
+                  {formatAmount(selectedProject.finance?.receivedAmount || 0)}
+                </span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '0.5rem', borderTop: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-secondary)', fontWeight: 600 }}>Pending Amount:</span>
+                <span style={{ fontWeight: 700, color: '#ef4444', fontSize: '1rem' }}>
+                  {formatAmount((selectedProject.finance?.totalBudget || 0) - (selectedProject.finance?.receivedAmount || 0))}
+                </span>
+              </div>
+            </div>
+          )}
+          
           <DatePicker
             label="Date"
             value={transactionForm.datetime}
             onChange={(value) => setTransactionForm({ ...transactionForm, datetime: value })}
             placeholder="Select date"
             required
-            includeTime={true}
-            timeValue={transactionForm.time}
-            onTimeChange={(value) => setTransactionForm({ ...transactionForm, time: value })}
+            info="Select the date when this payment was received or made"
           />
 
-          <Input
-            label="Amount (₹)"
-            type="number"
+          <AmountInput
+            label="Amount"
             value={transactionForm.amount}
-            onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
+            onChange={(value) => setTransactionForm({ ...transactionForm, amount: value })}
             placeholder="Enter amount"
-            min="0"
-            step="0.01"
             required
+            info={transactionForm.nature === 'received' 
+              ? "Amount received from customer. Cannot exceed pending amount" 
+              : "Amount paid for project expenses or vendor payments"}
+            error={
+              transactionForm.nature === 'received' && 
+              transactionForm.amount && 
+              selectedProject &&
+              parseFloat(transactionForm.amount) > ((selectedProject.finance?.totalBudget || 0) - (selectedProject.finance?.receivedAmount || 0))
+                ? `Cannot exceed pending amount of ${formatAmount((selectedProject.finance?.totalBudget || 0) - (selectedProject.finance?.receivedAmount || 0))}`
+                : undefined
+            }
           />
 
           <Select
-            label="Nature"
+            label="Type"
             value={transactionForm.nature}
             onChange={(value) => setTransactionForm({ ...transactionForm, nature: value as 'received' | 'paid' })}
             options={[
@@ -613,6 +746,7 @@ export const CustomersFinanceTable = () => {
               { value: 'paid', label: 'Paid' }
             ]}
             required
+            info="Choose 'Received' for payments from customer, 'Paid' for expenses"
           />
 
           <Textarea
@@ -621,6 +755,9 @@ export const CustomersFinanceTable = () => {
             onChange={(e) => setTransactionForm({ ...transactionForm, comment: e.target.value })}
             placeholder="Add a comment (optional)"
             rows={3}
+            maxLength={500}
+            showCharCount={true}
+            info="Optional notes about this transaction (e.g., payment method, purpose)"
           />
 
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
@@ -647,7 +784,7 @@ export const CustomersFinanceTable = () => {
                 padding: '0.5rem 1rem',
                 border: 'none',
                 borderRadius: '0.375rem',
-                background: '#6366f1',
+                background: isSubmitting ? '#d1d5db' : '#6366f1',
                 color: 'white',
                 fontSize: '0.875rem',
                 fontWeight: 500,

@@ -1,9 +1,10 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../store/index.js';
 import { toggleSidebar } from '../../store/slices/uiSlice.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { ROUTES } from '../../utils/constants.js';
+import { projectApi, proposalApi } from '../../services/api.js';
 import styles from './Sidebar.module.css';
 
 interface MenuItem {
@@ -57,7 +58,6 @@ const mainMenuItems: MenuSection[] = [
     ),
     isCollapsible: false,
     path: ROUTES.PROJECTS,
-    badge: '24',
   },
   {
     id: 'proposals',
@@ -158,17 +158,51 @@ export const Sidebar: React.FC = () => {
   const { isAdmin } = useAuth();
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [hoveredSection, setHoveredSection] = useState<string | null>(null);
+  const [projectCount, setProjectCount] = useState<number>(0);
+  const [proposalCount, setProposalCount] = useState<number>(0);
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      try {
+        const [projectsResponse, proposalsResponse] = await Promise.all([
+          projectApi.getAll(),
+          proposalApi.getAll()
+        ]);
+        setProjectCount(projectsResponse?.count || projectsResponse?.projects?.length || 0);
+        setProposalCount(proposalsResponse?.count || proposalsResponse?.proposals?.length || 0);
+      } catch (error) {
+        console.error('Error fetching counts:', error);
+      }
+    };
+
+    if (isAdmin) {
+      fetchCounts();
+      // Refresh counts every 30 seconds
+      const interval = setInterval(fetchCounts, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [isAdmin]);
 
   // Filter menu items based on user role
   const visibleMainMenuItems = useMemo(() => {
+    const items = mainMenuItems.map(item => {
+      if (item.id === 'projects') {
+        return { ...item, badge: projectCount > 0 ? projectCount : undefined };
+      }
+      if (item.id === 'proposals') {
+        return { ...item, badge: proposalCount > 0 ? proposalCount : undefined };
+      }
+      return item;
+    });
+
     if (isAdmin) {
-      return mainMenuItems; // Admin sees all items
+      return items; // Admin sees all items
     }
     // User only sees Dashboard, Albums, Calendar
-    return mainMenuItems.filter(item => 
+    return items.filter(item => 
       ['dashboard', 'albums', 'calendar'].includes(item.id)
     );
-  }, [isAdmin]);
+  }, [isAdmin, projectCount, proposalCount]);
 
   const visibleSecondaryMenuItems = useMemo(() => {
     if (isAdmin) {

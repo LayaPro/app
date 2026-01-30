@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { teamApi, teamFinanceApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
@@ -8,6 +9,8 @@ import { Input } from '../../../components/ui/Input';
 import { DatePicker } from '../../../components/ui/DatePicker';
 import { Select } from '../../../components/ui/Select';
 import { Textarea } from '../../../components/ui/Textarea';
+import { AmountInput } from '../../../components/ui/AmountInput';
+import styles from './FinanceTables.module.css';
 
 interface SalaryTransaction {
   transactionId: string;
@@ -55,6 +58,7 @@ export const TeamFinanceTable = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
@@ -64,13 +68,35 @@ export const TeamFinanceTable = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      
+      if (target.closest('button[class*="actionsDropdownButton"]') || 
+          target.closest('button[class*="actionsDropdownItem"]')) {
+        return;
+      }
+      
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenMenuId(null);
       }
     };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+
+    const handleScroll = () => {
+      if (openMenuId) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+        window.addEventListener('scroll', handleScroll, true);
+      }, 0);
+      return () => {
+        document.removeEventListener('click', handleClickOutside);
+        window.removeEventListener('scroll', handleScroll, true);
+      };
+    }
+  }, [openMenuId]);
 
   const fetchTeamMembersWithFinances = async () => {
     try {
@@ -234,137 +260,79 @@ export const TeamFinanceTable = () => {
       key: 'memberId',
       header: 'Actions',
       render: (row) => (
-        <div style={{ position: 'relative' }}>
+        <div style={{ position: 'relative' }} onClick={(e) => e.stopPropagation()}>
           <button
-            style={{
-              padding: '0.5rem',
-              background: 'transparent',
-              color: 'var(--text-secondary)',
-              border: 'none',
-              borderRadius: '0.375rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.2s',
-            }}
+            className={styles.actionsDropdownButton}
             onClick={(e) => {
               e.stopPropagation();
+              const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+              setDropdownPosition({
+                top: rect.bottom + 4,
+                left: rect.right - 160
+              });
               setOpenMenuId(openMenuId === row.memberId ? null : row.memberId);
             }}
-            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
           >
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <circle cx="10" cy="4" r="1.5" />
-              <circle cx="10" cy="10" r="1.5" />
-              <circle cx="10" cy="16" r="1.5" />
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
             </svg>
           </button>
-          {openMenuId === row.memberId && (
-            <div
-              ref={menuRef}
-              style={{
-                position: 'absolute',
-                right: 0,
-                top: '100%',
-                marginTop: '0.25rem',
-                background: 'var(--bg-primary)',
-                border: '1px solid var(--border-color)',
-                borderRadius: '0.5rem',
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
-                zIndex: 1000,
-                minWidth: '160px',
-                overflow: 'hidden'
-              }}
-            >
+
+          {openMenuId === row.memberId && createPortal(
+            <>
+              <div 
+                className={styles.dropdownBackdrop}
+                onClick={() => setOpenMenuId(null)}
+              />
+              <div 
+                ref={menuRef} 
+                className={styles.actionsDropdown}
+                style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
+              >
               <button
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'background 0.2s'
-                }}
+                className={styles.actionsDropdownItem}
                 onClick={(e) => {
                   e.stopPropagation();
                   handleOpenModal(row);
                   setOpenMenuId(null);
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                 </svg>
                 Make Payment
               </button>
               <button
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'background 0.2s'
-                }}
+                className={styles.actionsDropdownItem}
                 onClick={(e) => {
                   e.stopPropagation();
                   // TODO: View details functionality
                   setOpenMenuId(null);
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                 </svg>
                 View Details
               </button>
               <button
-                style={{
-                  width: '100%',
-                  padding: '0.75rem 1rem',
-                  background: 'transparent',
-                  border: 'none',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontSize: '0.875rem',
-                  color: 'var(--text-primary)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.5rem',
-                  transition: 'background 0.2s'
-                }}
+                className={styles.actionsDropdownItem}
                 onClick={(e) => {
                   e.stopPropagation();
                   // TODO: Edit salary functionality
                   setOpenMenuId(null);
                 }}
-                onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
-                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
-                <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
                 Edit Salary
               </button>
             </div>
-          )}
+          </>,
+          document.body
+        )}
         </div>
       ),
     }
@@ -559,32 +527,25 @@ export const TeamFinanceTable = () => {
         size="medium"
       >
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <DatePicker
-              label="Date"
-              value={transactionForm.datetime}
-              onChange={(value) => setTransactionForm({ ...transactionForm, datetime: value })}
-              required
-            />
-            <Input
-              label="Time"
-              type="time"
-              value={transactionForm.time}
-              onChange={(e) => setTransactionForm({ ...transactionForm, time: e.target.value })}
-            />
-          </div>
+          <DatePicker
+            label="Date"
+            value={transactionForm.datetime}
+            onChange={(value) => setTransactionForm({ ...transactionForm, datetime: value })}
+            required
+            info="Select the date when this salary payment was made"
+          />
 
-          <Input
+          <AmountInput
             label="Amount"
-            type="number"
             value={transactionForm.amount}
-            onChange={(e) => setTransactionForm({ ...transactionForm, amount: e.target.value })}
+            onChange={(value) => setTransactionForm({ ...transactionForm, amount: value })}
             placeholder="Enter amount"
             required
+            info="Enter the payment amount. Use bonus for additional payments or deduction for salary reductions"
           />
 
           <Select
-            label="Payment Type"
+            label="Type"
             value={transactionForm.nature}
             onChange={(value) => setTransactionForm({ ...transactionForm, nature: value as any })}
             options={[
@@ -593,6 +554,7 @@ export const TeamFinanceTable = () => {
               { value: 'deduction', label: 'Deduction' }
             ]}
             required
+            info="Regular Payment: Monthly salary | Bonus: Additional payment | Deduction: Amount deducted from salary"
           />
 
           <Textarea
@@ -601,6 +563,9 @@ export const TeamFinanceTable = () => {
             onChange={(e) => setTransactionForm({ ...transactionForm, comment: e.target.value })}
             placeholder="Add a note (optional)"
             rows={3}
+            maxLength={500}
+            showCharCount={true}
+            info="Optional notes about this payment (e.g., reason for bonus or deduction)"
           />
 
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
@@ -626,7 +591,7 @@ export const TeamFinanceTable = () => {
               disabled={isSubmitting || !transactionForm.amount}
               style={{
                 padding: '0.625rem 1.25rem',
-                background: isSubmitting || !transactionForm.amount ? '#d1d5db' : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                background: isSubmitting || !transactionForm.amount ? '#d1d5db' : '#6366f1',
                 color: 'white',
                 border: 'none',
                 borderRadius: '0.5rem',

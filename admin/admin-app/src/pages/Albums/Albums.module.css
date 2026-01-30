@@ -36,11 +36,11 @@
 @keyframes cardAppear {
   from {
     opacity: 0;
-    transform: translateY(30px) scale(0.95);
+    transform: scale(0.8);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1);
   }
 }
 
@@ -260,8 +260,7 @@
   border-radius: 1rem;
   overflow: visible;
   position: relative;
-  animation: cardAppear 0.4s ease-out backwards;
-  animation-delay: calc(0.03s * var(--card-index, 0));
+  animation: cardAppear 0.25s ease-out backwards;
 }
 
 .badgeBeforeTitle {
@@ -1708,42 +1707,16 @@
   background: var(--bg-secondary);
   cursor: grab;
   transition: transform 0.2s;
-  animation: cardAppear 0.4s ease-out backwards;
+  animation: cardAppear 0.25s ease-out backwards;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
 }
 
-/* Stagger delays for gallery images - using calculation for smooth top-to-bottom loading */
+/* No stagger delays - all images appear at once */
 .imageItem:nth-child(n) { 
-  animation-delay: calc(0.03s * var(--item-index, 0)); 
+  animation-delay: 0s; 
 }
-.imageItem:nth-child(1) { --item-index: 1; }
-.imageItem:nth-child(2) { --item-index: 2; }
-.imageItem:nth-child(3) { --item-index: 3; }
-.imageItem:nth-child(4) { --item-index: 4; }
-.imageItem:nth-child(5) { --item-index: 5; }
-.imageItem:nth-child(6) { --item-index: 6; }
-.imageItem:nth-child(7) { --item-index: 7; }
-.imageItem:nth-child(8) { --item-index: 8; }
-.imageItem:nth-child(9) { --item-index: 9; }
-.imageItem:nth-child(10) { --item-index: 10; }
-.imageItem:nth-child(11) { --item-index: 11; }
-.imageItem:nth-child(12) { --item-index: 12; }
-.imageItem:nth-child(13) { --item-index: 13; }
-.imageItem:nth-child(14) { --item-index: 14; }
-.imageItem:nth-child(15) { --item-index: 15; }
-.imageItem:nth-child(16) { --item-index: 16; }
-.imageItem:nth-child(17) { --item-index: 17; }
-.imageItem:nth-child(18) { --item-index: 18; }
-.imageItem:nth-child(19) { --item-index: 19; }
-.imageItem:nth-child(20) { --item-index: 20; }
-.imageItem:nth-child(21) { --item-index: 21; }
-.imageItem:nth-child(22) { --item-index: 22; }
-.imageItem:nth-child(23) { --item-index: 23; }
-.imageItem:nth-child(24) { --item-index: 24; }
-.imageItem:nth-child(25) { --item-index: 25; }
-.imageItem:nth-child(26) { --item-index: 26; }
 .imageItem:nth-child(27) { --item-index: 27; }
 .imageItem:nth-child(28) { --item-index: 28; }
 .imageItem:nth-child(29) { --item-index: 29; }

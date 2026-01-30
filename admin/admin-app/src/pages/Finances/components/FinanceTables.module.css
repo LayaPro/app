@@ -1,0 +1,98 @@
+.actionsDropdownButton {
+  padding: 6px;
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
+}
+
+.actionsDropdownButton:hover {
+  background: var(--bg-secondary);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.dropdownBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999998;
+  background: transparent;
+}
+
+.actionsDropdown {
+  position: fixed;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 999999;
+  min-width: 160px;
+  overflow: hidden;
+  animation: slideDown 0.2s ease-out;
+  transform-origin: top;
+  isolation: isolate;
+  will-change: transform;
+}
+
+[data-theme="dark"] .actionsDropdown {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.actionsDropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  text-align: left;
+}
+
+.actionsDropdownItem:hover {
+  background: var(--bg-secondary);
+}
+
+.actionsDropdownItem svg {
+  flex-shrink: 0;
+  stroke-width: 2;
+}
+
+.statusFilterSelect {
+  min-width: 220px;
+}
+
+.statusFilterSelect :global(button) {
+  height: 38px;
+  padding: 10px 14px;
+  font-size: 14px;
+}
+
+.statusFilterSelect :global(.selectLabel) {
+  display: none;
+}
