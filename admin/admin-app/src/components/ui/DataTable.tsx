@@ -28,7 +28,13 @@ export function DataTable<T extends Record<string, any>>({
   data,
   itemsPerPage = 10,
   emptyMessage = 'No data available',
-  emptyIcon,
+  emptyIcon = (
+    <img 
+      src="/nodata.svg" 
+      alt="No data" 
+      style={{ width: '120px', height: '120px', opacity: 0.5, marginBottom: '16px' }}
+    />
+  ),
   onCreateClick,
   createButtonText = 'Create New',
   renderExpandedRow,

@@ -781,10 +781,6 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
     );
   }
 
-  if (projects.length === 0) {
-    return null;
-  }
-
   const handleClearFilters = () => {
     setStartDate('');
     setEndDate('');
