@@ -145,6 +145,16 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
     try {
       setLoading(true);
       const response = await projectApi.getAll();
+      console.log('Fetched projects:', response?.projects?.length);
+      // Log first project's events to verify duration field
+      if (response?.projects?.[0]?.events?.[0]) {
+        console.log('Sample event from first project:', {
+          clientEventId: response.projects[0].events[0].clientEventId,
+          duration: response.projects[0].events[0].duration,
+          fromDatetime: response.projects[0].events[0].fromDatetime,
+          toDatetime: response.projects[0].events[0].toDatetime
+        });
+      }
       setProjects(response?.projects || []);
     } catch (error) {
       console.error('Error fetching projects:', error);
@@ -449,6 +459,12 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
                     onClick={(e) => {
                       e.stopPropagation();
                       console.log('Edit clicked, project:', project);
+                      console.log('Project events:', project.events);
+                      if (project.events && project.events.length > 0) {
+                        project.events.forEach((event: any, index: number) => {
+                          console.log(`Event ${index}: duration=${event.duration}, fromDatetime=${event.fromDatetime}, toDatetime=${event.toDatetime}`);
+                        });
+                      }
                       dispatch(setEditingProject(project));
                       setOpenActionDropdown(null);
                     }}

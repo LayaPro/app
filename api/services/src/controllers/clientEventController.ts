@@ -50,6 +50,10 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Event ID and Project ID are required' });
     }
 
+    if (!fromDatetime || !toDatetime) {
+      return res.status(400).json({ message: 'From datetime and To datetime are required' });
+    }
+
     if (!tenantId) {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }

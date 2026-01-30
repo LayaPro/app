@@ -80,9 +80,20 @@ const Projects = () => {
             border: '1px solid var(--border-color)',
             borderRadius: '12px'
           }}>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(28px, 7vw, 36px)', height: 'clamp(28px, 7vw, 36px)', strokeWidth: 1.5, color: '#6366f1', flexShrink: 0 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
+            <div style={{
+              width: 'clamp(36px, 8vw, 44px)',
+              height: 'clamp(36px, 8vw, 44px)',
+              borderRadius: '12px',
+              background: 'rgba(99, 102, 241, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(18px, 4vw, 22px)', height: 'clamp(18px, 4vw, 22px)', strokeWidth: 2, color: '#6366f1' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+              </svg>
+            </div>
             <div>
               <p style={{ margin: 0, fontSize: 'clamp(9px, 2vw, 12px)', color: 'var(--text-secondary)', fontWeight: 500 }}>Active Projects</p>
               <p style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>{stats.active}</p>
@@ -98,9 +109,20 @@ const Projects = () => {
             border: '1px solid var(--border-color)',
             borderRadius: '12px'
           }}>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(28px, 7vw, 36px)', height: 'clamp(28px, 7vw, 36px)', strokeWidth: 1.5, color: '#10b981', flexShrink: 0 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <div style={{
+              width: 'clamp(36px, 8vw, 44px)',
+              height: 'clamp(36px, 8vw, 44px)',
+              borderRadius: '12px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(18px, 4vw, 22px)', height: 'clamp(18px, 4vw, 22px)', strokeWidth: 2, color: '#10b981' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
             <div>
               <p style={{ margin: 0, fontSize: 'clamp(9px, 2vw, 12px)', color: 'var(--text-secondary)', fontWeight: 500 }}>Completed</p>
               <p style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>{stats.completed}</p>
@@ -116,9 +138,20 @@ const Projects = () => {
             border: '1px solid var(--border-color)',
             borderRadius: '12px'
           }}>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(28px, 7vw, 36px)', height: 'clamp(28px, 7vw, 36px)', strokeWidth: 1.5, color: '#f59e0b', flexShrink: 0 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <div style={{
+              width: 'clamp(36px, 8vw, 44px)',
+              height: 'clamp(36px, 8vw, 44px)',
+              borderRadius: '12px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(18px, 4vw, 22px)', height: 'clamp(18px, 4vw, 22px)', strokeWidth: 2, color: '#10b981' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
             <div>
               <p style={{ margin: 0, fontSize: 'clamp(9px, 2vw, 12px)', color: 'var(--text-secondary)', fontWeight: 500 }}>Total Revenue</p>
               <p style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>₹{formatIndianAmount(stats.revenue)}</p>
@@ -134,9 +167,20 @@ const Projects = () => {
             border: '1px solid var(--border-color)',
             borderRadius: '12px'
           }}>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(28px, 7vw, 36px)', height: 'clamp(28px, 7vw, 36px)', strokeWidth: 1.5, color: '#ef4444', flexShrink: 0 }}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <div style={{
+              width: 'clamp(36px, 8vw, 44px)',
+              height: 'clamp(36px, 8vw, 44px)',
+              borderRadius: '12px',
+              background: 'rgba(239, 68, 68, 0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: 'clamp(18px, 4vw, 22px)', height: 'clamp(18px, 4vw, 22px)', strokeWidth: 2, color: '#ef4444' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
             <div>
               <p style={{ margin: 0, fontSize: 'clamp(9px, 2vw, 12px)', color: 'var(--text-secondary)', fontWeight: 500 }}>Due Soon</p>
               <p style={{ margin: 0, fontSize: 'clamp(16px, 4vw, 24px)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1, marginTop: '4px' }}>{stats.dueSoon}</p>

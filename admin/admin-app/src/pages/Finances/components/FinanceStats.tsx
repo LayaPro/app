@@ -54,58 +54,56 @@ export const FinanceStats = () => {
       title: 'Total Revenue',
       value: stats.totalRevenue,
       icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      color: 'green',
-      gradient: 'linear-gradient(135deg, #10b981 0%, #059669 100%)'
+      color: '#10b981',
+      bgColor: 'rgba(16, 185, 129, 0.1)'
     },
     {
       title: 'Total Expenses',
       value: stats.totalExpenses,
       icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
         </svg>
       ),
-      color: 'orange',
-      gradient: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
+      color: '#f59e0b',
+      bgColor: 'rgba(245, 158, 11, 0.1)'
     },
     {
       title: 'Net Profit',
       value: stats.netProfit,
       icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
       ),
-      color: stats.netProfit >= 0 ? 'blue' : 'red',
-      gradient: stats.netProfit >= 0 
-        ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
-        : 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+      color: stats.netProfit >= 0 ? '#3b82f6' : '#ef4444',
+      bgColor: stats.netProfit >= 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)'
     },
     {
       title: 'Pending Receivable',
       value: stats.pendingReceivable,
       icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
         </svg>
       ),
-      color: 'purple',
-      gradient: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)'
+      color: '#8b5cf6',
+      bgColor: 'rgba(139, 92, 246, 0.1)'
     },
     {
       title: 'Pending Payable',
       value: stats.pendingPayable,
       icon: (
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" />
         </svg>
       ),
-      color: 'red',
-      gradient: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)'
+      color: '#ef4444',
+      bgColor: 'rgba(239, 68, 68, 0.1)'
     }
   ];
 
@@ -113,8 +111,10 @@ export const FinanceStats = () => {
     <div className={styles.statsContainer}>
       {statCards.map((card, index) => (
         <div key={index} className={styles.statCard}>
-          <div className={styles.iconWrapper} style={{ background: card.gradient }}>
-            {card.icon}
+          <div className={styles.iconWrapper} style={{ background: card.bgColor }}>
+            <div style={{ color: card.color }}>
+              {card.icon}
+            </div>
           </div>
           <div className={styles.content}>
             <div className={styles.title}>{card.title}</div>

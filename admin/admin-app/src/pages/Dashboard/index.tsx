@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { dashboardStatsApi } from '../../services/api';
-import { ROUTES } from '../../utils/constants';
+import { dashboardStatsApi, clientEventApi, projectApi } from '../../services/api';
+import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import styles from './Dashboard.module.css';
 import pageStyles from '../Page.module.css';
 
@@ -24,9 +24,11 @@ interface DashboardStats {
 const Dashboard = () => {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
 
   useEffect(() => {
     fetchDashboardStats();
+    fetchUpcomingEvents();
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -39,6 +41,75 @@ const Dashboard = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchUpcomingEvents = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/dashboard/upcoming-events`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        console.error('Failed to fetch upcoming events, status:', response.status);
+        return;
+      }
+
+      const data = await response.json();
+      console.log('Upcoming events response:', data);
+      
+      setUpcomingEvents(data.upcomingEvents || []);
+    } catch (error) {
+      console.error('Error fetching upcoming events:', error);
+    }
+  };
+
+  const formatEventDate = (event: any) => {
+    const fromDate = new Date(event.fromDatetime);
+    const toDate = event.toDatetime ? new Date(event.toDatetime) : fromDate;
+    
+    const monthFrom = fromDate.toLocaleDateString('en-US', { month: 'short' });
+    const dayFrom = fromDate.getDate();
+    const dayTo = toDate.getDate();
+    const year = fromDate.getFullYear();
+    const time = fromDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    
+    // Use duration field
+    const daysText = event.duration === 1 ? '1 hour' : `${event.duration} hours`;
+    
+    if (dayFrom === dayTo) {
+      return `${monthFrom} ${dayFrom}, ${year} • ${time} • ${daysText}`;
+    }
+    return `${monthFrom} ${dayFrom}-${dayTo}, ${year} • ${time} • ${daysText}`;
+  };
+
+  const formatEventTime = (datetime: string) => {
+    const date = new Date(datetime);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
+  const getEventColor = (event: any, index: number) => {
+    // If event is ongoing (shoot in progress), use blue color
+    if (event.isOngoing) {
+      return '#3b82f6'; // blue - matching calendar today/ongoing events
+    }
+    
+    // For upcoming/future events, always use purple
+    return '#8b5cf6'; // purple - matching calendar future events
+  };
+
+  const getStatusColor = (statusCode: string) => {
+    const colorMap: Record<string, string> = {
+      'SHOOT_SCHEDULED': '#8b5cf6', // purple - matching calendar future/scheduled events
+      'SCHEDULED': '#8b5cf6', // purple - matching calendar future/scheduled events
+      'SHOOT_IN_PROGRESS': '#3b82f6', // blue - matching calendar today/in-progress events
+      'IN_PROGRESS': '#3b82f6', // blue - matching calendar today/in-progress events
+      'SHOOT_COMPLETED': '#10b981', // green - matching calendar past/completed events
+      'DELIVERED': '#10b981', // green - delivered is completed
+    };
+    return colorMap[statusCode] || '#8b5cf6'; // default purple for scheduled
   };
 
   const formatCurrency = (amount: number) => {
@@ -169,6 +240,127 @@ const Dashboard = () => {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* Events and Upcoming Events Grid */}
+      <div className={styles.contentGrid}>
+        <div className={styles.eventsPlaceholder}>
+          {/* Placeholder for future Events section */}
+        </div>
+
+        <div className={styles.upcomingEventsSection}>
+          <div className={styles.sectionHeader}>
+            <div className={styles.sectionTitleWrapper}>
+              <svg
+                className={styles.sectionIcon}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <h2 className={styles.sectionTitle}>Upcoming Events</h2>
+            </div>
+            <Link to={ROUTES.CALENDAR} className={styles.viewAllLink}>
+              View All →
+            </Link>
+          </div>
+          <div className={styles.eventsGrid}>
+            {upcomingEvents.length > 0 ? (
+              upcomingEvents.map((event, index) => {
+                const eventColor = getEventColor(event, index);
+                return (
+                  <div 
+                    key={event.clientEventId} 
+                    className={styles.eventCard}
+                    style={{ 
+                      borderLeftColor: eventColor,
+                      '--event-color': eventColor
+                    } as any}
+                  >
+                    <div className={styles.eventCardHeader}>
+                      <h3 className={styles.eventTitle}>
+                        {event.isOngoing && <span className={styles.ongoingIndicator}>● </span>}
+                        {event.eventType || 'Event'} - {event.projectName || 'Unnamed Project'}
+                      </h3>
+                      <span 
+                        className={styles.eventStatus}
+                        style={{ 
+                          borderColor: event.statusCode ? getStatusColor(event.statusCode) : '#8b5cf6',
+                          color: event.statusCode ? getStatusColor(event.statusCode) : '#8b5cf6'
+                        }}
+                      >
+                        {event.statusDesc || 'Scheduled'}
+                      </span>
+                    </div>
+                    <p className={styles.eventDate}>
+                      {formatEventDate(event)}
+                    </p>
+                    {event.venue && (
+                      <div className={styles.eventVenue}>
+                        <svg
+                          className={styles.venueIcon}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        <span>{event.venue}{event.city ? `, ${event.city}` : ''}</span>
+                      </div>
+                    )}
+                    {event.teamMembers && event.teamMembers.length > 0 && (
+                      <div className={styles.eventTeam}>
+                        <svg
+                          className={styles.teamIcon}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        {event.teamMembers.map((member: any, idx: number) => (
+                          <span 
+                            key={idx} 
+                            className={styles.teamMemberBadge}
+                            style={{ borderColor: eventColor }}
+                          >
+                            {member.firstName} {member.lastName}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            ) : (
+              <div className={styles.noEvents}>
+                <p>No upcoming events in the next 30 days</p>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

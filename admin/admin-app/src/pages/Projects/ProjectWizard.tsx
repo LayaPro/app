@@ -115,10 +115,25 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       const email = editingProject.email || '';
       
       // Map events with proper field handling
+      console.log('Raw events from editingProject:', editingProject.events);
       const mappedEvents = (editingProject.events || []).map((e: any) => {
         // Handle datetime fields - check multiple possible field names
         const fromDatetime = e.fromDatetime || e.startDate || e.date;
         const toDatetime = e.toDatetime || e.endDate;
+        
+        // Calculate duration if not present
+        let duration = e.duration;
+        if (!duration && fromDatetime && toDatetime) {
+          const from = new Date(fromDatetime);
+          const to = new Date(toDatetime);
+          duration = Math.round((to.getTime() - from.getTime()) / (60 * 60 * 1000));
+          console.log(`Calculated duration for event ${e.clientEventId}: ${duration} hours`);
+        } else if (!duration) {
+          duration = 4; // Default fallback
+          console.log(`Using default duration for event ${e.clientEventId}`);
+        }
+        
+        console.log(`Event ${e.clientEventId} - duration: ${e.duration} (from DB), calculated/used: ${duration}`);
         
         return {
           clientEventId: e.clientEventId,
@@ -128,6 +143,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
           toDate: toDatetime ? new Date(toDatetime).toISOString().split('T')[0] : '',
           fromTime: fromDatetime ? new Date(fromDatetime).toTimeString().slice(0, 5) : '',
           toTime: toDatetime ? new Date(toDatetime).toTimeString().slice(0, 5) : '',
+          duration: duration,
           venue: e.venue || '',
           venueLocation: e.venueLocation || e.venue || '',
           venueMapUrl: e.venueMapUrl || '',
@@ -222,10 +238,12 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       if (formData.events.length === 0) {
         newErrors.events = 'Please add at least one event';
       } else {
-        // Check if all events have required date/time information
-        const eventsWithoutDates = formData.events.filter((event: any) => !event.fromDate || !event.fromTime);
+        // Check if all events have required date/time and duration information
+        const eventsWithoutDates = formData.events.filter((event: any) => 
+          !event.fromDate || !event.fromTime || !event.toDate || !event.toTime || !event.duration
+        );
         if (eventsWithoutDates.length > 0) {
-          newErrors.events = 'All events must have date and time information. Please edit events from proposal to add date/time.';
+          newErrors.events = 'All events must have complete date, time, and duration information.';
         }
       }
     }
@@ -291,23 +309,38 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
       };
 
       // Transform events data
-      const eventsData = formData.events.map((event) => ({
-        eventId: event.eventId,
-        fromDatetime: event.fromDate && event.fromTime 
+      const eventsData = formData.events.map((event) => {
+        const fromDatetime = event.fromDate && event.fromTime 
           ? new Date(`${event.fromDate}T${event.fromTime}`)
           : event.fromDate 
             ? new Date(event.fromDate) 
-            : undefined,
-        toDatetime: event.toDate && event.toTime 
+            : undefined;
+        
+        const toDatetime = event.toDate && event.toTime 
           ? new Date(`${event.toDate}T${event.toTime}`)
           : event.toDate 
             ? new Date(event.toDate) 
-            : undefined,
-        venue: event.venue,
-        venueMapUrl: event.venueLocation,
-        city: formData.city,
-        teamMembersAssigned: event.teamMembers || [],
-      }));
+            : undefined;
+        
+        // Calculate duration if not present but dates are
+        let duration = event.duration || 4;
+        if (!event.duration && fromDatetime && toDatetime) {
+          duration = Math.round((toDatetime.getTime() - fromDatetime.getTime()) / (60 * 60 * 1000));
+        }
+        
+        return {
+          eventId: event.eventId,
+          fromDatetime,
+          toDatetime,
+          duration,
+          venue: event.venue,
+          venueMapUrl: event.venueLocation,
+          city: formData.city,
+          teamMembersAssigned: event.teamMembers || [],
+        };
+      });
+      
+      console.log('Events data being sent to API:', eventsData);
 
       // Transform finance data
       const financeData = formData.totalBudget ? {

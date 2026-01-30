@@ -4,6 +4,9 @@ import Project from '../models/project';
 import ClientEvent from '../models/clientEvent';
 import ProjectFinance from '../models/projectFinance';
 import Proposal from '../models/proposal';
+import Team from '../models/team';
+import Event from '../models/event';
+import EventDeliveryStatus from '../models/eventDeliveryStatus';
 
 interface StatsComparison {
   current: number;
@@ -151,6 +154,86 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
   }
 };
 
+export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
+  try {
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    // Get current date and 30 days from now
+    const now = new Date();
+    const next30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    // Fetch all data in parallel
+    const [clientEvents, projects, teamMembers, events, statuses] = await Promise.all([
+      // Fetch upcoming events (future dates)
+      ClientEvent.find({
+        tenantId,
+        fromDatetime: { $gte: now, $lte: next30Days }
+      }).sort({ fromDatetime: 1 }).lean(),
+      Project.find({ tenantId }).select('projectId projectName displayPic').lean(),
+      Team.find({ tenantId }).select('memberId firstName lastName profileIds').lean(),
+      Event.find({ tenantId }).select('eventId eventCode eventDesc eventAlias').lean(),
+      EventDeliveryStatus.find({ tenantId }).select('statusId statusCode statusDescription').lean()
+    ]);
+
+    // Also fetch ongoing events (shoot in progress status)
+    const ongoingStatusId = Array.from(statuses).find(s => s.statusCode === 'SHOOT_IN_PROGRESS')?.statusId;
+    const ongoingEvents = ongoingStatusId ? await ClientEvent.find({
+      tenantId,
+      eventDeliveryStatusId: ongoingStatusId
+    }).lean() : [];
+
+    // Combine ongoing and upcoming events
+    const allEvents = [...ongoingEvents, ...clientEvents];
+
+    // Create lookup maps
+    const projectMap = new Map(projects.map(p => [p.projectId, p]));
+    const teamMap = new Map(teamMembers.map(t => [t.memberId, t]));
+    const eventMap = new Map(events.map(e => [e.eventId, e]));
+    const statusMap = new Map(statuses.map(s => [s.statusId, s]));
+
+    // Enrich events with related data
+    const enrichedEvents = allEvents.map(event => {
+      const status = statusMap.get(event.eventDeliveryStatusId || '');
+      const isOngoing = status?.statusCode === 'SHOOT_IN_PROGRESS';
+      
+      return {
+        ...event,
+        projectName: projectMap.get(event.projectId)?.projectName,
+        eventType: eventMap.get(event.eventId)?.eventDesc,
+        statusDesc: status?.statusDescription,
+        statusCode: status?.statusCode,
+        isOngoing,
+        teamMembers: event.teamMembersAssigned?.map((id: string) => teamMap.get(id)).filter(Boolean) || []
+      };
+    });
+
+    // Sort: ongoing events first, then upcoming events
+    enrichedEvents.sort((a, b) => {
+      if (a.isOngoing && !b.isOngoing) return -1;
+      if (!a.isOngoing && b.isOngoing) return 1;
+      const aTime = a.fromDatetime ? new Date(a.fromDatetime).getTime() : 0;
+      const bTime = b.fromDatetime ? new Date(b.fromDatetime).getTime() : 0;
+      return aTime - bTime;
+    });
+
+    // Limit to 4 events
+    const limitedEvents = enrichedEvents.slice(0, 4);
+
+    return res.status(200).json({
+      message: 'Upcoming events retrieved successfully',
+      upcomingEvents: limitedEvents
+    });
+  } catch (err: any) {
+    console.error('Get upcoming events error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export default {
-  getDashboardStats
+  getDashboardStats,
+  getUpcomingEvents
 };

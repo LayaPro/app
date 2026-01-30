@@ -187,6 +187,12 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
         const eventsWithDetails = await Promise.all(
           clientEvents.map(async (ce) => {
             const event = await Event.findOne({ eventId: ce.eventId }).lean();
+            
+            // Log if duration is missing to help debug
+            if (ce.duration === undefined || ce.duration === null) {
+              console.log(`Warning: Event ${ce.clientEventId} missing duration field`);
+            }
+            
             return {
               ...ce,
               eventTitle: event?.eventDesc || null,
@@ -414,6 +420,7 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
           eventDeliveryStatusId: scheduledStatus?.statusId,
           fromDatetime: eventData.fromDatetime,
           toDatetime: eventData.toDatetime,
+          duration: eventData.duration,
           venue: eventData.venue,
           venueMapUrl: eventData.venueMapUrl,
           city: eventData.city,
@@ -497,6 +504,7 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
           eventDeliveryStatusId: scheduledStatus?.statusId,
           fromDatetime: eventData.fromDatetime,
           toDatetime: eventData.toDatetime,
+          duration: eventData.duration,
           venue: eventData.venue,
           venueMapUrl: eventData.venueMapUrl,
           city: eventData.city,
