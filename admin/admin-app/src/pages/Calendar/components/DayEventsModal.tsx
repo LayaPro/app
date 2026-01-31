@@ -44,7 +44,9 @@ export const DayEventsModal: React.FC<DayEventsModalProps> = ({
         ) : (
           <div className={styles.eventsList}>
             {events.map((event) => {
-              const color = getEventColor(new Date(event.fromDatetime!));
+              const fromDate = new Date(event.fromDatetime!);
+              const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
+              const color = getEventColor(fromDate, toDate);
               const eventType = eventTypes.get(event.eventId);
               const project = projects.get(event.projectId);
               const fromTime = event.fromDatetime

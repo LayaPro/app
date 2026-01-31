@@ -103,7 +103,17 @@ export const DayView: React.FC<DayViewProps> = ({
         const endMinute = toDate.getMinutes();
 
         const startMinutes = startHour * 60 + startMinute;
-        const endMinutes = endHour * 60 + endMinute;
+        let endMinutes = endHour * 60 + endMinute;
+        
+        // Check if event spans to next day
+        const fromDateStr = formatDateString(fromDate);
+        const toDateStr = formatDateString(toDate);
+        
+        // If event ends on a different day, cap it at end of current day (11:59 PM = 1439 minutes)
+        if (fromDateStr !== toDateStr || endMinutes <= startMinutes) {
+          endMinutes = 1440; // 24 hours * 60 minutes
+        }
+        
         const durationMinutes = endMinutes - startMinutes || 60; // Default 1 hour if same time
 
         const top = (startMinutes / 60) * HOUR_HEIGHT;
@@ -283,9 +293,9 @@ export const DayView: React.FC<DayViewProps> = ({
             {dayEvents.map((event) => {
               const eventType = eventTypes.get(event.eventId);
               const project = projects.get(event.projectId);
-              const color = getEventColor(new Date(event.fromDatetime!));
               const fromDate = new Date(event.fromDatetime!);
               const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
+              const color = getEventColor(fromDate, toDate);
               
               const formatTime = (d: Date) => d.toLocaleTimeString('en-US', {
                 hour: 'numeric',
@@ -293,7 +303,15 @@ export const DayView: React.FC<DayViewProps> = ({
                 hour12: true,
               });
               
-              const timeLabel = toDate ? `${formatTime(fromDate)} - ${formatTime(toDate)}` : formatTime(fromDate);
+              // Check if event spans to next day
+              const fromDateStr = formatDateString(fromDate);
+              const toDateStr = toDate ? formatDateString(toDate) : fromDateStr;
+              const spansToNextDay = fromDateStr !== toDateStr;
+              
+              const timeLabel = toDate 
+                ? `${formatTime(fromDate)} - ${formatTime(toDate)}${spansToNextDay ? ' (Next Day)' : ''}` 
+                : formatTime(fromDate);
+              
               const displayText = project ? `${eventType?.eventDesc || 'Event'} - ${project.projectName}` : eventType?.eventDesc || 'Event';
 
               const leftPosition = needsScroll ? `${event.column * 200}px` : `${(event.column / event.totalColumns) * 100}%`;

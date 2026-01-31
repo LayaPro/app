@@ -170,7 +170,9 @@ export const MonthView: React.FC<MonthViewProps> = ({
         </div>
         <div className={styles.eventsContainer}>
           {dayEvents.slice(0, 3).map((event) => {
-            const color = getEventColor(new Date(event.fromDatetime!));
+            const fromDate = new Date(event.fromDatetime!);
+            const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
+            const color = getEventColor(fromDate, toDate);
             const eventType = eventTypes.get(event.eventId);
             const project = projects.get(event.projectId);
             const fromTime = event.fromDatetime ? formatTimeString(new Date(event.fromDatetime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })) : '';

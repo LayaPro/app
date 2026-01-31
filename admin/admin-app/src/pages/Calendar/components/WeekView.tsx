@@ -105,7 +105,17 @@ export const WeekView: React.FC<WeekViewProps> = ({
         const endMinute = toDate.getMinutes();
 
         const startMinutes = startHour * 60 + startMinute;
-        const endMinutes = endHour * 60 + endMinute;
+        let endMinutes = endHour * 60 + endMinute;
+        
+        // Check if event spans to next day
+        const fromDateStr = formatDateString(fromDate);
+        const toDateStr = formatDateString(toDate);
+        
+        // If event ends on a different day, cap it at end of current day (11:59 PM = 1439 minutes)
+        if (fromDateStr !== toDateStr || endMinutes <= startMinutes) {
+          endMinutes = 1440; // 24 hours * 60 minutes
+        }
+        
         const durationMinutes = endMinutes - startMinutes || 60; // Default 1 hour if same time
 
         const top = (startMinutes / 60) * HOUR_HEIGHT;
@@ -299,13 +309,25 @@ export const WeekView: React.FC<WeekViewProps> = ({
                   {dayEvents.map((event) => {
                     const eventType = eventTypes.get(event.eventId);
                     const project = projects.get(event.projectId);
-                    const color = getEventColor(new Date(event.fromDatetime!));
                     const fromDate = new Date(event.fromDatetime!);
-                    const timeLabel = fromDate.toLocaleTimeString('en-US', {
+                    const toDate = event.toDatetime ? new Date(event.toDatetime) : new Date(fromDate.getTime() + 60 * 60 * 1000);
+                    const color = getEventColor(fromDate, toDate);
+                    
+                    const formatTime = (d: Date) => d.toLocaleTimeString('en-US', {
                       hour: 'numeric',
                       minute: '2-digit',
                       hour12: true,
                     });
+                    
+                    // Check if event spans to next day
+                    const fromDateStr = formatDateString(fromDate);
+                    const toDateStr = formatDateString(toDate);
+                    const spansToNextDay = fromDateStr !== toDateStr;
+                    
+                    const timeLabel = spansToNextDay 
+                      ? `${formatTime(fromDate)} - ${formatTime(toDate)} (Next Day)`
+                      : formatTime(fromDate);
+                    
                     const displayText = project ? `${eventType?.eventDesc || 'Event'} - ${project.projectName}` : eventType?.eventDesc || 'Event';
 
                     const leftPosition = needsScroll ? `${event.column * 150}px` : `${(event.column / event.totalColumns) * 100}%`;

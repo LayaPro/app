@@ -192,15 +192,19 @@ export function getAvatarColorClass(str: string): string {
 }
 
 /**
- * Determine event color based on date (past/present/future)
+ * Determine event color based on date (past/ongoing/future)
  */
-export function getEventColor(eventDate: Date): 'green' | 'blue' | 'purple' {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const compareDate = new Date(eventDate);
-  compareDate.setHours(0, 0, 0, 0);
+export function getEventColor(fromDatetime: Date, toDatetime?: Date): 'green' | 'blue' | 'purple' {
+  const now = new Date();
+  const fromDate = new Date(fromDatetime);
+  const toDate = toDatetime ? new Date(toDatetime) : null;
 
-  if (compareDate < today) return 'green'; // past
-  if (compareDate.getTime() === today.getTime()) return 'blue'; // today
-  return 'purple'; // future
+  // If event has ended (toDatetime has passed), show green
+  if (toDate && toDate < now) return 'green';
+  
+  // If event is ongoing (started but not ended), show blue
+  if (fromDate <= now && (!toDate || toDate >= now)) return 'blue';
+  
+  // Event hasn't started yet, show purple
+  return 'purple';
 }

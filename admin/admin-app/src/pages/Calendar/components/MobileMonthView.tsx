@@ -287,7 +287,12 @@ export const MobileMonthView: React.FC<MobileMonthViewProps> = ({
               const toTime = event.toDatetime 
                 ? formatTimeString(new Date(event.toDatetime).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })) 
                 : '';
-              const eventColor = event.fromDatetime ? getEventColor(new Date(event.fromDatetime)) : 'blue';
+              const eventColor = event.fromDatetime 
+                ? getEventColor(
+                    new Date(event.fromDatetime), 
+                    event.toDatetime ? new Date(event.toDatetime) : undefined
+                  ) 
+                : 'blue';
               
               return (
                 <div
