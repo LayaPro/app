@@ -1,6 +1,7 @@
 import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import { teamApi, clientEventApi, eventApi, profileApi } from '../../../services/api';
 import styles from './AssignEditorModal.module.css';
 
@@ -40,6 +41,7 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
   
   // Single designer mode
   const [selectedDesigner, setSelectedDesigner] = useState('');
+  const [albumDesignDueDate, setAlbumDesignDueDate] = useState('');
   
   // Per-event mode
   const [eventMappings, setEventMappings] = useState<EventDesignerMapping[]>([]);
@@ -97,6 +99,14 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
       } else {
         setSelectedDesigner('');
       }
+      
+      // Set due date if all events have the same due date
+      const dueDates = fetchedEvents.map((e: any) => e.albumDesignDueDate).filter((d: any) => d);
+      if (dueDates.length > 0 && dueDates.every((d: any) => d === dueDates[0])) {
+        setAlbumDesignDueDate(dueDates[0].split('T')[0]);
+      } else {
+        setAlbumDesignDueDate('');
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -152,7 +162,8 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
         await Promise.all(
           events.map(event =>
             clientEventApi.update(event.clientEventId, {
-              albumDesigner: selectedDesigner || null
+              albumDesigner: selectedDesigner || null,
+              albumDesignDueDate: albumDesignDueDate || null
             })
           )
         );
@@ -161,7 +172,8 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
         await Promise.all(
           eventMappings.map(mapping =>
             clientEventApi.update(mapping.clientEventId, {
-              albumDesigner: mapping.designerId || null
+              albumDesigner: mapping.designerId || null,
+              albumDesignDueDate: albumDesignDueDate || null
             })
           )
         );
@@ -184,6 +196,7 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
     setProject(null);
     setMode('single');
     setSelectedDesigner('');
+    setAlbumDesignDueDate('');
     setEventMappings([]);
     setValidationError('');
   };
@@ -296,8 +309,19 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
               onChange={(value) => setSelectedDesigner(value)}
               placeholder="Select a designer..."
             />
+            
+            <div style={{ marginTop: '1rem' }}>
+              <DatePicker
+                label="Album Design Due Date"
+                value={albumDesignDueDate}
+                onChange={(value) => setAlbumDesignDueDate(value)}
+                placeholder="Select due date"
+                allowPast={false}
+              />
+            </div>
+            
             <p className={styles.helperText}>
-              This designer will be assigned to all {events.length} events
+              This designer and due date will be assigned to all {events.length} events
             </p>
             
             <div className={styles.eventPreviewSection}>
@@ -322,6 +346,16 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
           </div>
         ) : (
           <div className={styles.perEventSection}>
+            <div style={{ marginBottom: '1rem' }}>
+              <DatePicker
+                label="Album Design Due Date (applies to all events)"
+                value={albumDesignDueDate}
+                onChange={(value) => setAlbumDesignDueDate(value)}
+                placeholder="Select due date"
+                allowPast={false}
+              />
+            </div>
+            
             <label className={styles.label}>Assign designer per event</label>
             <div className={styles.eventList}>
               {eventMappings.map((mapping) => {

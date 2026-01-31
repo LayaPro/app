@@ -9,6 +9,7 @@ import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Proposal from '../models/proposal';
 import { AuthRequest } from '../middleware/auth';
 import { generateBucketName, createS3Bucket, bucketExists } from '../utils/s3Bucket';
+import { NotificationUtils } from '../services/notificationUtils';
 
 export const createProject = async (req: AuthRequest, res: Response) => {
   console.log('[Project] ========== CREATE PROJECT REQUEST RECEIVED ==========');
@@ -456,6 +457,14 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
           createdBy: userId,
         });
         createdEvents.push(clientEvent);
+
+        // If event was created with AWAITING_EDITING status and no editor, notify admins
+        if (statusId === awaitingEditingStatus?.statusId && !clientEvent.albumEditor) {
+          await NotificationUtils.notifyAssignEditorNeeded(
+            clientEvent,
+            projectData.projectName
+          );
+        }
       }
     }
 

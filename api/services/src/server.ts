@@ -31,6 +31,7 @@ import projectFinanceController from './controllers/projectFinanceController';
 import teamFinanceController from './controllers/teamFinanceController';
 import imageController from './controllers/imageController';
 import dashboardController from './controllers/dashboardController';
+import './models/notification';
 import dashboardStatsController from './controllers/dashboardStatsController';
 import financeStatsController from './controllers/financeStatsController';
 import searchController from './controllers/searchController';
@@ -38,10 +39,13 @@ import userController from './controllers/userController';
 import albumPdfController from './controllers/albumPdfController';
 import organizationController from './controllers/organizationController';
 import * as proposalController from './controllers/proposalController';
+import { NotificationController } from './controllers/notificationController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload, uploadPdf } from './middleware/upload';
 import { startEventStatusUpdater } from './jobs/eventStatusUpdater';
+import { initializeSocketIO } from './services/socketService';
+import http from 'http';
 
 const app = express();
 app.use(express.json({ limit: '10gb' }));
@@ -255,10 +259,24 @@ app.patch('/toggle-user-active/:userId', authenticate, requireAdmin, userControl
 app.post('/change-password', authenticate, userController.changePassword);
 app.post('/admin-reset-password/:userId', authenticate, requireAdmin, userController.adminResetPassword);
 
+// ---------- Notification routes ----------
+app.get('/notifications', authenticate, NotificationController.getNotifications);
+app.get('/notifications/unread-count', authenticate, NotificationController.getUnreadCount);
+app.post('/notifications/:id/read', authenticate, NotificationController.markAsRead);
+app.post('/notifications/read-all', authenticate, NotificationController.markAllAsRead);
+app.delete('/notifications/:id', authenticate, NotificationController.deleteNotification);
+app.post('/notifications/test', authenticate, NotificationController.createTestNotification);
+
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || '';
 
 console.log("MONGO_URI:", process.env.MONGO_URI);
+
+// Create HTTP server for Socket.io
+const server = http.createServer(app);
+
+// Initialize Socket.io
+initializeSocketIO(server);
 
 mongoose
   .connect(MONGO_URI, { dbName: 'flomingo_db' })
@@ -268,7 +286,10 @@ mongoose
     // Start cron jobs
     startEventStatusUpdater();
     
-    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+    server.listen(PORT, () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log('Socket.io enabled for real-time notifications');
+    });
   })
   .catch((err) => {
     console.error('MongoDB connection error:', err);

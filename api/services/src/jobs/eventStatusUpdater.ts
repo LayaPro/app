@@ -1,6 +1,8 @@
 import cron from 'node-cron';
 import ClientEvent from '../models/clientEvent';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
+import Project from '../models/project';
+import { NotificationUtils } from '../services/notificationUtils';
 
 /**
  * Cron job to automatically update event statuses based on datetime
@@ -55,34 +57,42 @@ export const startEventStatusUpdater = () => {
         const shootInProgressStatusId = shootInProgressMap.get(tenantId);
         if (!shootInProgressStatusId) continue;
 
-        // Find events that should be updated (for debugging)
+        // Find events that should be updated
         const eventsToUpdate = await ClientEvent.find({
           tenantId,
           eventDeliveryStatusId: scheduledStatusId,
           fromDatetime: { $lte: now },
           toDatetime: { $gt: now }
-        }).select('clientEventId fromDatetime toDatetime').lean();
+        });
 
         if (eventsToUpdate.length > 0) {
-          console.log(`[EventStatusUpdater] Updating ${eventsToUpdate.length} events to SHOOT_IN_PROGRESS`);
-        }
-
-        const result = await ClientEvent.updateMany(
-          {
-            tenantId,
-            eventDeliveryStatusId: scheduledStatusId,
-            fromDatetime: { $lte: now },
-            toDatetime: { $gt: now }
-          },
-          {
-            $set: {
-              eventDeliveryStatusId: shootInProgressStatusId,
-              updatedBy: 'system-cron'
+          console.log(`[EventStatusUpdater] Updating ${eventsToUpdate.length} events to SHOOT_IN_PROGRESS for tenant ${tenantId}`);
+          
+          // Update each event individually and trigger notifications
+          for (const event of eventsToUpdate) {
+            console.log(`[EventStatusUpdater] Processing event ${event.clientEventId}`);
+            event.eventDeliveryStatusId = shootInProgressStatusId;
+            event.updatedBy = 'system-cron';
+            await event.save();
+            console.log(`[EventStatusUpdater] Event ${event.clientEventId} status updated`);
+            
+            // Trigger notification for admins
+            try {
+              const project = await Project.findOne({ projectId: event.projectId });
+              if (project) {
+                console.log(`[EventStatusUpdater] Notifying admins about shoot start for event ${event.clientEventId}`);
+                await NotificationUtils.notifyShootInProgress(event, project.projectName);
+                console.log(`[EventStatusUpdater] Notification sent successfully`);
+              } else {
+                console.log(`[EventStatusUpdater] Project not found for event ${event.clientEventId}`);
+              }
+            } catch (notifError) {
+              console.error(`[EventStatusUpdater] Error sending notification for event ${event.clientEventId}:`, notifError);
             }
+            
+            updatedToInProgress++;
           }
-        );
-
-        updatedToInProgress += result.modifiedCount || 0;
+        }
       }
 
       // 2. Update SHOOT_IN_PROGRESS → AWAITING_EDITING
@@ -91,21 +101,45 @@ export const startEventStatusUpdater = () => {
         const awaitingEditingStatusId = awaitingEditingMap.get(tenantId);
         if (!awaitingEditingStatusId) continue;
 
-        const result = await ClientEvent.updateMany(
-          {
-            tenantId,
-            eventDeliveryStatusId: shootInProgressStatusId,
-            toDatetime: { $lte: now }
-          },
-          {
-            $set: {
-              eventDeliveryStatusId: awaitingEditingStatusId,
-              updatedBy: 'system-cron'
-            }
-          }
-        );
+        // Find events that should be updated
+        const eventsToUpdate = await ClientEvent.find({
+          tenantId,
+          eventDeliveryStatusId: shootInProgressStatusId,
+          toDatetime: { $lte: now }
+        });
 
-        updatedToAwaitingEditing += result.modifiedCount || 0;
+        if (eventsToUpdate.length > 0) {
+          console.log(`[EventStatusUpdater] Updating ${eventsToUpdate.length} events to AWAITING_EDITING`);
+          
+          // Update each event individually and trigger notifications if no editor assigned
+          for (const event of eventsToUpdate) {
+            console.log(`[EventStatusUpdater] Processing event ${event.clientEventId} for AWAITING_EDITING`);
+            event.eventDeliveryStatusId = awaitingEditingStatusId;
+            event.updatedBy = 'system-cron';
+            await event.save();
+            console.log(`[EventStatusUpdater] Event ${event.clientEventId} status updated to AWAITING_EDITING`);
+            
+            // Notify admins if no editor assigned
+            if (!event.albumEditor) {
+              try {
+                const project = await Project.findOne({ projectId: event.projectId });
+                if (project) {
+                  console.log(`[EventStatusUpdater] Notifying admins about editor needed for event ${event.clientEventId}`);
+                  await NotificationUtils.notifyAssignEditorNeeded(event, project.projectName);
+                  console.log(`[EventStatusUpdater] Editor notification sent successfully`);
+                } else {
+                  console.log(`[EventStatusUpdater] Project not found for event ${event.clientEventId}`);
+                }
+              } catch (notifError) {
+                console.error(`[EventStatusUpdater] Error sending editor notification for event ${event.clientEventId}:`, notifError);
+              }
+            } else {
+              console.log(`[EventStatusUpdater] Editor already assigned to event ${event.clientEventId}, skipping notification`);
+            }
+            
+            updatedToAwaitingEditing++;
+          }
+        }
       }
 
       if (updatedToInProgress > 0) {

@@ -50,7 +50,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
     return { 
       hour: String(hour12), 
-      minute: String(Math.floor(minute / 10) * 10), 
+      minute: String(Math.floor(minute / 5) * 5).padStart(2, '0'), 
       period 
     };
   };
@@ -386,7 +386,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                     onChange={(e) => handleTimeChange('minute', e.target.value)}
                   >
                     <option value="">--</option>
-                    {['0', '10', '20', '30', '40', '50'].map((minute) => {
+                    {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((minute) => {
                       // Disable past minutes if today is selected, same hour, and allowPast is false
                       let isDisabled = false;
                       if (!allowPast && value && timeComponents.hour) {
@@ -406,7 +406,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                           }
                         }
                       }
-                      return <option key={minute} value={minute} disabled={isDisabled}>{minute.padStart(2, '0')}</option>;
+                      return <option key={minute} value={minute} disabled={isDisabled}>{minute}</option>;
                     })}
                   </select>
                   <select

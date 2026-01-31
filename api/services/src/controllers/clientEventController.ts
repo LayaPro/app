@@ -4,9 +4,11 @@ import ClientEvent from '../models/clientEvent';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Team from '../models/team';
 import Project from '../models/project';
+import Event from '../models/event';
 import AlbumPdf from '../models/albumPdf';
 import { uploadToS3, deleteFromS3 } from '../utils/s3';
 import { AuthRequest } from '../middleware/auth';
+import { NotificationUtils } from '../services/notificationUtils';
 
 const sanitizeSegment = (value: string) =>
   value
@@ -220,8 +222,15 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
     // Add updatedBy field
     updates.updatedBy = userId;
 
-    // Automatically update status when editor or designer is assigned
+    // Get current event to track status changes
     const currentEvent = await ClientEvent.findOne({ clientEventId });
+    
+    // Track if we need to notify assigned users
+    let notifyEditorAssignment = false;
+    let notifyDesignerAssignment = false;
+    
+    // Track old status for status change notifications
+    const oldStatusId = currentEvent?.eventDeliveryStatusId;
     
     // If albumEditor is being assigned (and not being removed), set status to EDITING_ONGOING
     if (updates.albumEditor && updates.albumEditor !== currentEvent?.albumEditor) {
@@ -232,6 +241,7 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
       if (editingStatus) {
         updates.eventDeliveryStatusId = editingStatus.statusId;
       }
+      notifyEditorAssignment = true;
     }
     
     // If albumDesigner is being assigned (and not being removed), set status to ALBUM_DESIGN_ONGOING
@@ -243,6 +253,7 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
       if (designStatus) {
         updates.eventDeliveryStatusId = designStatus.statusId;
       }
+      notifyDesignerAssignment = true;
     }
 
     const updatedClientEvent = await ClientEvent.findOneAndUpdate(
@@ -250,6 +261,77 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
       { $set: updates },
       { new: true, runValidators: true }
     );
+
+    // Send notifications after update
+    if (updatedClientEvent) {
+      const project = await Project.findOne({ projectId: updatedClientEvent.projectId });
+      const projectName = project?.projectName || 'Unknown Project';
+      
+      // Get event name from Event model
+      const event = await Event.findOne({ eventId: updatedClientEvent.eventId });
+      const eventName = event?.eventDesc || 'event';
+
+      // Notify editor if they were assigned
+      if (notifyEditorAssignment && updates.albumEditor) {
+        await NotificationUtils.notifyUserAssignment(
+          updates.albumEditor,
+          tenantId,
+          eventName,
+          projectName,
+          'editor',
+          updates.editingDueDate
+        );
+      }
+
+      // Notify designer if they were assigned
+      if (notifyDesignerAssignment && updates.albumDesigner) {
+        await NotificationUtils.notifyUserAssignment(
+          updates.albumDesigner,
+          tenantId,
+          eventName,
+          projectName,
+          'designer',
+          updates.albumDesignDueDate
+        );
+      }
+
+      // Check for status changes
+      if (updates.eventDeliveryStatusId && oldStatusId !== updates.eventDeliveryStatusId) {
+        console.log('[Status Change] Detected status change:', {
+          oldStatusId,
+          newStatusId: updates.eventDeliveryStatusId,
+          eventId: updatedClientEvent.clientEventId
+        });
+
+        const [oldStatus, newStatus] = await Promise.all([
+          oldStatusId ? EventDeliveryStatus.findOne({ statusId: oldStatusId }) : null,
+          EventDeliveryStatus.findOne({ statusId: updatedClientEvent.eventDeliveryStatusId })
+        ]);
+
+        console.log('[Status Change] Status codes:', {
+          oldStatusCode: oldStatus?.statusCode,
+          newStatusCode: newStatus?.statusCode
+        });
+
+        // If status changed from SCHEDULED to SHOOT_IN_PROGRESS, notify admins
+        if (oldStatus?.statusCode === 'SCHEDULED' && newStatus?.statusCode === 'SHOOT_IN_PROGRESS') {
+          console.log('[Status Change - Controller] Triggering shoot in progress notification');
+          await NotificationUtils.notifyShootInProgress(
+            updatedClientEvent,
+            projectName
+          );
+        }
+
+        // If status is AWAITING_EDITING and no editor assigned, notify admins
+        if (newStatus?.statusCode === 'AWAITING_EDITING' && !updatedClientEvent.albumEditor) {
+          console.log('[Status Change] Triggering awaiting editing notification');
+          await NotificationUtils.notifyAssignEditorNeeded(
+            updatedClientEvent,
+            projectName
+          );
+        }
+      }
+    }
 
     return res.status(200).json({
       message: 'Client event updated successfully',

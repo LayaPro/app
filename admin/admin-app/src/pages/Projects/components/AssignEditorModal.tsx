@@ -1,6 +1,7 @@
 import { useState, useEffect, forwardRef, useImperativeHandle, useMemo } from 'react';
 import { Modal } from '../../../components/ui/Modal';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import { teamApi, clientEventApi, eventApi, profileApi } from '../../../services/api';
 import styles from './AssignEditorModal.module.css';
 
@@ -40,6 +41,7 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
   
   // Single editor mode
   const [selectedEditor, setSelectedEditor] = useState('');
+  const [editingDueDate, setEditingDueDate] = useState('');
   
   // Per-event mode
   const [eventMappings, setEventMappings] = useState<EventEditorMapping[]>([]);
@@ -97,6 +99,14 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
       } else {
         setSelectedEditor('');
       }
+      
+      // Set due date if all events have the same due date
+      const dueDates = fetchedEvents.map((e: any) => e.editingDueDate).filter((d: any) => d);
+      if (dueDates.length > 0 && dueDates.every((d: any) => d === dueDates[0])) {
+        setEditingDueDate(dueDates[0].split('T')[0]);
+      } else {
+        setEditingDueDate('');
+      }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -152,7 +162,8 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
         await Promise.all(
           events.map(event =>
             clientEventApi.update(event.clientEventId, {
-              albumEditor: selectedEditor || null
+              albumEditor: selectedEditor || null,
+              editingDueDate: editingDueDate || null
             })
           )
         );
@@ -161,7 +172,8 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
         await Promise.all(
           eventMappings.map(mapping =>
             clientEventApi.update(mapping.clientEventId, {
-              albumEditor: mapping.editorId || null
+              albumEditor: mapping.editorId || null,
+              editingDueDate: editingDueDate || null
             })
           )
         );
@@ -184,6 +196,7 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
     setProject(null);
     setMode('single');
     setSelectedEditor('');
+    setEditingDueDate('');
     setEventMappings([]);
     setValidationError('');
   };
@@ -296,8 +309,19 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
               onChange={(value) => setSelectedEditor(value)}
               placeholder="Select an editor..."
             />
+            
+            <div style={{ marginTop: '1rem' }}>
+              <DatePicker
+                label="Editing Due Date"
+                value={editingDueDate}
+                onChange={(value) => setEditingDueDate(value)}
+                placeholder="Select due date"
+                allowPast={false}
+              />
+            </div>
+            
             <p className={styles.helperText}>
-              This editor will be assigned to all {events.length} events
+              This editor and due date will be assigned to all {events.length} events
             </p>
             
             <div className={styles.eventPreviewSection}>
@@ -322,6 +346,16 @@ export const AssignEditorModal = forwardRef<AssignEditorModalHandle, AssignEdito
           </div>
         ) : (
           <div className={styles.perEventSection}>
+            <div style={{ marginBottom: '1rem' }}>
+              <DatePicker
+                label="Editing Due Date (applies to all events)"
+                value={editingDueDate}
+                onChange={(value) => setEditingDueDate(value)}
+                placeholder="Select due date"
+                allowPast={false}
+              />
+            </div>
+            
             <label className={styles.label}>Assign editor per event</label>
             <div className={styles.eventList}>
               {eventMappings.map((mapping) => {

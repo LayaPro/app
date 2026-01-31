@@ -19,6 +19,8 @@ export interface IClientEvent extends Document {
   notes?: string;
   albumEditor?: string; // Team member ID assigned as album editor
   albumDesigner?: string; // Team member ID assigned as album designer
+  editingDueDate?: Date; // Due date for editing completion
+  albumDesignDueDate?: Date; // Due date for album design completion
   createdBy?: string;
   updatedBy?: string;
   createdAt: Date;
@@ -45,6 +47,8 @@ const ClientEventSchema = new Schema<IClientEvent>(
     notes: { type: String },
     albumEditor: { type: String }, // Team member ID assigned as album editor
     albumDesigner: { type: String }, // Team member ID assigned as album designer
+    editingDueDate: { type: Date }, // Due date for editing completion
+    albumDesignDueDate: { type: Date }, // Due date for album design completion
     createdBy: { type: String },
     updatedBy: { type: String }
   },

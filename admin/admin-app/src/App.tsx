@@ -8,6 +8,7 @@ import { MobileMenuDrawer } from './components/panels/MobileMenuDrawer.js';
 import { Login } from './components/auth/Login.js';
 import { ROUTES } from './utils/constants.js';
 import { ToastProvider } from './context/ToastContext.js';
+import { NotificationProvider } from './context/NotificationContext.js';
 import { ToastContainer } from './components/ui/ToastContainer.js';
 
 // Page imports
@@ -61,13 +62,14 @@ function App() {
   // Show main app if authenticated
   return (
     <ToastProvider>
-      <div>
-        <Header />
-        <Sidebar />
-        <NotificationPanel />
-        <ProfilePanel />
-        <MobileMenuDrawer />
-        <ToastContainer />
+      <NotificationProvider>
+        <div>
+          <Header />
+          <Sidebar />
+          <NotificationPanel />
+          <ProfilePanel />
+          <MobileMenuDrawer />
+          <ToastContainer />
         
         {/* Main Content Area */}
         <main
@@ -117,7 +119,8 @@ function App() {
           <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
         </Routes>
       </main>
-      </div>
+        </div>
+      </NotificationProvider>
     </ToastProvider>
   );
 }
