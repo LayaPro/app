@@ -331,9 +331,9 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
             <Input
               label="Duration (hours)"
               type="number"
-              min="0.5"
+              min="0.01"
               max="24"
-              step="0.5"
+              step="0.01"
               value={String(newEvent.duration)}
               onChange={(e) => {
                 const value = parseFloat(e.target.value);
@@ -348,7 +348,7 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
                 }
               }}
               placeholder="Enter duration in hours (max 24)"
-              info="Expected duration of the event (0.5 to 24 hours)"
+              info="Expected duration of the event (0.01 to 24 hours, e.g. 0.083 = 5 minutes)"
               required
             />
           </div>
@@ -463,9 +463,9 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
               <Input
                 label="Duration (hours)"
                 type="number"
-                min="0.5"
+                min="0.01"
                 max="24"
-                step="0.5"
+                step="0.01"
                 value={String(newEvent.duration)}
                 onChange={(e) => {
                   const value = parseFloat(e.target.value);
@@ -480,7 +480,7 @@ export const EventsStep: React.FC<EventsStepProps> = ({ formData, onChange, erro
                   }
                 }}
                 placeholder="Enter duration in hours (max 24)"
-                info="Expected duration of the event (0.5 to 24 hours)"
+                info="Expected duration of the event (0.01 to 24 hours, e.g. 0.083 = 5 minutes)"
                 required
               />
             </div>

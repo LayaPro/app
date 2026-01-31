@@ -519,7 +519,7 @@
 }
 
 .eventCard {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(249, 250, 251, 0.95));
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 16px;
   padding: 24px;
@@ -531,10 +531,7 @@
 
 .eventCard:hover {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-}
-
-[data-theme="dark"] .eventCard {
-  background: linear-gradient(135deg, rgba(31, 41, 55, 0.9), rgba(17, 24, 39, 0.95));
+  background: var(--bg-hover);
 }
 
 .eventHeader {
@@ -699,7 +696,7 @@
   padding: 8px 16px;
   font-size: 14px;
   font-weight: 600;
-  background-color: #ffffff;
+  background-color: var(--bg-primary);
   color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -710,10 +707,6 @@
 
 .editButton:hover {
   background-color: var(--bg-tertiary);
-}
-
-[data-theme="dark"] .editButton {
-  background-color: #1f2937;
 }
 
 .fromProposalBadge {

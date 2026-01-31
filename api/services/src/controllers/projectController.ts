@@ -137,13 +137,8 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
         console.log('getAllProjects - Team Member ID:', memberId);
       } else {
         console.log('getAllProjects - No team member found for user');
-        // User is not a team member, return empty projects
-        return res.status(200).json({
-          message: 'Projects retrieved successfully',
-          count: 0,
-          projects: []
-        });
       }
+      console.log('getAllProjects - User will see events where albumEditor or albumDesigner equals:', userId);
     }
 
     // Get all projects for the tenant
@@ -159,20 +154,39 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
           // Admin sees all events for the project
           clientEvents = await ClientEvent.find({ projectId: project.projectId }).lean();
         } else {
-          // Non-admin users only see events where they are assigned as team members
-          clientEvents = await ClientEvent.find({ 
+          // Non-admin users see events where they are:
+          // 1. Assigned as team members, OR
+          // 2. Assigned as album editor (by userId or memberId), OR
+          // 3. Assigned as album designer (by userId or memberId)
+          const query: any = {
             projectId: project.projectId,
-            teamMembersAssigned: memberId 
-          }).lean();
+            $or: [
+              { albumEditor: userId },
+              { albumDesigner: userId }
+            ]
+          };
+          
+          // Add conditions for memberId if user is a team member
+          if (memberId) {
+            query.$or.push({ teamMembersAssigned: memberId });
+            query.$or.push({ albumEditor: memberId });
+            query.$or.push({ albumDesigner: memberId });
+          }
+          
+          console.log(`Project ${project.projectName} - Query:`, JSON.stringify(query, null, 2));
+          clientEvents = await ClientEvent.find(query).lean();
+          console.log(`Project ${project.projectName} - Found ${clientEvents.length} events for user`);
           
           // Debug: Check all events for this project
           const allProjectEvents = await ClientEvent.find({ projectId: project.projectId }).lean();
           if (allProjectEvents.length > 0) {
-            console.log(`Project ${project.projectName}:`);
+            console.log(`Project ${project.projectName} - Total events in project: ${allProjectEvents.length}`);
             allProjectEvents.forEach(event => {
-              console.log(`  Event: ${event.clientEventId}, teamMembersAssigned:`, event.teamMembersAssigned);
+              console.log(`  Event: ${event.clientEventId}`);
+              console.log(`    teamMembersAssigned:`, event.teamMembersAssigned);
+              console.log(`    albumEditor: ${event.albumEditor} (matches userId: ${event.albumEditor === userId})`);
+              console.log(`    albumDesigner: ${event.albumDesigner} (matches userId: ${event.albumDesigner === userId})`);
             });
-            console.log(`  Member ${memberId} is assigned to ${clientEvents.length} events`);
           }
         }
 

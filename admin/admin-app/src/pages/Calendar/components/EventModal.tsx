@@ -249,9 +249,9 @@ export const EventModal: React.FC<EventModalProps> = ({
             <Input
               label="Duration (hours)"
               type="number"
-              min="0.5"
+              min="0.01"
               max="24"
-              step="0.5"
+              step="0.01"
               value={formData.duration === 0 ? '' : String(formData.duration || 4)}
               onChange={(e) => {
                 const value = e.target.value;
@@ -269,15 +269,13 @@ export const EventModal: React.FC<EventModalProps> = ({
                 }
               }}
               onBlur={() => {
-                // On blur, enforce minimum or set to default
-                if (formData.duration === 0 || formData.duration < 0.5) {
+                // On blur, set to default if empty or negative
+                if (formData.duration === 0 || formData.duration < 0) {
                   handleChange('duration', 4);
-                } else if (formData.duration < 0.5) {
-                  handleChange('duration', 0.5);
                 }
               }}
               placeholder="4"
-              info="Expected duration of the event (0.5 to 24 hours)"
+              info="Expected duration of the event (0.01 to 24 hours, e.g. 0.083 = 5 minutes)"
               required
             />
           </div>

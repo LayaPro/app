@@ -73,8 +73,8 @@ export class NotificationUtils {
 
       const userIds = adminUsers.map((user) => user.userId);
 
-      // Create notification
-      const notification = await NotificationService.create({
+      // Create notification (already sends via Socket.io)
+      await NotificationService.create({
         userId: userIds,
         tenantId: event.tenantId,
         type: NOTIFICATION_TYPES.ASSIGN_EDITOR_NEEDED,
@@ -88,11 +88,6 @@ export class NotificationUtils {
         },
         actionUrl: `/projects`,
       });
-
-      // Send real-time notification to all admins
-      if (notification.length > 0) {
-        sendNotificationToUsers(userIds, notification[0]);
-      }
 
       console.log(
         `Notification sent to ${userIds.length} admins for event ${event.clientEventId}`
@@ -130,8 +125,8 @@ export class NotificationUtils {
 
       const userIds = adminUsers.map((user) => user.userId);
 
-      // Create notification
-      const notification = await NotificationService.create({
+      // Create notification (already sends via Socket.io)
+      await NotificationService.create({
         userId: userIds,
         tenantId: event.tenantId,
         type: NOTIFICATION_TYPES.ASSIGN_DESIGNER_NEEDED,
@@ -145,11 +140,6 @@ export class NotificationUtils {
         },
         actionUrl: `/projects`,
       });
-
-      // Send real-time notification to all admins
-      if (notification.length > 0) {
-        sendNotificationToUsers(userIds, notification[0]);
-      }
 
       console.log(
         `Notification sent to ${userIds.length} admins for event ${event.clientEventId}`
@@ -176,7 +166,8 @@ export class NotificationUtils {
         : '';
       const roleText = role === 'editor' ? 'editor' : 'album designer';
 
-      const notification = await NotificationService.create({
+      // Create notification (already sends via Socket.io)
+      await NotificationService.create({
         userId: [userId],
         tenantId,
         type: NOTIFICATION_TYPES.ASSIGNED_TO_TASK,
@@ -188,13 +179,8 @@ export class NotificationUtils {
           role,
           dueDate,
         },
-        actionUrl: `/projects`,
+        actionUrl: `/events`,
       });
-
-      // Send real-time notification
-      if (notification.length > 0) {
-        sendNotificationToUsers([userId], notification[0]);
-      }
     } catch (error) {
       console.error('Error sending assignment notification:', error);
     }
@@ -225,7 +211,7 @@ export class NotificationUtils {
       const userIds = adminUsers.map((user) => user.userId);
       console.log(`[notifyShootInProgress] Creating notification for ${userIds.length} admins:`, userIds);
 
-      // Create notification
+      // Create notification (already sends via Socket.io)
       const notification = await NotificationService.create({
         userId: userIds,
         tenantId: event.tenantId,
@@ -242,12 +228,6 @@ export class NotificationUtils {
       });
 
       console.log(`[notifyShootInProgress] Created ${notification.length} notification records`);
-
-      // Send real-time notification to all admins
-      if (notification.length > 0) {
-        sendNotificationToUsers(userIds, notification[0]);
-      }
-
       console.log(
         `Shoot in progress notification sent to ${userIds.length} admins for event ${event.clientEventId}`
       );

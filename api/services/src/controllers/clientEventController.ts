@@ -119,20 +119,28 @@ export const getAllClientEvents = async (req: AuthRequest, res: Response) => {
     } else {
       // Find the user's team member ID
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
-      if (!teamMember) {
-        // User is not a team member
-        return res.status(200).json({
-          message: 'Client events retrieved successfully',
-          count: 0,
-          clientEvents: []
-        });
-      }
-
-      // Non-admin users only see events where they are assigned as team members
-      clientEvents = await ClientEvent.find({ 
+      
+      // Non-admin users see events where they are:
+      // 1. Assigned as team members, OR
+      // 2. Assigned as album editor (by userId or memberId), OR
+      // 3. Assigned as album designer (by userId or memberId)
+      const query: any = {
         tenantId,
-        teamMembersAssigned: teamMember.memberId 
-      }).sort({ createdAt: -1 }).lean();
+        $or: [
+          { albumEditor: userId },
+          { albumDesigner: userId }
+        ]
+      };
+      
+      // Add conditions for memberId if user is a team member
+      if (teamMember) {
+        const memberId = teamMember.memberId;
+        query.$or.push({ teamMembersAssigned: memberId });
+        query.$or.push({ albumEditor: memberId });
+        query.$or.push({ albumDesigner: memberId });
+      }
+      
+      clientEvents = await ClientEvent.find(query).sort({ createdAt: -1 }).lean();
     }
 
     return res.status(200).json({
@@ -168,7 +176,13 @@ export const getClientEventById = async (req: AuthRequest, res: Response) => {
     const isAdmin = roleName === 'Admin';
     if (!isAdmin) {
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
-      if (!teamMember || !clientEvent.teamMembersAssigned?.includes(teamMember.memberId)) {
+      const memberId = teamMember?.memberId;
+      
+      const isTeamMember = memberId && clientEvent.teamMembersAssigned?.includes(memberId);
+      const isEditor = clientEvent.albumEditor === userId || clientEvent.albumEditor === memberId;
+      const isDesigner = clientEvent.albumDesigner === userId || clientEvent.albumDesigner === memberId;
+      
+      if (!isTeamMember && !isEditor && !isDesigner) {
         return res.status(403).json({ message: 'Access denied. You can only view events you are assigned to.' });
       }
     }
@@ -271,28 +285,34 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
       const event = await Event.findOne({ eventId: updatedClientEvent.eventId });
       const eventName = event?.eventDesc || 'event';
 
-      // Notify editor if they were assigned
+      // Notify editor if they were assigned (need to get userId from memberId)
       if (notifyEditorAssignment && updates.albumEditor) {
-        await NotificationUtils.notifyUserAssignment(
-          updates.albumEditor,
-          tenantId,
-          eventName,
-          projectName,
-          'editor',
-          updates.editingDueDate
-        );
+        const editorMember = await Team.findOne({ memberId: updates.albumEditor });
+        if (editorMember?.userId) {
+          await NotificationUtils.notifyUserAssignment(
+            editorMember.userId,
+            tenantId,
+            eventName,
+            projectName,
+            'editor',
+            updates.editingDueDate
+          );
+        }
       }
 
-      // Notify designer if they were assigned
+      // Notify designer if they were assigned (need to get userId from memberId)
       if (notifyDesignerAssignment && updates.albumDesigner) {
-        await NotificationUtils.notifyUserAssignment(
-          updates.albumDesigner,
-          tenantId,
-          eventName,
-          projectName,
-          'designer',
-          updates.albumDesignDueDate
-        );
+        const designerMember = await Team.findOne({ memberId: updates.albumDesigner });
+        if (designerMember?.userId) {
+          await NotificationUtils.notifyUserAssignment(
+            designerMember.userId,
+            tenantId,
+            eventName,
+            projectName,
+            'designer',
+            updates.albumDesignDueDate
+          );
+        }
       }
 
       // Check for status changes
