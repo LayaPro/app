@@ -710,17 +710,17 @@ export const ListView: React.FC<ListViewProps> = ({
             <>
               <div style={{ 
                 padding: '1rem', 
-                backgroundColor: '#f9fafb', 
+                backgroundColor: 'var(--bg-secondary)', 
                 borderRadius: '8px',
-                border: '1px solid #e5e7eb'
+                border: '1px solid var(--border-color)'
               }}>
-                <div style={{ fontSize: '0.875rem', color: '#6b7280', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
                   Current Status
                 </div>
-                <div style={{ fontWeight: 600, color: '#111827' }}>
+                <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
                   {eventDeliveryStatuses.get(selectedEventForStatus.eventDeliveryStatusId || '')?.statusDescription || 'No Status'}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#6b7280', marginTop: '0.25rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '0.25rem' }}>
                   Step {eventDeliveryStatuses.get(selectedEventForStatus.eventDeliveryStatusId || '')?.step || 0}
                 </div>
               </div>
@@ -730,7 +730,7 @@ export const ListView: React.FC<ListViewProps> = ({
                   display: 'block', 
                   fontSize: '0.875rem', 
                   fontWeight: 500, 
-                  color: '#374151',
+                  color: 'var(--text-primary)',
                   marginBottom: '0.5rem'
                 }}>
                   New Status *
@@ -756,7 +756,7 @@ export const ListView: React.FC<ListViewProps> = ({
                   <div style={{ 
                     marginTop: '0.5rem', 
                     fontSize: '0.875rem', 
-                    color: '#ef4444',
+                    color: 'var(--color-danger)',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '0.5rem'
@@ -772,11 +772,11 @@ export const ListView: React.FC<ListViewProps> = ({
               {getNextAvailableStatus(selectedEventForStatus.eventDeliveryStatusId) && (
                 <div style={{ 
                   padding: '0.75rem', 
-                  backgroundColor: '#eff6ff', 
+                  backgroundColor: 'var(--color-primary-light)', 
                   borderRadius: '8px',
-                  border: '1px solid #bfdbfe',
+                  border: '1px solid var(--color-primary)',
                   fontSize: '0.875rem',
-                  color: '#1e40af',
+                  color: 'var(--color-primary)',
                   display: 'flex',
                   gap: '0.5rem',
                   alignItems: 'flex-start'

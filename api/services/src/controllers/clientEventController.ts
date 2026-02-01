@@ -36,8 +36,12 @@ const sanitizePdfName = (fileName: string) => {
  */
 const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) => {
   try {
+    console.log(`[CheckProjectStatus] Starting check for project ${projectId}`);
+    
     // Get all events for this project
     const allEvents = await ClientEvent.find({ projectId, tenantId });
+    
+    console.log(`[CheckProjectStatus] Found ${allEvents.length} events for project ${projectId}`);
     
     if (allEvents.length === 0) {
       return; // No events, nothing to check
@@ -54,10 +58,19 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
       return;
     }
 
+    console.log(`[CheckProjectStatus] DELIVERY status found: ${deliveryStatus.statusId}`);
+
+    // Log each event's status
+    allEvents.forEach((event, index) => {
+      console.log(`[CheckProjectStatus] Event ${index + 1} (${event.clientEventId}): statusId = ${event.eventDeliveryStatusId}`);
+    });
+
     // Check if ALL events are in DELIVERY status
     const allEventsDelivered = allEvents.every(
       event => event.eventDeliveryStatusId === deliveryStatus.statusId
     );
+
+    console.log(`[CheckProjectStatus] All events delivered? ${allEventsDelivered}`);
 
     if (allEventsDelivered) {
       console.log(`[CheckProjectStatus] All events delivered for project ${projectId}, updating to Delivered`);
@@ -69,14 +82,17 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
       });
 
       if (completedStatus) {
-        await Project.findOneAndUpdate(
+        const result = await Project.findOneAndUpdate(
           { projectId, tenantId },
-          { $set: { projectDeliveryStatusId: completedStatus.statusId } }
+          { $set: { projectDeliveryStatusId: completedStatus.statusId } },
+          { new: true }
         );
-        console.log(`[CheckProjectStatus] Project ${projectId} status updated to Delivered`);
+        console.log(`[CheckProjectStatus] Project ${projectId} status updated to Delivered. New status: ${result?.projectDeliveryStatusId}`);
       } else {
-        console.log('[CheckProjectStatus] Delivered project status not found');
+        console.log('[CheckProjectStatus] Delivered project status not found in database');
       }
+    } else {
+      console.log(`[CheckProjectStatus] Not all events are delivered yet`);
     }
   } catch (error) {
     console.error('[CheckProjectStatus] Error checking project status:', error);
@@ -658,7 +674,8 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
         designerName,
         project.projectName,
         eventNames,
-        1
+        1,
+        userId
       );
     } catch (notifError) {
       console.error('Failed to send album PDF upload notification:', notifError);
@@ -848,7 +865,8 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
           designerName,
           project.projectName,
           eventNames,
-          createdPdfs.length
+          createdPdfs.length,
+          userId
         );
       } catch (notifError) {
         console.error('Failed to send album PDF upload notification:', notifError);

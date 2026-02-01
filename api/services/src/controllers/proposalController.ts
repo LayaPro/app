@@ -733,19 +733,35 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
     // Send notifications to admins based on selection progress
     if (selected && result.modifiedCount > 0) {
       try {
-        // Get selection counts
+        // Get the clientEventId from one of the selected images
+        const sampleImage = await Image.findOne({ 
+          imageId: { $in: imageIds }, 
+          tenantId: project.tenantId 
+        });
+        
+        if (!sampleImage || !sampleImage.clientEventId) {
+          console.log('[Customer Portal] Could not determine event from images');
+          return res.status(200).json({
+            message: `${result.modifiedCount} image(s) ${selected ? 'selected' : 'deselected'}`,
+            modifiedCount: result.modifiedCount
+          });
+        }
+
+        const clientEventId = sampleImage.clientEventId;
+
+        // Get selection counts for THIS EVENT only
         const selectedCount = await Image.countDocuments({
-          projectId: project.projectId,
+          clientEventId: clientEventId,
           selectedByClient: true,
           tenantId: project.tenantId
         });
 
         const totalCount = await Image.countDocuments({
-          projectId: project.projectId,
+          clientEventId: clientEventId,
           tenantId: project.tenantId
         });
 
-        const clientEvent = await ClientEvent.findOne({ projectId: project.projectId });
+        const clientEvent = await ClientEvent.findOne({ clientEventId: clientEventId });
         const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
         const eventName = event?.eventDesc || 'event';
         const clientName = proposal.clientName || 'Client';
@@ -868,9 +884,9 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
         const event = existingEvent ? await Event.findOne({ eventId: existingEvent.eventId }) : null;
         const eventName = event?.eventDesc || 'event';
 
-        // Count selected images
+        // Count selected images for THIS EVENT only
         const selectedCount = await Image.countDocuments({
-          projectId: project.projectId,
+          clientEventId: eventId,
           selectedByClient: true,
           tenantId: project.tenantId
         });

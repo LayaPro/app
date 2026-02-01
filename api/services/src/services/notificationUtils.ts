@@ -275,16 +275,22 @@ export class NotificationUtils {
     editorName: string,
     projectName: string,
     eventName: string,
-    imageCount: number
+    imageCount: number,
+    excludeUserId?: string
   ): Promise<void> {
     try {
       console.log(`[notifyImagesUploaded] Editor ${editorName} uploaded ${imageCount} images for ${eventName} in ${projectName}`);
       
       // Get all admin users for this tenant
-      const adminUsers = await this.getAdminUsers(tenantId);
+      let adminUsers = await this.getAdminUsers(tenantId);
+
+      // Exclude the user who performed the action
+      if (excludeUserId) {
+        adminUsers = adminUsers.filter(admin => admin.userId !== excludeUserId);
+      }
 
       if (adminUsers.length === 0) {
-        console.log('No admin users found for tenant:', tenantId);
+        console.log('No other admin users to notify for image upload (excluding self)');
         return;
       }
 
@@ -589,18 +595,24 @@ export class NotificationUtils {
     designerName: string,
     projectName: string,
     eventNames: string,
-    pdfCount: number
+    pdfCount: number,
+    excludeUserId?: string
   ): Promise<void> {
     try {
       // Get all admin users
-      const adminUsers = await this.getAdminUsers(tenantId);
+      let adminUsers = await this.getAdminUsers(tenantId);
+      
+      // Exclude the user who performed the action
+      if (excludeUserId) {
+        adminUsers = adminUsers.filter(admin => admin.userId !== excludeUserId);
+      }
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for album PDF upload');
+        console.log('No other admin users to notify for album PDF upload (excluding self)');
         return;
       }
 
-      // Send notification to each admin
+      // Send notification to each admin (except the one who uploaded)
       for (const admin of adminUsers) {
         await NotificationService.create({
           userId: admin.userId,

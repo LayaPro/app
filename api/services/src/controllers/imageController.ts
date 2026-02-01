@@ -777,7 +777,8 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           editorName,
           projectName,
           eventName,
-          successful.length
+          successful.length,
+          userId
         );
       } catch (notifError) {
         console.error('Error sending images uploaded notification:', notifError);
@@ -1477,7 +1478,8 @@ export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
       editorName,
       projectName,
       eventName,
-      parseInt(imageCount)
+      parseInt(imageCount),
+      userId
     );
 
     res.status(200).json({ message: 'Notification sent successfully' });
