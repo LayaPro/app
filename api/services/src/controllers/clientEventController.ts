@@ -3,6 +3,7 @@ import { nanoid } from 'nanoid';
 import ClientEvent from '../models/clientEvent';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Team from '../models/team';
+import User from '../models/user';
 import Project from '../models/project';
 import Event from '../models/event';
 import AlbumPdf from '../models/albumPdf';
@@ -578,6 +579,33 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       );
     }
 
+    // Send notification to admins
+    try {
+      // Get designer name
+      const designerUser = await User.findOne({ userId, tenantId });
+      const designerTeamMember = await Team.findOne({ userId, tenantId });
+      const designerName = designerTeamMember 
+        ? `${designerTeamMember.firstName} ${designerTeamMember.lastName}` 
+        : designerUser?.email || 'Designer';
+
+      // Get event names
+      const events = await Event.find({ 
+        eventId: { $in: clientEvents.map(ce => ce.eventId) } 
+      });
+      const eventNames = events.map(e => e.eventDesc).join(', ');
+
+      await NotificationUtils.notifyAlbumPdfUploaded(
+        tenantId,
+        designerName,
+        project.projectName,
+        eventNames,
+        1
+      );
+    } catch (notifError) {
+      console.error('Failed to send album PDF upload notification:', notifError);
+      // Don't fail the request if notification fails
+    }
+
     return res.status(200).json({
       message: deletedCount > 0 ? `Replaced ${deletedCount} existing PDF${deletedCount > 1 ? 's' : ''}` : 'Album PDF uploaded successfully',
       albumPdf: albumPdf.toObject(),
@@ -737,6 +765,35 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
             }
           }
         );
+      }
+    }
+
+    // Send notification to admins
+    if (createdPdfs.length > 0) {
+      try {
+        // Get designer name
+        const designerUser = await User.findOne({ userId, tenantId });
+        const designerTeamMember = await Team.findOne({ userId, tenantId });
+        const designerName = designerTeamMember 
+          ? `${designerTeamMember.firstName} ${designerTeamMember.lastName}` 
+          : designerUser?.email || 'Designer';
+
+        // Get event names
+        const events = await Event.find({ 
+          eventId: { $in: clientEvents.map(ce => ce.eventId) } 
+        });
+        const eventNames = events.map(e => e.eventDesc).join(', ');
+
+        await NotificationUtils.notifyAlbumPdfUploaded(
+          tenantId,
+          designerName,
+          project.projectName,
+          eventNames,
+          createdPdfs.length
+        );
+      } catch (notifError) {
+        console.error('Failed to send album PDF upload notification:', notifError);
+        // Don't fail the request if notification fails
       }
     }
 

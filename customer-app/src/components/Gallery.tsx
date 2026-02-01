@@ -510,6 +510,10 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
               data-tooltip={currentEvent?.albumPdfUrl ? "View Album" : "Album not uploaded yet"}
               onClick={() => {
                 if (currentEvent?.albumPdfUrl) {
+                  // Notify admins that customer is viewing album
+                  customerPortalApi.notifyAlbumView(currentEvent?.clientEventId || selectedEvent)
+                    .catch(error => console.error('Failed to send album view notification:', error));
+                  // Open PDF in new tab
                   window.open(currentEvent.albumPdfUrl, '_blank');
                 }
               }}

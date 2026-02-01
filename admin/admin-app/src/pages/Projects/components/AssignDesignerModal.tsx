@@ -62,6 +62,8 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
   const fetchData = async () => {
     setLoading(true);
     try {
+      // Add timestamp to bust cache
+      const timestamp = Date.now();
       const [teamResponse, eventsResponse, eventTypesResponse, profilesResponse] = await Promise.all([
         teamApi.getAll(),
         clientEventApi.getByProject(project.projectId),
@@ -114,17 +116,30 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
     }
   };
 
-  const getProfileName = (profileId?: string) => {
-    if (!profileId) return '';
-    const profile = profiles.find(p => p.profileId === profileId);
-    return profile?.name || '';
+  const getProfileName = (member: any) => {
+    if (!member) return '';
+    
+    // Support both profileIds (array) and profileId (single - deprecated)
+    const profileIds = Array.isArray(member.profileIds) && member.profileIds.length > 0
+      ? member.profileIds
+      : member.profileId 
+        ? [member.profileId]
+        : [];
+    
+    if (profileIds.length === 0) return '';
+    
+    const profileNames = profileIds
+      .map((id: string) => profiles.find(p => p.profileId === id)?.name)
+      .filter((name): name is string => !!name);
+    
+    return profileNames.join(', ');
   };
 
   const designerOptions = useMemo(() => {
     return [
       { value: '', label: '-- No Designer --' },
       ...teamMembers.map(member => {
-        const profileName = getProfileName(member.profileId);
+        const profileName = getProfileName(member);
         return {
           value: member.memberId,
           label: `${member.firstName} ${member.lastName}${profileName ? ` - ${profileName}` : ''}`

@@ -9,8 +9,10 @@ import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Image from '../models/image';
 import ImageStatus from '../models/imageStatus';
 import AlbumPdf from '../models/albumPdf';
+import Team from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { sendProposalEmail } from '../services/emailService';
+import { NotificationUtils } from '../services/notificationUtils';
 
 export const createProposal = async (req: AuthRequest, res: Response) => {
   console.log('[Proposal] ========== CREATE PROPOSAL REQUEST RECEIVED ==========');
@@ -727,6 +729,70 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
     );
 
     console.log('[Customer Portal] Images updated:', { modifiedCount: result.modifiedCount });
+
+    // Send notifications to admins based on selection progress
+    if (selected && result.modifiedCount > 0) {
+      try {
+        // Get selection counts
+        const selectedCount = await Image.countDocuments({
+          projectId: project.projectId,
+          selectedByClient: true,
+          tenantId: project.tenantId
+        });
+
+        const totalCount = await Image.countDocuments({
+          projectId: project.projectId,
+          tenantId: project.tenantId
+        });
+
+        const clientEvent = await ClientEvent.findOne({ projectId: project.projectId });
+        const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
+        const eventName = event?.eventDesc || 'event';
+        const clientName = proposal.clientName || 'Client';
+
+        // Notify if this is the first time client is selecting
+        if (selectedCount === result.modifiedCount) {
+          await NotificationUtils.notifyClientSelectionStarted(
+            project.tenantId,
+            clientName,
+            project.projectName,
+            eventName
+          );
+        }
+
+        // Notify when 50% threshold is reached
+        const selectionPercentage = (selectedCount / totalCount) * 100;
+        const previousCount = selectedCount - result.modifiedCount;
+        const previousPercentage = (previousCount / totalCount) * 100;
+
+        // Check if we just crossed the 50% threshold
+        if (previousPercentage < 50 && selectionPercentage >= 50) {
+          await NotificationUtils.notifyClientSelection50Percent(
+            project.tenantId,
+            clientName,
+            project.projectName,
+            eventName,
+            selectedCount,
+            totalCount
+          );
+        }
+
+        // Check if we just reached 100% selection
+        if (previousCount < totalCount && selectedCount === totalCount) {
+          await NotificationUtils.notifyClientSelection100Percent(
+            project.tenantId,
+            clientName,
+            project.projectName,
+            eventName,
+            totalCount
+          );
+        }
+      } catch (notifError) {
+        console.error('[Customer Portal] Failed to send client selection notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
+
     return res.status(200).json({
       message: `${result.modifiedCount} image(s) ${selected ? 'selected' : 'deselected'}`,
       modifiedCount: result.modifiedCount
@@ -794,6 +860,42 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
     );
 
     console.log('[Customer Portal] Event status updated:', result);
+
+    // Send notification to admins
+    if (result.modifiedCount > 0) {
+      try {
+        // Get event details
+        const event = existingEvent ? await Event.findOne({ eventId: existingEvent.eventId }) : null;
+        const eventName = event?.eventDesc || 'event';
+
+        // Count selected images
+        const selectedCount = await Image.countDocuments({
+          projectId: project.projectId,
+          selectedByClient: true,
+          tenantId: project.tenantId
+        });
+
+        await NotificationUtils.notifyClientSelectionFinalized(
+          project.tenantId,
+          proposal.clientName || 'Client',
+          project.projectName,
+          eventName,
+          selectedCount
+        );
+
+        // Also notify admins to assign designer
+        await NotificationUtils.notifyAssignDesignerAfterSelection(
+          project.tenantId,
+          project.projectName,
+          eventName,
+          selectedCount
+        );
+      } catch (notifError) {
+        console.error('[Customer Portal] Failed to send selection finalized notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
+
     return res.status(200).json({
       message: 'Event marked as selection done',
       modifiedCount: result.modifiedCount
@@ -854,6 +956,29 @@ export const approveAlbum = async (req: Request, res: Response) => {
     );
 
     console.log('[Customer Portal] Album approved, event status updated:', result);
+
+    // Send notification to admins and designer
+    if (result.modifiedCount > 0) {
+      try {
+        const clientEvent = await ClientEvent.findOne({ 
+          clientEventId: eventId, 
+          tenantId: project.tenantId 
+        });
+        const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
+
+        await NotificationUtils.notifyAlbumApprovedByCustomer(
+          project.tenantId,
+          proposal.clientName || 'Customer',
+          project.projectName,
+          event?.eventDesc || 'event',
+          clientEvent?.albumDesigner
+        );
+      } catch (notifError) {
+        console.error('[Customer Portal] Failed to send album approval notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
+
     return res.status(200).json({
       message: 'Album approved and marked for printing',
       modifiedCount: result.modifiedCount
@@ -863,3 +988,59 @@ export const approveAlbum = async (req: Request, res: Response) => {
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
+
+export const notifyAlbumView = async (req: Request, res: Response) => {
+  try {
+    const { eventId } = req.body;
+    const pin = req.headers['x-portal-pin'] as string;
+
+    console.log('[Customer Portal] Album view notification request');
+
+    if (!eventId) {
+      return res.status(400).json({ message: 'Event ID is required' });
+    }
+
+    if (!pin) {
+      return res.status(401).json({ message: 'PIN is required' });
+    }
+
+    // Verify PIN
+    const proposal = await Proposal.findOne({ accessPin: pin });
+    if (!proposal) {
+      return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    // Get project and event
+    const project = await Project.findOne({ 
+      proposalId: proposal.proposalId,
+      tenantId: proposal.tenantId 
+    });
+    if (!project) {
+      return res.status(404).json({ message: 'Project not found' });
+    }
+
+    const clientEvent = await ClientEvent.findOne({ 
+      clientEventId: eventId, 
+      tenantId: project.tenantId 
+    });
+    if (!clientEvent) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+
+    const event = await Event.findOne({ eventId: clientEvent.eventId });
+
+    // Send notification to admins
+    await NotificationUtils.notifyCustomerAlbumReviewStarted(
+      project.tenantId,
+      proposal.clientName || 'Customer',
+      project.projectName,
+      event?.eventDesc || 'event'
+    );
+
+    return res.status(200).json({ message: 'Notification sent successfully' });
+  } catch (err: any) {
+    console.error('[Customer Portal] Album view notification error:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
