@@ -15,6 +15,7 @@ export interface IProject extends Document {
   address?: string;
   city?: string;
   referredBy?: string;
+  deliveryDueDate?: Date;
   projectDeliveryStatusId?: string; // Reference to ProjectDeliveryStatus
   proposalId?: string; // Reference to the proposal this project was created from
   s3BucketName?: string;
@@ -44,6 +45,7 @@ const ProjectSchema = new Schema<IProject>(
     address: { type: String },
     city: { type: String, trim: true },
     referredBy: { type: String, trim: true },
+    deliveryDueDate: { type: Date },
     projectDeliveryStatusId: { type: String, index: true }, // Reference to ProjectDeliveryStatus
     proposalId: { type: String, index: true }, // Reference to the proposal this project was created from
     s3BucketName: { type: String, unique: true, sparse: true },

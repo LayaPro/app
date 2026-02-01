@@ -3,6 +3,7 @@ import { Input } from '../../../components/ui/Input';
 import { PhoneInput } from '../../../components/ui/PhoneInput';
 import { Textarea } from '../../../components/ui/Textarea';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { DatePicker } from '../../../components/ui/DatePicker';
 import type { ProjectFormData } from '../ProjectWizard';
 import styles from '../ProjectWizard.module.css';
 
@@ -132,13 +133,12 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({ formData, on
           </div>
 
           <div className={styles.formGroup}>
-            <SearchableSelect
-              label="Referral Source"
-              value={formData.referredBy || ''}
-              onChange={(value) => onChange('referredBy', value)}
-              options={referralOptions}
-              placeholder="How did you hear about us?"
-              info="Helps us understand our marketing channels"
+            <DatePicker
+              label="Delivery Due Date"
+              value={formData.deliveryDueDate ? new Date(formData.deliveryDueDate).toISOString().split('T')[0] : ''}
+              onChange={(value) => onChange('deliveryDueDate', value)}
+              placeholder="Select delivery date"
+              allowPast={false}
             />
           </div>
         </div>
@@ -164,6 +164,17 @@ export const BasicDetailsStep: React.FC<BasicDetailsStepProps> = ({ formData, on
               placeholder="City name"
               maxLength={50}
               showCharCount={true}
+            />
+          </div>
+
+          <div className={styles.formGroup}>
+            <SearchableSelect
+              label="Referral Source"
+              value={formData.referredBy || ''}
+              onChange={(value) => onChange('referredBy', value)}
+              options={referralOptions}
+              placeholder="How did you hear about us?"
+              info="Helps us understand our marketing channels"
             />
           </div>
         </div>

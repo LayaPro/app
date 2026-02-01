@@ -50,6 +50,7 @@ export class NotificationService {
       notifications.push(notification);
 
       // Send real-time notification via Socket.io
+      console.log(`[NotificationService] Sending notification to user ${userId} via Socket.io`);
       sendNotificationToUser(userId, {
         id: notification._id,
         type: notification.type,
@@ -60,6 +61,7 @@ export class NotificationService {
         createdAt: notification.createdAt,
         read: false
       });
+      console.log(`[NotificationService] Socket notification sent for user ${userId}`);
     }
 
     return notifications;

@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { nanoid } from 'nanoid';
 import ClientEvent from '../models/clientEvent';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
+import ProjectDeliveryStatus from '../models/projectDeliveryStatus';
 import Team from '../models/team';
 import User from '../models/user';
 import Project from '../models/project';
@@ -27,6 +28,59 @@ const sanitizePdfName = (fileName: string) => {
     return `${base || 'album-proof'}.pdf`;
   }
   return base;
+};
+
+/**
+ * Check if all events in a project are in DELIVERY status
+ * If yes, update project status to COMPLETED
+ */
+const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) => {
+  try {
+    // Get all events for this project
+    const allEvents = await ClientEvent.find({ projectId, tenantId });
+    
+    if (allEvents.length === 0) {
+      return; // No events, nothing to check
+    }
+
+    // Get DELIVERY status
+    const deliveryStatus = await EventDeliveryStatus.findOne({
+      tenantId,
+      statusCode: 'DELIVERY'
+    });
+
+    if (!deliveryStatus) {
+      console.log('[CheckProjectStatus] DELIVERY status not found');
+      return;
+    }
+
+    // Check if ALL events are in DELIVERY status
+    const allEventsDelivered = allEvents.every(
+      event => event.eventDeliveryStatusId === deliveryStatus.statusId
+    );
+
+    if (allEventsDelivered) {
+      console.log(`[CheckProjectStatus] All events delivered for project ${projectId}, updating to Delivered`);
+      
+      // Get Delivered project status
+      const completedStatus = await ProjectDeliveryStatus.findOne({
+        tenantId,
+        statusCode: 'Delivered'
+      });
+
+      if (completedStatus) {
+        await Project.findOneAndUpdate(
+          { projectId, tenantId },
+          { $set: { projectDeliveryStatusId: completedStatus.statusId } }
+        );
+        console.log(`[CheckProjectStatus] Project ${projectId} status updated to Delivered`);
+      } else {
+        console.log('[CheckProjectStatus] Delivered project status not found');
+      }
+    }
+  } catch (error) {
+    console.error('[CheckProjectStatus] Error checking project status:', error);
+  }
 };
 
 export const createClientEvent = async (req: AuthRequest, res: Response) => {
@@ -350,6 +404,11 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
             updatedClientEvent,
             projectName
           );
+        }
+
+        // Check if all events in the project are now in DELIVERY status
+        if (newStatus?.statusCode === 'DELIVERY') {
+          await checkAndUpdateProjectStatus(updatedClientEvent.projectId, tenantId!);
         }
       }
     }

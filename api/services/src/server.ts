@@ -44,6 +44,7 @@ import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { upload, uploadPdf } from './middleware/upload';
 import { startEventStatusUpdater } from './jobs/eventStatusUpdater';
+import { startDueDateChecker } from './jobs/dueDateChecker';
 import { initializeSocketIO } from './services/socketService';
 import http from 'http';
 
@@ -59,6 +60,18 @@ app.use(cors({
 
 // ---------- Miscellaneous routes ----------
 app.get('/test', testController.getTest);
+
+// ---------- Due Date Check routes ----------
+app.post('/check-due-dates', authenticate, requireAdmin, async (req, res) => {
+  try {
+    const { triggerDueDateCheck } = await import('./jobs/dueDateChecker');
+    await triggerDueDateCheck();
+    res.json({ message: 'Due date check completed successfully' });
+  } catch (error) {
+    console.error('Error triggering due date check:', error);
+    res.status(500).json({ message: 'Failed to check due dates' });
+  }
+});
 
 // ---------- Auth routes ----------
 app.post('/login', authController.login);
@@ -288,6 +301,7 @@ mongoose
     
     // Start cron jobs
     startEventStatusUpdater();
+    startDueDateChecker();
     
     server.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);

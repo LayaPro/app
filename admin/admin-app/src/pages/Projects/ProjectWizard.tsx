@@ -29,6 +29,7 @@ export interface ProjectFormData {
   address?: string;
   city?: string;
   referredBy?: string;
+  deliveryDueDate?: string;
   displayPic?: string;
   coverPhoto?: string;
   
@@ -304,6 +305,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
         address: formData.address,
         city: formData.city,
         referredBy: formData.referredBy,
+        deliveryDueDate: formData.deliveryDueDate ? new Date(formData.deliveryDueDate) : undefined,
         displayPic: formData.displayPic,
         coverPhoto: formData.coverPhoto,
         proposalId: editingProject?.proposalId, // Include proposalId if project was created from proposal
