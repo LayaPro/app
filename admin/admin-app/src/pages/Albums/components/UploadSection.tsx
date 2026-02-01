@@ -128,7 +128,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                       style={{ width: `${(uploadedCount / uploadedImages.length) * 100}%` }}
                     />
                   </div>
-                  <p>Uploaded {uploadedCount} of {uploadedImages.length} images</p>
+                  <p>{Math.round((uploadedCount / uploadedImages.length) * 100)}% complete</p>
                 </div>
               )}
 

@@ -12,6 +12,10 @@ export const NOTIFICATION_TYPES = {
   STATUS_CHANGED: 'STATUS_CHANGED',
   ASSIGNED_TO_TASK: 'ASSIGNED_TO_TASK',
   SHOOT_IN_PROGRESS: 'SHOOT_IN_PROGRESS',
+  IMAGES_UPLOADED: 'IMAGES_UPLOADED',
+  RE_EDIT_REQUESTED: 'RE_EDIT_REQUESTED',
+  IMAGES_APPROVED: 'IMAGES_APPROVED',
+  RE_EDIT_COMPLETED: 'RE_EDIT_COMPLETED',
 } as const;
 
 export class NotificationUtils {
@@ -187,6 +191,117 @@ export class NotificationUtils {
   }
 
   /**
+   * Notify editor when admin approves images
+   */
+  static async notifyImagesApproved(
+    tenantId: string,
+    editorUserId: string,
+    projectName: string,
+    eventName: string,
+    imageCount: number,
+    adminName: string
+  ): Promise<void> {
+    try {
+      console.log(`[notifyImagesApproved] Admin ${adminName} approved ${imageCount} images in ${eventName}`);
+      
+      // Create notification for the specific editor
+      await NotificationService.create({
+        userId: [editorUserId],
+        tenantId,
+        type: NOTIFICATION_TYPES.IMAGES_APPROVED,
+        title: `${imageCount} image${imageCount !== 1 ? 's' : ''} approved`,
+        message: `${adminName} approved ${imageCount} image${imageCount !== 1 ? 's' : ''} in ${eventName} (${projectName})`,
+        data: {
+          adminName,
+          projectName,
+          eventName,
+          imageCount,
+        },
+        actionUrl: `/albums`,
+      });
+    } catch (error) {
+      console.error('Error sending images approved notification:', error);
+    }
+  }
+
+  /**
+   * Notify editor when admin requests re-edit
+   */
+  static async notifyReEditRequested(
+    tenantId: string,
+    editorUserId: string,
+    projectName: string,
+    eventName: string,
+    imageCount: number,
+    adminName: string
+  ): Promise<void> {
+    try {
+      console.log(`[notifyReEditRequested] Admin ${adminName} requested re-edit for ${imageCount} images in ${eventName}`);
+      
+      // Create notification for the specific editor
+      await NotificationService.create({
+        userId: [editorUserId],
+        tenantId,
+        type: NOTIFICATION_TYPES.RE_EDIT_REQUESTED,
+        title: `Re-edit requested for ${imageCount} image${imageCount !== 1 ? 's' : ''}`,
+        message: `${adminName} requested re-edit for ${imageCount} image${imageCount !== 1 ? 's' : ''} in ${eventName} (${projectName})`,
+        data: {
+          adminName,
+          projectName,
+          eventName,
+          imageCount,
+        },
+        actionUrl: `/albums`,
+      });
+    } catch (error) {
+      console.error('Error sending re-edit requested notification:', error);
+    }
+  }
+
+  /**
+   * Notify admins when editor uploads images
+   */
+  static async notifyImagesUploaded(
+    tenantId: string,
+    editorName: string,
+    projectName: string,
+    eventName: string,
+    imageCount: number
+  ): Promise<void> {
+    try {
+      console.log(`[notifyImagesUploaded] Editor ${editorName} uploaded ${imageCount} images for ${eventName} in ${projectName}`);
+      
+      // Get all admin users for this tenant
+      const adminUsers = await this.getAdminUsers(tenantId);
+
+      if (adminUsers.length === 0) {
+        console.log('No admin users found for tenant:', tenantId);
+        return;
+      }
+
+      const userIds = adminUsers.map(u => u.userId);
+
+      // Create notification (already sends via Socket.io)
+      await NotificationService.create({
+        userId: userIds,
+        tenantId,
+        type: NOTIFICATION_TYPES.IMAGES_UPLOADED,
+        title: `${imageCount} images uploaded`,
+        message: `${editorName} uploaded ${imageCount} image${imageCount !== 1 ? 's' : ''} for ${eventName} in project ${projectName}`,
+        data: {
+          editorName,
+          projectName,
+          eventName,
+          imageCount,
+        },
+        actionUrl: `/events`,
+      });
+    } catch (error) {
+      console.error('Error sending images uploaded notification:', error);
+    }
+  }
+
+  /**
    * Notify admins when shoot starts (status changes from SCHEDULED to SHOOT_IN_PROGRESS)
    */
   static async notifyShootInProgress(
@@ -233,6 +348,43 @@ export class NotificationUtils {
       );
     } catch (error) {
       console.error('Error sending shoot in progress notification:', error);
+    }
+  }
+
+  /**
+   * Notify admins when editor completes re-edit and reuploads images
+   */
+  static async notifyReEditCompleted(
+    tenantId: string,
+    editorName: string,
+    projectName: string,
+    eventName: string,
+    imageCount: number
+  ): Promise<void> {
+    try {
+      // Get all admin users
+      const adminUsers = await this.getAdminUsers(tenantId);
+      
+      if (adminUsers.length === 0) {
+        console.warn('No admin users found to notify for re-edit completion');
+        return;
+      }
+
+      // Send notification to each admin
+      for (const admin of adminUsers) {
+        await NotificationService.create({
+          userId: admin.userId,
+          tenantId,
+          type: NOTIFICATION_TYPES.RE_EDIT_COMPLETED,
+          title: 'Re-Edited Images Uploaded',
+          message: `${editorName} has uploaded ${imageCount} re-edited image${imageCount !== 1 ? 's' : ''} for ${eventName} in ${projectName}`,
+        });
+      }
+
+      console.log(`✓ Sent re-edit completion notifications to ${adminUsers.length} admin(s)`);
+    } catch (error) {
+      console.error('Error sending re-edit completion notification:', error);
+      throw error;
     }
   }
 }

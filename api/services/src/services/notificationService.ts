@@ -20,15 +20,15 @@ export class NotificationService {
     const notifications: INotification[] = [];
 
     for (const userId of userIds) {
-      // Check for duplicate notification in the last 2 minutes
-      const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
+      // Check for duplicate notification in the last 10 seconds (prevents accidental double-sends)
+      const tenSecondsAgo = new Date(Date.now() - 10 * 1000);
       const existingNotification = await Notification.findOne({
         userId,
         tenantId: input.tenantId,
         type: input.type,
         title: input.title,
         message: input.message,
-        createdAt: { $gte: twoMinutesAgo }
+        createdAt: { $gte: tenSecondsAgo }
       });
 
       if (existingNotification) {

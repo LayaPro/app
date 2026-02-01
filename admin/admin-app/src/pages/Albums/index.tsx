@@ -890,6 +890,28 @@ const Albums = () => {
         comment: comment
       });
       
+      // Send notification to editor - get project/event from first image
+      try {
+        console.log('[Re-edit] Preparing to send notification...');
+        console.log('[Re-edit] selectedProject:', selectedProject);
+        console.log('[Re-edit] selectedEvent:', selectedEvent);
+        
+        if (selectedProject && selectedEvent) {
+          console.log('[Re-edit] Sending notification to editor...');
+          const result = await imageApi.notifyReEditRequested({
+            projectId: selectedProject.projectId,
+            clientEventId: selectedEvent.clientEventId,
+            imageCount: imageIds.length
+          });
+          console.log('[Re-edit] Notification sent:', result);
+        } else {
+          console.warn('[Re-edit] Cannot send notification - project or event not selected');
+        }
+      } catch (notifError) {
+        console.error('Failed to send re-edit notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+      
       showToast('success', `Re-edit requested for ${imageIds.length} image${imageIds.length !== 1 ? 's' : ''}`);
       
       // Clear selection and close modal
@@ -1306,8 +1328,12 @@ const Albums = () => {
       let successCount = 0;
       let wasAborted = false;
 
-      // Upload images one at a time for accurate progress tracking
-      for (let i = 0; i < uploadedImages.length; i++) {
+      // Upload images in chunks of 10 for better memory management and visible progress
+      const CHUNK_SIZE = 10;
+      const imagesWithFiles = uploadedImages.filter(img => img.file);
+      const totalChunks = Math.ceil(imagesWithFiles.length / CHUNK_SIZE);
+
+      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
         // Check if upload was cancelled
         if (uploadAbortRef.current) {
           console.log('Upload cancelled by user');
@@ -1316,23 +1342,36 @@ const Albums = () => {
           break;
         }
 
-        const img = uploadedImages[i];
-        
-        if (!img.file) continue;
+        const startIdx = chunkIndex * CHUNK_SIZE;
+        const endIdx = Math.min(startIdx + CHUNK_SIZE, imagesWithFiles.length);
+        const chunk = imagesWithFiles.slice(startIdx, endIdx);
 
         const formData = new FormData();
         formData.append('projectId', selectedProject.projectId);
         formData.append('clientEventId', selectedEvent.clientEventId);
-        formData.append('images', img.file);
+        formData.append('skipNotification', 'true'); // Skip notification for each chunk
+        
+        // Add chunk images to FormData
+        chunk.forEach((img) => {
+          if (img.file) {
+            formData.append('images', img.file);
+          }
+        });
 
         try {
           const result = await imageApi.uploadBatch(formData, uploadAbortControllerRef.current?.signal);
           
-          if (result.stats.successful > 0) {
-            successCount++;
-            setUploadedCount(successCount);
-          } else {
-            failedImageIds.add(img.id);
+          successCount += result.stats.successful;
+          setUploadedCount(successCount);
+
+          // Track failed images
+          if (result.failed && result.failed.length > 0) {
+            result.failed.forEach((failed: any) => {
+              const failedImg = chunk.find(img => img.file?.name === failed.fileName);
+              if (failedImg) {
+                failedImageIds.add(failedImg.id);
+              }
+            });
           }
         } catch (error) {
           // Check if error is due to abort
@@ -1340,19 +1379,30 @@ const Albums = () => {
             console.log('Request aborted');
             wasAborted = true;
             showToast('info', `Upload aborted. ${successCount} of ${uploadedImages.length} images uploaded.`);
-            // Don't add to failed images if aborted
+            // Don't mark chunk as failed if aborted
             break;
           }
-          console.error('Upload error:', error);
-          failedImageIds.add(img.id);
+          console.error('Upload error for chunk:', error);
+          // Mark this chunk's images as failed
+          chunk.forEach(img => failedImageIds.add(img.id));
         }
       }
 
       // Update failed images state
       setFailedImages(failedImageIds);
 
-      // Only show success message if not aborted
+      // Send single notification after all chunks are uploaded
       if (successCount > 0 && !wasAborted) {
+        try {
+          const formData = new FormData();
+          formData.append('projectId', selectedProject.projectId);
+          formData.append('clientEventId', selectedEvent.clientEventId);
+          formData.append('imageCount', successCount.toString());
+          await imageApi.notifyImagesUploaded(formData);
+        } catch (notifError) {
+          console.error('Failed to send upload notification:', notifError);
+        }
+
         // Show success toast
         showToast('success', `Successfully uploaded ${successCount} image${successCount !== 1 ? 's' : ''}!${failedImageIds.size > 0 ? ` (${failedImageIds.size} failed - see below)` : ''}`);
       }
@@ -1824,7 +1874,7 @@ const Albums = () => {
                               />
                             </div>
                             <p className={styles.uploadProgressText}>
-                              Uploaded {uploadedCount} of {uploadedImages.length} {uploadedImages.length === 1 ? 'image' : 'images'}
+                              {Math.round((uploadedCount / uploadedImages.length) * 100)}% complete
                             </p>
                           </div>
                           <div className={styles.uploadActions}>

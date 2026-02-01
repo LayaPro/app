@@ -202,6 +202,8 @@ app.put('/bulk-update-images', authenticate, imageController.bulkUpdateImages);
 app.delete('/delete-image/:imageId', authenticate, requireAdmin, imageController.deleteImage);
 app.delete('/bulk-delete-images', authenticate, requireAdmin, imageController.bulkDeleteImages);app.post('/mark-images-client-selected', authenticate, imageController.markImagesAsClientSelected);
 app.post('/finalize-client-selection', authenticate, imageController.finalizeClientSelection);
+app.post('/notify-images-uploaded', authenticate, imageController.notifyImagesUploaded);
+app.post('/notify-reedit-requested', authenticate, imageController.notifyReEditRequested);
 app.post('/approve-album-design', authenticate, clientEventController.approveAlbumDesign);
 // ---------- Album PDF routes ----------
 app.post('/create-album-pdf', authenticate, albumPdfController.createAlbumPdf);

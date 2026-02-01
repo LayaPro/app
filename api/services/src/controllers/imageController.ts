@@ -15,6 +15,7 @@ import { compressImage } from '../utils/imageProcessor';
 import { uploadToS3, uploadBothVersions, bulkDeleteFromS3, getS3ObjectStreamFromUrl } from '../utils/s3';
 import pMap from 'p-map';
 import exifr from 'exifr';
+import { NotificationUtils } from '../services/notificationUtils';
 
 export const createImage = async (req: AuthRequest, res: Response) => {
   try {
@@ -198,7 +199,14 @@ export const getImagesByClientEvent = async (req: AuthRequest, res: Response) =>
     const isAdmin = roleName === 'Admin';
     if (!isAdmin) {
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
-      if (!teamMember || !clientEvent.teamMembersAssigned?.includes(teamMember.memberId)) {
+      const memberId = teamMember?.memberId;
+      
+      // Check if user is assigned as team member, editor, or designer
+      const isTeamMember = memberId && clientEvent.teamMembersAssigned?.includes(memberId);
+      const isEditor = clientEvent.albumEditor === userId || (memberId && clientEvent.albumEditor === memberId);
+      const isDesigner = clientEvent.albumDesigner === userId || (memberId && clientEvent.albumDesigner === memberId);
+      
+      if (!isTeamMember && !isEditor && !isDesigner) {
         return res.status(403).json({ message: 'Access denied. You can only view images for events you are assigned to.' });
       }
     }
@@ -518,7 +526,7 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
 // Batch upload endpoint with compression
 export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
   try {
-    const { projectId, clientEventId, eventDeliveryStatusId } = req.body;
+    const { projectId, clientEventId, eventDeliveryStatusId, skipNotification } = req.body;
     const tenantId = req.user?.tenantId;
     const userId = req.user?.userId;
 
@@ -749,6 +757,33 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
     const failed = results.filter((r) => !r.success);
 
     console.log(`Batch upload completed: ${successful.length} successful, ${failed.length} failed`);
+
+    // Send notification to admins if any images were successfully uploaded (unless explicitly skipped)
+    if (successful.length > 0 && !skipNotification) {
+      try {
+        // Get editor name
+        const editorUser = await User.findOne({ userId, tenantId });
+        const editorTeamMember = await Team.findOne({ userId, tenantId });
+        const editorName = editorTeamMember 
+          ? `${editorTeamMember.firstName} ${editorTeamMember.lastName}` 
+          : editorUser?.email || 'Editor';
+
+        // Project and event names already fetched above
+        const projectName = project.projectName || 'Unknown Project';
+        const eventName = event.eventDesc || 'Unknown Event';
+
+        await NotificationUtils.notifyImagesUploaded(
+          tenantId,
+          editorName,
+          projectName,
+          eventName,
+          successful.length
+        );
+      } catch (notifError) {
+        console.error('Error sending images uploaded notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
 
     // Check if we should update event status to REVIEW_ONGOING
     if (clientEventId && successful.length > 0) {
@@ -1054,6 +1089,30 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
     const successful = results.filter(r => r.success);
     const failed = results.filter(r => !r.success);
 
+    // Send notification to admins if any images were successfully reuploaded
+    if (successful.length > 0) {
+      try {
+        // Get editor name
+        const editorUser = await User.findOne({ userId, tenantId });
+        const editorTeamMember = await Team.findOne({ userId, tenantId });
+        
+        const editorName = editorTeamMember 
+          ? `${editorTeamMember.firstName} ${editorTeamMember.lastName}` 
+          : editorUser?.email || 'Editor';
+
+        await NotificationUtils.notifyReEditCompleted(
+          tenantId,
+          editorName,
+          project.projectName,
+          event.eventDesc,
+          successful.length
+        );
+      } catch (notifError) {
+        console.error('Failed to send re-edit completion notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
+
     return res.status(200).json({
       message: 'Reupload completed',
       successful: successful.length,
@@ -1113,6 +1172,44 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
         } 
       }
     );
+
+    // Send notification to editor
+    if (result.modifiedCount > 0 && images.length > 0) {
+      try {
+        // Get project and event info from first image
+        const firstImage = images[0];
+        const project = await Project.findOne({ projectId: firstImage.projectId, tenantId });
+        const clientEvent = await ClientEvent.findOne({ clientEventId: firstImage.clientEventId, tenantId });
+        const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
+
+        // Get editor userId if assigned
+        if (clientEvent?.albumEditor) {
+          const editorMember = await Team.findOne({ memberId: clientEvent.albumEditor, tenantId });
+          if (editorMember?.userId) {
+            // Get admin name
+            const adminTeamMember = await Team.findOne({ userId, tenantId });
+            const adminName = adminTeamMember 
+              ? `${adminTeamMember.firstName} ${adminTeamMember.lastName}` 
+              : 'Admin';
+
+            const projectName = project?.projectName || 'Unknown Project';
+            const eventName = event?.eventDesc || 'Unknown Event';
+
+            await NotificationUtils.notifyImagesApproved(
+              tenantId!,
+              editorMember.userId,
+              projectName,
+              eventName,
+              result.modifiedCount,
+              adminName
+            );
+          }
+        }
+      } catch (notifError) {
+        console.error('Failed to send approval notification:', notifError);
+        // Don't fail the request if notification fails
+      }
+    }
 
     return res.status(200).json({
       message: 'Images approved successfully',
@@ -1347,6 +1444,111 @@ export const finalizeClientSelection = async (req: AuthRequest, res: Response) =
   }
 };
 
+export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId, clientEventId, imageCount } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!projectId || !clientEventId || !imageCount) {
+      return res.status(400).json({ message: 'Project ID, Client Event ID, and image count are required' });
+    }
+
+    if (!tenantId || !userId) {
+      return res.status(400).json({ message: 'Tenant ID and User ID are required' });
+    }
+
+    // Get project, event, and editor info
+    const project = await Project.findOne({ projectId, tenantId });
+    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+    const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
+    
+    const editorUser = await User.findOne({ userId, tenantId });
+    const editorTeamMember = await Team.findOne({ userId, tenantId });
+    const editorName = editorTeamMember 
+      ? `${editorTeamMember.firstName} ${editorTeamMember.lastName}` 
+      : editorUser?.email || 'Editor';
+
+    const projectName = project?.projectName || 'Unknown Project';
+    const eventName = event?.eventDesc || 'Unknown Event';
+
+    await NotificationUtils.notifyImagesUploaded(
+      tenantId,
+      editorName,
+      projectName,
+      eventName,
+      parseInt(imageCount)
+    );
+
+    res.status(200).json({ message: 'Notification sent successfully' });
+  } catch (error) {
+    console.error('Error sending images uploaded notification:', error);
+    res.status(500).json({ 
+      message: 'Failed to send notification', 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+};
+
+export const notifyReEditRequested = async (req: AuthRequest, res: Response) => {
+  try {
+    const { projectId, clientEventId, imageCount } = req.body;
+    const tenantId = req.user?.tenantId;
+    const userId = req.user?.userId;
+
+    if (!projectId || !clientEventId || !imageCount) {
+      return res.status(400).json({ message: 'Project ID, Client Event ID, and image count are required' });
+    }
+
+    if (!tenantId || !userId) {
+      return res.status(400).json({ message: 'Tenant ID and User ID are required' });
+    }
+
+    // Get project, event, editor, and admin info
+    const project = await Project.findOne({ projectId, tenantId });
+    const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
+    const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
+
+    if (!clientEvent?.albumEditor) {
+      return res.status(400).json({ message: 'No editor assigned to this event' });
+    }
+
+    // Get editor's userId from their memberId
+    const editorMember = await Team.findOne({ memberId: clientEvent.albumEditor, tenantId });
+    if (!editorMember?.userId) {
+      return res.status(400).json({ message: 'Editor user account not found' });
+    }
+
+    // Get admin name
+    const adminUser = await User.findOne({ userId, tenantId });
+    const adminTeamMember = await Team.findOne({ userId, tenantId });
+    
+    const adminName = adminTeamMember
+      ? `${adminTeamMember.firstName} ${adminTeamMember.lastName}`
+      : 'Admin';
+
+    const projectName = project?.projectName || 'Unknown Project';
+    const eventName = event?.eventDesc || 'Unknown Event';
+
+    await NotificationUtils.notifyReEditRequested(
+      tenantId,
+      editorMember.userId,
+      projectName,
+      eventName,
+      parseInt(imageCount),
+      adminName
+    );
+
+    res.status(200).json({ message: 'Notification sent successfully' });
+  } catch (error) {
+    console.error('Error sending re-edit requested notification:', error);
+    res.status(500).json({
+      message: 'Failed to send notification',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+};
+
 export default {
   createImage,
   bulkCreateImages,
@@ -1367,4 +1569,6 @@ export default {
   downloadEventImagesZip,
   markImagesAsClientSelected,
   finalizeClientSelection,
+  notifyImagesUploaded,
+  notifyReEditRequested,
 };

@@ -810,6 +810,29 @@ export const imageApi = {
     return handleResponse(response);
   },
 
+  notifyImagesUploaded: async (formData: FormData) => {
+    const response = await fetch(`${API_BASE_URL}/notify-images-uploaded`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+      },
+      body: formData,
+    });
+    return handleResponse(response);
+  },
+
+  notifyReEditRequested: async (data: { projectId: string; clientEventId: string; imageCount: number }) => {
+    const response = await fetch(`${API_BASE_URL}/notify-reedit-requested`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
   reorderImages: async (data: { clientEventId: string; imageIds: string[] }) => {
     const response = await fetch(`${API_BASE_URL}/reorder-images`, {
       method: 'POST',
