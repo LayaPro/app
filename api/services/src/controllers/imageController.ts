@@ -116,14 +116,14 @@ export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
         // Get current event to check its status
         const currentEvent = await ClientEvent.findOne({ clientEventId, tenantId });
         const editingOngoingStatus = await EventDeliveryStatus.findOne({
-          tenantId,
+          tenantId: { $in: [tenantId, -1] },
           statusCode: 'EDITING_ONGOING'
         });
         
         // Only update if current status is EDITING_ONGOING
         if (currentEvent && editingOngoingStatus && currentEvent.eventDeliveryStatusId === editingOngoingStatus.statusId) {
           const reviewStatus = await EventDeliveryStatus.findOne({
-            tenantId,
+            tenantId: { $in: [tenantId, -1] },
             statusCode: 'REVIEW_ONGOING'
           });
           
@@ -584,7 +584,7 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
       if (role) {
         // All uploads go to REVIEW_PENDING status
         const statusCode = 'REVIEW_PENDING';
-        const imageStatus = await ImageStatus.findOne({ statusCode, tenantId });
+        const imageStatus = await ImageStatus.findOne({ statusCode, tenantId: { $in: [tenantId, -1] } });
         if (imageStatus) {
           imageStatusId = imageStatus.statusId;
         }
@@ -796,7 +796,7 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
         // Get current event to check its status
         const currentEvent = await ClientEvent.findOne({ clientEventId, tenantId });
         const editingOngoingStatus = await EventDeliveryStatus.findOne({
-          tenantId,
+          tenantId: { $in: [tenantId, -1] },
           statusCode: 'EDITING_ONGOING'
         });
         
@@ -805,7 +805,7 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
         // Get the actual status name for debugging
         if (currentEvent?.eventDeliveryStatusId) {
           const actualStatus = await EventDeliveryStatus.findOne({
-            tenantId,
+            tenantId: { $in: [tenantId, -1] },
             statusId: currentEvent.eventDeliveryStatusId
           });
           console.log(`[UploadBatchImages] Event is currently in status: ${actualStatus?.statusCode} (${actualStatus?.statusDescription})`);
@@ -814,7 +814,7 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
         // Only update if current status is EDITING_ONGOING
         if (currentEvent && editingOngoingStatus && currentEvent.eventDeliveryStatusId === editingOngoingStatus.statusId) {
           const reviewStatus = await EventDeliveryStatus.findOne({
-            tenantId,
+            tenantId: { $in: [tenantId, -1] },
             statusCode: 'REVIEW_ONGOING'
           });
           
@@ -971,7 +971,7 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
     // Get "Re-edit done" status
     const reEditDoneStatus = await ImageStatus.findOne({ 
       statusCode: 'RE_EDIT_DONE',
-      tenantId 
+      tenantId: { $in: [tenantId, -1] }
     });
 
     if (!reEditDoneStatus) {
@@ -1140,7 +1140,7 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
     // Find the APPROVED status (which represents approved images)
     const approvedStatus = await ImageStatus.findOne({ 
       statusCode: 'APPROVED', 
-      tenantId 
+      tenantId: { $in: [tenantId, -1] }
     });
 
     if (!approvedStatus) {

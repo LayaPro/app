@@ -421,15 +421,15 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
 
     // Get event delivery statuses
     const scheduledStatus = await EventDeliveryStatus.findOne({
-      tenantId,
+      tenantId: { $in: [tenantId, -1] },
       statusCode: 'SCHEDULED'
     });
     const shootInProgressStatus = await EventDeliveryStatus.findOne({
-      tenantId,
+      tenantId: { $in: [tenantId, -1] },
       statusCode: 'SHOOT_IN_PROGRESS'
     });
     const awaitingEditingStatus = await EventDeliveryStatus.findOne({
-      tenantId,
+      tenantId: { $in: [tenantId, -1] },
       statusCode: 'AWAITING_EDITING'
     });
 
@@ -537,7 +537,7 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
 
     // Get event delivery statuses
     const scheduledStatus = await EventDeliveryStatus.findOne({
-      tenantId,
+      tenantId: { $in: [tenantId, -1] },
       statusCode: 'SCHEDULED'
     });
 

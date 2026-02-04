@@ -49,8 +49,8 @@ export const getAllEvents = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    // All users only see their own tenant's events
-    const events = await Event.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    // Include both global events (tenantId: -1) and tenant-specific events
+    const events = await Event.find({ tenantId: { $in: [tenantId, -1] } }).sort({ createdAt: -1 }).lean();
 
     return res.status(200).json({
       message: 'Events retrieved successfully',

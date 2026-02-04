@@ -168,10 +168,10 @@ export const getAllTeamMembers = async (req: AuthRequest, res: Response) => {
     });
     const allProfileIds = Array.from(profileIdsSet);
 
-    // Fetch all profiles in one query
+    // Fetch all profiles in one query (include global profiles)
     const profiles = await Profile.find({ 
       profileId: { $in: allProfileIds },
-      tenantId 
+      tenantId: { $in: [tenantId, -1] }
     }).lean();
 
     // Create a map for quick lookup

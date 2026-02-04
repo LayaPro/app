@@ -477,7 +477,7 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
               'DELIVERY'
             ] 
           },
-          tenantId: proposal.tenantId 
+          tenantId: { $in: [proposal.tenantId, -1] }
         });
 
         const galleryStatusIds = galleryStatuses.map(s => s.statusId);
@@ -550,22 +550,22 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
           tenantId: proposal.tenantId 
         }).sort({ fromDatetime: 1 }); // Sort chronologically
 
-        // Fetch event names from Event master data
+        // Fetch event names from Event master data (include global events)
         const eventIds = events.map(e => e.eventId);
         const eventMasterData = await Event.find({ 
           eventId: { $in: eventIds },
-          tenantId: proposal.tenantId 
+          tenantId: { $in: [proposal.tenantId, -1] }
         });
         
         const eventNameMap = new Map(
           eventMasterData.map(e => [e.eventId, e.eventDesc || e.eventCode])
         );
 
-        // Fetch event delivery status details
+        // Fetch event delivery status details (include global statuses)
         const statusIds = events.map(e => e.eventDeliveryStatusId).filter(Boolean);
         const statusData = await EventDeliveryStatus.find({
           statusId: { $in: statusIds },
-          tenantId: proposal.tenantId
+          tenantId: { $in: [proposal.tenantId, -1] }
         });
 
         const statusMap = new Map(
@@ -692,7 +692,7 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
     // Get CLIENT_SELECTED status ID
     const clientSelectedStatus = await ImageStatus.findOne({ 
       statusCode: 'CLIENT_SELECTED',
-      tenantId: project.tenantId 
+      tenantId: { $in: [project.tenantId, -1] }
     });
 
     if (!clientSelectedStatus && selected) {
@@ -703,7 +703,7 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
     // Get APPROVED status ID for deselection
     const approvedStatus = await ImageStatus.findOne({ 
       statusCode: 'APPROVED',
-      tenantId: project.tenantId 
+      tenantId: { $in: [project.tenantId, -1] }
     });
 
     if (!approvedStatus && !selected) {
@@ -853,7 +853,7 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
     // Find CLIENT_SELECTION_DONE status
     const clientSelectionDoneStatus = await EventDeliveryStatus.findOne({
       statusCode: 'CLIENT_SELECTION_DONE',
-      tenantId: project.tenantId
+      tenantId: { $in: [project.tenantId, -1] }
     });
 
     console.log('[Customer Portal] CLIENT_SELECTION_DONE status found:', clientSelectionDoneStatus);
@@ -956,7 +956,7 @@ export const approveAlbum = async (req: Request, res: Response) => {
     // Find ALBUM_PRINTING status
     const albumPrintingStatus = await EventDeliveryStatus.findOne({
       statusCode: 'ALBUM_PRINTING',
-      tenantId: project.tenantId
+      tenantId: { $in: [project.tenantId, -1] }
     });
 
     console.log('[Customer Portal] ALBUM_PRINTING status found:', albumPrintingStatus);

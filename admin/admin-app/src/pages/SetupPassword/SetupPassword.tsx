@@ -6,7 +6,11 @@ import styles from './SetupPassword.module.css';
 const SetupPassword = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const token = searchParams.get('token');
+  
+  // Check for token in URL params (email activation) or sessionStorage (first login)
+  const urlToken = searchParams.get('token');
+  const sessionToken = sessionStorage.getItem('setupToken');
+  const token = urlToken || sessionToken;
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -44,6 +48,11 @@ const SetupPassword = () => {
       });
 
       setSuccess(true);
+      
+      // Clear session storage after marking success
+      sessionStorage.removeItem('setupToken');
+      sessionStorage.removeItem('setupEmail');
+
       setTimeout(() => {
         navigate('/login');
       }, 3000);
@@ -54,7 +63,8 @@ const SetupPassword = () => {
     }
   };
 
-  if (!token) {
+  // Don't show invalid link error if we're in success state
+  if (!token && !success) {
     return (
       <div className={styles.container}>
         <div className={styles.card}>

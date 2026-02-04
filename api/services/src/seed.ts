@@ -1,10 +1,7 @@
 import mongoose from 'mongoose';
 import { nanoid } from 'nanoid';
-import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import Role from './models/role';
-import Tenant from './models/tenant';
-import User from './models/user';
 import Profile from './models/profile';
 import Event from './models/event';
 import EventDeliveryStatus from './models/eventDeliveryStatus';
@@ -12,7 +9,6 @@ import ProjectDeliveryStatus from './models/projectDeliveryStatus';
 import ImageStatus from './models/imageStatus';
 import Module from './models/module';
 import RolePermission from './models/rolePermission';
-import Organization from './models/organization';
 
 dotenv.config();
 
@@ -38,52 +34,7 @@ async function seedDatabase() {
       console.log('✓ Admin role already exists');
     }
 
-    // 2. Create HR role if it doesn't exist
-    let hrRole = await Role.findOne({ name: 'HR', tenantId: '-1' });
-    if (!hrRole) {
-      const roleId = `role_${nanoid()}`;
-      hrRole = await Role.create({
-        roleId,
-        tenantId: '-1', // Global role
-        name: 'HR',
-        description: 'Access to finances, team members, salaries etc'
-      });
-      console.log('✓ Created HR role:', roleId);
-    } else {
-      console.log('✓ HR role already exists');
-    }
-
-    // 3. Create Co-ordinator role if it doesn't exist
-    let coordinatorRole = await Role.findOne({ name: 'Co-ordinator', tenantId: '-1' });
-    if (!coordinatorRole) {
-      const roleId = `role_${nanoid()}`;
-      coordinatorRole = await Role.create({
-        roleId,
-        tenantId: '-1', // Global role
-        name: 'Co-ordinator',
-        description: 'Access to assigned projects, finances, events, teams'
-      });
-      console.log('✓ Created Co-ordinator role:', roleId);
-    } else {
-      console.log('✓ Co-ordinator role already exists');
-    }
-
-    // 4. Create Team Lead role if it doesn't exist
-    let teamLeadRole = await Role.findOne({ name: 'Team Lead', tenantId: '-1' });
-    if (!teamLeadRole) {
-      const roleId = `role_${nanoid()}`;
-      teamLeadRole = await Role.create({
-        roleId,
-        tenantId: '-1', // Global role
-        name: 'Team Lead',
-        description: 'Handles technical stuff and assigns editor, designer to events'
-      });
-      console.log('✓ Created Team Lead role:', roleId);
-    } else {
-      console.log('✓ Team Lead role already exists');
-    }
-
-    // 5. Create Photo Editor role if it doesn't exist
+    // 2. Create Photo Editor role if it doesn't exist
     let photoEditorRole = await Role.findOne({ name: 'Photo Editor', tenantId: '-1' });
     if (!photoEditorRole) {
       const roleId = `role_${nanoid()}`;
@@ -98,22 +49,7 @@ async function seedDatabase() {
       console.log('✓ Photo Editor role already exists');
     }
 
-    // 6. Create Video Editor role if it doesn't exist
-    let videoEditorRole = await Role.findOne({ name: 'Video Editor', tenantId: '-1' });
-    if (!videoEditorRole) {
-      const roleId = `role_${nanoid()}`;
-      videoEditorRole = await Role.create({
-        roleId,
-        tenantId: '-1', // Global role
-        name: 'Video Editor',
-        description: 'Edits and uploads videos for assigned events'
-      });
-      console.log('✓ Created Video Editor role:', roleId);
-    } else {
-      console.log('✓ Video Editor role already exists');
-    }
-
-    // 7. Create Album Designer role if it doesn't exist
+    // 3. Create Album Designer role if it doesn't exist
     let albumDesignerRole = await Role.findOne({ name: 'Album Designer', tenantId: '-1' });
     if (!albumDesignerRole) {
       const roleId = `role_${nanoid()}`;
@@ -128,52 +64,7 @@ async function seedDatabase() {
       console.log('✓ Album Designer role already exists');
     }
 
-    // 8. Create LayaPro tenant if it doesn't exist
-    let layaproTenant = await Tenant.findOne({ tenantUsername: 'LayaPro' });
-    if (!layaproTenant) {
-      const tenantId = `tenant_${nanoid()}`;
-      layaproTenant = await Tenant.create({
-        tenantId,
-        tenantFirstName: 'Laya',
-        tenantLastName: 'Productions',
-        tenantCompanyName: 'Laya Productions',
-        tenantUsername: 'LayaPro',
-        tenantEmailAddress: 'productionslaya@gmail.com',
-        countryCode: '+91',
-        tenantPhoneNumber: '',
-        isActive: true
-      });
-      console.log('✓ Created LayaPro tenant:', tenantId);
-    } else {
-      console.log('✓ LayaPro tenant already exists');
-    }
-
-    // 9. Create admin user if it doesn't exist
-    let adminUser = await User.findOne({ email: 'productionslaya@gmail.com' });
-    if (!adminUser) {
-      const userId = `user_${nanoid()}`;
-      const passwordHash = await bcrypt.hash('LayaPro@2025', 10); // Change this password!
-      
-      adminUser = await User.create({
-        userId,
-        tenantId: layaproTenant.tenantId,
-        email: 'productionslaya@gmail.com',
-        passwordHash,
-        firstName: 'Laya',
-        lastName: 'Productions',
-        roleId: adminRole.roleId,
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-      console.log('✓ Created admin user:', userId);
-      console.log('  Email: productionslaya@gmail.com');
-      console.log('  Password: LayaPro@2025 (CHANGE THIS!)');
-    } else {
-      console.log('✓ Admin user already exists');
-    }
-
-    // 10. Create system modules
+    // 8. Create system modules
     const modules = [
       { name: 'Dashboard', description: 'Overview and analytics', path: '/dashboard', icon: 'dashboard', order: 1 },
       { name: 'Albums', description: 'Manage photo and video albums', path: '/albums', icon: 'albums', order: 2 },
@@ -210,27 +101,15 @@ async function seedDatabase() {
 
     console.log(`✓ Modules: ${moduleCreatedCount} created, ${moduleExistingCount} already exist`);
 
-    // 11. Create role permissions
+    // 4. Create role permissions
     console.log('\n✓ Creating role permissions...');
     
     const rolePermissions = [
       // Admin - Full access to everything
       { roleName: 'Admin', modules: ['Dashboard', 'Albums', 'Projects', 'Finances', 'Calendar', 'Events Setup', 'Team Setup', 'Equipments', 'Access Management'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: true } },
       
-      // HR - Access to finances, team members, salaries
-      { roleName: 'HR', modules: ['Dashboard', 'Finances', 'Team Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: true } },
-      
-      // Co-ordinator - Access to projects, finances, events, teams assigned to him
-      { roleName: 'Co-ordinator', modules: ['Dashboard', 'Projects', 'Finances', 'Calendar', 'Events Setup', 'Team Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
-      
-      // Team Lead - Technical stuff, assigns editors and designers
-      { roleName: 'Team Lead', modules: ['Dashboard', 'Projects', 'Calendar', 'Events Setup', 'Team Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
-      
       // Photo Editor - Edits and uploads photos for assigned events
       { roleName: 'Photo Editor', modules: ['Dashboard', 'Albums', 'Calendar', 'Events Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
-      
-      // Video Editor - Edits and uploads videos for assigned events
-      { roleName: 'Video Editor', modules: ['Dashboard', 'Albums', 'Calendar', 'Events Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
       
       // Album Designer - Designs and uploads PDF albums
       { roleName: 'Album Designer', modules: ['Dashboard', 'Albums', 'Calendar', 'Events Setup'], permissions: { canView: true, canCreate: true, canEdit: true, canDelete: false } },
@@ -241,11 +120,7 @@ async function seedDatabase() {
 
     for (const rolePermConfig of rolePermissions) {
       const role = rolePermConfig.roleName === 'Admin' ? adminRole :
-                   rolePermConfig.roleName === 'HR' ? hrRole :
-                   rolePermConfig.roleName === 'Co-ordinator' ? coordinatorRole :
-                   rolePermConfig.roleName === 'Team Lead' ? teamLeadRole :
                    rolePermConfig.roleName === 'Photo Editor' ? photoEditorRole :
-                   rolePermConfig.roleName === 'Video Editor' ? videoEditorRole :
                    rolePermConfig.roleName === 'Album Designer' ? albumDesignerRole : null;
 
       if (!role) continue;
@@ -276,7 +151,7 @@ async function seedDatabase() {
 
     console.log(`✓ Role Permissions: ${permissionCreatedCount} created, ${permissionExistingCount} already exist`);
 
-// 5. Create default profiles for LayaPro tenant
+// 5. Create default profiles (GLOBAL - shared across all tenants)
     const defaultProfiles = [
       { name: 'Candid Photographer', description: 'Captures candid moments and natural expressions' },
       { name: 'Cinematographer', description: 'Creates cinematic video content' },
@@ -284,21 +159,21 @@ async function seedDatabase() {
       { name: 'Traditional Videographer', description: 'Captures traditional video content' },
     ];
 
-    console.log('\n✓ Creating default profiles...');
+    console.log('\n✓ Creating default profiles (Global)...');
     let createdCount = 0;
     let existingCount = 0;
 
     for (const profileData of defaultProfiles) {
       const existing = await Profile.findOne({ 
         name: profileData.name, 
-        tenantId: (layaproTenant as any).tenantId 
+        tenantId: -1 
       });
 
       if (!existing) {
         const profileId = `profile_${nanoid()}`;
         await Profile.create({
           profileId,
-          tenantId: (layaproTenant as any).tenantId,
+          tenantId: -1, // Global data
           name: profileData.name,
           description: profileData.description
         });
@@ -316,7 +191,7 @@ async function seedDatabase() {
       console.log(`✓ ${existingCount} profile(s) already exist`);
     }
 
-    // 5. Create default events for LayaPro tenant
+    // 6. Create default events (GLOBAL - shared across all tenants)
     const defaultEvents = [
       { eventCode: 'PREWEDDING', eventDesc: 'Pre Wedding', eventAlias: 'Pre-Wedding Shoot' },
       { eventCode: 'SANGEET', eventDesc: 'Sangeet', eventAlias: 'Sangeet Ceremony' },
@@ -327,21 +202,21 @@ async function seedDatabase() {
       { eventCode: 'PHERA', eventDesc: 'Phera', eventAlias: 'Phera Ceremony' }
     ];
 
-    console.log('\n✓ Creating default events...');
+    console.log('\n✓ Creating default events (Global)...');
     let createdEventCount = 0;
     let existingEventCount = 0;
 
     for (const eventData of defaultEvents) {
       const existing = await Event.findOne({ 
         eventCode: eventData.eventCode, 
-        tenantId: (layaproTenant as any).tenantId 
+        tenantId: -1 
       });
 
       if (!existing) {
         const eventId = `event_${nanoid()}`;
         await Event.create({
           eventId,
-          tenantId: (layaproTenant as any).tenantId,
+          tenantId: -1, // Global data
           eventCode: eventData.eventCode,
           eventDesc: eventData.eventDesc,
           eventAlias: eventData.eventAlias
@@ -360,7 +235,7 @@ async function seedDatabase() {
       console.log(`✓ ${existingEventCount} event(s) already exist`);
     }
 
-    // 6. Create default event delivery statuses for LayaPro tenant
+    // 7. Create default event delivery statuses (GLOBAL - shared across all tenants)
     const defaultEventStatuses = [
       {
         statusCode: 'SCHEDULED',
@@ -452,21 +327,21 @@ async function seedDatabase() {
       }
     ];
 
-    console.log('\n✓ Creating default event delivery statuses...');
+    console.log('\n✓ Creating default event delivery statuses (Global)...');
     let createdEventStatusCount = 0;
     let existingEventStatusCount = 0;
 
     for (const statusData of defaultEventStatuses) {
       const existing = await EventDeliveryStatus.findOne({ 
         statusCode: statusData.statusCode, 
-        tenantId: (layaproTenant as any).tenantId 
+        tenantId: -1 
       });
 
       if (!existing) {
         const statusId = `status_${nanoid()}`;
         await EventDeliveryStatus.create({
           statusId,
-          tenantId: (layaproTenant as any).tenantId,
+          tenantId: -1, // Global data
           statusCode: statusData.statusCode,
           statusDescription: statusData.statusDescription,
           step: statusData.step,
@@ -489,7 +364,7 @@ async function seedDatabase() {
       console.log(`✓ ${existingEventStatusCount} event status(es) already exist`);
     }
 
-    // 7. Create default project delivery statuses for LayaPro tenant
+    // 8. Create default project delivery statuses (GLOBAL - shared across all tenants)
     const defaultProjectStatuses = [
       { statusCode: 'Lead', step: 1 },
       { statusCode: 'Negotiation', step: 2 },
@@ -501,21 +376,21 @@ async function seedDatabase() {
       { statusCode: 'Closed', step: 8 }
     ];
 
-    console.log('\n✓ Creating default project delivery statuses...');
+    console.log('\n✓ Creating default project delivery statuses (Global)...');
     let createdProjectStatusCount = 0;
     let existingProjectStatusCount = 0;
 
     for (const statusData of defaultProjectStatuses) {
       const existing = await ProjectDeliveryStatus.findOne({ 
         statusCode: statusData.statusCode, 
-        tenantId: (layaproTenant as any).tenantId 
+        tenantId: -1 
       });
 
       if (!existing) {
         const statusId = `status_${nanoid()}`;
         await ProjectDeliveryStatus.create({
           statusId,
-          tenantId: (layaproTenant as any).tenantId,
+          tenantId: -1, // Global data
           statusCode: statusData.statusCode,
           step: statusData.step
         });
@@ -533,7 +408,7 @@ async function seedDatabase() {
       console.log(`✓ ${existingProjectStatusCount} project status(es) already exist`);
     }
 
-    // 8. Create default image statuses for LayaPro tenant
+    // 9. Create default image statuses (GLOBAL - shared across all tenants)
     const defaultImageStatuses = [
       { statusCode: 'REVIEW_PENDING', statusDescription: 'Review pending', step: 1 },
       { statusCode: 'RE_EDIT_SUGGESTED', statusDescription: 'Re-edit requested', step: 2 },
@@ -543,21 +418,21 @@ async function seedDatabase() {
 
     ];
 
-    console.log('\n✓ Creating default image statuses...');
+    console.log('\n✓ Creating default image statuses (Global)...');
     let createdImageStatusCount = 0;
     let existingImageStatusCount = 0;
 
     for (const statusData of defaultImageStatuses) {
       const existing = await ImageStatus.findOne({ 
         statusCode: statusData.statusCode, 
-        tenantId: (layaproTenant as any).tenantId 
+        tenantId: -1 
       });
 
       if (!existing) {
         const statusId = `imgstatus_${nanoid()}`;
         await ImageStatus.create({
           statusId,
-          tenantId: (layaproTenant as any).tenantId,
+          tenantId: -1, // Global data
           statusCode: statusData.statusCode,
           statusDescription: statusData.statusDescription,
           step: statusData.step
@@ -576,26 +451,12 @@ async function seedDatabase() {
       console.log(`✓ ${existingImageStatusCount} image status(es) already exist`);
     }
 
-    // Create Organization for LayaPro tenant if it doesn't exist
-    let organization = await Organization.findOne({ tenantId: layaproTenant.tenantId });
-    if (!organization) {
-      const organizationId = `org_${nanoid()}`;
-      organization = await Organization.create({
-        organizationId,
-        tenantId: layaproTenant.tenantId,
-        companyName: layaproTenant.tenantCompanyName,
-        email: layaproTenant.tenantEmailAddress,
-        countryCode: layaproTenant.countryCode,
-        phone: layaproTenant.tenantPhoneNumber,
-        createdBy: adminUser.userId,
-        updatedBy: adminUser.userId
-      });
-      console.log('\n✓ Created organization for LayaPro tenant:', organizationId);
-    } else {
-      console.log('\n✓ Organization already exists for LayaPro tenant');
-    }
-
     console.log('\n✅ Database seeding completed successfully!');
+    console.log('\n💡 Next steps:');
+    console.log('   1. Login to Super Admin Portal at http://localhost:5000');
+    console.log('   2. Create your first tenant');
+    console.log('   3. Login with tenant email (password = email initially)');
+    console.log('   4. Set a new password on first login');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error seeding database:', error);

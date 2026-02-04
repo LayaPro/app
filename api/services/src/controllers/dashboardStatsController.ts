@@ -166,8 +166,8 @@ export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
     const now = new Date();
     const next30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
-    // Fetch statuses first to identify relevant status codes
-    const statuses = await EventDeliveryStatus.find({ tenantId }).select('statusId statusCode statusDescription').lean();
+    // Fetch statuses first to identify relevant status codes (include global statuses)
+    const statuses = await EventDeliveryStatus.find({ tenantId: { $in: [tenantId, -1] } }).select('statusId statusCode statusDescription').lean();
     const scheduledStatusId = statuses.find(s => s.statusCode === 'SCHEDULED')?.statusId;
     const ongoingStatusId = statuses.find(s => s.statusCode === 'SHOOT_IN_PROGRESS')?.statusId;
 
@@ -185,7 +185,7 @@ export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
       }).lean() : [],
       Project.find({ tenantId }).select('projectId projectName displayPic').lean(),
       Team.find({ tenantId }).select('memberId firstName lastName profileIds').lean(),
-      Event.find({ tenantId }).select('eventId eventCode eventDesc eventAlias').lean()
+      Event.find({ tenantId: { $in: [tenantId, -1] } }).select('eventId eventCode eventDesc eventAlias').lean()
     ]);
 
     // Filter scheduled events to only show those within next 30 days

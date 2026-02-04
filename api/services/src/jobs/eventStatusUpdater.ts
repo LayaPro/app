@@ -3,6 +3,7 @@ import ClientEvent from '../models/clientEvent';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Project from '../models/project';
 import { NotificationUtils } from '../services/notificationUtils';
+import { emitEventStatusUpdate } from '../services/socketService';
 
 /**
  * Cron job to automatically update event statuses based on datetime
@@ -16,129 +17,128 @@ export const startEventStatusUpdater = () => {
       const now = new Date();
       console.log('[EventStatusUpdater] Current time:', now.toISOString());
 
-      // Get all tenants' statuses
-      const scheduledStatuses = await EventDeliveryStatus.find({ statusCode: 'SCHEDULED' }).lean();
-      const shootInProgressStatuses = await EventDeliveryStatus.find({ statusCode: 'SHOOT_IN_PROGRESS' }).lean();
-      const awaitingEditingStatuses = await EventDeliveryStatus.find({ statusCode: 'AWAITING_EDITING' }).lean();
+      // Get global statuses (tenantId: -1)
+      const scheduledStatus = await EventDeliveryStatus.findOne({ statusCode: 'SCHEDULED', tenantId: -1 }).lean();
+      const shootInProgressStatus = await EventDeliveryStatus.findOne({ statusCode: 'SHOOT_IN_PROGRESS', tenantId: -1 }).lean();
+      const awaitingEditingStatus = await EventDeliveryStatus.findOne({ statusCode: 'AWAITING_EDITING', tenantId: -1 }).lean();
 
-      // Create maps for quick lookup by tenantId
-      const scheduledStatusMap = new Map(scheduledStatuses.map(s => [s.tenantId, s.statusId]));
-      const shootInProgressMap = new Map(shootInProgressStatuses.map(s => [s.tenantId, s.statusId]));
-      const awaitingEditingMap = new Map(awaitingEditingStatuses.map(s => [s.tenantId, s.statusId]));
+      if (!scheduledStatus || !shootInProgressStatus || !awaitingEditingStatus) {
+        console.error('[EventStatusUpdater] Required statuses not found. Make sure seed script has run.');
+        return;
+      }
 
       let updatedToInProgress = 0;
       let updatedToAwaitingEditing = 0;
 
       // Debug: Check all SCHEDULED events
-      for (const [tenantId, scheduledStatusId] of scheduledStatusMap.entries()) {
-        const allScheduledEvents = await ClientEvent.find({
-          tenantId,
-          eventDeliveryStatusId: scheduledStatusId
-        }).select('clientEventId fromDatetime toDatetime eventDeliveryStatusId').lean();
-        
-        if (allScheduledEvents.length > 0) {
-          console.log(`[EventStatusUpdater] Found ${allScheduledEvents.length} SCHEDULED events for tenant ${tenantId}:`);
-          allScheduledEvents.forEach(e => {
-            const fromDate = e.fromDatetime ? new Date(e.fromDatetime) : null;
-            const toDate = e.toDatetime ? new Date(e.toDatetime) : null;
-            const shouldStart = fromDate && fromDate <= now;
-            const shouldNotEnd = toDate && toDate > now;
-            console.log(`  - Event ${e.clientEventId}:`);
-            console.log(`    From: ${fromDate?.toISOString()} (should start: ${shouldStart})`);
-            console.log(`    To: ${toDate?.toISOString()} (should not end: ${shouldNotEnd})`);
-            console.log(`    Should update: ${shouldStart && shouldNotEnd}`);
-          });
-        }
+      const allScheduledEvents = await ClientEvent.find({
+        eventDeliveryStatusId: scheduledStatus.statusId
+      }).select('clientEventId tenantId fromDatetime toDatetime eventDeliveryStatusId').lean();
+      
+      if (allScheduledEvents.length > 0) {
+        console.log(`[EventStatusUpdater] Found ${allScheduledEvents.length} SCHEDULED events:`);
+        allScheduledEvents.forEach(e => {
+          const fromDate = e.fromDatetime ? new Date(e.fromDatetime) : null;
+          const toDate = e.toDatetime ? new Date(e.toDatetime) : null;
+          const shouldStart = fromDate && fromDate <= now;
+          const shouldNotEnd = toDate && toDate > now;
+          console.log(`  - Event ${e.clientEventId} (tenant: ${e.tenantId}):`);
+          console.log(`    From: ${fromDate?.toISOString()} (should start: ${shouldStart})`);
+          console.log(`    To: ${toDate?.toISOString()} (should not end: ${shouldNotEnd})`);
+          console.log(`    Should update: ${shouldStart && shouldNotEnd}`);
+        });
       }
 
       // 1. Update SCHEDULED → SHOOT_IN_PROGRESS
       // Criteria: status = SCHEDULED AND fromDatetime <= now AND toDatetime > now
-      for (const [tenantId, scheduledStatusId] of scheduledStatusMap.entries()) {
-        const shootInProgressStatusId = shootInProgressMap.get(tenantId);
-        if (!shootInProgressStatusId) continue;
+      const eventsToStart = await ClientEvent.find({
+        eventDeliveryStatusId: scheduledStatus.statusId,
+        fromDatetime: { $lte: now },
+        toDatetime: { $gt: now }
+      });
 
-        // Find events that should be updated
-        const eventsToUpdate = await ClientEvent.find({
-          tenantId,
-          eventDeliveryStatusId: scheduledStatusId,
-          fromDatetime: { $lte: now },
-          toDatetime: { $gt: now }
-        });
-
-        if (eventsToUpdate.length > 0) {
-          console.log(`[EventStatusUpdater] Updating ${eventsToUpdate.length} events to SHOOT_IN_PROGRESS for tenant ${tenantId}`);
+      if (eventsToStart.length > 0) {
+        console.log(`[EventStatusUpdater] Updating ${eventsToStart.length} events to SHOOT_IN_PROGRESS`);
+        
+        // Update each event individually and trigger notifications
+        for (const event of eventsToStart) {
+          console.log(`[EventStatusUpdater] Processing event ${event.clientEventId}`);
+          event.eventDeliveryStatusId = shootInProgressStatus.statusId;
+          event.updatedBy = 'system-cron';
+          await event.save();
+          console.log(`[EventStatusUpdater] Event ${event.clientEventId} status updated`);
           
-          // Update each event individually and trigger notifications
-          for (const event of eventsToUpdate) {
-            console.log(`[EventStatusUpdater] Processing event ${event.clientEventId}`);
-            event.eventDeliveryStatusId = shootInProgressStatusId;
-            event.updatedBy = 'system-cron';
-            await event.save();
-            console.log(`[EventStatusUpdater] Event ${event.clientEventId} status updated`);
-            
-            // Trigger notification for admins
-            try {
-              const project = await Project.findOne({ projectId: event.projectId });
-              if (project) {
-                console.log(`[EventStatusUpdater] Notifying admins about shoot start for event ${event.clientEventId}`);
-                await NotificationUtils.notifyShootInProgress(event, project.projectName);
-                console.log(`[EventStatusUpdater] Notification sent successfully`);
-              } else {
-                console.log(`[EventStatusUpdater] Project not found for event ${event.clientEventId}`);
-              }
-            } catch (notifError) {
-              console.error(`[EventStatusUpdater] Error sending notification for event ${event.clientEventId}:`, notifError);
+          // Emit socket event for real-time update
+          emitEventStatusUpdate(event.tenantId, {
+            clientEventId: event.clientEventId,
+            eventDeliveryStatusId: shootInProgressStatus.statusId,
+            statusCode: 'SHOOT_IN_PROGRESS',
+            updatedAt: new Date()
+          });
+          
+          // Trigger notification for admins
+          try {
+            const project = await Project.findOne({ projectId: event.projectId });
+            if (project) {
+              console.log(`[EventStatusUpdater] Notifying admins about shoot start for event ${event.clientEventId}`);
+              await NotificationUtils.notifyShootInProgress(event, project.projectName);
+              console.log(`[EventStatusUpdater] Notification sent successfully`);
+            } else {
+              console.log(`[EventStatusUpdater] Project not found for event ${event.clientEventId}`);
             }
-            
-            updatedToInProgress++;
+          } catch (notifError) {
+            console.error(`[EventStatusUpdater] Error sending notification for event ${event.clientEventId}:`, notifError);
           }
+          
+          updatedToInProgress++;
         }
       }
 
       // 2. Update SHOOT_IN_PROGRESS → AWAITING_EDITING
       // Criteria: status = SHOOT_IN_PROGRESS AND toDatetime <= now
-      for (const [tenantId, shootInProgressStatusId] of shootInProgressMap.entries()) {
-        const awaitingEditingStatusId = awaitingEditingMap.get(tenantId);
-        if (!awaitingEditingStatusId) continue;
+      const eventsToFinish = await ClientEvent.find({
+        eventDeliveryStatusId: shootInProgressStatus.statusId,
+        toDatetime: { $lte: now }
+      });
 
-        // Find events that should be updated
-        const eventsToUpdate = await ClientEvent.find({
-          tenantId,
-          eventDeliveryStatusId: shootInProgressStatusId,
-          toDatetime: { $lte: now }
-        });
-
-        if (eventsToUpdate.length > 0) {
-          console.log(`[EventStatusUpdater] Updating ${eventsToUpdate.length} events to AWAITING_EDITING`);
+      if (eventsToFinish.length > 0) {
+        console.log(`[EventStatusUpdater] Updating ${eventsToFinish.length} events to AWAITING_EDITING`);
+        
+        // Update each event individually and trigger notifications if no editor assigned
+        for (const event of eventsToFinish) {
+          console.log(`[EventStatusUpdater] Processing event ${event.clientEventId} for AWAITING_EDITING`);
+          event.eventDeliveryStatusId = awaitingEditingStatus.statusId;
+          event.updatedBy = 'system-cron';
+          await event.save();
+          console.log(`[EventStatusUpdater] Event ${event.clientEventId} status updated to AWAITING_EDITING`);
           
-          // Update each event individually and trigger notifications if no editor assigned
-          for (const event of eventsToUpdate) {
-            console.log(`[EventStatusUpdater] Processing event ${event.clientEventId} for AWAITING_EDITING`);
-            event.eventDeliveryStatusId = awaitingEditingStatusId;
-            event.updatedBy = 'system-cron';
-            await event.save();
-            console.log(`[EventStatusUpdater] Event ${event.clientEventId} status updated to AWAITING_EDITING`);
-            
-            // Notify admins if no editor assigned
-            if (!event.albumEditor) {
-              try {
-                const project = await Project.findOne({ projectId: event.projectId });
-                if (project) {
-                  console.log(`[EventStatusUpdater] Notifying admins about editor needed for event ${event.clientEventId}`);
-                  await NotificationUtils.notifyAssignEditorNeeded(event, project.projectName);
-                  console.log(`[EventStatusUpdater] Editor notification sent successfully`);
-                } else {
-                  console.log(`[EventStatusUpdater] Project not found for event ${event.clientEventId}`);
-                }
-              } catch (notifError) {
-                console.error(`[EventStatusUpdater] Error sending editor notification for event ${event.clientEventId}:`, notifError);
+          // Emit socket event for real-time update
+          emitEventStatusUpdate(event.tenantId, {
+            clientEventId: event.clientEventId,
+            eventDeliveryStatusId: awaitingEditingStatus.statusId,
+            statusCode: 'AWAITING_EDITING',
+            updatedAt: new Date()
+          });
+          
+          // Notify admins if no editor assigned
+          if (!event.albumEditor) {
+            try {
+              const project = await Project.findOne({ projectId: event.projectId });
+              if (project) {
+                console.log(`[EventStatusUpdater] Notifying admins about editor needed for event ${event.clientEventId}`);
+                await NotificationUtils.notifyAssignEditorNeeded(event, project.projectName);
+                console.log(`[EventStatusUpdater] Editor notification sent successfully`);
+              } else {
+                console.log(`[EventStatusUpdater] Project not found for event ${event.clientEventId}`);
               }
-            } else {
-              console.log(`[EventStatusUpdater] Editor already assigned to event ${event.clientEventId}, skipping notification`);
+            } catch (notifError) {
+              console.error(`[EventStatusUpdater] Error sending editor notification for event ${event.clientEventId}:`, notifError);
             }
-            
-            updatedToAwaitingEditing++;
+          } else {
+            console.log(`[EventStatusUpdater] Editor already assigned to event ${event.clientEventId}, skipping notification`);
           }
+          
+          updatedToAwaitingEditing++;
         }
       }
 

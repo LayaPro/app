@@ -34,9 +34,16 @@ const authSlice = createSlice({
       state,
       action: PayloadAction<{ user: User; token: string }>
     ) => {
+      // Clear any existing user data first
+      state.user = null;
+      state.token = null;
+      state.isAuthenticated = false;
+      
+      // Set new user data
       state.user = action.payload.user;
       state.token = action.payload.token;
       state.isAuthenticated = true;
+      
       // Store user in same location as token
       const storage = localStorage.getItem('token') ? localStorage : sessionStorage;
       storage.setItem('user', JSON.stringify(action.payload.user));

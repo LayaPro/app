@@ -50,8 +50,8 @@ export const getAllProjectDeliveryStatuses = async (req: AuthRequest, res: Respo
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    // All users only see their own tenant's statuses
-    const projectDeliveryStatuses = await ProjectDeliveryStatus.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    // Include both global statuses (tenantId: -1) and tenant-specific statuses
+    const projectDeliveryStatuses = await ProjectDeliveryStatus.find({ tenantId: { $in: [tenantId, -1] } }).sort({ createdAt: -1 }).lean();
 
     return res.status(200).json({
       message: 'Project delivery statuses retrieved successfully',

@@ -60,6 +60,20 @@ export const Login: React.FC = () => {
         throw new Error(data.message || 'Login failed');
       }
 
+      // Check if user needs to setup password (first time login)
+      if (data.requirePasswordSetup) {
+        // Store setup token temporarily
+        sessionStorage.setItem('setupToken', data.setupToken);
+        sessionStorage.setItem('setupEmail', data.email);
+        // Redirect to setup password page
+        window.location.href = '/setup-password';
+        return;
+      }
+
+      // Clear any existing auth data first to prevent role/data conflicts
+      localStorage.clear();
+      sessionStorage.clear();
+
       // Store token based on remember me
       if (rememberMe) {
         localStorage.setItem('token', data.token);
@@ -72,6 +86,9 @@ export const Login: React.FC = () => {
         user: data.user,
         token: data.token,
       }));
+
+      // Force a full page reload to clear any cached state
+      window.location.href = '/';
 
     } catch (error) {
       setErrors({

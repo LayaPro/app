@@ -21,15 +21,23 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     const authHeader = req.headers.authorization;
     console.log('[Auth] Request path:', req.path);
     console.log('[Auth] Auth header exists:', !!authHeader);
-    console.log('[Auth] Auth header preview:', authHeader?.substring(0, 30));
+    console.log('[Auth] Full auth header:', authHeader);
     
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('[Auth] No token provided or invalid format');
+    if (!authHeader) {
+      console.log('[Auth] No authorization header');
       return res.status(401).json({ message: 'No token provided' });
     }
 
-    const token = authHeader.substring(7);
+    // Handle both "Bearer <token>" and just "<token>" formats
+    let token: string;
+    if (authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else {
+      token = authHeader;
+    }
+    
     console.log('[Auth] Token extracted, length:', token.length);
+    console.log('[Auth] Token preview:', token.substring(0, 50) + '...');
     
     const decoded = jwt.verify(token, JWT_SECRET) as any;
     console.log('[Auth] Token verified successfully for user:', decoded.userId);

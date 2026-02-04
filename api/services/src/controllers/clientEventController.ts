@@ -49,7 +49,7 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
 
     // Get DELIVERY status
     const deliveryStatus = await EventDeliveryStatus.findOne({
-      tenantId,
+      tenantId: { $in: [tenantId, -1] },
       statusCode: 'DELIVERY'
     });
 
@@ -135,7 +135,7 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
     let finalStatusId = eventDeliveryStatusId;
     if (!finalStatusId) {
       const scheduledStatus = await EventDeliveryStatus.findOne({
-        tenantId,
+        tenantId: { $in: [tenantId, -1] },
         statusCode: 'SCHEDULED'
       });
       finalStatusId = scheduledStatus?.statusId;
@@ -320,7 +320,7 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
     // If albumEditor is being assigned (and not being removed), set status to EDITING_ONGOING
     if (updates.albumEditor && updates.albumEditor !== currentEvent?.albumEditor) {
       const editingStatus = await EventDeliveryStatus.findOne({
-        tenantId,
+        tenantId: { $in: [tenantId, -1] },
         statusCode: 'EDITING_ONGOING'
       });
       if (editingStatus) {
@@ -332,7 +332,7 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
     // If albumDesigner is being assigned (and not being removed), set status to ALBUM_DESIGN_ONGOING
     if (updates.albumDesigner && updates.albumDesigner !== currentEvent?.albumDesigner) {
       const designStatus = await EventDeliveryStatus.findOne({
-        tenantId,
+        tenantId: { $in: [tenantId, -1] },
         statusCode: 'ALBUM_DESIGN_ONGOING'
       });
       if (designStatus) {
@@ -638,7 +638,7 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
 
     // Update all target events to ALBUM_DESIGN_COMPLETE status
     const albumDesignCompleteStatus = await EventDeliveryStatus.findOne({
-      tenantId,
+      tenantId: { $in: [tenantId, -1] },
       statusCode: 'ALBUM_DESIGN_COMPLETE'
     });
 
@@ -827,7 +827,7 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
     const batchAllEventIds = Array.from(new Set(parsedMappings.flatMap(m => m.eventIds || [])));
     if (batchAllEventIds.length > 0) {
       const albumDesignCompleteStatus = await EventDeliveryStatus.findOne({
-        tenantId,
+        tenantId: { $in: [tenantId, -1] },
         statusCode: 'ALBUM_DESIGN_COMPLETE'
       });
 
@@ -897,7 +897,7 @@ export const approveAlbumDesign = async (req: AuthRequest, res: Response) => {
 
     // Find ALBUM_PRINTING status
     const albumPrintingStatus = await EventDeliveryStatus.findOne({
-      tenantId,
+      tenantId: { $in: [tenantId, -1] },
       statusCode: 'ALBUM_PRINTING'
     });
 

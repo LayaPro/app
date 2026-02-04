@@ -11,6 +11,7 @@ export interface IUser extends Document {
   roleId: string; // Reference to Role table
   isActive: boolean;
   isActivated?: boolean; // Email activation status
+  isSuperAdmin?: boolean; // Super admin for multi-tenant management
   createdAt: Date;
   updatedAt: Date;
   lastLogin?: Date;
@@ -33,6 +34,7 @@ const UserSchema = new Schema<IUser>(
     roleId: { type: String, required: true },
     isActive: { type: Boolean, default: true },
     isActivated: { type: Boolean, default: false },
+    isSuperAdmin: { type: Boolean, default: false },
     lastLogin: { type: Date },
     activationToken: { type: String, default: null },
     activationTokenExpires: { type: Date, default: null },

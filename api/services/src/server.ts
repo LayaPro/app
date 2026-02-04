@@ -39,9 +39,11 @@ import userController from './controllers/userController';
 import albumPdfController from './controllers/albumPdfController';
 import organizationController from './controllers/organizationController';
 import * as proposalController from './controllers/proposalController';
+import * as superAdminController from './controllers/superAdminController';
 import { NotificationController } from './controllers/notificationController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
+import { requireSuperAdmin } from './middleware/requireSuperAdmin';
 import { upload, uploadPdf } from './middleware/upload';
 import { startEventStatusUpdater } from './jobs/eventStatusUpdater';
 import { startDueDateChecker } from './jobs/dueDateChecker';
@@ -77,6 +79,7 @@ app.post('/check-due-dates', authenticate, requireAdmin, async (req, res) => {
 app.post('/login', authController.login);
 app.post('/logout', authController.logout);
 app.get('/verify-token', authController.verifyToken);
+app.get('/auth/me', authenticate, authController.getCurrentUser);
 app.post('/refresh-token', authController.refreshToken);
 app.post('/forgot-password', authController.forgotPassword);
 app.post('/reset-password', authController.resetPassword);
@@ -282,6 +285,17 @@ app.post('/notifications/:id/read', authenticate, NotificationController.markAsR
 app.post('/notifications/read-all', authenticate, NotificationController.markAllAsRead);
 app.delete('/notifications/:id', authenticate, NotificationController.deleteNotification);
 app.post('/notifications/test', authenticate, NotificationController.createTestNotification);
+
+// ---------- Super Admin routes ----------
+app.get('/super-admin/tenants', authenticate, requireSuperAdmin, superAdminController.getAllTenants);
+app.get('/super-admin/tenants/:tenantId', authenticate, requireSuperAdmin, superAdminController.getTenantById);
+app.post('/super-admin/tenants', authenticate, requireSuperAdmin, superAdminController.createTenant);
+app.put('/super-admin/tenants/:tenantId', authenticate, requireSuperAdmin, superAdminController.updateTenant);
+app.patch('/super-admin/tenants/:tenantId', authenticate, requireSuperAdmin, superAdminController.toggleTenantStatus);
+app.delete('/super-admin/tenants/:tenantId', authenticate, requireSuperAdmin, superAdminController.deleteTenant);
+
+// ---------- Static files ----------
+app.use(express.static(path.join(__dirname, '../public')));
 
 const PORT = process.env.PORT || 4000;
 const MONGO_URI = process.env.MONGO_URI || '';

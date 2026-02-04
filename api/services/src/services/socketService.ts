@@ -104,3 +104,18 @@ export const broadcastNotification = (notification: any) => {
   io.emit('notification', notification);
   console.log(`📢 Broadcast notification:`, notification.title);
 };
+
+// Emit event status update to tenant users
+export const emitEventStatusUpdate = (tenantId: string, eventData: any) => {
+  if (!io) {
+    console.error('Socket.IO not initialized');
+    return;
+  }
+
+  // Emit to all users in the tenant (frontend should filter by tenantId)
+  io.emit('event:statusUpdate', {
+    tenantId,
+    ...eventData
+  });
+  console.log(`📊 Event status update emitted for tenant ${tenantId}:`, eventData.clientEventId);
+};

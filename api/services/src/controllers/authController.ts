@@ -9,6 +9,10 @@ import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailSe
 const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const JWT_EXPIRES_IN: number = Number(process.env.JWT_EXPIRES_IN) || 7 * 24 * 60 * 60;
 
+// Hardcoded Super Admin Credentials
+const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'superadmin@laya.pro';
+const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || 'LayaPro@SuperAdmin2026';
+
 console.log('[Auth Controller] JWT_SECRET loaded:', JWT_SECRET?.substring(0, 10) + '...');
 
 interface LoginRequest {
@@ -23,6 +27,42 @@ export const login = async (req: Request, res: Response) => {
     // Validate input
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
+    }
+
+    // Check for hardcoded Super Admin credentials first
+    if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && password === SUPER_ADMIN_PASSWORD) {
+      console.log('[Auth] Super Admin login detected');
+      
+      // Generate JWT token for super admin
+      const payload = {
+        userId: 'super-admin-001',
+        email: SUPER_ADMIN_EMAIL,
+        roleId: 'super-admin-role',
+        roleName: 'Super Admin',
+        tenantId: 'internal',
+        isSuperAdmin: true
+      };
+      
+      const options: SignOptions = {
+        expiresIn: JWT_EXPIRES_IN
+      };
+      
+      const token = jwt.sign(payload, JWT_SECRET, options);
+
+      return res.status(200).json({
+        message: 'Super Admin login successful',
+        token,
+        user: {
+          userId: 'super-admin-001',
+          email: SUPER_ADMIN_EMAIL,
+          firstName: 'Super',
+          lastName: 'Admin',
+          roleId: 'super-admin-role',
+          roleName: 'Super Admin',
+          tenantId: 'internal',
+          isSuperAdmin: true
+        }
+      });
     }
 
     // Find user by email
@@ -45,6 +85,24 @@ export const login = async (req: Request, res: Response) => {
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    // Check if user needs to set a new password (first time login)
+    if (!user.isActivated) {
+      // Generate a temporary token for password setup
+      const setupToken = jwt.sign(
+        { userId: user.userId, email: user.email, purpose: 'setup-password' },
+        JWT_SECRET,
+        { expiresIn: '24h' }
+      );
+
+      return res.status(200).json({
+        requirePasswordSetup: true,
+        setupToken,
+        message: 'Please set a new password',
+        userId: user.userId,
+        email: user.email
+      });
     }
 
     // Get user role
@@ -83,7 +141,8 @@ export const login = async (req: Request, res: Response) => {
         lastName: user.lastName,
         roleId: user.roleId,
         roleName: role.name,
-        tenantId: user.tenantId
+        tenantId: user.tenantId,
+        isSuperAdmin: user.isSuperAdmin || false
       }
     });
   } catch (err: any) {
@@ -96,6 +155,54 @@ export const logout = async (req: Request, res: Response) => {
   // For JWT, logout is typically handled client-side by removing the token
   // Optionally, you can implement token blacklisting here
   return res.status(200).json({ message: 'Logout successful' });
+};
+
+export const getCurrentUser = async (req: Request, res: Response) => {
+  try {
+    // @ts-ignore - userId is added by authenticate middleware
+    const userId = req.user?.userId;
+
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required' });
+    }
+
+    // Check if it's the hardcoded super admin
+    if (userId === 'super-admin-001') {
+      return res.json({
+        userId: 'super-admin-001',
+        email: SUPER_ADMIN_EMAIL,
+        firstName: 'Super',
+        lastName: 'Admin',
+        name: 'Super Admin',
+        roleId: 'super-admin-role',
+        roleName: 'Super Admin',
+        tenantId: 'internal',
+        isSuperAdmin: true
+      });
+    }
+
+    const user = await User.findOne({ userId });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const role = await Role.findOne({ roleId: user.roleId });
+
+    return res.json({
+      userId: user.userId,
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      name: `${user.firstName} ${user.lastName}`,
+      roleId: user.roleId,
+      roleName: role?.name,
+      tenantId: user.tenantId,
+      isSuperAdmin: user.isSuperAdmin || false
+    });
+  } catch (error) {
+    console.error('Error getting current user:', error);
+    return res.status(500).json({ message: 'Server error' });
+  }
 };
 
 export const verifyToken = async (req: Request, res: Response) => {
@@ -271,24 +378,34 @@ export const setupPassword = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Password must be at least 8 characters long' });
     }
 
-    // Hash the provided token to match with stored hash
-    const activationTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+    let user;
 
-    // Find user with valid activation token
-    const user = await User.findOne({
-      activationToken: activationTokenHash,
-      activationTokenExpires: { $gt: new Date() }
-    });
+    // Try to verify as JWT token first (for new tenant flow)
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      if (decoded.purpose === 'setup-password' && decoded.userId) {
+        user = await User.findOne({ userId: decoded.userId });
+      }
+    } catch (jwtError) {
+      // If JWT verification fails, try activation token hash method
+      const activationTokenHash = crypto.createHash('sha256').update(token).digest('hex');
+      user = await User.findOne({
+        activationToken: activationTokenHash,
+        activationTokenExpires: { $gt: new Date() }
+      });
+    }
 
     if (!user) {
-      return res.status(400).json({ message: 'Invalid or expired activation token' });
+      return res.status(400).json({ message: 'Invalid or expired token' });
     }
 
     // Hash password
-    const passwordHash = await bcrypt.hash(password, 10);
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(password, salt);
 
     // Update password and activate account
     user.passwordHash = passwordHash;
+    user.passwordSalt = salt;
     user.isActivated = true;
     user.activationToken = null;
     user.activationTokenExpires = null;
@@ -377,7 +494,8 @@ export const resendActivationLink = async (req: Request, res: Response) => {
 
 export default { 
   login, 
-  logout, 
+  logout,
+  getCurrentUser,
   verifyToken, 
   refreshToken, 
   forgotPassword, 
