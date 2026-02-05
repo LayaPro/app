@@ -4,6 +4,7 @@ import { toggleNotificationPanel, toggleProfilePanel, toggleMobileMenu } from '.
 import { useTheme } from '../../hooks/useTheme.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { NotificationDropdown } from '../common/NotificationDropdown.js';
+import { StorageIndicator } from '../common/StorageIndicator.js';
 import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
@@ -65,45 +66,11 @@ export const Header: React.FC = () => {
 
         {/* Right Side Controls */}
         <div className={styles.controls}>
-          {/* Quick Stats Ticker */}
-          <div className={styles.statsTicker}>
-            {/* Revenue */}
-            <div className={styles.statItem}>
-              <svg className={styles.statIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#3b82f6' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <div className={styles.statLabel}>Revenue</div>
-                <div className={styles.statValue}>$24.5K</div>
-              </div>
-            </div>
-
-            <div className={styles.statDivider}></div>
-
-            {/* Completed */}
-            <div className={styles.statItem}>
-              <svg className={styles.statIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#8b5cf6' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <div>
-                <div className={styles.statLabel}>Completed</div>
-                <div className={styles.statValue}>142 tasks</div>
-              </div>
-            </div>
-
-            <div className={styles.statDivider}></div>
-
-            {/* Growth */}
-            <div className={styles.statItem}>
-              <svg className={styles.statIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: '#10b981' }}>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-              </svg>
-              <div>
-                <div className={styles.statLabel}>Growth</div>
-                <div className={styles.statValue} style={{ color: '#10b981' }}>+23%</div>
-              </div>
-            </div>
-          </div>
+          {/* Storage Usage Indicator */}
+          <StorageIndicator />
+          
+          {/* Divider */}
+          <div className={styles.statDivider}></div>
 
           {/* Dark Mode Toggle */}
           <button onClick={toggleTheme} className={`${styles.iconButton} ${styles.themeToggle}`}>

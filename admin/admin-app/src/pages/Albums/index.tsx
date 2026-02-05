@@ -1278,6 +1278,9 @@ const Albums = () => {
       if (selectedEvent) {
         refreshGallerySilently(selectedEvent.clientEventId);
       }
+
+      // Trigger storage update event
+      window.dispatchEvent(new Event('storageUpdated'));
     } catch (error) {
       console.error('Error deleting images:', error);
       showToast('error', 'Failed to delete images');
@@ -1428,6 +1431,9 @@ const Albums = () => {
         if (selectedEvent) {
           refreshGallerySilently(selectedEvent.clientEventId);
         }
+
+        // Trigger storage update event
+        window.dispatchEvent(new Event('storageUpdated'));
       }
     } catch (error) {
       console.error('Upload error:', error);

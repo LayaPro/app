@@ -591,6 +591,12 @@
                         <label>Phone</label>
                         <input type="tel" id="tenantPhone">
                     </div>
+                    <div class="form-group">
+                        <label>Subscription Plan *</label>
+                        <select id="tenantPlan" required>
+                            <option value="">Select a plan...</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
@@ -607,6 +613,7 @@
         let currentUser = null;
         let allTenants = [];
         let editingTenantId = null;
+        let subscriptionPlans = [];
 
         // Update API URL input
         document.getElementById('apiUrlInput').value = API_URL;
@@ -643,6 +650,32 @@
             verifyAuth();
         } else {
             document.getElementById('loginForm').classList.remove('hidden');
+        }
+
+        // Load subscription plans
+        async function loadSubscriptionPlans() {
+            try {
+                const response = await fetch(`${API_URL}/storage/plans`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    subscriptionPlans = await response.json();
+                    populatePlanDropdown();
+                }
+            } catch (error) {
+                console.error('Failed to load subscription plans:', error);
+            }
+        }
+
+        function populatePlanDropdown() {
+            const select = document.getElementById('tenantPlan');
+            select.innerHTML = '<option value="">Select a plan...</option>';
+            subscriptionPlans.forEach(plan => {
+                const option = document.createElement('option');
+                option.value = plan.planCode;
+                option.textContent = `${plan.planName} - ${plan.storageLimit} GB (₹${plan.price}/month)`;
+                select.appendChild(option);
+            });
         }
 
         // Login
@@ -718,6 +751,7 @@
             document.getElementById('app').classList.add('active');
             document.getElementById('userName').textContent = currentUser.name || currentUser.email;
             loadTenants();
+            loadSubscriptionPlans();
         }
 
         function handleLogout() {
@@ -823,6 +857,7 @@
             document.getElementById('tenantContact').value = '';
             document.getElementById('tenantEmail').value = '';
             document.getElementById('tenantPhone').value = '';
+            document.getElementById('tenantPlan').value = 'FREE';
             document.getElementById('tenantModal').classList.add('active');
         }
 
@@ -851,7 +886,8 @@
                 name: document.getElementById('tenantName').value,
                 contactPerson: document.getElementById('tenantContact').value,
                 email: document.getElementById('tenantEmail').value,
-                phone: document.getElementById('tenantPhone').value
+                phone: document.getElementById('tenantPhone').value,
+                planCode: document.getElementById('tenantPlan').value
             };
 
             try {

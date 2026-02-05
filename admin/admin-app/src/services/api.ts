@@ -1080,3 +1080,61 @@ export const proposalApi = {
     return handleResponse(response);
   },
 };
+
+// Storage API
+export const storageApi = {
+  getStats: async (tenantId: string) => {
+    const response = await fetch(`${API_BASE_URL}/storage/stats/${tenantId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  refresh: async (tenantId: string) => {
+    const response = await fetch(`${API_BASE_URL}/storage/refresh/${tenantId}`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  checkUpload: async (tenantId: string, uploadSizeBytes: number) => {
+    const response = await fetch(`${API_BASE_URL}/storage/check-upload`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tenantId, uploadSizeBytes }),
+    });
+    return handleResponse(response);
+  },
+
+  getPlans: async () => {
+    const response = await fetch(`${API_BASE_URL}/storage/plans`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  updateSubscription: async (tenantId: string, planId: string) => {
+    const response = await fetch(`${API_BASE_URL}/storage/subscription/${tenantId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ planId }),
+    });
+    return handleResponse(response);
+  },
+};

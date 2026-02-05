@@ -1,0 +1,199 @@
+.storageIndicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 14px;
+  background: transparent;
+  border-radius: 8px;
+  min-width: 240px;
+  max-width: 280px;
+}
+
+.planBadgeContainer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.planBadge {
+  font-size: 8px;
+  padding: 3px 6px;
+  background: var(--color-primary);
+  color: white;
+  border-radius: 4px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1;
+}
+
+.storageDetails {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.storageText {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.storageUsed {
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.storageSeparator {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+  line-height: 1;
+}
+
+.storageLimit {
+  font-size: 11px;
+  color: var(--color-text-secondary);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.progressBarContainer {
+  position: relative;
+  width: 100%;
+  height: 4px;
+  background: #fcfcfc;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 1px;
+}
+
+.progressBar {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s ease;
+  position: relative;
+}
+
+.progressBar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    rgba(255, 255, 255, 0) 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.warningText {
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  animation: fadeIn 0.3s ease;
+  line-height: 1;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.loadingSpinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .storageIndicator {
+    min-width: 200px;
+    max-width: 220px;
+    padding: 5px 10px;
+    gap: 8px;
+  }
+
+  .storageIcon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .storageIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .storageUsed {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 1024px) {
+  .storageIndicator {
+    min-width: 180px;
+    max-width: 200px;
+    padding: 4px 8px;
+  }
+
+  .storageIcon {
+    width: 26px;
+    height: 26px;
+  }
+
+  .storageIcon svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .storageUsed {
+    font-size: 12px;
+  }
+  
+  .progressBarContainer {
+    height: 3px;
+  }
+}
+
+@media (max-width: 768px) {
+  .storageIndicator {
+    display: none; /* Hidden on mobile, can be shown in a dropdown/menu */
+  }
+}
+
+/* Dark mode enhancements */
+@media (prefers-color-scheme: dark) {
+  .progressBarContainer {
+    background: #f3f4f6;
+  }
+}

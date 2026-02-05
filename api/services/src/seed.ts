@@ -9,6 +9,7 @@ import ProjectDeliveryStatus from './models/projectDeliveryStatus';
 import ImageStatus from './models/imageStatus';
 import Module from './models/module';
 import RolePermission from './models/rolePermission';
+import { SubscriptionPlan } from './models/subscriptionPlan';
 
 dotenv.config();
 
@@ -449,6 +450,134 @@ async function seedDatabase() {
     }
     if (existingImageStatusCount > 0) {
       console.log(`✓ ${existingImageStatusCount} image status(es) already exist`);
+    }
+
+    // 10. Create subscription plans (GLOBAL - pricing tiers)
+    const subscriptionPlans = [
+      {
+        planName: 'Free Tier',
+        planCode: 'FREE',
+        storageLimit: 1, // GB
+        storageDisplayGB: 1,
+        price: 0,
+        currency: 'INR',
+        features: [
+          '1 GB Storage',
+          'Basic Image Upload',
+          'Up to 3 Projects',
+          'Email Support',
+        ],
+        isActive: true,
+        displayOrder: 1,
+        description: 'Perfect for trying out our platform with limited storage and projects.',
+      },
+      {
+        planName: 'Basic',
+        planCode: 'BASIC',
+        storageLimit: 100, // GB
+        storageDisplayGB: 100,
+        price: 2499,
+        currency: 'INR',
+        features: [
+          '100 GB Storage',
+          'Unlimited Projects',
+          'Image Compression & Optimization',
+          'Customer Portal Access',
+          'Priority Email Support',
+        ],
+        isActive: true,
+        displayOrder: 2,
+        description: 'Ideal for small studios managing multiple wedding projects.',
+      },
+      {
+        planName: 'Professional',
+        planCode: 'PROFESSIONAL',
+        storageLimit: 300, // GB
+        storageDisplayGB: 300,
+        price: 6499,
+        currency: 'INR',
+        features: [
+          '300 GB Storage',
+          'Unlimited Projects',
+          'Advanced Image Management',
+          'Team Collaboration (Up to 5 members)',
+          'Custom Branding',
+          'Analytics Dashboard',
+          '24/7 Email & Chat Support',
+        ],
+        isActive: true,
+        displayOrder: 3,
+        description: 'Great for growing studios with multiple team members and larger portfolios.',
+      },
+      {
+        planName: 'Business',
+        planCode: 'BUSINESS',
+        storageLimit: 500, // GB
+        storageDisplayGB: 500,
+        price: 10499,
+        currency: 'INR',
+        features: [
+          '500 GB Storage',
+          'Unlimited Projects',
+          'Unlimited Team Members',
+          'Advanced Analytics & Reporting',
+          'Custom Domain Support',
+          'API Access',
+          'White Label Options',
+          'Priority 24/7 Support',
+        ],
+        isActive: true,
+        displayOrder: 4,
+        description: 'Perfect for established studios managing high volumes of projects and clients.',
+      },
+      {
+        planName: 'Enterprise',
+        planCode: 'ENTERPRISE',
+        storageLimit: 1000, // GB
+        storageDisplayGB: 1000,
+        price: 19999,
+        currency: 'INR',
+        features: [
+          '1 TB (1000 GB) Storage',
+          'Unlimited Everything',
+          'Dedicated Account Manager',
+          'Custom Integrations',
+          'Advanced Security Features',
+          'SLA Guarantee',
+          'On-boarding & Training',
+          'Premium 24/7 Phone Support',
+        ],
+        isActive: true,
+        displayOrder: 5,
+        description: 'For large studios and agencies requiring maximum storage and premium support.',
+      },
+    ];
+
+    console.log('\n✓ Creating subscription plans (Global)...');
+    let createdPlansCount = 0;
+    let existingPlansCount = 0;
+
+    for (const planData of subscriptionPlans) {
+      const existing = await SubscriptionPlan.findOne({ planCode: planData.planCode });
+
+      if (!existing) {
+        const planId = `plan_${nanoid()}`;
+        await SubscriptionPlan.create({
+          planId,
+          ...planData,
+        });
+        createdPlansCount++;
+        console.log(`  ✓ Created plan: ${planData.planName} - ${planData.storageDisplayGB} GB - ₹${planData.price}/month`);
+      } else {
+        existingPlansCount++;
+      }
+    }
+
+    if (createdPlansCount > 0) {
+      console.log(`✓ Created ${createdPlansCount} new subscription plan(s)`);
+    }
+    if (existingPlansCount > 0) {
+      console.log(`✓ ${existingPlansCount} subscription plan(s) already exist`);
     }
 
     console.log('\n✅ Database seeding completed successfully!');

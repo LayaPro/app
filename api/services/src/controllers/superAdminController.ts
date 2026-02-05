@@ -5,6 +5,8 @@ import Image from '../models/image';
 import User from '../models/user';
 import Role from '../models/role';
 import Organization from '../models/organization';
+import { SubscriptionPlan } from '../models/subscriptionPlan';
+import { TenantSubscription } from '../models/tenantSubscription';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
 import { ensureMainBucketExists } from '../utils/s3Bucket';
@@ -93,7 +95,7 @@ export const getTenantById = async (req: Request, res: Response) => {
  */
 export const createTenant = async (req: Request, res: Response) => {
   try {
-    const { name, contactPerson, email, phone, address } = req.body;
+    const { name, contactPerson, email, phone, address, planCode } = req.body;
 
     if (!name || !email) {
       return res.status(400).json({ message: 'Tenant name and email are required' });
@@ -133,6 +135,11 @@ export const createTenant = async (req: Request, res: Response) => {
     const sanitizedCompanyName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const s3TenantFolderName = `${nanoid(10)}_${sanitizedCompanyName}`;
 
+    // Set subscription dates: start = now, end = 1 year from now
+    const subscriptionStartDate = new Date();
+    const subscriptionEndDate = new Date();
+    subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+
     const newTenant = new Tenant({
       tenantId,
       tenantFirstName: firstName,
@@ -144,6 +151,8 @@ export const createTenant = async (req: Request, res: Response) => {
       tenantPhoneNumber: phone || '',
       isActive: true,
       subscriptionPlan: 'basic',
+      subscriptionStartDate,
+      subscriptionEndDate,
       s3TenantFolderName,
       createdBy: 'super-admin',
       updatedBy: 'super-admin',
@@ -198,6 +207,26 @@ export const createTenant = async (req: Request, res: Response) => {
       createdBy: adminUser.userId,
       updatedBy: adminUser.userId
     });
+
+    // Assign subscription plan to new tenant
+    const selectedPlanCode = planCode || 'FREE';
+    const selectedPlan = await SubscriptionPlan.findOne({ planCode: selectedPlanCode });
+    
+    if (selectedPlan) {
+      await TenantSubscription.create({
+        tenantId,
+        planId: selectedPlan.planId,
+        storageUsed: 0,
+        storageLimit: selectedPlan.storageLimit,
+        subscriptionStatus: 'ACTIVE',
+        paymentStatus: selectedPlan.planCode === 'FREE' ? 'FREE' : 'PENDING',
+        startDate: new Date(),
+        isAutoRenewal: false,
+      });
+      console.log(`[Super Admin] Assigned ${selectedPlan.planName} plan to tenant ${tenantId}`);
+    } else {
+      console.warn(`[Super Admin] ${selectedPlanCode} plan not found. Tenant ${tenantId} created without subscription.`);
+    }
 
     return res.status(201).json({
       message: 'Tenant created successfully. Login with email as password, then set new password.',

@@ -40,6 +40,7 @@ import albumPdfController from './controllers/albumPdfController';
 import organizationController from './controllers/organizationController';
 import * as proposalController from './controllers/proposalController';
 import * as superAdminController from './controllers/superAdminController';
+import * as storageController from './controllers/storageController';
 import { NotificationController } from './controllers/notificationController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
@@ -240,6 +241,13 @@ app.get('/dashboard/monthly-sales', authenticate, dashboardStatsController.getMo
 app.get('/dashboard/revenue-summary', authenticate, requireAdmin, dashboardController.getRevenueSummary);
 app.get('/dashboard/project-status-counts', authenticate, dashboardController.getProjectStatusCounts);
 app.get('/dashboard/event-status-counts', authenticate, dashboardController.getEventStatusCounts);
+
+// ---------- Storage & Subscription routes ----------
+app.get('/storage/stats/:tenantId', authenticate, storageController.getStorageStats);
+app.post('/storage/refresh/:tenantId', authenticate, requireAdmin, storageController.refreshStorageUsage);
+app.post('/storage/check-upload', authenticate, storageController.checkUploadCapacity);
+app.get('/storage/plans', authenticate, storageController.getSubscriptionPlans);
+app.put('/storage/subscription/:tenantId', authenticate, requireAdmin, storageController.updateTenantSubscription);
 
 // ---------- Finance Stats routes ----------
 app.get('/finance-stats', authenticate, financeStatsController.getFinanceStats);

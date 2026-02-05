@@ -537,6 +537,12 @@
                         <label>Address</label>
                         <input type="text" id="tenantAddress">
                     </div>
+                    <div class="form-group">
+                        <label>Subscription Plan *</label>
+                        <select id="tenantPlan" required>
+                            <option value="">Select a plan...</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="closeModal()">Cancel</button>
@@ -552,12 +558,40 @@
         let currentUser = null;
         let allTenants = [];
         let editingTenantId = null;
+        let subscriptionPlans = [];
 
         // Initialize
         if (authToken) {
             verifyAuth();
+            loadSubscriptionPlans();
         } else {
             document.getElementById('loginForm').classList.remove('hidden');
+        }
+
+        // Load subscription plans
+        async function loadSubscriptionPlans() {
+            try {
+                const response = await fetch(`${API_URL}/storage/plans`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+                if (response.ok) {
+                    subscriptionPlans = await response.json();
+                    populatePlanDropdown();
+                }
+            } catch (error) {
+                console.error('Failed to load subscription plans:', error);
+            }
+        }
+
+        function populatePlanDropdown() {
+            const select = document.getElementById('tenantPlan');
+            select.innerHTML = '<option value="">Select a plan...</option>';
+            subscriptionPlans.forEach(plan => {
+                const option = document.createElement('option');
+                option.value = plan.planCode;
+                option.textContent = `${plan.planName} - ${plan.storageLimit} GB (₹${plan.price}/month)`;
+                select.appendChild(option);
+            });
         }
 
         // Login
@@ -731,6 +765,7 @@
             document.getElementById('tenantEmail').value = '';
             document.getElementById('tenantPhone').value = '';
             document.getElementById('tenantAddress').value = '';
+            document.getElementById('tenantPlan').value = 'FREE';
             document.getElementById('tenantModal').classList.add('active');
         }
 
@@ -761,7 +796,8 @@
                 contactPerson: document.getElementById('tenantContact').value,
                 email: document.getElementById('tenantEmail').value,
                 phone: document.getElementById('tenantPhone').value,
-                address: document.getElementById('tenantAddress').value
+                address: document.getElementById('tenantAddress').value,
+                planCode: document.getElementById('tenantPlan').value
             };
 
             try {

@@ -18,6 +18,7 @@ import { getMainBucketName } from '../utils/s3Bucket';
 import pMap from 'p-map';
 import exifr from 'exifr';
 import { NotificationUtils } from '../services/notificationUtils';
+import { updateTenantStorageUsage } from '../utils/storageCalculator';
 
 export const createImage = async (req: AuthRequest, res: Response) => {
   try {
@@ -68,6 +69,12 @@ export const createImage = async (req: AuthRequest, res: Response) => {
       uploadedBy: userId,
       uploadedAt: new Date()
     });
+
+    // Update storage usage asynchronously
+    console.log(`[Storage] Updating storage for tenant ${tenantId} after image upload`);
+    updateTenantStorageUsage(tenantId)
+      .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
+      .catch(err => console.error('[Storage] Error updating storage after image upload:', err));
 
     return res.status(201).json({
       message: 'Image created successfully',
@@ -146,6 +153,12 @@ export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
         }
       }
     }
+
+    // Update storage usage asynchronously
+    console.log(`[Storage] Updating storage for tenant ${tenantId} after bulk upload of ${createdImages.length} images`);
+    updateTenantStorageUsage(tenantId)
+      .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
+      .catch(err => console.error('[Storage] Error updating storage after bulk image upload:', err));
 
     return res.status(201).json({
       message: `${createdImages.length} images created successfully`,
@@ -466,6 +479,13 @@ export const deleteImage = async (req: AuthRequest, res: Response) => {
 
     await Image.deleteOne({ imageId });
 
+    // Update storage usage asynchronously
+    if (tenantId) {
+      updateTenantStorageUsage(tenantId).catch(err => 
+        console.error('Error updating storage after image deletion:', err)
+      );
+    }
+
     return res.status(200).json({
       message: 'Image deleted successfully',
       imageId
@@ -513,6 +533,14 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
       imageId: { $in: imageIds },
       tenantId
     });
+
+    // Update storage usage asynchronously
+    if (tenantId) {
+      console.log(`[Storage] Updating storage for tenant ${tenantId} after deleting ${result.deletedCount} images`);
+      updateTenantStorageUsage(tenantId)
+        .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
+        .catch(err => console.error('[Storage] Error updating storage after bulk delete:', err));
+    }
 
     return res.status(200).json({
       message: 'Images deleted successfully',
@@ -623,6 +651,8 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           // Get original buffer
           const originalBuffer = file.buffer;
           const originalMetadata = await require('sharp')(originalBuffer).metadata();
+          
+          console.log(`[Upload] ${file.originalname}: file.size=${file.size}, buffer.length=${originalBuffer.length}`);
 
           // Extract dates from EXIF data using exifr
           let capturedAt: Date | undefined;
@@ -769,7 +799,9 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
     const successful = results.filter((r) => r.success);
     const failed = results.filter((r) => !r.success);
 
-    console.log(`Batch upload completed: ${successful.length} successful, ${failed.length} failed`);
+    const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
+    const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
+    console.log(`Batch upload completed: ${successful.length} successful, ${failed.length} failed. Total size: ${totalMB} MB (${totalBytes} bytes)`);
 
     // Send notification to admins if any images were successfully uploaded (unless explicitly skipped)
     if (successful.length > 0 && !skipNotification) {
@@ -847,6 +879,14 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           console.log(`[UploadBatchImages] Event ${clientEventId} not in EDITING_ONGOING status, skipping status update`);
         }
       }
+    }
+
+    // Update storage usage asynchronously
+    if (tenantId && successful.length > 0) {
+      console.log(`[Storage] Updating storage for tenant ${tenantId} after batch upload of ${successful.length} images`);
+      updateTenantStorageUsage(tenantId)
+        .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
+        .catch(err => console.error('[Storage] Error updating storage after batch upload:', err));
     }
 
     res.status(200).json({
