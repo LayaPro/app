@@ -9,6 +9,7 @@ import Project from '../models/project';
 import Event from '../models/event';
 import AlbumPdf from '../models/albumPdf';
 import { uploadToS3, deleteFromS3 } from '../utils/s3';
+import { getMainBucketName } from '../utils/s3Bucket';
 import { AuthRequest } from '../middleware/auth';
 import { NotificationUtils } from '../services/notificationUtils';
 
@@ -142,6 +143,19 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
     }
 
     const clientEventId = `clientevent_${nanoid()}`;
+    
+    // Fetch event master data to get event name
+    const event = await Event.findOne({ 
+      eventId,
+      tenantId: { $in: [tenantId, -1] }
+    });
+    if (!event) {
+      return res.status(404).json({ message: 'Event not found' });
+    }
+    
+    // Generate S3 folder name from event description
+    const s3EventFolderName = event.eventDesc.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    
     const clientEvent = await ClientEvent.create({
       clientEventId,
       tenantId,
@@ -158,6 +172,7 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
       expenseId,
       coverPhoto,
       notes,
+      s3EventFolderName,
       createdBy: userId
     });
 
@@ -582,10 +597,8 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const bucketName = project.s3BucketName || process.env.AWS_S3_BUCKET;
-    if (!bucketName) {
-      return res.status(400).json({ message: 'No S3 bucket configured for this customer' });
-    }
+    // Get main bucket name
+    const bucketName = await getMainBucketName();
 
     const folder = buildCustomerFolder(project.projectName, project.projectId);
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -763,10 +776,8 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const bucketName = project.s3BucketName || process.env.AWS_S3_BUCKET;
-    if (!bucketName) {
-      return res.status(400).json({ message: 'No S3 bucket configured for this customer' });
-    }
+    // Get main bucket name
+    const bucketName = await getMainBucketName();
 
     // Delete ALL existing PDFs for this project
     const existingPdfs = await AlbumPdf.find({ tenantId, projectId });

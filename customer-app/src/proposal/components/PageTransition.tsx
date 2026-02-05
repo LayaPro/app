@@ -1,9 +1,12 @@
 import './PageTransition.css';
+import { useProposal } from '../context/ProposalContext';
 
 export const PageTransition = () => {
+  const { organization } = useProposal();
+  
   return (
     <div className="page-transition">
-      <div className="transition-logo">LAYA PRODUCTIONS</div>
+      <div className="transition-logo">{organization?.companyName?.toUpperCase() || 'STUDIO'}</div>
       
       {/* Floating Particles */}
       <div className="transition-particles">

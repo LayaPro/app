@@ -7,8 +7,9 @@ import Event from '../models/event';
 import Team from '../models/team';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Proposal from '../models/proposal';
+import Tenant from '../models/tenant';
 import { AuthRequest } from '../middleware/auth';
-import { generateBucketName, createS3Bucket, bucketExists } from '../utils/s3Bucket';
+
 import { NotificationUtils } from '../services/notificationUtils';
 
 export const createProject = async (req: AuthRequest, res: Response) => {
@@ -41,31 +42,21 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
+    // Fetch tenant to get company name
+    const tenant = await Tenant.findOne({ tenantId });
+    if (!tenant) {
+      return res.status(404).json({ message: 'Tenant not found' });
+    }
+
     const projectId = `project_${nanoid()}`;
     
-    // Generate unique S3 bucket name from project name
-    const s3BucketName = generateBucketName(projectName, tenantId);
-    console.log(`[Project] Creating project ${projectId} with S3 bucket: ${s3BucketName}`);
+    // Generate unique S3 folder identifier: guid_projectname_tenantname
+    const sanitizedProjectName = projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const sanitizedTenantName = (tenant.tenantCompanyName || `${tenant.tenantFirstName}${tenant.tenantLastName}`)
+      .replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const s3ProjectFolderName = `${nanoid(10)}_${sanitizedProjectName}_${sanitizedTenantName}`;
     
-    // Create S3 bucket
-    try {
-      console.log('[Project] Calling createS3Bucket...');
-      await createS3Bucket(s3BucketName);
-      console.log('[Project] S3 bucket created successfully');
-    } catch (bucketError) {
-      console.error('[Project] S3 bucket creation failed:', {
-        projectId,
-        projectName,
-        s3BucketName,
-        tenantId,
-        error: bucketError instanceof Error ? bucketError.message : 'Unknown error',
-        stack: bucketError instanceof Error ? bucketError.stack : undefined
-      });
-      return res.status(500).json({ 
-        message: 'Failed to create S3 bucket for project',
-        error: bucketError instanceof Error ? bucketError.message : 'Unknown error'
-      });
-    }
+    console.log(`[Project] Creating project ${projectId} with folder: ${s3ProjectFolderName}`);
     
     const project = await Project.create({
       projectId,
@@ -81,7 +72,7 @@ export const createProject = async (req: AuthRequest, res: Response) => {
       referredBy,
       projectDeliveryStatusId,
       proposalId,
-      s3BucketName,
+      s3ProjectFolderName,
       displayPic,
       coverPhoto
     });
@@ -354,31 +345,21 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
+    // Fetch tenant to get company name
+    const tenant = await Tenant.findOne({ tenantId });
+    if (!tenant) {
+      return res.status(404).json({ message: 'Tenant not found' });
+    }
+
     const projectId = `project_${nanoid()}`;
     
-    // Generate unique S3 bucket name from project name
-    const s3BucketName = generateBucketName(projectData.projectName, tenantId);
-    console.log(`[ProjectWithDetails] Creating project ${projectId} with S3 bucket: ${s3BucketName}`);
+    // Generate unique S3 folder identifier: guid_projectname_tenantname
+    const sanitizedProjectName = projectData.projectName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const sanitizedTenantName = (tenant.tenantCompanyName || `${tenant.tenantFirstName}${tenant.tenantLastName}`)
+      .replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const s3ProjectFolderName = `${nanoid(10)}_${sanitizedProjectName}_${sanitizedTenantName}`;
     
-    // Create S3 bucket
-    try {
-      console.log('[ProjectWithDetails] Calling createS3Bucket...');
-      await createS3Bucket(s3BucketName);
-      console.log('[ProjectWithDetails] S3 bucket created successfully');
-    } catch (bucketError) {
-      console.error('[ProjectWithDetails] S3 bucket creation failed:', {
-        projectId,
-        projectName: projectData.projectName,
-        s3BucketName,
-        tenantId,
-        error: bucketError instanceof Error ? bucketError.message : 'Unknown error',
-        stack: bucketError instanceof Error ? bucketError.stack : undefined
-      });
-      return res.status(500).json({ 
-        message: 'Failed to create S3 bucket for project',
-        error: bucketError instanceof Error ? bucketError.message : 'Unknown error'
-      });
-    }
+    console.log(`[ProjectWithDetails] Creating project ${projectId} with folder: ${s3ProjectFolderName}`);
     
     // Create project
     const project = await Project.create({
@@ -397,9 +378,9 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       city: projectData.city,
       referredBy: projectData.referredBy,
       proposalId: projectData.proposalId,
+      s3ProjectFolderName,
       displayPic: projectData.displayPic,
       coverPhoto: projectData.coverPhoto,
-      s3BucketName,
     });
 
     // If project was created from a proposal, update the proposal status
@@ -455,6 +436,15 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
         }
         // else: Event hasn't started yet, keep SCHEDULED
         
+        // Fetch event master data to get event name
+        const eventMaster = await Event.findOne({ 
+          eventId: eventData.eventId,
+          tenantId: { $in: [tenantId, -1] }
+        });
+        
+        // Generate S3 folder name from event description
+        const s3EventFolderName = eventMaster?.eventDesc.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'event';
+        
         const clientEvent = await ClientEvent.create({
           clientEventId,
           tenantId,
@@ -468,6 +458,7 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
           venueMapUrl: eventData.venueMapUrl,
           city: eventData.city,
           teamMembersAssigned: eventData.teamMembersAssigned || [],
+          s3EventFolderName,
           createdBy: userId,
         });
         createdEvents.push(clientEvent);
@@ -572,6 +563,15 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
           const clientEventId = `clientevent_${nanoid()}`;
           processedEventIds.add(clientEventId);
           
+          // Fetch event master data to get event name
+          const eventMaster = await Event.findOne({ 
+            eventId: eventData.eventId,
+            tenantId: { $in: [tenantId, -1] }
+          });
+          
+          // Generate S3 folder name from event description
+          const s3EventFolderName = eventMaster?.eventDesc.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'event';
+          
           await ClientEvent.create({
             clientEventId,
             tenantId,
@@ -585,6 +585,7 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
             venueMapUrl: eventData.venueMapUrl,
             city: eventData.city,
             teamMembersAssigned: eventData.teamMembersAssigned || [],
+            s3EventFolderName,
             createdBy: userId,
           });
         }

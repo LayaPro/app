@@ -10,9 +10,11 @@ import Role from '../models/role';
 import ImageStatus from '../models/imageStatus';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Team from '../models/team';
+import Tenant from '../models/tenant';
 import { AuthRequest } from '../middleware/auth';
 import { compressImage } from '../utils/imageProcessor';
 import { uploadToS3, uploadBothVersions, bulkDeleteFromS3, getS3ObjectStreamFromUrl } from '../utils/s3';
+import { getMainBucketName } from '../utils/s3Bucket';
 import pMap from 'p-map';
 import exifr from 'exifr';
 import { NotificationUtils } from '../services/notificationUtils';
@@ -545,15 +547,24 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'No images provided' });
     }
 
-    // Fetch project to get S3 bucket name
+    // Fetch project
     const project = await Project.findOne({ projectId, tenantId });
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
 
-    const s3BucketName = project.s3BucketName;
-    if (!s3BucketName) {
-      return res.status(400).json({ message: 'Project does not have an S3 bucket configured' });
+    // Get main bucket name
+    const s3BucketName = await getMainBucketName();
+
+    // Fetch tenant to get folder name
+    const tenant = await Tenant.findOne({ tenantId });
+    if (!tenant || !tenant.s3TenantFolderName) {
+      return res.status(400).json({ message: 'Tenant S3 folder not configured' });
+    }
+
+    // Validate project has folder name
+    if (!project.s3ProjectFolderName) {
+      return res.status(400).json({ message: 'Project S3 folder not configured' });
     }
 
     // Fetch client event to get eventId
@@ -562,18 +573,21 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Client event not found' });
     }
 
+    // Validate event has folder name
+    if (!clientEvent.s3EventFolderName) {
+      return res.status(400).json({ message: 'Event S3 folder not configured' });
+    }
+
+    // Build full folder path: tenant/project/event
+    const folderPrefix = `${tenant.s3TenantFolderName}/${project.s3ProjectFolderName}/${clientEvent.s3EventFolderName}`;
+
+    console.log(`Starting batch upload of ${files.length} images to bucket: ${s3BucketName}, path: ${folderPrefix}`);
+
     // Fetch event to get event name
     const event = await Event.findOne({ eventId: clientEvent.eventId });
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
-
-    // Sanitize event name for folder (remove special chars, spaces to hyphens)
-    const eventFolderName = event.eventDesc
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '-')
-      .replace(/--+/g, '-')
-      .replace(/^-|-$/g, '');
 
     // Determine image status based on user role
     const user = await User.findOne({ userId, tenantId });
@@ -591,7 +605,6 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    console.log(`Starting batch upload of ${files.length} images to bucket: ${s3BucketName}, folder: ${eventFolderName}...`);
 
     // Get the current maximum sortOrder for this clientEventId
     const maxSortOrderImage = await Image.findOne({ clientEventId, tenantId })
@@ -646,14 +659,14 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
             format: 'jpeg',
           });
 
-          // Upload original and compressed versions to project's bucket
+          // Upload original and compressed versions to main bucket
           const uploadResult = await uploadBothVersions(
             originalBuffer,
             compressed.buffer,
             file.originalname,
             file.mimetype,
             s3BucketName,
-            eventFolderName
+            folderPrefix
           );
 
           // Check if image with same filename already exists for this event
@@ -946,9 +959,18 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Project not found. Please contact support.' });
     }
 
-    const s3BucketName = project.s3BucketName;
-    if (!s3BucketName) {
-      return res.status(400).json({ message: 'Project does not have an S3 bucket configured' });
+    // Get main bucket name
+    const s3BucketName = await getMainBucketName();
+
+    // Fetch tenant to get folder name
+    const tenant = await Tenant.findOne({ tenantId });
+    if (!tenant || !tenant.s3TenantFolderName) {
+      return res.status(400).json({ message: 'Tenant S3 folder not configured' });
+    }
+
+    // Validate project has folder name
+    if (!project.s3ProjectFolderName) {
+      return res.status(400).json({ message: 'Project S3 folder not configured' });
     }
 
     // Get event info for folder name
@@ -957,16 +979,20 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Client event not found' });
     }
 
+    // Validate event has folder name
+    if (!clientEvent.s3EventFolderName) {
+      return res.status(400).json({ message: 'Event S3 folder not configured' });
+    }
+
     const event = await Event.findOne({ eventId: clientEvent.eventId });
     if (!event) {
       return res.status(404).json({ message: 'Event not found' });
     }
 
-    const eventFolderName = event.eventDesc
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, '-')
-      .replace(/--+/g, '-')
-      .replace(/^-|-$/g, '');
+    // Build full folder path: tenant/project/event
+    const folderPrefix = `${tenant.s3TenantFolderName}/${project.s3ProjectFolderName}/${clientEvent.s3EventFolderName}`;
+
+    console.log(`Processing reupload to path: ${folderPrefix}`);
 
     // Get "Re-edit done" status
     const reEditDoneStatus = await ImageStatus.findOne({ 
@@ -1039,7 +1065,7 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
             file.originalname,
             file.mimetype,
             s3BucketName,
-            eventFolderName
+            folderPrefix
           );
 
           // Update existing image record

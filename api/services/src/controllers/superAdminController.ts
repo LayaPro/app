@@ -7,6 +7,7 @@ import Role from '../models/role';
 import Organization from '../models/organization';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
+import { ensureMainBucketExists } from '../utils/s3Bucket';
 
 /**
  * Get all tenants with statistics
@@ -98,6 +99,16 @@ export const createTenant = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Tenant name and email are required' });
     }
 
+    // Ensure main S3 bucket exists (creates if first tenant)
+    try {
+      await ensureMainBucketExists();
+    } catch (s3Error) {
+      console.error('[Super Admin] Failed to ensure S3 bucket exists:', s3Error);
+      return res.status(500).json({ 
+        message: 'Failed to initialize storage bucket. Please check AWS configuration.' 
+      });
+    }
+
     // Check if tenant with same email exists
     const existingTenant = await Tenant.findOne({ tenantEmailAddress: email.toLowerCase() });
     
@@ -117,6 +128,10 @@ export const createTenant = async (req: Request, res: Response) => {
     // Generate username from email
     const username = email.split('@')[0] + '_' + nanoid(4);
     const tenantId = nanoid(12);
+    
+    // Generate S3 folder name: guid_TENANTNAME
+    const sanitizedCompanyName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const s3TenantFolderName = `${nanoid(10)}_${sanitizedCompanyName}`;
 
     const newTenant = new Tenant({
       tenantId,
@@ -129,6 +144,7 @@ export const createTenant = async (req: Request, res: Response) => {
       tenantPhoneNumber: phone || '',
       isActive: true,
       subscriptionPlan: 'basic',
+      s3TenantFolderName,
       createdBy: 'super-admin',
       updatedBy: 'super-admin',
     });

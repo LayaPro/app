@@ -18,7 +18,7 @@ export interface IProject extends Document {
   deliveryDueDate?: Date;
   projectDeliveryStatusId?: string; // Reference to ProjectDeliveryStatus
   proposalId?: string; // Reference to the proposal this project was created from
-  s3BucketName?: string;
+  s3ProjectFolderName?: string; // Unique folder identifier for S3 storage
   displayPic?: string;
   coverPhoto?: string;
   mobileCoverUrl?: string; // Mobile cover image URL
@@ -48,7 +48,7 @@ const ProjectSchema = new Schema<IProject>(
     deliveryDueDate: { type: Date },
     projectDeliveryStatusId: { type: String, index: true }, // Reference to ProjectDeliveryStatus
     proposalId: { type: String, index: true }, // Reference to the proposal this project was created from
-    s3BucketName: { type: String, unique: true, sparse: true },
+    s3ProjectFolderName: { type: String, unique: true, sparse: true }, // Unique folder identifier for S3
     displayPic: { type: String },
     coverPhoto: { type: String },
     mobileCoverUrl: { type: String },

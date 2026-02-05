@@ -13,6 +13,7 @@ export interface ITenant extends Document {
   subscriptionStartDate: Date;
   subscriptionEndDate: Date;
   subscriptionPlan: string;
+  s3TenantFolderName: string;
   createdAt: Date;
   updatedAt: Date;
   createdBy: string;
@@ -34,6 +35,7 @@ const TenantSchema = new Schema<ITenant>(
     subscriptionStartDate: { type: Date },
     subscriptionEndDate: { type: Date },
     subscriptionPlan: { type: String },
+    s3TenantFolderName: { type: String, required: true, unique: true },
     createdBy: { type: String },
     updatedBy: { type: String },
     // legacy/extra fields kept for DB if needed

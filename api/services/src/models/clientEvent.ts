@@ -21,6 +21,7 @@ export interface IClientEvent extends Document {
   albumDesigner?: string; // Team member ID assigned as album designer
   editingDueDate?: Date; // Due date for editing completion
   albumDesignDueDate?: Date; // Due date for album design completion
+  s3EventFolderName?: string; // Unique folder identifier for S3 storage
   createdBy?: string;
   updatedBy?: string;
   createdAt: Date;
@@ -49,6 +50,7 @@ const ClientEventSchema = new Schema<IClientEvent>(
     albumDesigner: { type: String }, // Team member ID assigned as album designer
     editingDueDate: { type: Date }, // Due date for editing completion
     albumDesignDueDate: { type: Date }, // Due date for album design completion
+    s3EventFolderName: { type: String, unique: true, sparse: true }, // Unique folder identifier for S3
     createdBy: { type: String },
     updatedBy: { type: String }
   },

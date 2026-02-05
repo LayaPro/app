@@ -6,8 +6,14 @@ import {
   PutBucketPolicyCommand,
   PutPublicAccessBlockCommand 
 } from '@aws-sdk/client-s3';
+import { customAlphabet } from 'nanoid';
+import Settings from '../models/settings';
+
+// Custom nanoid with only alphanumeric lowercase (S3 bucket name safe)
+const nanoidSafe = customAlphabet('abcdefghijklmnopqrstuvwxyz0123456789', 12);
 
 let s3Client: S3Client | null = null;
+let bucketNameCache: string | null = null; // Cache to avoid DB lookups
 
 const getS3Client = () => {
   if (!s3Client) {
@@ -163,5 +169,83 @@ export const createS3Bucket = async (bucketName: string): Promise<string> => {
       errorDetails: error
     });
     throw new Error(`Failed to create S3 bucket: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
+ * Ensure the main production bucket exists, create if not
+ * This is the single bucket used by all tenants
+ */
+export const ensureMainBucketExists = async (): Promise<string> => {
+  try {
+    // Always check database first (don't use cache for tenant creation)
+    const setting = await Settings.findOne({ key: 'main_s3_bucket' });
+    
+    if (setting && setting.value) {
+      console.log(`[S3] Found bucket name in database: ${setting.value}`);
+      
+      // Verify bucket still exists
+      const exists = await bucketExists(setting.value);
+      if (exists) {
+        bucketNameCache = setting.value;
+        return setting.value;
+      }
+      
+      console.log(`[S3] Bucket ${setting.value} no longer exists, will create new one`);
+    }
+
+    // Generate unique bucket name
+    const newBucketName = `${nanoidSafe()}-storage-${nanoidSafe()}`;
+    console.log(`[S3] Creating new bucket: ${newBucketName}`);
+    
+    // Create bucket
+    await createS3Bucket(newBucketName);
+    console.log(`[S3] Bucket created successfully: ${newBucketName}`);
+    
+    // Store bucket name in database
+    await Settings.findOneAndUpdate(
+      { key: 'main_s3_bucket' },
+      { 
+        key: 'main_s3_bucket', 
+        value: newBucketName,
+        description: 'Main S3 bucket name for all tenant storage'
+      },
+      { upsert: true, new: true }
+    );
+    console.log(`[S3] Bucket name saved to database`);
+    
+    bucketNameCache = newBucketName;
+    return newBucketName;
+  } catch (error) {
+    console.error('[S3] Failed to ensure main bucket exists:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get main bucket name without creating it
+ * Returns cached value or fetches from database
+ * Use this for read operations when you know bucket already exists
+ */
+export const getMainBucketName = async (): Promise<string> => {
+  try {
+    // Return cached bucket name if available
+    if (bucketNameCache) {
+      return bucketNameCache;
+    }
+
+    // Fetch from database
+    const setting = await Settings.findOne({ key: 'main_s3_bucket' });
+    
+    if (!setting || !setting.value) {
+      throw new Error('Main S3 bucket not configured. Please create a tenant first.');
+    }
+    
+    // Cache it for next time
+    bucketNameCache = setting.value;
+    return setting.value;
+  } catch (error) {
+    console.error('[S3] Failed to get main bucket name:', error);
+    throw error;
   }
 };
