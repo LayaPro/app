@@ -7,10 +7,11 @@ import { DotLoader } from '../../components/ui/DotLoader.js';
 import { StatusBadge } from '../../components/ui/StatusBadge.js';
 import { CommentModal } from '../../components/ui/CommentModal.js';
 import ReuploadModal from '../../components/ui/ReuploadModal';
+import { StorageLimitModal } from '../../components/modals/StorageLimitModal';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useAlbumPdfsByEvent } from '../../hooks/useAlbumPdfs';
-import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDeliveryStatusApi } from '../../services/api';
+import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDeliveryStatusApi, storageApi } from '../../services/api';
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
@@ -19,7 +20,7 @@ import { AlbumPdfInfo, EventMenuDropdown, EventDateTime, VideosCard, VideosView 
 const Albums = () => {
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
-  const { isAdmin } = useAuth();
+  const { isAdmin, user } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [events, setEvents] = useState<ClientEvent[]>([]);
   const [allEvents, setAllEvents] = useState<ClientEvent[]>([]);
@@ -78,6 +79,8 @@ const Albums = () => {
   const [showCommentViewModal, setShowCommentViewModal] = useState(false);
   const [viewingComment, setViewingComment] = useState<string>('');
   const [isApprovingImages, setIsApprovingImages] = useState(false);
+  const [showStorageLimitModal, setShowStorageLimitModal] = useState(false);
+  const [storageLimitInfo, setStorageLimitInfo] = useState<{ currentPlan: string; isEnterprise: boolean } | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [publishAfterApprove, setPublishAfterApprove] = useState(false);
   const [eventDeliveryStatuses, setEventDeliveryStatuses] = useState<Map<string, any>>(new Map());
@@ -162,6 +165,36 @@ const Albums = () => {
     fetchAllImages();
     fetchImageStatuses();
   }, []);
+
+  useEffect(() => {
+    // Check storage status when upload section is expanded
+    const checkStorageStatus = async () => {
+      if (isUploadExpanded && user?.tenantId && !showStorageLimitModal) {
+        try {
+          // Check if current storage already exceeds limit (0 bytes upload check)
+          const storageCheck = await storageApi.checkUpload(user.tenantId, 0);
+          console.log('Storage status check on expand:', storageCheck);
+          
+          if (!storageCheck.canUpload) {
+            console.log('Storage already exceeded - showing warning');
+            const stats = await storageApi.getStats(user.tenantId);
+            const isEnterprise = stats.planName?.toUpperCase() === 'ENTERPRISE';
+            
+            setStorageLimitInfo({
+              currentPlan: stats.planName || 'FREE',
+              isEnterprise
+            });
+            setShowStorageLimitModal(true);
+          }
+        } catch (error: any) {
+          console.error('Error checking storage status:', error);
+          console.error('Error details:', error.message, error.stack);
+        }
+      }
+    };
+
+    checkStorageStatus();
+  }, [isUploadExpanded, user?.tenantId]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -442,7 +475,7 @@ const Albums = () => {
     setIsUploadExpanded(false);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     
     console.log('handleFileSelect called, files:', files?.length);
@@ -456,6 +489,42 @@ const Albums = () => {
     
     if (!files || files.length === 0) {
       console.log('No files, hiding preparing');
+      setIsPreparingImages(false);
+      return;
+    }
+
+    // Check storage before allowing upload
+    try {
+      const totalSize = Array.from(files).reduce((sum, file) => sum + file.size, 0);
+      console.log('Checking storage for upload. Total size:', totalSize, 'bytes');
+      const storageCheck = await storageApi.checkUpload(user?.tenantId!, totalSize);
+      console.log('Storage check result:', storageCheck);
+      
+      if (!storageCheck.canUpload) {
+        console.log('Storage limit exceeded - showing modal');
+        // Get current storage stats to show plan info
+        const stats = await storageApi.getStats(user?.tenantId!);
+        const isEnterprise = stats.planName?.toUpperCase() === 'ENTERPRISE';
+        
+        setStorageLimitInfo({
+          currentPlan: stats.planName || 'FREE',
+          isEnterprise
+        });
+        console.log('Setting showStorageLimitModal to true. Storage info:', {
+          currentPlan: stats.planName || 'FREE',
+          isEnterprise
+        });
+        setShowStorageLimitModal(true);
+        setIsUploadExpanded(true); // Auto-expand upload section to show the warning
+        e.target.value = ''; // Reset input
+        setIsPreparingImages(false);
+        return;
+      }
+      console.log('Storage check passed - proceeding with upload');
+    } catch (error) {
+      console.error('Error checking storage:', error);
+      showToast('error', 'Failed to check storage availability');
+      e.target.value = '';
       setIsPreparingImages(false);
       return;
     }
@@ -1723,15 +1792,36 @@ const Albums = () => {
                     style={{ display: 'none' }}
                   />
                   
+                  {/* Storage Limit Warning - replaces upload UI when storage is full */}
+                  {showStorageLimitModal && storageLimitInfo && (
+                    <StorageLimitModal
+                      show={showStorageLimitModal}
+                      currentPlan={storageLimitInfo.currentPlan}
+                      isEnterprise={storageLimitInfo.isEnterprise}
+                      onClose={() => setShowStorageLimitModal(false)}
+                      onUpgrade={() => {
+                        setShowStorageLimitModal(false);
+                        showToast('info', 'Please contact your administrator to upgrade your plan');
+                      }}
+                      onPlanUpgraded={() => {
+                        // Plan was upgraded, hide the storage limit warning
+                        setShowStorageLimitModal(false);
+                        showToast('success', 'Plan upgraded successfully! You can now upload images.');
+                        // Refresh storage stats
+                        window.dispatchEvent(new Event('storageUpdated'));
+                      }}
+                    />
+                  )}
+                  
                   {/* Preparing Images State */}
-                  {isPreparingImages && uploadedImages.length === 0 && (
+                  {!showStorageLimitModal && isPreparingImages && uploadedImages.length === 0 && (
                     <div style={{ padding: '2rem' }}>
                       <DotLoader text="Preparing images..." />
                     </div>
                   )}
                   
                   {/* Initial Upload UI */}
-                  {!isPreparingImages && uploadedImages.length === 0 && (
+                  {!showStorageLimitModal && !isPreparingImages && uploadedImages.length === 0 && (
                     <div>
                       <svg
                         className={styles.uploadIcon}
@@ -1790,7 +1880,7 @@ const Albums = () => {
                   )}
 
                   {/* Preview Grid or Upload Progress */}
-                  {uploadedImages.length > 0 && (
+                  {!showStorageLimitModal && uploadedImages.length > 0 && (
                     <>
                       {!isUploading ? (
                         <>
@@ -3608,4 +3698,3 @@ const Albums = () => {
 };
 
 export default Albums;
-
