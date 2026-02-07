@@ -2,12 +2,20 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import ProjectFinance from '../models/projectFinance';
 import TeamFinance from '../models/teamFinance';
+import { nanoid } from 'nanoid';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('FinanceStatsController');
 
 export const getFinanceStats = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching finance stats`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -29,6 +37,15 @@ export const getFinanceStats = async (req: AuthRequest, res: Response) => {
     // Calculate net profit
     const netProfit = totalRevenue - totalExpenses;
 
+    logger.info(`[${requestId}] Finance stats retrieved`, { 
+      tenantId, 
+      totalRevenue, 
+      totalExpenses, 
+      netProfit,
+      projectCount: projectFinances.length,
+      teamFinanceCount: teamFinances.length
+    });
+
     return res.status(200).json({
       message: 'Finance stats retrieved successfully',
       stats: {
@@ -41,7 +58,11 @@ export const getFinanceStats = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (err: any) {
-    console.error('Get finance stats error:', err);
+    logger.error(`[${requestId}] Error fetching finance stats`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
