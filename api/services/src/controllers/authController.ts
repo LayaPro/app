@@ -4,7 +4,10 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import User from '../models/user';
 import Role from '../models/role';
+import { TenantSubscription } from '../models/tenantSubscription';
+import { SubscriptionPlan } from '../models/subscriptionPlan';
 import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailService';
+import { createTenantWithSubscription } from '../services/tenantService';
 import { nanoid } from 'nanoid';
 import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
@@ -627,44 +630,25 @@ export const signup = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
-    // Import Tenant model dynamically
-    const Tenant = require('../models/tenant').default;
-
     // Parse name for tenant creation
     const nameParts = fullName.split(' ');
     const firstName = nameParts[0] || fullName;
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Generate tenant ID and S3 folder name
+    // Create tenant with subscription using common service
     const tenantId = nanoid(12);
-    const sanitizedTenantName = tenantName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-    const s3TenantFolderName = `${nanoid(10)}_${sanitizedTenantName}`;
-    const tenantUsername = email.split('@')[0].toLowerCase() + '_' + nanoid(6);
-
-    // Set subscription dates
-    const subscriptionStartDate = new Date();
-    const subscriptionEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days trial
-
-    // Create tenant
-    const tenant = await Tenant.create({
+    const { tenant } = await createTenantWithSubscription({
       tenantId,
-      tenantFirstName: firstName,
-      tenantLastName: lastName,
-      tenantCompanyName: tenantName,
-      tenantUsername,
-      tenantEmailAddress: email.toLowerCase(),
-      countryCode: '+91',
-      tenantPhoneNumber: '',
-      isActive: true,
-      subscriptionPlan: 'FREE',
-      subscriptionStartDate,
-      subscriptionEndDate,
-      s3TenantFolderName,
+      firstName,
+      lastName,
+      companyName: tenantName,
+      email,
+      planCode: 'FREE',
+      trialDays: 14,
       createdBy: 'system',
-      updatedBy: 'system',
     });
 
-    logger.info(`[${requestId}] Tenant created`, { tenantId: tenant._id, tenantName });
+    logger.info(`[${requestId}] Tenant and subscription created`, { tenantId: tenant.tenantId, tenantName });
 
     // Find existing Admin role (global role with tenantId: '-1')
     let adminRole = await Role.findOne({ name: 'Admin', tenantId: '-1' });
@@ -717,7 +701,13 @@ export const signup = async (req: Request, res: Response) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.userId, tenantId: tenant.tenantId, roleId: adminRole.roleId },
+      { 
+        userId: user.userId, 
+        tenantId: tenant.tenantId, 
+        roleId: adminRole.roleId,
+        roleName: adminRole.name,
+        email: user.email
+      },
       JWT_SECRET,
       { expiresIn: '30d' }
     );
@@ -834,35 +824,21 @@ export const googleCallback = async (req: Request, res: Response) => {
       const firstName = nameParts[0] || fullName;
       const lastName = nameParts.slice(1).join(' ') || '';
 
-      // Generate tenant ID and S3 folder name
+      // Create tenant with subscription using common service
       const tenantId = nanoid(12);
-      const sanitizedName = fullName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
-      const s3TenantFolderName = `${nanoid(10)}_${sanitizedName}`;
-      const tenantUsername = email.split('@')[0].toLowerCase() + '_' + nanoid(6);
-
-      // Set subscription dates
-      const subscriptionStartDate = new Date();
-      const subscriptionEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days trial
-
-      tenant = await Tenant.create({
+      const result = await createTenantWithSubscription({
         tenantId,
-        tenantFirstName: firstName,
-        tenantLastName: lastName,
-        tenantCompanyName: `${fullName}'s Studio`,
-        tenantUsername,
-        tenantEmailAddress: email,
-        countryCode: '+91',
-        tenantPhoneNumber: '',
-        isActive: true,
-        subscriptionPlan: 'FREE',
-        subscriptionStartDate,
-        subscriptionEndDate,
-        s3TenantFolderName,
+        firstName,
+        lastName,
+        companyName: `${fullName}'s Studio`,
+        email,
+        planCode: 'FREE',
+        trialDays: 14,
         createdBy: 'google-oauth',
-        updatedBy: 'google-oauth',
       });
+      tenant = result.tenant;
 
-      logger.info(`[${requestId}] Tenant created via Google signup`, { tenantId: tenant.tenantId });
+      logger.info(`[${requestId}] Tenant and subscription created via Google signup`, { tenantId: tenant.tenantId });
 
       // Find existing Admin role (global role with tenantId: '-1')
       let adminRole = await Role.findOne({ name: 'Admin', tenantId: '-1' });
@@ -913,7 +889,13 @@ export const googleCallback = async (req: Request, res: Response) => {
 
     // Generate JWT token
     const token = jwt.sign(
-      { userId: user.userId, tenantId: tenant.tenantId, roleId: user.roleId },
+      { 
+        userId: user.userId, 
+        tenantId: user.tenantId, 
+        roleId: user.roleId,
+        roleName: role?.name || 'Admin',
+        email: user.email
+      },
       JWT_SECRET,
       { expiresIn: '30d' }
     );

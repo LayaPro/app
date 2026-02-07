@@ -7,6 +7,7 @@ import Role from '../models/role';
 import Organization from '../models/organization';
 import { SubscriptionPlan } from '../models/subscriptionPlan';
 import { TenantSubscription } from '../models/tenantSubscription';
+import { createTenantWithSubscription } from '../services/tenantService';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
 import { ensureMainBucketExists } from '../utils/s3Bucket';
@@ -197,35 +198,27 @@ export const createTenant = async (req: Request, res: Response) => {
       s3FolderName: s3TenantFolderName
     });
 
-    // Set subscription dates: start = now, end = 1 year from now
-    const subscriptionStartDate = new Date();
-    const subscriptionEndDate = new Date();
-    subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+    const selectedPlanCode = planCode || 'FREE';
 
-    const selectedPlanCode = planCode || 'FREE'; // Default to basic if not provided
-
-    const newTenant = new Tenant({
+    // Create tenant with subscription using common service
+    const { tenant: newTenant, plan: selectedPlan } = await createTenantWithSubscription({
       tenantId,
-      tenantFirstName: firstName,
-      tenantLastName: lastName,
-      tenantCompanyName: name,
-      tenantEmailAddress: email.toLowerCase(),
+      firstName,
+      lastName,
+      companyName: name,
+      email,
       countryCode: '+91',
-      tenantPhoneNumber: phone || '',
-      isActive: true,
-      subscriptionPlan: selectedPlanCode,
-      subscriptionStartDate,
-      subscriptionEndDate,
-      s3TenantFolderName,
+      phoneNumber: phone || '',
+      planCode: selectedPlanCode,
+      trialDays: 365, // 1 year for super admin created tenants
       createdBy: 'super-admin',
-      updatedBy: 'super-admin',
     });
 
-    await newTenant.save();
-    logger.info(`[${requestId}] Tenant created successfully`, {
+    logger.info(`[${requestId}] Tenant and subscription created successfully`, {
       tenantId,
       companyName: name,
-      email
+      email,
+      planCode: selectedPlanCode
     });
 
     // Find or create Admin role for the tenant
@@ -289,35 +282,6 @@ export const createTenant = async (req: Request, res: Response) => {
       updatedBy: adminUser.userId
     });
     logger.info(`[${requestId}] Organization created`, { organizationId });
-
-    // Assign subscription plan to new tenant
-    logger.debug(`[${requestId}] Assigning subscription plan`, { planCode: selectedPlanCode });
-    
-    const selectedPlan = await SubscriptionPlan.findOne({ planCode: selectedPlanCode });
-    
-    if (selectedPlan) {
-      await TenantSubscription.create({
-        tenantId,
-        planId: selectedPlan.planId,
-        storageUsed: 0,
-        storageLimit: selectedPlan.storageLimit,
-        subscriptionStatus: 'ACTIVE',
-        paymentStatus: selectedPlan.planCode === 'FREE' ? 'FREE' : 'PENDING',
-        startDate: new Date(),
-        isAutoRenewal: false,
-      });
-      logger.info(`[${requestId}] Subscription assigned successfully`, {
-        tenantId,
-        planCode: selectedPlan.planCode,
-        planName: selectedPlan.planName,
-        storageLimit: selectedPlan.storageLimit
-      });
-    } else {
-      logger.warn(`[${requestId}] Subscription plan not found`, {
-        tenantId,
-        requestedPlanCode: selectedPlanCode
-      });
-    }
 
     logger.info(`[${requestId}] Tenant creation completed successfully`, {
       tenantId,
