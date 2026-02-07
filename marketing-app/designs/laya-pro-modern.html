@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laya Pro - Modern Photography Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #6366f1;
+      --primary-light: #818cf8;
+      --secondary: #8b5cf6;
+      --accent: #a78bfa;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #ffffff;
+      color: #0f172a;
+      overflow-x: hidden;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      padding: 1.25rem 0;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px) saturate(180%);
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .navbar.scrolled {
+      padding: 0.875rem 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      font-size: 1.375rem;
+      font-weight: 700;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+
+    .logo-mark {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2.5rem;
+      align-items: center;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: #475569;
+      font-weight: 500;
+      font-size: 0.9375rem;
+      transition: color 0.2s ease;
+    }
+
+    .nav-links a:hover {
+      color: #0f172a;
+    }
+
+    .btn-nav {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      padding: 0.625rem 1.5rem;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 0.9375rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 1px 3px rgba(99, 102, 241, 0.2);
+    }
+
+    .btn-nav:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    /* Hero */
+    .hero {
+      padding: 10rem 2rem 6rem;
+      max-width: 1280px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      padding: 0.5rem 1rem;
+      border-radius: 100px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: #6366f1;
+      margin-bottom: 2rem;
+      animation: fadeInUp 0.6s ease-out;
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .hero h1 {
+      font-size: 4.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      letter-spacing: -2px;
+      animation: fadeInUp 0.6s ease-out 0.1s backwards;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.375rem;
+      color: #475569;
+      max-width: 700px;
+      margin: 0 auto 3rem;
+      line-height: 1.7;
+      font-weight: 400;
+      animation: fadeInUp 0.6s ease-out 0.2s backwards;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+      animation: fadeInUp 0.6s ease-out 0.3s backwards;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      padding: 1rem 2.5rem;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.0625rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+    }
+
+    .btn-secondary {
+      background: #f8fafc;
+      color: #0f172a;
+      padding: 1rem 2.5rem;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 1.0625rem;
+      border: 1px solid #e2e8f0;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-secondary:hover {
+      background: #f1f5f9;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Dashboard Preview */
+    .dashboard-preview {
+      max-width: 1100px;
+      margin: 5rem auto 0;
+      animation: fadeInUp 0.6s ease-out 0.4s backwards;
+    }
+
+    .dashboard-window {
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.12), 0 0 1px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .window-header {
+      background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .window-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .window-content {
+      background: linear-gradient(to bottom, #f8fafc, #ffffff);
+      padding: 3rem 2.5rem;
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+    }
+
+    .stat-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 14px;
+      padding: 1.75rem;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+      border-color: #cbd5e1;
+    }
+
+    .stat-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .stat-label {
+      font-size: 0.875rem;
+      color: #64748b;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    /* Features */
+    .features {
+      padding: 8rem 2rem;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 700px;
+      margin: 0 auto 5rem;
+    }
+
+    .section-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+      border: 1px solid rgba(99, 102, 241, 0.2);
+      color: #6366f1;
+      padding: 0.375rem 1rem;
+      border-radius: 100px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-title {
+      font-size: 3.5rem;
+      font-weight: 800;
+      margin-bottom: 1.25rem;
+      letter-spacing: -1.5px;
+      line-height: 1.15;
+    }
+
+    .section-description {
+      font-size: 1.25rem;
+      color: #475569;
+      line-height: 1.7;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 2.5rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-6px);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+
+    .feature-card h3 {
+      font-size: 1.375rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #0f172a;
+    }
+
+    .feature-card p {
+      color: #475569;
+      line-height: 1.7;
+      font-size: 1rem;
+    }
+
+    /* Showcase */
+    .showcase {
+      padding: 8rem 2rem;
+      background: linear-gradient(to bottom, #f8fafc, #ffffff);
+    }
+
+    .showcase-container {
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6rem;
+      align-items: center;
+      margin-bottom: 8rem;
+    }
+
+    .showcase-grid:nth-child(even) {
+      direction: rtl;
+    }
+
+    .showcase-grid:nth-child(even) > * {
+      direction: ltr;
+    }
+
+    .showcase-content h2 {
+      font-size: 3rem;
+      font-weight: 800;
+      margin-bottom: 1.5rem;
+      letter-spacing: -1px;
+      line-height: 1.15;
+    }
+
+    .showcase-content p {
+      font-size: 1.125rem;
+      color: #475569;
+      line-height: 1.8;
+      margin-bottom: 2rem;
+    }
+
+    .showcase-features {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .showcase-feature-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1rem;
+      color: #334155;
+    }
+
+    .showcase-feature-item::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.875rem;
+      flex-shrink: 0;
+    }
+
+    .showcase-visual {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+    }
+
+    .visual-placeholder {
+      aspect-ratio: 4/3;
+      background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 3rem;
+    }
+
+    /* Pricing */
+    .pricing {
+      padding: 8rem 2rem;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+      margin-top: 4rem;
+    }
+
+    .pricing-card {
+      background: white;
+      border: 2px solid #e2e8f0;
+      border-radius: 20px;
+      padding: 3rem 2.5rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      border-color: #6366f1;
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+      transform: scale(1.05);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      color: white;
+      padding: 0.375rem 1.25rem;
+      border-radius: 100px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.12);
+      border-color: #cbd5e1;
+    }
+
+    .pricing-card.featured:hover {
+      transform: scale(1.05) translateY(-8px);
+    }
+
+    .pricing-card h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: #0f172a;
+    }
+
+    .pricing-card .price {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 1.5rem 0;
+      letter-spacing: -1px;
+    }
+
+    .pricing-card .price span {
+      font-size: 1.25rem;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    .pricing-card .description {
+      color: #64748b;
+      font-size: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .pricing-card ul {
+      list-style: none;
+      margin: 2rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.875rem;
+    }
+
+    .pricing-card ul li {
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.9375rem;
+    }
+
+    .pricing-card ul li::before {
+      content: '✓';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      background: #f1f5f9;
+      color: #6366f1;
+      border-radius: 50%;
+      font-weight: 700;
+      font-size: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    /* CTA */
+    .cta {
+      padding: 8rem 2rem;
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .cta-card {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6);
+      border-radius: 28px;
+      padding: 5rem 3rem;
+      box-shadow: 0 30px 60px rgba(99, 102, 241, 0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent);
+      animation: float 8s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% {
+        transform: translate(0, 0);
+      }
+      50% {
+        transform: translate(-20px, 20px);
+      }
+    }
+
+    .cta-card h2 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 1.5rem;
+      letter-spacing: -1px;
+      position: relative;
+    }
+
+    .cta-card p {
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 2.5rem;
+      position: relative;
+    }
+
+    .btn-cta {
+      background: white;
+      color: #6366f1;
+      padding: 1.125rem 3rem;
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 1.0625rem;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      position: relative;
+    }
+
+    .btn-cta:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Footer */
+    .footer {
+      background: #0f172a;
+      color: white;
+      padding: 4rem 2rem 2rem;
+    }
+
+    .footer-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+
+    .footer-brand h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+
+    .footer-brand p {
+      color: #94a3b8;
+      line-height: 1.7;
+      font-size: 0.9375rem;
+    }
+
+    .footer-section h4 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin-bottom: 1.25rem;
+      color: white;
+    }
+
+    .footer-section ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .footer-section ul li a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.9375rem;
+      transition: color 0.2s ease;
+    }
+
+    .footer-section ul li a:hover {
+      color: white;
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 2rem;
+      text-align: center;
+      color: #64748b;
+      font-size: 0.875rem;
+    }
+
+    /* Animations */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero h1 {
+        font-size: 3.5rem;
+      }
+
+      .section-title {
+        font-size: 2.75rem;
+      }
+
+      .features-grid,
+      .pricing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .showcase-grid {
+        grid-template-columns: 1fr;
+        gap: 3rem;
+      }
+
+      .footer-container {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 {
+        font-size: 2.5rem;
+      }
+
+      .hero p {
+        font-size: 1.125rem;
+      }
+
+      .hero-cta {
+        flex-direction: column;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .footer-container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <div class="logo-mark">📸</div>
+        Laya Pro
+      </div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#showcase">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><button class="btn-nav">Get Started</button></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-badge">
+      ✨ Trusted by 500+ photography studios worldwide
+    </div>
+    <h1>
+      Photography business,<br>
+      <span class="gradient-text">simplified</span>
+    </h1>
+    <p>
+      Manage your entire photography workflow in one place. From client management to delivery, we've got you covered.
+    </p>
+    <div class="hero-cta">
+      <a href="#" class="btn-primary">
+        Start free trial
+        <span>→</span>
+      </a>
+      <a href="#" class="btn-secondary">
+        <span>▶</span>
+        Watch demo
+      </a>
+    </div>
+
+    <!-- Dashboard Preview -->
+    <div class="dashboard-preview">
+      <div class="dashboard-window">
+        <div class="window-header">
+          <div class="window-dot"></div>
+          <div class="window-dot"></div>
+          <div class="window-dot"></div>
+        </div>
+        <div class="window-content">
+          <div class="dashboard-grid">
+            <div class="stat-card">
+              <div class="stat-icon">💰</div>
+              <div class="stat-label">Total Revenue</div>
+              <div class="stat-value">$45,280</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">📊</div>
+              <div class="stat-label">Active Projects</div>
+              <div class="stat-value">124</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon">⭐</div>
+              <div class="stat-label">Client Rating</div>
+              <div class="stat-value">4.9/5</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="section-header reveal">
+      <span class="section-badge">Features</span>
+      <h2 class="section-title">
+        Everything you need to<br>
+        <span class="gradient-text">grow your studio</span>
+      </h2>
+      <p class="section-description">
+        Powerful tools designed for photographers who want to focus on their craft, not paperwork.
+      </p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card reveal">
+        <div class="feature-icon">⚡</div>
+        <h3>Lightning Fast</h3>
+        <p>Upload and deliver galleries in seconds. Our optimized infrastructure ensures your work is always ready when you need it.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🎨</div>
+        <h3>Beautiful Galleries</h3>
+        <p>Create stunning client galleries with customizable templates that showcase your work in the best light.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">💳</div>
+        <h3>Easy Payments</h3>
+        <p>Accept payments, send invoices, and manage contracts all in one place. Get paid faster than ever.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🤖</div>
+        <h3>Smart Automation</h3>
+        <p>AI-powered tagging, smart albums, and automated workflows save you 10+ hours every week.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">🔒</div>
+        <h3>Bank-Level Security</h3>
+        <p>Your photos are encrypted and backed up automatically. We take security seriously so you don't have to.</p>
+      </div>
+      <div class="feature-card reveal">
+        <div class="feature-icon">📈</div>
+        <h3>Analytics & Insights</h3>
+        <p>Understand your business with detailed analytics. Track revenue, client behavior, and growth metrics.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Showcase -->
+  <section id="showcase" class="showcase">
+    <div class="showcase-container">
+      <div class="showcase-grid">
+        <div class="showcase-content reveal">
+          <h2>Client management made <span class="gradient-text">simple</span></h2>
+          <p>Give your clients a premium experience with personalized portals, automated emails, and seamless communication.</p>
+          <div class="showcase-features">
+            <div class="showcase-feature-item">Automated booking and scheduling</div>
+            <div class="showcase-feature-item">Custom client portals</div>
+            <div class="showcase-feature-item">Real-time notifications</div>
+            <div class="showcase-feature-item">Digital contracts and signatures</div>
+          </div>
+        </div>
+        <div class="showcase-visual reveal">
+          <div class="visual-placeholder">👥</div>
+        </div>
+      </div>
+
+      <div class="showcase-grid">
+        <div class="showcase-content reveal">
+          <h2>Galleries that <span class="gradient-text">wow</span> your clients</h2>
+          <p>Create beautiful, responsive galleries that work perfectly on any device. Let your clients favorite, share, and download with ease.</p>
+          <div class="showcase-features">
+            <div class="showcase-feature-item">Customizable gallery designs</div>
+            <div class="showcase-feature-item">Mobile-optimized viewing</div>
+            <div class="showcase-feature-item">Client favorites and selections</div>
+            <div class="showcase-feature-item">Direct download and sharing</div>
+          </div>
+        </div>
+        <div class="showcase-visual reveal">
+          <div class="visual-placeholder">🖼️</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section id="pricing" class="pricing">
+    <div class="section-header reveal">
+      <span class="section-badge">Pricing</span>
+      <h2 class="section-title">
+        Simple, transparent <span class="gradient-text">pricing</span>
+      </h2>
+      <p class="section-description">
+        Start with 14 days free. No credit card required.
+      </p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="pricing-card reveal">
+        <h3>Starter</h3>
+        <div class="price">$29<span>/mo</span></div>
+        <p class="description">Perfect for solo photographers</p>
+        <ul>
+          <li>5 events per month</li>
+          <li>10GB storage</li>
+          <li>Client portals</li>
+          <li>Basic galleries</li>
+          <li>Email support</li>
+        </ul>
+        <a href="#" class="btn-secondary">Start free trial</a>
+      </div>
+
+      <div class="pricing-card featured reveal">
+        <span class="pricing-badge">Most Popular</span>
+        <h3>Professional</h3>
+        <div class="price">$79<span>/mo</span></div>
+        <p class="description">For growing studios</p>
+        <ul>
+          <li>Unlimited events</li>
+          <li>100GB storage</li>
+          <li>Advanced portals</li>
+          <li>Premium galleries</li>
+          <li>Priority support</li>
+          <li>Team collaboration</li>
+          <li>Custom branding</li>
+        </ul>
+        <a href="#" class="btn-primary">Start free trial</a>
+      </div>
+
+      <div class="pricing-card reveal">
+        <h3>Enterprise</h3>
+        <div class="price">$199<span>/mo</span></div>
+        <p class="description">For established studios</p>
+        <ul>
+          <li>Unlimited everything</li>
+          <li>500GB storage</li>
+          <li>White-label solution</li>
+          <li>Advanced workflows</li>
+          <li>Dedicated support</li>
+          <li>API access</li>
+          <li>Custom integrations</li>
+        </ul>
+        <a href="#" class="btn-secondary">Contact sales</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="cta">
+    <div class="cta-card reveal">
+      <h2>Ready to grow your photography business?</h2>
+      <p>Join hundreds of photographers who trust Laya Pro to manage their studio</p>
+      <a href="#" class="btn-cta">
+        Start your free trial
+        <span>→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <h3>Laya Pro</h3>
+        <p>The modern platform for photography studios. Built by photographers, for photographers.</p>
+      </div>
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#">Features</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Roadmap</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Security</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Laya Pro. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script>
+    // Navbar scroll effect
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      if (window.scrollY > 20) {
+        navbar.classList.add('scrolled');
+      } else {
+        navbar.classList.remove('scrolled');
+      }
+    });
+
+    // Reveal on scroll
+    const reveals = document.querySelectorAll('.reveal');
+    const revealOnScroll = () => {
+      reveals.forEach(element => {
+        const elementTop = element.getBoundingClientRect().top;
+        const elementVisible = 100;
+        if (elementTop < window.innerHeight - elementVisible) {
+          element.classList.add('active');
+        }
+      });
+    };
+
+    window.addEventListener('scroll', revealOnScroll);
+    revealOnScroll();
+  </script>
+</body>
+</html>

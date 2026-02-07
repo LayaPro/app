@@ -7,6 +7,16 @@ import { Menu, X, Camera } from "lucide-react";
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    // Trigger slide down animation
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -25,17 +35,19 @@ export function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 slide-in-from-top ${
         isScrolled
           ? "bg-white/80 backdrop-blur-md shadow-md"
           : "bg-transparent"
+      } ${
+        isVisible ? "animated" : ""
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2 group">
-            <div className="bg-gradient-to-br from-purple-600 to-pink-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
+            <div className="bg-gradient-to-br from-indigo-600 to-violet-600 p-2 rounded-lg group-hover:scale-110 transition-transform">
               <Camera className="w-6 h-6 text-white" />
             </div>
             <span className="text-2xl font-bold gradient-text">Laya Pro</span>
@@ -47,14 +59,14 @@ export function Navbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-gray-700 hover:text-purple-600 transition-colors font-medium"
+                className="text-gray-700 hover:text-indigo-600 transition-colors font-medium"
               >
                 {link.label}
               </Link>
             ))}
             <Link
               href="/signup"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2.5 rounded-full hover:shadow-lg hover-scale transition-all font-semibold"
+              className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-2.5 rounded-full hover:shadow-lg hover-scale transition-all font-semibold"
             >
               Get Started
             </Link>
@@ -82,14 +94,14 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="text-gray-700 hover:text-purple-600 transition-colors font-medium px-4 py-2"
+                  className="text-gray-700 hover:text-indigo-600 transition-colors font-medium px-4 py-2"
                 >
                   {link.label}
                 </Link>
               ))}
               <Link
                 href="/signup"
-                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-full hover:shadow-lg transition-all font-semibold text-center mx-4"
+                className="bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-3 rounded-full hover:shadow-lg transition-all font-semibold text-center mx-4"
               >
                 Get Started
               </Link>

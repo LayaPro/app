@@ -41,11 +41,11 @@ html {
 
 /* Gradient backgrounds */
 .gradient-bg {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #9333ea 0%, #ec4899 50%, #f97316 100%);
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -55,7 +55,7 @@ html {
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(30px);
+    transform: translateY(40px);
   }
   to {
     opacity: 1;
@@ -75,11 +75,44 @@ html {
 @keyframes scaleIn {
   from {
     opacity: 0;
-    transform: scale(0.9);
+    transform: scale(0.85);
   }
   to {
     opacity: 1;
     transform: scale(1);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromTop {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -90,7 +123,7 @@ html {
 }
 
 .animate-on-scroll.animated {
-  animation: fadeInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: fadeInUp 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .fade-in {
@@ -98,7 +131,7 @@ html {
 }
 
 .fade-in.animated {
-  animation: fadeIn 0.6s ease-out forwards;
+  animation: fadeIn 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 .scale-in {
@@ -106,16 +139,42 @@ html {
 }
 
 .scale-in.animated {
-  animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  animation: scaleIn 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-in-left {
+  opacity: 0;
+}
+
+.slide-in-left.animated {
+  animation: slideInLeft 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-in-right {
+  opacity: 0;
+}
+
+.slide-in-right.animated {
+  animation: slideInRight 2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.slide-in-from-top {
+  opacity: 0;
+}
+
+.slide-in-from-top.animated {
+  animation: slideInFromTop 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Stagger Delays */
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-.delay-600 { animation-delay: 0.6s; }
+.delay-100 { animation-delay: 0.3s; }
+.delay-200 { animation-delay: 0.6s; }
+.delay-300 { animation-delay: 0.9s; }
+.delay-400 { animation-delay: 1.2s; }
+.delay-500 { animation-delay: 1.5s; }
+.delay-600 { animation-delay: 1.8s; }
+.delay-700 { animation-delay: 2.1s; }
+.delay-800 { animation-delay: 2.4s; }
 
 /* Hover Effects */
 .hover-lift {
@@ -155,4 +214,115 @@ html {
 .animated-gradient {
   background-size: 200% 200%;
   animation: gradientShift 8s ease infinite;
+}
+
+/* 3D Screenshot Frame */
+.screenshot-3d-wrapper {
+  perspective: 2000px;
+  perspective-origin: center;
+}
+
+.screenshot-3d-frame {
+  position: relative;
+  transform-style: preserve-3d;
+  transform: rotateY(18deg);
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.screenshot-3d-frame:hover {
+  transform: rotateY(15deg) scale(1.02);
+}
+
+.screenshot-3d-frame.view-from-right {
+  transform: rotateY(-18deg);
+}
+
+.screenshot-3d-frame.view-from-right:hover {
+  transform: rotateY(-15deg) scale(1.02);
+}
+
+.screenshot-content {
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  transform: translateZ(50px);
+}
+
+/* Mac window controls */
+.mac-window-controls {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(to bottom, #f5f5f5 0%, #e8e8e8 100%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 8px;
+  z-index: 10;
+}
+
+.mac-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 0.5px solid rgba(0, 0, 0, 0.1);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.mac-dot-red {
+  background: linear-gradient(135deg, #ff5f57 0%, #ff4136 100%);
+}
+
+.mac-dot-yellow {
+  background: linear-gradient(135deg, #ffbd2e 0%, #feb600 100%);
+}
+
+.mac-dot-green {
+  background: linear-gradient(135deg, #28ca42 0%, #1fb331 100%);
+}
+
+.screenshot-content img {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 40px;
+}
+
+.screenshot-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(99, 102, 241, 0.05) 0%,
+    rgba(139, 92, 246, 0.05) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.screenshot-content::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 70%
+  );
+  transform: rotate(45deg);
+  pointer-events: none;
+  z-index: 2;
 }

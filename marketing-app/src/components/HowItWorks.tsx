@@ -39,33 +39,8 @@ const steps = [
 ];
 
 function StepCard({ step, index }: { step: (typeof steps)[0]; index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("animated");
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: "50px" }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, []);
-
   return (
-    <div ref={ref} className={`relative animate-on-scroll delay-${index * 100 + 100}`}>
+    <div className={`relative animate-on-scroll delay-${(index + 3) * 100}`}>
       <div className="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 hover-lift">
         {/* Number Badge */}
         <div className="absolute -top-6 -left-6 w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
@@ -93,49 +68,44 @@ function StepCard({ step, index }: { step: (typeof steps)[0]; index: number }) {
 }
 
 export function HowItWorks() {
-  const headerRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add("animated");
+            entry.target.classList.add('animated');
           }
         });
       },
-      { threshold: 0.1 }
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
     );
 
-    [headerRef, ctaRef].forEach((ref) => {
-      if (ref.current) observer.observe(ref.current);
-    });
+    const items = document.querySelectorAll('#how-it-works .scale-in, #how-it-works .animate-on-scroll, #how-it-works .fade-in');
+    items.forEach((item) => observer.observe(item));
 
-    return () => {
-      [headerRef, ctaRef].forEach((ref) => {
-        if (ref.current) observer.unobserve(ref.current);
-      });
-    };
+    return () => observer.disconnect();
   }, []);
 
   return (
     <section
       id="how-it-works"
-      className="py-20 md:py-32 bg-gradient-to-b from-purple-50/30 to-white"
+      className="py-20 md:py-32 bg-gradient-to-b from-indigo-50/30 to-white"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div ref={headerRef} className="animate-on-scroll text-center mb-20">
-          <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-4">
+        <div className="text-center mb-20">
+          <span className="inline-block px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold mb-4 scale-in">
             How It Works
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 animate-on-scroll delay-100">
             Get Started in
             <br />
             <span className="gradient-text">4 Simple Steps</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto animate-on-scroll delay-200">
             From setup to delivery, our intuitive platform guides you every step
             of the way. No complex training required.
           </p>
@@ -149,13 +119,13 @@ export function HowItWorks() {
         </div>
 
         {/* Bottom CTA */}
-        <div ref={ctaRef} className="animate-on-scroll delay-400 text-center mt-20">
-          <p className="text-gray-600 mb-6 text-lg">
+        <div className="text-center mt-20">
+          <p className="text-gray-600 mb-6 text-lg fade-in delay-700">
             Ready to streamline your photography workflow?
           </p>
           <a
             href="/signup"
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover-scale transition-all"
+            className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover-scale transition-all scale-in delay-800"
           >
             <span>Start Your Free Trial</span>
           </a>

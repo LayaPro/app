@@ -66,35 +66,12 @@ function PricingCard({
   plan: (typeof plans)[0];
   index: number;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("animated");
-          }
-        });
-      },
-      { threshold: 0.1, rootMargin: "50px" }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, []);
-
   return (
-    <div ref={ref} className={`relative ${plan.popular ? "lg:-mt-4" : ""} animate-on-scroll delay-${index * 150 + 100}`}>
+    <div
+      className={`scale-in delay-${(index + 3) * 100} relative ${plan.popular ? "lg:-mt-4" : ""}`}
+    >
       {plan.popular && (
-        <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
+        <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
           Most Popular
         </div>
       )}
@@ -102,7 +79,7 @@ function PricingCard({
       <div
         className={`relative bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden hover-lift ${
           plan.popular
-            ? "border-2 border-purple-500 lg:scale-105"
+            ? "border-2 border-indigo-500 lg:scale-105"
             : "border border-gray-200"
         }`}
       >
@@ -130,7 +107,7 @@ function PricingCard({
             href="/signup"
             className={`block w-full text-center py-3 px-6 rounded-xl font-semibold transition-all hover-scale ${
               plan.popular
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl"
+                ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-lg hover:shadow-xl"
                 : "bg-gray-100 text-gray-900 hover:bg-gray-200"
             }`}
           >
@@ -153,52 +130,48 @@ function PricingCard({
 }
 
 export function Pricing() {
-  const headerRef = useRef<HTMLDivElement>(null);
-
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add("animated");
+            entry.target.classList.add('animated');
           }
         });
       },
-      { threshold: 0.1 }
+      {
+        threshold: 0.1,
+        rootMargin: '50px'
+      }
     );
 
-    if (headerRef.current) {
-      observer.observe(headerRef.current);
-    }
+    const items = document.querySelectorAll('#pricing .scale-in, #pricing .animate-on-scroll, #pricing .fade-in');
+    items.forEach((item) => observer.observe(item));
 
-    return () => {
-      if (headerRef.current) {
-        observer.unobserve(headerRef.current);
-      }
-    };
+    return () => observer.disconnect();
   }, []);
 
   return (
     <section
       id="pricing"
-      className="py-20 md:py-32 bg-gradient-to-b from-white to-purple-50/30"
+      className="py-20 md:py-32 bg-gradient-to-b from-white to-indigo-50/30"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div ref={headerRef} className="animate-on-scroll text-center mb-16">
-          <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-4">
+        <div className="text-center mb-16">
+          <span className="inline-block px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold mb-4 scale-in">
             Pricing
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 animate-on-scroll delay-100">
             Choose Your
             <br />
             <span className="gradient-text">Perfect Plan</span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6">
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-6 animate-on-scroll delay-200">
             Start with a 14-day free trial. No credit card required. Cancel
             anytime.
           </p>
-          <div className="flex items-center justify-center space-x-2 text-sm text-gray-600">
+          <div className="flex items-center justify-center space-x-2 text-sm text-gray-600 fade-in delay-300">
             <Check className="w-4 h-4 text-green-500" />
             <span>All plans include 14-day free trial</span>
           </div>
@@ -213,12 +186,12 @@ export function Pricing() {
 
         {/* FAQ Teaser */}
         <div className="text-center mt-16">
-          <p className="text-gray-600 mb-4">
+          <p className="text-gray-600 mb-4 fade-in delay-600">
             Need a custom plan for your large studio?
           </p>
           <a
             href="#contact"
-            className="text-purple-600 hover:text-purple-700 font-semibold underline"
+            className="text-indigo-600 hover:text-indigo-700 font-semibold underline fade-in delay-700"
           >
             Contact us for enterprise pricing
           </a>

@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laya Pro - Photography Business Management</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --secondary: #8b5cf6;
+      --secondary-light: #a78bfa;
+      --accent: #c4b5fd;
+      --gray-50: #f9fafb;
+      --gray-100: #f3f4f6;
+      --gray-200: #e5e7eb;
+      --gray-600: #4b5563;
+      --gray-700: #374151;
+      --gray-900: #111827;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+      line-height: 1.6;
+      color: var(--gray-900);
+      overflow-x: hidden;
+    }
+
+    /* Navbar */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      padding: 1rem 0;
+    }
+
+    .nav-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 1.25rem;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      list-style: none;
+    }
+
+    .nav-links a {
+      text-decoration: none;
+      color: var(--gray-700);
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: var(--primary);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 0.625rem 1.5rem;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: inline-block;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: var(--primary);
+      padding: 0.625rem 1.5rem;
+      border-radius: 50px;
+      text-decoration: none;
+      font-weight: 600;
+      transition: all 0.3s;
+      display: inline-block;
+      border: 2px solid var(--gray-200);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.1);
+    }
+
+    /* Hero Section */
+    .hero {
+      margin-top: 80px;
+      min-height: 90vh;
+      display: flex;
+      align-items: center;
+      background: linear-gradient(135deg, #f0f4ff 0%, #f5f3ff 50%, #faf5ff 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+      top: -200px;
+      right: -200px;
+      border-radius: 50%;
+    }
+
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+      bottom: -150px;
+      left: -150px;
+      border-radius: 50%;
+    }
+
+    .hero-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 4rem 2rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-content h1 {
+      font-size: 3.5rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      color: var(--gray-900);
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--secondary-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-content p {
+      font-size: 1.25rem;
+      color: var(--gray-600);
+      margin-bottom: 2rem;
+      line-height: 1.8;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .trust-badges {
+      display: flex;
+      gap: 2rem;
+      align-items: center;
+      padding-top: 2rem;
+      border-top: 1px solid var(--gray-200);
+    }
+
+    .trust-stat {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .trust-stat-number {
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .trust-stat-label {
+      font-size: 0.875rem;
+      color: var(--gray-600);
+    }
+
+    .hero-visual {
+      position: relative;
+    }
+
+    .dashboard-preview {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      transform: perspective(1000px) rotateY(-5deg);
+      transition: transform 0.5s ease;
+    }
+
+    .dashboard-preview:hover {
+      transform: perspective(1000px) rotateY(0deg);
+    }
+
+    .preview-header {
+      background: var(--gray-900);
+      padding: 0.75rem 1rem;
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .preview-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #ef4444; }
+    .dot-yellow { background: #f59e0b; }
+    .dot-green { background: #10b981; }
+
+    .preview-content {
+      padding: 2rem;
+      background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .preview-card {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .preview-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    .preview-info h4 {
+      font-size: 0.875rem;
+      color: var(--gray-600);
+      margin-bottom: 0.25rem;
+    }
+
+    .preview-info p {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    /* Features Section */
+    .features {
+      padding: 6rem 2rem;
+      background: white;
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto 4rem;
+    }
+
+    .section-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+      color: var(--primary);
+      padding: 0.5rem 1rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+    }
+
+    .section-header h2 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      margin-bottom: 1rem;
+      color: var(--gray-900);
+    }
+
+    .section-header p {
+      font-size: 1.125rem;
+      color: var(--gray-600);
+    }
+
+    .features-grid {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .feature-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      border: 1px solid var(--gray-200);
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      transform: scaleX(0);
+      transition: transform 0.3s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+      border-color: var(--primary);
+    }
+
+    .feature-card:hover::before {
+      transform: scaleX(1);
+    }
+
+    .feature-icon {
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      color: white;
+      font-size: 1.75rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--gray-900);
+    }
+
+    .feature-card p {
+      color: var(--gray-600);
+      line-height: 1.7;
+    }
+
+    /* How It Works */
+    .how-it-works {
+      padding: 6rem 2rem;
+      background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+    }
+
+    .steps-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2rem;
+      position: relative;
+    }
+
+    .steps-container::before {
+      content: '';
+      position: absolute;
+      top: 40px;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+      z-index: 0;
+    }
+
+    .step-card {
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .step-number {
+      width: 80px;
+      height: 80px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      color: white;
+      font-size: 2rem;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+      border: 6px solid white;
+    }
+
+    .step-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      color: var(--gray-900);
+    }
+
+    .step-card p {
+      color: var(--gray-600);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    /* Pricing Section */
+    .pricing {
+      padding: 6rem 2rem;
+      background: white;
+    }
+
+    .pricing-grid {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .pricing-card {
+      background: white;
+      border: 2px solid var(--gray-200);
+      border-radius: 20px;
+      padding: 2.5rem;
+      text-align: center;
+      transition: all 0.3s;
+      position: relative;
+    }
+
+    .pricing-card.featured {
+      border-color: var(--primary);
+      transform: scale(1.05);
+      box-shadow: 0 20px 50px rgba(99, 102, 241, 0.2);
+    }
+
+    .pricing-badge {
+      position: absolute;
+      top: -15px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+      padding: 0.5rem 1.5rem;
+      border-radius: 50px;
+      font-size: 0.875rem;
+      font-weight: 600;
+      box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .pricing-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 40px rgba(99, 102, 241, 0.15);
+    }
+
+    .pricing-card h3 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+      color: var(--gray-900);
+    }
+
+    .pricing-card .price {
+      font-size: 3.5rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 1rem 0;
+    }
+
+    .pricing-card .price span {
+      font-size: 1.25rem;
+      color: var(--gray-600);
+    }
+
+    .pricing-card ul {
+      list-style: none;
+      margin: 2rem 0;
+      text-align: left;
+    }
+
+    .pricing-card ul li {
+      padding: 0.75rem 0;
+      color: var(--gray-700);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .pricing-card ul li::before {
+      content: '✓';
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 1.25rem;
+    }
+
+    /* Testimonials */
+    .testimonials {
+      padding: 6rem 2rem;
+      background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+    }
+
+    .testimonials-grid {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+
+    .testimonial-card {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+      transition: all 0.3s;
+    }
+
+    .testimonial-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 30px rgba(99, 102, 241, 0.15);
+    }
+
+    .stars {
+      color: #fbbf24;
+      font-size: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .testimonial-text {
+      color: var(--gray-700);
+      font-size: 1rem;
+      line-height: 1.7;
+      margin-bottom: 1.5rem;
+    }
+
+    .testimonial-author {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .author-avatar {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+    }
+
+    .author-info h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--gray-900);
+    }
+
+    .author-info p {
+      font-size: 0.875rem;
+      color: var(--gray-600);
+    }
+
+    /* CTA Section */
+    .cta {
+      padding: 6rem 2rem;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta::before {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+      top: -100px;
+      right: -100px;
+      border-radius: 50%;
+    }
+
+    .cta-container {
+      max-width: 900px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    .cta h2 {
+      font-size: 3rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 1.5rem;
+    }
+
+    .cta p {
+      font-size: 1.25rem;
+      color: rgba(255, 255, 255, 0.9);
+      margin-bottom: 2rem;
+    }
+
+    .cta .btn-primary {
+      background: white;
+      color: var(--primary);
+      font-size: 1.125rem;
+      padding: 1rem 2.5rem;
+    }
+
+    .cta .btn-primary:hover {
+      background: var(--gray-50);
+    }
+
+    /* Footer */
+    .footer {
+      background: var(--gray-900);
+      color: white;
+      padding: 4rem 2rem 2rem;
+    }
+
+    .footer-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 3rem;
+      margin-bottom: 3rem;
+    }
+
+    .footer-brand {
+      max-width: 300px;
+    }
+
+    .footer-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .footer-brand p {
+      color: var(--gray-200);
+      line-height: 1.7;
+      font-size: 0.95rem;
+    }
+
+    .footer-section h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: white;
+    }
+
+    .footer-section ul {
+      list-style: none;
+    }
+
+    .footer-section ul li {
+      margin-bottom: 0.75rem;
+    }
+
+    .footer-section ul li a {
+      color: var(--gray-200);
+      text-decoration: none;
+      font-size: 0.95rem;
+      transition: color 0.3s;
+    }
+
+    .footer-section ul li a:hover {
+      color: var(--primary);
+    }
+
+    .footer-bottom {
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      padding-top: 2rem;
+      text-align: center;
+      color: var(--gray-200);
+      font-size: 0.875rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .hero-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .hero-cta {
+        justify-content: center;
+      }
+
+      .trust-badges {
+        justify-content: center;
+      }
+
+      .features-grid,
+      .testimonials-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .steps-container {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .steps-container::before {
+        display: none;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .hero-content h1 {
+        font-size: 2.5rem;
+      }
+
+      .features-grid,
+      .steps-container,
+      .pricing-grid,
+      .testimonials-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .pricing-card.featured {
+        transform: scale(1);
+      }
+
+      .footer-container {
+        grid-template-columns: 1fr;
+        text-align: center;
+      }
+
+      .footer-brand {
+        max-width: 100%;
+      }
+    }
+
+    /* Animations */
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+
+    .floating {
+      animation: float 3s ease-in-out infinite;
+    }
+  </style>
+</head>
+<body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="nav-container">
+      <div class="logo">
+        <div class="logo-icon">📸</div>
+        <span>Laya Pro</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#how-it-works">How It Works</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#testimonials">Testimonials</a></li>
+        <li><a href="#" class="btn-primary">Get Started</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-container">
+      <div class="hero-content">
+        <h1>
+          Manage Your Photography Business 
+          <span class="gradient-text">Like a Pro</span>
+        </h1>
+        <p>
+          From bookings to delivery, streamline every aspect of your photography workflow. 
+          Focus on capturing moments while we handle the rest.
+        </p>
+        <div class="hero-cta">
+          <a href="#" class="btn-primary">Start Free Trial</a>
+          <a href="#" class="btn-secondary">Watch Demo</a>
+        </div>
+        <div class="trust-badges">
+          <div class="trust-stat">
+            <span class="trust-stat-number">500+</span>
+            <span class="trust-stat-label">Active Studios</span>
+          </div>
+          <div class="trust-stat">
+            <span class="trust-stat-number">10K+</span>
+            <span class="trust-stat-label">Events Managed</span>
+          </div>
+          <div class="trust-stat">
+            <span class="trust-stat-number">50K+</span>
+            <span class="trust-stat-label">Happy Clients</span>
+          </div>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="dashboard-preview floating">
+          <div class="preview-header">
+            <span class="preview-dot dot-red"></span>
+            <span class="preview-dot dot-yellow"></span>
+            <span class="preview-dot dot-green"></span>
+          </div>
+          <div class="preview-content">
+            <div class="preview-card">
+              <div class="preview-icon">📊</div>
+              <div class="preview-info">
+                <h4>Total Events</h4>
+                <p>245</p>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-icon">💰</div>
+              <div class="preview-info">
+                <h4>Revenue This Month</h4>
+                <p>$12,450</p>
+              </div>
+            </div>
+            <div class="preview-card">
+              <div class="preview-icon">⭐</div>
+              <div class="preview-info">
+                <h4>Client Satisfaction</h4>
+                <p>98%</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="features">
+    <div class="section-header">
+      <span class="section-badge">Features</span>
+      <h2>Everything You Need to <span class="gradient-text">Run Your Studio</span></h2>
+      <p>Powerful features designed specifically for professional photographers and studios</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <h3>Lightning Fast</h3>
+        <p>Upload and process thousands of photos in minutes. Our optimized infrastructure ensures your work is always ready.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <h3>Bank-Level Security</h3>
+        <p>Your photos are encrypted end-to-end with military-grade security. We never share your data with third parties.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h3>Client Portal</h3>
+        <p>Beautiful client portals, automated workflows, and seamless communication tools that make you look professional.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📸</div>
+        <h3>Smart Organization</h3>
+        <p>AI-powered tagging, facial recognition, and smart albums that organize your photos automatically.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">⏰</div>
+        <h3>Save Time</h3>
+        <p>Automate repetitive tasks and focus on what you do best. Reclaim 10+ hours every week.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📈</div>
+        <h3>Grow Your Business</h3>
+        <p>Built-in marketing tools, analytics, and client management features that help you book more shoots.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="section-header">
+      <span class="section-badge">How It Works</span>
+      <h2>Get Started in <span class="gradient-text">4 Simple Steps</span></h2>
+      <p>From setup to delivery, our intuitive platform guides you every step of the way</p>
+    </div>
+    <div class="steps-container">
+      <div class="step-card">
+        <div class="step-number">1</div>
+        <h3>Sign Up & Setup</h3>
+        <p>Create your account in seconds. Set up your studio profile and branding in minutes.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">2</div>
+        <h3>Create Events</h3>
+        <p>Add your shoots, weddings, or projects. Set dates and configure workflows.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">3</div>
+        <h3>Upload & Organize</h3>
+        <p>Upload photos directly from your camera. AI-powered organization makes it effortless.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-number">4</div>
+        <h3>Share & Deliver</h3>
+        <p>Send beautiful galleries to clients. Track views and deliver final products seamlessly.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="pricing">
+    <div class="section-header">
+      <span class="section-badge">Pricing</span>
+      <h2>Choose Your <span class="gradient-text">Perfect Plan</span></h2>
+      <p>Start with a 14-day free trial. No credit card required. Cancel anytime.</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <h3>Starter</h3>
+        <div class="price">$29<span>/mo</span></div>
+        <p>Perfect for solo photographers</p>
+        <ul>
+          <li>Up to 5 events per month</li>
+          <li>10GB storage</li>
+          <li>Client portal access</li>
+          <li>Basic gallery features</li>
+          <li>Email support</li>
+          <li>Mobile app access</li>
+        </ul>
+        <a href="#" class="btn-secondary">Start Free Trial</a>
+      </div>
+      <div class="pricing-card featured">
+        <span class="pricing-badge">Most Popular</span>
+        <h3>Professional</h3>
+        <div class="price">$79<span>/mo</span></div>
+        <p>For growing studios</p>
+        <ul>
+          <li>Unlimited events</li>
+          <li>100GB storage</li>
+          <li>Advanced client portal</li>
+          <li>Quotation & proposals</li>
+          <li>Priority support</li>
+          <li>Team collaboration (5 users)</li>
+          <li>Custom branding</li>
+          <li>Analytics dashboard</li>
+        </ul>
+        <a href="#" class="btn-primary">Start Free Trial</a>
+      </div>
+      <div class="pricing-card">
+        <h3>Enterprise</h3>
+        <div class="price">$199<span>/mo</span></div>
+        <p>For established studios</p>
+        <ul>
+          <li>Unlimited everything</li>
+          <li>500GB storage</li>
+          <li>White-label solution</li>
+          <li>Advanced workflows</li>
+          <li>Dedicated account manager</li>
+          <li>Unlimited team members</li>
+          <li>API access</li>
+          <li>Custom integrations</li>
+          <li>SLA guarantee</li>
+        </ul>
+        <a href="#" class="btn-secondary">Contact Sales</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section id="testimonials" class="testimonials">
+    <div class="section-header">
+      <span class="section-badge">Testimonials</span>
+      <h2>Loved by Photographers <span class="gradient-text">Worldwide</span></h2>
+      <p>Don't just take our word for it. Here's what professional photographers say about Laya Pro.</p>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Laya Pro completely transformed how I run my wedding photography business. The client portal is a game-changer!"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">SJ</div>
+          <div class="author-info">
+            <h4>Sarah Johnson</h4>
+            <p>Wedding Photographer</p>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"Managing multiple photographers was a nightmare before Laya Pro. Now everything is organized and automated."</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">MC</div>
+          <div class="author-info">
+            <h4>Michael Chen</h4>
+            <p>Studio Owner</p>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card">
+        <div class="stars">★★★★★</div>
+        <p class="testimonial-text">"The customer support is amazing, and my clients constantly compliment the beautiful galleries. It's like having a full-time assistant!"</p>
+        <div class="testimonial-author">
+          <div class="author-avatar">ER</div>
+          <div class="author-info">
+            <h4>Emily Rodriguez</h4>
+            <p>Portrait Photographer</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Section -->
+  <section class="cta">
+    <div class="cta-container">
+      <h2>Ready to Transform Your Photography Business?</h2>
+      <p>Join hundreds of professional photographers who trust Laya Pro to manage their business</p>
+      <a href="#" class="btn-primary">Start Your Free 14-Day Trial</a>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-container">
+      <div class="footer-brand">
+        <div class="footer-logo">Laya Pro</div>
+        <p>The complete photography business management solution. Streamline your workflow and grow your studio.</p>
+      </div>
+      <div class="footer-section">
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#">Features</a></li>
+          <li><a href="#">Pricing</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Roadmap</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div class="footer-section">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy</a></li>
+          <li><a href="#">Terms</a></li>
+          <li><a href="#">Security</a></li>
+          <li><a href="#">Compliance</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p>&copy; 2026 Laya Pro. All rights reserved.</p>
+    </div>
+  </footer>
+</body>
+</html>

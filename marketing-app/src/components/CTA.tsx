@@ -30,7 +30,7 @@ export function CTA() {
   }, []);
 
   return (
-    <section id="signup" className="py-20 md:py-32 bg-gradient-to-br from-purple-600 via-pink-600 to-orange-500 relative overflow-hidden animated-gradient">
+    <section id="signup" className="py-20 md:py-32 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 relative overflow-hidden animated-gradient">
       {/* Animated Background Elements */}
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl float-animation" />
@@ -65,14 +65,14 @@ export function CTA() {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
             <a
               href="/signup"
-              className="group inline-flex items-center space-x-2 bg-white text-purple-600 px-8 py-4 rounded-full text-lg font-semibold shadow-2xl hover:shadow-3xl hover-scale transition-all"
+              className="group inline-flex items-center space-x-2 bg-white text-indigo-600 px-8 py-4 rounded-full text-lg font-semibold shadow-2xl hover:shadow-3xl hover-scale transition-all"
             >
               <span>Start Your Free Trial</span>
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </a>
             <a
               href="#pricing"
-              className="inline-flex items-center space-x-2 bg-purple-900/30 backdrop-blur-sm text-white px-8 py-4 rounded-full text-lg font-semibold border-2 border-white/30 hover:border-white/50 hover-scale transition-all"
+              className="inline-flex items-center space-x-2 bg-indigo-900/30 backdrop-blur-sm text-white px-8 py-4 rounded-full text-lg font-semibold border-2 border-white/30 hover:border-white/50 hover-scale transition-all"
             >
               <span>View Pricing</span>
             </a>
