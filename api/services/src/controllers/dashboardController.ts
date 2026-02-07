@@ -7,12 +7,20 @@ import ProjectFinance from '../models/projectFinance';
 import EventExpense from '../models/eventExpense';
 import ProjectDeliveryStatus from '../models/projectDeliveryStatus';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
+import { nanoid } from 'nanoid';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('DashboardController');
 
 export const getStats = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching dashboard stats`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -33,6 +41,14 @@ export const getStats = async (req: AuthRequest, res: Response) => {
 
     // Calculate profit
     const profit = totalRevenue - totalExpenses;
+
+    logger.info(`[${requestId}] Dashboard stats retrieved`, { 
+      tenantId,
+      totalProjects,
+      totalClientEvents,
+      totalRevenue,
+      profit 
+    });
 
     return res.status(200).json({
       message: 'Dashboard stats retrieved successfully',
@@ -56,16 +72,24 @@ export const getStats = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (err: any) {
-    console.error('Get dashboard stats error:', err);
+    logger.error(`[${requestId}] Error fetching dashboard stats`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getRevenueSummary = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching revenue summary`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -91,6 +115,13 @@ export const getRevenueSummary = async (req: AuthRequest, res: Response) => {
     // Expense breakdown by crew (salary vs other)
     const salaryExpenses = expenses.filter(e => e.crewId !== '-1').reduce((sum, e) => sum + (e.expenseAmount || 0), 0);
     const otherExpenses = expenses.filter(e => e.crewId === '-1').reduce((sum, e) => sum + (e.expenseAmount || 0), 0);
+
+    logger.info(`[${requestId}] Revenue summary retrieved`, { 
+      tenantId,
+      totalProjects,
+      totalReceived,
+      totalExpenses 
+    });
 
     return res.status(200).json({
       message: 'Revenue summary retrieved successfully',
@@ -118,16 +149,24 @@ export const getRevenueSummary = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (err: any) {
-    console.error('Get revenue summary error:', err);
+    logger.error(`[${requestId}] Error fetching revenue summary`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getProjectStatusCounts = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching project status counts`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -151,6 +190,12 @@ export const getProjectStatusCounts = async (req: AuthRequest, res: Response) =>
     // Count projects without status
     const withoutStatus = projects.filter(p => !p.projectDeliveryStatusId).length;
 
+    logger.info(`[${requestId}] Project status counts retrieved`, { 
+      tenantId,
+      totalProjects: projects.length,
+      withoutStatus 
+    });
+
     return res.status(200).json({
       message: 'Project status counts retrieved successfully',
       totalProjects: projects.length,
@@ -158,16 +203,24 @@ export const getProjectStatusCounts = async (req: AuthRequest, res: Response) =>
       withoutStatus
     });
   } catch (err: any) {
-    console.error('Get project status counts error:', err);
+    logger.error(`[${requestId}] Error fetching project status counts`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getEventStatusCounts = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching event status counts`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -191,6 +244,12 @@ export const getEventStatusCounts = async (req: AuthRequest, res: Response) => {
     // Count events without status
     const withoutStatus = clientEvents.filter(e => !e.eventDeliveryStatusId).length;
 
+    logger.info(`[${requestId}] Event status counts retrieved`, { 
+      tenantId,
+      totalEvents: clientEvents.length,
+      withoutStatus 
+    });
+
     return res.status(200).json({
       message: 'Event status counts retrieved successfully',
       totalEvents: clientEvents.length,
@@ -198,7 +257,11 @@ export const getEventStatusCounts = async (req: AuthRequest, res: Response) => {
       withoutStatus
     });
   } catch (err: any) {
-    console.error('Get event status counts error:', err);
+    logger.error(`[${requestId}] Error fetching event status counts`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

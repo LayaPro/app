@@ -1,14 +1,18 @@
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('EmailService');
 
 let sesClient: SESClient | null = null;
 
 const getSESClient = () => {
   if (!sesClient) {
-    console.log('🔍 Initializing AWS SES Client:');
-    console.log('AWS_SES_REGION:', process.env.AWS_SES_REGION);
-    console.log('AWS_ACCESS_KEY_ID:', process.env.AWS_ACCESS_KEY_ID ? '✅ Set' : '❌ Missing');
-    console.log('AWS_SECRET_ACCESS_KEY:', process.env.AWS_SECRET_ACCESS_KEY ? '✅ Set' : '❌ Missing');
-    console.log('AWS_SES_FROM_EMAIL:', process.env.AWS_SES_FROM_EMAIL);
+    logger.info('Initializing AWS SES Client', {
+      region: process.env.AWS_SES_REGION,
+      hasAccessKey: !!process.env.AWS_ACCESS_KEY_ID,
+      hasSecretKey: !!process.env.AWS_SECRET_ACCESS_KEY,
+      fromEmail: process.env.AWS_SES_FROM_EMAIL
+    });
 
     sesClient = new SESClient({
       region: process.env.AWS_SES_REGION || 'us-east-1',
@@ -36,13 +40,16 @@ export const sendEmail = async ({ to, subject, htmlBody, textBody }: SendEmailPa
   const hasAwsCredentials = process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY;
 
   if (isDevelopment && !hasAwsCredentials) {
-    console.log('📧 [DEV MODE] Email would be sent:');
-    console.log('To:', to);
-    console.log('Subject:', subject);
-    console.log('HTML Body:', htmlBody.substring(0, 200) + '...');
-    console.log('✅ Email logged in development mode (AWS credentials not configured)');
+    logger.info('[DEV MODE] Email would be sent', {
+      to,
+      subject,
+      bodyPreview: htmlBody.substring(0, 100) + '...',
+      mode: 'development'
+    });
     return;
   }
+
+  logger.info('Sending email', { to, subject });
 
   const params = {
     Source: FROM_EMAIL,
@@ -72,11 +79,12 @@ export const sendEmail = async ({ to, subject, htmlBody, textBody }: SendEmailPa
   try {
     const command = new SendEmailCommand(params);
     await getSESClient().send(command);
-    console.log(`✅ Email sent successfully to ${to}`);
+    logger.info('Email sent successfully', { to, subject });
   } catch (error: any) {
-    console.error('❌ Error sending email:', error);
-    console.error('Error details:', {
-      message: error.message,
+    logger.error('Error sending email', {
+      to,
+      subject,
+      error: error.message,
       code: error.code,
       statusCode: error.$metadata?.httpStatusCode,
       requestId: error.$metadata?.requestId

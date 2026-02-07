@@ -5,6 +5,9 @@ import { Event } from '../models/event';
 import Team from '../models/team';
 import { NotificationService } from './notificationService';
 import { sendNotificationToUsers } from './socketService';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('NotificationUtils');
 
 export const NOTIFICATION_TYPES = {
   ASSIGN_EDITOR_NEEDED: 'ASSIGN_EDITOR_NEEDED',
@@ -40,7 +43,7 @@ export class NotificationUtils {
       });
       
       if (!adminRole) {
-        console.error('Admin role not found');
+        logger.warn('Admin role not found', { tenantId });
         return [];
       }
 
@@ -51,9 +54,10 @@ export class NotificationUtils {
         isActive: true,
       });
 
+      logger.debug('Retrieved admin users', { tenantId, count: adminUsers.length });
       return adminUsers;
-    } catch (error) {
-      console.error('Error fetching admin users:', error);
+    } catch (error: any) {
+      logger.error('Error fetching admin users', { tenantId, error: error.message });
       return [];
     }
   }
@@ -66,9 +70,12 @@ export class NotificationUtils {
     projectName: string
   ): Promise<void> {
     try {
+      const tenantId = event.tenantId;
+      const eventId = event.clientEventId;
+      
       // Check if editor is already assigned
       if (event.albumEditor) {
-        console.log('Editor already assigned, skipping notification');
+        logger.debug('Editor already assigned, skipping notification', { tenantId, eventId });
         return;
       }
 
@@ -77,10 +84,10 @@ export class NotificationUtils {
       const eventName = eventData?.eventDesc || 'event';
 
       // Get all admin users for this tenant
-      const adminUsers = await this.getAdminUsers(event.tenantId);
+      const adminUsers = await this.getAdminUsers(tenantId);
 
       if (adminUsers.length === 0) {
-        console.log('No admin users found for tenant:', event.tenantId);
+        logger.warn('No admin users found for tenant', { tenantId, eventId });
         return;
       }
 
@@ -89,24 +96,31 @@ export class NotificationUtils {
       // Create notification (already sends via Socket.io)
       await NotificationService.create({
         userId: userIds,
-        tenantId: event.tenantId,
+        tenantId,
         type: NOTIFICATION_TYPES.ASSIGN_EDITOR_NEEDED,
         title: 'Editor Assignment Required',
         message: `Please assign an editor to ${eventName} in project ${projectName}`,
         data: {
-          eventId: event.clientEventId,
+          eventId,
           projectId: event.projectId,
-          eventName: eventName,
+          eventName,
           projectName,
         },
         actionUrl: `/projects`,
       });
 
-      console.log(
-        `Notification sent to ${userIds.length} admins for event ${event.clientEventId}`
-      );
-    } catch (error) {
-      console.error('Error sending assign editor notification:', error);
+      logger.info('Sent editor assignment notification', {
+        tenantId,
+        eventId,
+        projectName,
+        recipientCount: userIds.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending assign editor notification', {
+        tenantId: event.tenantId,
+        eventId: event.clientEventId,
+        error: error.message
+      });
     }
   }
 
@@ -118,9 +132,12 @@ export class NotificationUtils {
     projectName: string
   ): Promise<void> {
     try {
+      const tenantId = event.tenantId;
+      const eventId = event.clientEventId;
+      
       // Check if designer is already assigned
       if (event.albumDesigner) {
-        console.log('Designer already assigned, skipping notification');
+        logger.debug('Designer already assigned, skipping notification', { tenantId, eventId });
         return;
       }
 
@@ -129,10 +146,10 @@ export class NotificationUtils {
       const eventName = eventData?.eventDesc || 'event';
 
       // Get all admin users for this tenant
-      const adminUsers = await this.getAdminUsers(event.tenantId);
+      const adminUsers = await this.getAdminUsers(tenantId);
 
       if (adminUsers.length === 0) {
-        console.log('No admin users found for tenant:', event.tenantId);
+        logger.warn('No admin users found for tenant', { tenantId, eventId });
         return;
       }
 
@@ -141,24 +158,31 @@ export class NotificationUtils {
       // Create notification (already sends via Socket.io)
       await NotificationService.create({
         userId: userIds,
-        tenantId: event.tenantId,
+        tenantId,
         type: NOTIFICATION_TYPES.ASSIGN_DESIGNER_NEEDED,
         title: 'Designer Assignment Required',
         message: `Please assign a designer to ${eventName} in project ${projectName}`,
         data: {
-          eventId: event.clientEventId,
+          eventId,
           projectId: event.projectId,
-          eventName: eventName,
+          eventName,
           projectName,
         },
         actionUrl: `/projects`,
       });
 
-      console.log(
-        `Notification sent to ${userIds.length} admins for event ${event.clientEventId}`
-      );
-    } catch (error) {
-      console.error('Error sending assign designer notification:', error);
+      logger.info('Sent designer assignment notification', {
+        tenantId,
+        eventId,
+        projectName,
+        recipientCount: userIds.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending assign designer notification', {
+        tenantId: event.tenantId,
+        eventId: event.clientEventId,
+        error: error.message
+      });
     }
   }
 
@@ -194,8 +218,20 @@ export class NotificationUtils {
         },
         actionUrl: `/events`,
       });
-    } catch (error) {
-      console.error('Error sending assignment notification:', error);
+
+      logger.info('Sent user assignment notification', {
+        tenantId,
+        userId,
+        role,
+        eventName,
+        projectName
+      });
+    } catch (error: any) {
+      logger.error('Error sending assignment notification', {
+        tenantId,
+        userId,
+        error: error.message
+      });
     }
   }
 
@@ -211,7 +247,14 @@ export class NotificationUtils {
     adminName: string
   ): Promise<void> {
     try {
-      console.log(`[notifyImagesApproved] Admin ${adminName} approved ${imageCount} images in ${eventName}`);
+      logger.info('Sending images approved notification', {
+        tenantId,
+        editorUserId,
+        projectName,
+        eventName,
+        imageCount,
+        adminName
+      });
       
       // Create notification for the specific editor
       await NotificationService.create({
@@ -228,8 +271,12 @@ export class NotificationUtils {
         },
         actionUrl: `/albums`,
       });
-    } catch (error) {
-      console.error('Error sending images approved notification:', error);
+    } catch (error: any) {
+      logger.error('Error sending images approved notification', {
+        tenantId,
+        editorUserId,
+        error: error.message
+      });
     }
   }
 
@@ -245,7 +292,14 @@ export class NotificationUtils {
     adminName: string
   ): Promise<void> {
     try {
-      console.log(`[notifyReEditRequested] Admin ${adminName} requested re-edit for ${imageCount} images in ${eventName}`);
+      logger.info('Sending re-edit requested notification', {
+        tenantId,
+        editorUserId,
+        projectName,
+        eventName,
+        imageCount,
+        adminName
+      });
       
       // Create notification for the specific editor
       await NotificationService.create({
@@ -262,8 +316,12 @@ export class NotificationUtils {
         },
         actionUrl: `/albums`,
       });
-    } catch (error) {
-      console.error('Error sending re-edit requested notification:', error);
+    } catch (error: any) {
+      logger.error('Error sending re-edit requested notification', {
+        tenantId,
+        editorUserId,
+        error: error.message
+      });
     }
   }
 
@@ -279,7 +337,14 @@ export class NotificationUtils {
     excludeUserId?: string
   ): Promise<void> {
     try {
-      console.log(`[notifyImagesUploaded] Editor ${editorName} uploaded ${imageCount} images for ${eventName} in ${projectName}`);
+      logger.info('Sending images uploaded notification', {
+        tenantId,
+        editorName,
+        projectName,
+        eventName,
+        imageCount,
+        excludeUserId
+      });
       
       // Get all admin users for this tenant
       let adminUsers = await this.getAdminUsers(tenantId);
@@ -290,7 +355,7 @@ export class NotificationUtils {
       }
 
       if (adminUsers.length === 0) {
-        console.log('No other admin users to notify for image upload (excluding self)');
+        logger.debug('No other admin users to notify for image upload', { tenantId, excludeUserId });
         return;
       }
 
@@ -311,8 +376,16 @@ export class NotificationUtils {
         },
         actionUrl: `/events`,
       });
-    } catch (error) {
-      console.error('Error sending images uploaded notification:', error);
+
+      logger.info('Sent images uploaded notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending images uploaded notification', {
+        tenantId,
+        error: error.message
+      });
     }
   }
 
@@ -324,45 +397,56 @@ export class NotificationUtils {
     projectName: string
   ): Promise<void> {
     try {
-      console.log(`[notifyShootInProgress] Called for event ${event.clientEventId}`);
+      const tenantId = event.tenantId;
+      const eventId = event.clientEventId;
+      
+      logger.info('Sending shoot in progress notification', {
+        tenantId,
+        eventId,
+        projectName
+      });
       
       // Get event name from Event model
       const eventData = await Event.findOne({ eventId: event.eventId });
       const eventName = eventData?.eventDesc || 'event';
 
       // Get all admin users for this tenant
-      const adminUsers = await this.getAdminUsers(event.tenantId);
+      const adminUsers = await this.getAdminUsers(tenantId);
 
       if (adminUsers.length === 0) {
-        console.log('No admin users found for tenant:', event.tenantId);
+        logger.warn('No admin users found for tenant', { tenantId, eventId });
         return;
       }
 
       const userIds = adminUsers.map((user) => user.userId);
-      console.log(`[notifyShootInProgress] Creating notification for ${userIds.length} admins:`, userIds);
 
       // Create notification (already sends via Socket.io)
       const notification = await NotificationService.create({
         userId: userIds,
-        tenantId: event.tenantId,
+        tenantId,
         type: NOTIFICATION_TYPES.SHOOT_IN_PROGRESS,
         title: 'Shoot Started',
         message: `${eventName} shoot is now in progress for project ${projectName}`,
         data: {
-          eventId: event.clientEventId,
+          eventId,
           projectId: event.projectId,
-          eventName: eventName,
+          eventName,
           projectName,
         },
         actionUrl: `/projects`,
       });
 
-      console.log(`[notifyShootInProgress] Created ${notification.length} notification records`);
-      console.log(
-        `Shoot in progress notification sent to ${userIds.length} admins for event ${event.clientEventId}`
-      );
-    } catch (error) {
-      console.error('Error sending shoot in progress notification:', error);
+      logger.info('Sent shoot in progress notifications', {
+        tenantId,
+        eventId,
+        recipientCount: notification.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending shoot in progress notification', {
+        tenantId: event.tenantId,
+        eventId: event.clientEventId,
+        error: error.message
+      });
     }
   }
 
@@ -377,11 +461,19 @@ export class NotificationUtils {
     imageCount: number
   ): Promise<void> {
     try {
+      logger.info('Sending re-edit completed notification', {
+        tenantId,
+        editorName,
+        projectName,
+        eventName,
+        imageCount
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for re-edit completion');
+        logger.warn('No admin users found for re-edit completion notification', { tenantId });
         return;
       }
 
@@ -396,9 +488,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent re-edit completion notifications to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending re-edit completion notification:', error);
+      logger.info('Sent re-edit completion notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending re-edit completion notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -413,11 +511,18 @@ export class NotificationUtils {
     eventName: string
   ): Promise<void> {
     try {
+      logger.info('Sending client selection started notification', {
+        tenantId,
+        clientName,
+        projectName,
+        eventName
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for client selection');
+        logger.warn('No admin users found for client selection notification', { tenantId });
         return;
       }
 
@@ -432,9 +537,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent client selection started notifications to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending client selection started notification:', error);
+      logger.info('Sent client selection started notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending client selection started notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -451,11 +562,20 @@ export class NotificationUtils {
     totalCount: number
   ): Promise<void> {
     try {
+      logger.info('Sending 50% selection notification', {
+        tenantId,
+        clientName,
+        projectName,
+        eventName,
+        selectedCount,
+        totalCount
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for 50% selection');
+        logger.warn('No admin users found for 50% selection notification', { tenantId });
         return;
       }
 
@@ -470,9 +590,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent 50% selection notifications to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending 50% selection notification:', error);
+      logger.info('Sent 50% selection notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending 50% selection notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -488,11 +614,19 @@ export class NotificationUtils {
     totalCount: number
   ): Promise<void> {
     try {
+      logger.info('Sending 100% selection notification', {
+        tenantId,
+        clientName,
+        projectName,
+        eventName,
+        totalCount
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for 100% selection');
+        logger.warn('No admin users found for 100% selection notification', { tenantId });
         return;
       }
 
@@ -507,9 +641,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent 100% selection notifications to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending 100% selection notification:', error);
+      logger.info('Sent 100% selection notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending 100% selection notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -525,11 +665,19 @@ export class NotificationUtils {
     selectedCount: number
   ): Promise<void> {
     try {
+      logger.info('Sending selection finalized notification', {
+        tenantId,
+        clientName,
+        projectName,
+        eventName,
+        selectedCount
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for selection finalized');
+        logger.warn('No admin users found for selection finalized notification', { tenantId });
         return;
       }
 
@@ -544,9 +692,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent selection finalized notifications to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending selection finalized notification:', error);
+      logger.info('Sent selection finalized notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending selection finalized notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -561,11 +715,18 @@ export class NotificationUtils {
     selectedCount: number
   ): Promise<void> {
     try {
+      logger.info('Sending assign designer reminder notification', {
+        tenantId,
+        projectName,
+        eventName,
+        selectedCount
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for designer assignment');
+        logger.warn('No admin users found for designer assignment notification', { tenantId });
         return;
       }
 
@@ -580,9 +741,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent designer assignment reminder to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending designer assignment notification:', error);
+      logger.info('Sent designer assignment reminder notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending designer assignment notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -599,6 +766,15 @@ export class NotificationUtils {
     excludeUserId?: string
   ): Promise<void> {
     try {
+      logger.info('Sending album PDF uploaded notification', {
+        tenantId,
+        designerName,
+        projectName,
+        eventNames,
+        pdfCount,
+        excludeUserId
+      });
+      
       // Get all admin users
       let adminUsers = await this.getAdminUsers(tenantId);
       
@@ -608,7 +784,7 @@ export class NotificationUtils {
       }
       
       if (adminUsers.length === 0) {
-        console.log('No other admin users to notify for album PDF upload (excluding self)');
+        logger.debug('No other admin users to notify for album PDF upload', { tenantId, excludeUserId });
         return;
       }
 
@@ -623,9 +799,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent album PDF upload notifications to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending album PDF upload notification:', error);
+      logger.info('Sent album PDF upload notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending album PDF upload notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -640,11 +822,18 @@ export class NotificationUtils {
     eventName: string
   ): Promise<void> {
     try {
+      logger.info('Sending customer album review started notification', {
+        tenantId,
+        clientName,
+        projectName,
+        eventName
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
       if (adminUsers.length === 0) {
-        console.warn('No admin users found to notify for album review');
+        logger.warn('No admin users found for album review notification', { tenantId });
         return;
       }
 
@@ -659,9 +848,15 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent album review notifications to ${adminUsers.length} admin(s)`);
-    } catch (error) {
-      console.error('Error sending album review notification:', error);
+      logger.info('Sent customer album review notifications', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending album review notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }
@@ -677,6 +872,14 @@ export class NotificationUtils {
     designerMemberId?: string
   ): Promise<void> {
     try {
+      logger.info('Sending album approved by customer notification', {
+        tenantId,
+        clientName,
+        projectName,
+        eventName,
+        designerMemberId
+      });
+      
       // Get all admin users
       const adminUsers = await this.getAdminUsers(tenantId);
       
@@ -691,7 +894,10 @@ export class NotificationUtils {
         });
       }
 
-      console.log(`✓ Sent album approval notifications to ${adminUsers.length} admin(s)`);
+      logger.info('Sent album approval notifications to admins', {
+        tenantId,
+        recipientCount: adminUsers.length
+      });
 
       // Notify the designer if assigned
       if (designerMemberId) {
@@ -704,11 +910,18 @@ export class NotificationUtils {
             title: 'Album Approved by Customer',
             message: `${clientName} has approved the album for ${eventName} in ${projectName}`,
           });
-          console.log(`✓ Sent album approval notification to designer`);
+          
+          logger.info('Sent album approval notification to designer', {
+            tenantId,
+            designerUserId: designerMember.userId
+          });
         }
       }
-    } catch (error) {
-      console.error('Error sending album approval notification:', error);
+    } catch (error: any) {
+      logger.error('Error sending album approval notification', {
+        tenantId,
+        error: error.message
+      });
       throw error;
     }
   }

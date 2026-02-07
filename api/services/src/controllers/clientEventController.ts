@@ -12,6 +12,10 @@ import { uploadToS3, deleteFromS3 } from '../utils/s3';
 import { getMainBucketName } from '../utils/s3Bucket';
 import { AuthRequest } from '../middleware/auth';
 import { NotificationUtils } from '../services/notificationUtils';
+import { createModuleLogger } from '../utils/logger';
+import { logAudit, auditEvents } from '../utils/auditLogger';
+
+const logger = createModuleLogger('ClientEventController');
 
 const sanitizeSegment = (value: string) =>
   value
@@ -37,12 +41,12 @@ const sanitizePdfName = (fileName: string) => {
  */
 const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) => {
   try {
-    console.log(`[CheckProjectStatus] Starting check for project ${projectId}`);
+    logger.info('Checking project status for completion', { projectId, tenantId });
     
     // Get all events for this project
     const allEvents = await ClientEvent.find({ projectId, tenantId });
     
-    console.log(`[CheckProjectStatus] Found ${allEvents.length} events for project ${projectId}`);
+    logger.info('Found events for project', { projectId, tenantId, count: allEvents.length });
     
     if (allEvents.length === 0) {
       return; // No events, nothing to check
@@ -55,26 +59,21 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
     });
 
     if (!deliveryStatus) {
-      console.log('[CheckProjectStatus] DELIVERY status not found');
+      logger.warn('DELIVERY status not found', { tenantId });
       return;
     }
 
-    console.log(`[CheckProjectStatus] DELIVERY status found: ${deliveryStatus.statusId}`);
-
-    // Log each event's status
-    allEvents.forEach((event, index) => {
-      console.log(`[CheckProjectStatus] Event ${index + 1} (${event.clientEventId}): statusId = ${event.eventDeliveryStatusId}`);
-    });
+    logger.info('DELIVERY status found', { tenantId, statusId: deliveryStatus.statusId });
 
     // Check if ALL events are in DELIVERY status
     const allEventsDelivered = allEvents.every(
       event => event.eventDeliveryStatusId === deliveryStatus.statusId
     );
 
-    console.log(`[CheckProjectStatus] All events delivered? ${allEventsDelivered}`);
+    logger.info('All events delivery check result', { projectId, tenantId, allEventsDelivered });
 
     if (allEventsDelivered) {
-      console.log(`[CheckProjectStatus] All events delivered for project ${projectId}, updating to Delivered`);
+      logger.info('All events delivered, updating project to Delivered', { projectId, tenantId });
       
       // Get Delivered project status
       const completedStatus = await ProjectDeliveryStatus.findOne({
@@ -88,47 +87,62 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
           { $set: { projectDeliveryStatusId: completedStatus.statusId } },
           { new: true }
         );
-        console.log(`[CheckProjectStatus] Project ${projectId} status updated to Delivered. New status: ${result?.projectDeliveryStatusId}`);
+        logger.info('Project status updated to Delivered', { 
+          projectId, 
+          tenantId,
+          newStatus: result?.projectDeliveryStatusId 
+        });
       } else {
-        console.log('[CheckProjectStatus] Delivered project status not found in database');
+        logger.warn('Delivered project status not found in database', { tenantId });
       }
     } else {
-      console.log(`[CheckProjectStatus] Not all events are delivered yet`);
+      logger.info('Not all events are delivered yet', { projectId, tenantId });
     }
-  } catch (error) {
-    console.error('[CheckProjectStatus] Error checking project status:', error);
+  } catch (error: any) {
+    logger.error('Error checking project status', { 
+      projectId,
+      tenantId,
+      error: error.message,
+      stack: error.stack 
+    });
   }
 };
 
 export const createClientEvent = async (req: AuthRequest, res: Response) => {
-  try {
-    const {
-      eventId,
-      projectId,
-      eventDeliveryStatusId,
-      fromDatetime,
-      toDatetime,
-      venue,
-      venueMapUrl,
-      city,
-      teamMembersAssigned,
-      equipmentsAssigned,
-      expenseId,
-      coverPhoto,
-      notes
-    } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const {
+    eventId,
+    projectId,
+    eventDeliveryStatusId,
+    fromDatetime,
+    toDatetime,
+    venue,
+    venueMapUrl,
+    city,
+    teamMembersAssigned,
+    equipmentsAssigned,
+    expenseId,
+    coverPhoto,
+    notes
+  } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Creating client event`, { tenantId, eventId, projectId });
+
+  try {
     if (!eventId || !projectId) {
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId });
       return res.status(400).json({ message: 'Event ID and Project ID are required' });
     }
 
     if (!fromDatetime || !toDatetime) {
+      logger.warn(`[${requestId}] Missing datetime fields`, { tenantId });
       return res.status(400).json({ message: 'From datetime and To datetime are required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -150,6 +164,7 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
       tenantId: { $in: [tenantId, -1] }
     });
     if (!event) {
+      logger.warn(`[${requestId}] Event not found`, { tenantId, eventId });
       return res.status(404).json({ message: 'Event not found' });
     }
     
@@ -176,23 +191,46 @@ export const createClientEvent = async (req: AuthRequest, res: Response) => {
       createdBy: userId
     });
 
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'ClientEvent',
+      entityId: clientEventId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {},
+      metadata: { eventId, projectId, venue },
+      ipAddress: req.ip
+    });
+
+    logger.info(`[${requestId}] Client event created`, { tenantId, clientEventId, eventId, projectId });
+
     return res.status(201).json({
       message: 'Client event created successfully',
       clientEvent
     });
   } catch (err: any) {
-    console.error('Create client event error:', err);
+    logger.error(`[${requestId}] Error creating client event`, { 
+      tenantId,
+      eventId,
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getAllClientEvents = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const roleName = req.user?.roleName;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const roleName = req.user?.roleName;
 
+  logger.info(`[${requestId}] Fetching all client events`, { tenantId, roleName });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -229,32 +267,47 @@ export const getAllClientEvents = async (req: AuthRequest, res: Response) => {
       clientEvents = await ClientEvent.find(query).sort({ createdAt: -1 }).lean();
     }
 
+    logger.info(`[${requestId}] Client events retrieved`, { 
+      tenantId,
+      count: clientEvents.length,
+      isAdmin 
+    });
+
     return res.status(200).json({
       message: 'Client events retrieved successfully',
       count: clientEvents.length,
       clientEvents
     });
   } catch (err: any) {
-    console.error('Get all client events error:', err);
+    logger.error(`[${requestId}] Error fetching client events`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getClientEventById = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId } = req.params;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const roleName = req.user?.roleName;
+  const requestId = nanoid(8);
+  const { clientEventId } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const roleName = req.user?.roleName;
 
+  logger.info(`[${requestId}] Fetching client event by ID`, { tenantId, clientEventId });
+
+  try {
     const clientEvent = await ClientEvent.findOne({ clientEventId });
 
     if (!clientEvent) {
+      logger.warn(`[${requestId}] Client event not found`, { tenantId, clientEventId });
       return res.status(404).json({ message: 'Client event not found' });
     }
 
     // Check authorization: all users can only access their own tenant's events
     if (clientEvent.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied - tenant mismatch`, { tenantId, clientEventId });
       return res.status(403).json({ message: 'Access denied. You can only view your own tenant client events.' });
     }
 
@@ -269,25 +322,36 @@ export const getClientEventById = async (req: AuthRequest, res: Response) => {
       const isDesigner = clientEvent.albumDesigner === userId || clientEvent.albumDesigner === memberId;
       
       if (!isTeamMember && !isEditor && !isDesigner) {
+        logger.warn(`[${requestId}] Access denied - not assigned`, { tenantId, clientEventId, userId });
         return res.status(403).json({ message: 'Access denied. You can only view events you are assigned to.' });
       }
     }
 
+    logger.info(`[${requestId}] Client event retrieved`, { tenantId, clientEventId });
+
     return res.status(200).json({ clientEvent });
   } catch (err: any) {
-    console.error('Get client event error:', err);
+    logger.error(`[${requestId}] Error fetching client event`, { 
+      tenantId,
+      clientEventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const updateClientEvent = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId } = req.params;
-    const updates = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const roleName = req.user?.roleName;
+  const requestId = nanoid(8);
+  const { clientEventId } = req.params;
+  const updates = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const roleName = req.user?.roleName;
 
+  logger.info(`[${requestId}] Updating client event`, { tenantId, clientEventId });
+
+  try {
     // Don't allow updating clientEventId or tenantId
     delete updates.clientEventId;
     delete updates.tenantId;
@@ -295,11 +359,13 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
     const clientEvent = await ClientEvent.findOne({ clientEventId });
 
     if (!clientEvent) {
+      logger.warn(`[${requestId}] Client event not found`, { tenantId, clientEventId });
       return res.status(404).json({ message: 'Client event not found' });
     }
 
     // Check authorization
     if (clientEvent.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied - tenant mismatch`, { tenantId, clientEventId });
       return res.status(403).json({ message: 'Access denied. You can only update your own tenant client events.' });
     }
 
@@ -313,6 +379,12 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
       const hasUnauthorizedFields = updateKeys.some(key => !allowedFields.includes(key));
 
       if (hasUnauthorizedFields) {
+        logger.warn(`[${requestId}] Access denied - unauthorized fields`, { 
+          tenantId,
+          clientEventId,
+          userId,
+          attemptedFields: updateKeys 
+        });
         return res.status(403).json({ 
           message: 'Access denied. You can only update the delivery status. Other fields require admin access.' 
         });
@@ -403,10 +475,11 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
 
       // Check for status changes
       if (updates.eventDeliveryStatusId && oldStatusId !== updates.eventDeliveryStatusId) {
-        console.log('[Status Change] Detected status change:', {
+        logger.info('Status change detected', {
+          tenantId,
+          clientEventId: updatedClientEvent.clientEventId,
           oldStatusId,
-          newStatusId: updates.eventDeliveryStatusId,
-          eventId: updatedClientEvent.clientEventId
+          newStatusId: updates.eventDeliveryStatusId
         });
 
         const [oldStatus, newStatus] = await Promise.all([
@@ -414,14 +487,16 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
           EventDeliveryStatus.findOne({ statusId: updatedClientEvent.eventDeliveryStatusId })
         ]);
 
-        console.log('[Status Change] Status codes:', {
+        logger.info('Status codes', {
+          tenantId,
+          clientEventId: updatedClientEvent.clientEventId,
           oldStatusCode: oldStatus?.statusCode,
           newStatusCode: newStatus?.statusCode
         });
 
         // If status changed from SCHEDULED to SHOOT_IN_PROGRESS, notify admins
         if (oldStatus?.statusCode === 'SCHEDULED' && newStatus?.statusCode === 'SHOOT_IN_PROGRESS') {
-          console.log('[Status Change - Controller] Triggering shoot in progress notification');
+          logger.info('Triggering shoot in progress notification', { tenantId, clientEventId });
           await NotificationUtils.notifyShootInProgress(
             updatedClientEvent,
             projectName
@@ -430,7 +505,7 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
 
         // If status is AWAITING_EDITING and no editor assigned, notify admins
         if (newStatus?.statusCode === 'AWAITING_EDITING' && !updatedClientEvent.albumEditor) {
-          console.log('[Status Change] Triggering awaiting editing notification');
+          logger.info('Triggering awaiting editing notification', { tenantId, clientEventId });
           await NotificationUtils.notifyAssignEditorNeeded(
             updatedClientEvent,
             projectName
@@ -444,52 +519,98 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'ClientEvent',
+      entityId: clientEventId,
+      tenantId: tenantId!,
+      performedBy: userId || 'System',
+      changes: updates,
+      metadata: { projectId: clientEvent.projectId },
+      ipAddress: req.ip
+    });
+
+    logger.info(`[${requestId}] Client event updated`, { tenantId, clientEventId });
+
     return res.status(200).json({
       message: 'Client event updated successfully',
       clientEvent: updatedClientEvent
     });
   } catch (err: any) {
-    console.error('Update client event error:', err);
+    logger.error(`[${requestId}] Error updating client event`, { 
+      tenantId,
+      clientEventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const deleteClientEvent = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { clientEventId } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Deleting client event`, { tenantId, clientEventId });
+
+  try {
     const clientEvent = await ClientEvent.findOne({ clientEventId });
 
     if (!clientEvent) {
+      logger.warn(`[${requestId}] Client event not found`, { tenantId, clientEventId });
       return res.status(404).json({ message: 'Client event not found' });
     }
 
     // Check authorization
     if (clientEvent.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, clientEventId });
       return res.status(403).json({ message: 'Access denied. You can only delete your own tenant client events.' });
     }
 
     await ClientEvent.deleteOne({ clientEventId });
+
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'ClientEvent',
+      entityId: clientEventId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {},
+      metadata: { deleted: true, projectId: clientEvent.projectId },
+      ipAddress: req.ip
+    });
+
+    logger.info(`[${requestId}] Client event deleted`, { tenantId, clientEventId });
 
     return res.status(200).json({
       message: 'Client event deleted successfully',
       clientEventId
     });
   } catch (err: any) {
-    console.error('Delete client event error:', err);
+    logger.error(`[${requestId}] Error deleting client event`, { 
+      tenantId,
+      clientEventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getClientEventsByProject = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const roleName = req.user?.roleName;
+  const requestId = nanoid(8);
+  const { projectId } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const roleName = req.user?.roleName;
 
+  logger.info(`[${requestId}] Fetching client events by project`, { tenantId, projectId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -504,6 +625,7 @@ export const getClientEventsByProject = async (req: AuthRequest, res: Response) 
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
       if (!teamMember) {
         // User is not a team member
+        logger.info(`[${requestId}] User not a team member`, { tenantId, userId, projectId });
         return res.status(200).json({
           message: 'Client events retrieved successfully',
           count: 0,
@@ -519,28 +641,45 @@ export const getClientEventsByProject = async (req: AuthRequest, res: Response) 
       }).sort({ fromDatetime: 1 }).lean();
     }
 
+    logger.info(`[${requestId}] Client events by project retrieved`, { 
+      tenantId,
+      projectId,
+      count: clientEvents.length,
+      isAdmin 
+    });
+
     return res.status(200).json({
       message: 'Client events retrieved successfully',
       count: clientEvents.length,
       clientEvents
     });
   } catch (err: any) {
-    console.error('Get client events by project error:', err);
+    logger.error(`[${requestId}] Error fetching client events by project`, { 
+      tenantId,
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId, clientEventId, clientEventIds } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { projectId, clientEventId, clientEventIds } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Uploading album PDF`, { tenantId, projectId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     if (!projectId) {
+      logger.warn(`[${requestId}] Project ID missing`, { tenantId });
       return res.status(400).json({ message: 'Project ID is required' });
     }
 
@@ -568,15 +707,18 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
     targetEventIds = Array.from(new Set(targetEventIds.filter((id) => typeof id === 'string' && id.trim() !== '')));
 
     if (targetEventIds.length === 0) {
+      logger.warn(`[${requestId}] No valid event IDs provided`, { tenantId, projectId });
       return res.status(400).json({ message: 'At least one client event ID is required' });
     }
 
     const file = req.file;
     if (!file) {
+      logger.warn(`[${requestId}] No file uploaded`, { tenantId, projectId });
       return res.status(400).json({ message: 'Album PDF file is required' });
     }
 
     if (file.mimetype !== 'application/pdf') {
+      logger.warn(`[${requestId}] Invalid file type`, { tenantId, projectId, mimetype: file.mimetype });
       return res.status(400).json({ message: 'Only PDF files are allowed for album uploads' });
     }
 
@@ -584,16 +726,19 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
     if (clientEvents.length !== targetEventIds.length) {
       const foundIds = clientEvents.map((evt) => evt.clientEventId);
       const missing = targetEventIds.filter((id) => !foundIds.includes(id));
+      logger.warn(`[${requestId}] Some events not found`, { tenantId, projectId, missing });
       return res.status(404).json({ message: `Client events not found: ${missing.join(', ')}` });
     }
 
     const hasMismatchedProject = clientEvents.some((evt) => evt.projectId !== projectId);
     if (hasMismatchedProject) {
+      logger.warn(`[${requestId}] Event project mismatch`, { tenantId, projectId });
       return res.status(400).json({ message: 'One or more client events do not belong to the specified project' });
     }
 
     const project = await Project.findOne({ projectId, tenantId });
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { tenantId, projectId });
       return res.status(404).json({ message: 'Project not found' });
     }
 
@@ -629,8 +774,13 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
         await deleteFromS3(existingPdf.albumPdfUrl);
         await AlbumPdf.deleteOne({ _id: existingPdf._id });
         deletedCount++;
-      } catch (deleteError) {
-        console.error('Failed to delete existing PDF:', deleteError);
+      } catch (deleteError: any) {
+        logger.error(`[${requestId}] Failed to delete existing PDF`, { 
+          tenantId,
+          projectId,
+          pdfId: existingPdf.albumId,
+          error: deleteError.message 
+        });
         // Continue - we'll still create the new PDF
       }
     }
@@ -690,42 +840,66 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
         1,
         userId
       );
-    } catch (notifError) {
-      console.error('Failed to send album PDF upload notification:', notifError);
+    } catch (notifError: any) {
+      logger.error(`[${requestId}] Failed to send album PDF upload notification`, { 
+        tenantId,
+        projectId,
+        error: notifError.message 
+      });
       // Don't fail the request if notification fails
     }
+
+    logger.info(`[${requestId}] Album PDF uploaded`, { 
+      tenantId,
+      projectId,
+      albumId: albumPdf.albumId,
+      deletedCount,
+      eventsCount: targetEventIds.length 
+    });
 
     return res.status(200).json({
       message: deletedCount > 0 ? `Replaced ${deletedCount} existing PDF${deletedCount > 1 ? 's' : ''}` : 'Album PDF uploaded successfully',
       albumPdf: albumPdf.toObject(),
       deletedCount
     });
-  } catch (err) {
-    console.error('Upload album PDF error:', err);
+  } catch (err: any) {
+    logger.error(`[${requestId}] Failed to upload album PDF`, { 
+      tenantId,
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Failed to upload album PDF' });
   }
 };
 
 export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId, mappings } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const files = req.files as Express.Multer.File[];
+  const requestId = nanoid(8);
+  const { projectId, mappings } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const files = req.files as Express.Multer.File[];
 
+  logger.info(`[${requestId}] Batch uploading album PDFs`, { tenantId, projectId, filesCount: files?.length });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     if (!projectId) {
+      logger.warn(`[${requestId}] Project ID missing`, { tenantId });
       return res.status(400).json({ message: 'Project ID is required' });
     }
 
     if (!files || files.length === 0) {
+      logger.warn(`[${requestId}] No files uploaded`, { tenantId, projectId });
       return res.status(400).json({ message: 'At least one PDF file is required' });
     }
 
     if (!mappings) {
+      logger.warn(`[${requestId}] Mappings missing`, { tenantId, projectId });
       return res.status(400).json({ message: 'Mappings are required' });
     }
 
@@ -733,20 +907,34 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
     try {
       parsedMappings = JSON.parse(mappings);
     } catch (err) {
+      logger.warn(`[${requestId}] Invalid mappings format`, { tenantId, projectId });
       return res.status(400).json({ message: 'Invalid mappings format' });
     }
 
     if (!Array.isArray(parsedMappings) || parsedMappings.length === 0) {
+      logger.warn(`[${requestId}] Mappings must be non-empty array`, { tenantId, projectId });
       return res.status(400).json({ message: 'Mappings must be a non-empty array' });
     }
 
     if (files.length !== parsedMappings.length) {
+      logger.warn(`[${requestId}] Files and mappings count mismatch`, { 
+        tenantId,
+        projectId,
+        filesCount: files.length,
+        mappingsCount: parsedMappings.length 
+      });
       return res.status(400).json({ message: 'Number of files must match number of mappings' });
     }
 
     // Validate all files are PDFs
     for (const file of files) {
       if (file.mimetype !== 'application/pdf') {
+        logger.warn(`[${requestId}] Non-PDF file detected`, { 
+          tenantId,
+          projectId,
+          fileName: file.originalname,
+          mimetype: file.mimetype 
+        });
         return res.status(400).json({ message: `File ${file.originalname} is not a PDF` });
       }
     }
@@ -763,16 +951,19 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
     if (clientEvents.length !== uniqueEventIds.length) {
       const foundIds = clientEvents.map((evt) => evt.clientEventId);
       const missing = uniqueEventIds.filter((id: string) => !foundIds.includes(id));
+      logger.warn(`[${requestId}] Some events not found in batch`, { tenantId, projectId, missing });
       return res.status(404).json({ message: `Client events not found: ${missing.join(', ')}` });
     }
 
     const hasMismatchedProject = clientEvents.some((evt) => evt.projectId !== projectId);
     if (hasMismatchedProject) {
+      logger.warn(`[${requestId}] Event project mismatch in batch`, { tenantId, projectId });
       return res.status(400).json({ message: 'One or more client events do not belong to the specified project' });
     }
 
     const project = await Project.findOne({ projectId, tenantId });
     if (!project) {
+      logger.warn(`[${requestId}] Project not found for batch upload`, { tenantId, projectId });
       return res.status(404).json({ message: 'Project not found' });
     }
 
@@ -787,8 +978,13 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
         await deleteFromS3(existingPdf.albumPdfUrl);
         await AlbumPdf.deleteOne({ _id: existingPdf._id });
         deletedCount++;
-      } catch (deleteError) {
-        console.error('Failed to delete existing PDF:', deleteError);
+      } catch (deleteError: any) {
+        logger.error(`[${requestId}] Failed to delete existing PDF in batch`, { 
+          tenantId,
+          projectId,
+          pdfId: existingPdf.albumId,
+          error: deleteError.message 
+        });
       }
     }
 
@@ -879,30 +1075,50 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
           createdPdfs.length,
           userId
         );
-      } catch (notifError) {
-        console.error('Failed to send album PDF upload notification:', notifError);
+      } catch (notifError: any) {
+        logger.error(`[${requestId}] Failed to send batch album PDF upload notification`, { 
+          tenantId,
+          projectId,
+          error: notifError.message 
+        });
         // Don't fail the request if notification fails
       }
     }
+
+    logger.info(`[${requestId}] Batch album PDFs uploaded`, { 
+      tenantId,
+      projectId,
+      uploadedCount: createdPdfs.length,
+      deletedCount 
+    });
 
     return res.status(200).json({
       message: `Successfully uploaded ${createdPdfs.length} PDF${createdPdfs.length > 1 ? 's' : ''}`,
       albumPdfs: createdPdfs,
       deletedCount,
     });
-  } catch (err) {
-    console.error('Batch upload album PDF error:', err);
+  } catch (err: any) {
+    logger.error(`[${requestId}] Batch upload album PDF error`, { 
+      tenantId,
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Failed to upload album PDFs' });
   }
 };
 
 export const approveAlbumDesign = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId } = req.body;
-    const userId = req.user?.userId;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { clientEventId } = req.body;
+  const userId = req.user?.userId;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Approving album design`, { tenantId, clientEventId });
+
+  try {
     if (!clientEventId) {
+      logger.warn(`[${requestId}] Client Event ID missing`, { tenantId });
       return res.status(400).json({ error: 'Client Event ID is required' });
     }
 
@@ -913,6 +1129,7 @@ export const approveAlbumDesign = async (req: AuthRequest, res: Response) => {
     });
 
     if (!albumPrintingStatus) {
+      logger.warn(`[${requestId}] Album Printing status not found`, { tenantId });
       return res.status(404).json({ error: 'Album Printing status not found' });
     }
 
@@ -929,15 +1146,34 @@ export const approveAlbumDesign = async (req: AuthRequest, res: Response) => {
     );
 
     if (!updatedEvent) {
+      logger.warn(`[${requestId}] Client Event not found for approval`, { tenantId, clientEventId });
       return res.status(404).json({ error: 'Client Event not found' });
     }
+
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'ClientEvent',
+      entityId: clientEventId,
+      tenantId: tenantId!,
+      performedBy: userId || 'System',
+      changes: { eventDeliveryStatusId: albumPrintingStatus.statusId, approved: true },
+      metadata: { action: 'album_design_approved' },
+      ipAddress: req.ip
+    });
+
+    logger.info(`[${requestId}] Album design approved`, { tenantId, clientEventId });
 
     res.status(200).json({ 
       message: 'Album design approved successfully, printing in progress',
       clientEvent: updatedEvent
     });
-  } catch (error) {
-    console.error('Error approving album design:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error approving album design`, { 
+      tenantId,
+      clientEventId,
+      error: error.message,
+      stack: error.stack 
+    });
     res.status(500).json({ error: 'Failed to approve album design' });
   }
 };

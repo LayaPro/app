@@ -24,16 +24,16 @@ export const createEventExpense = async (req: AuthRequest, res: Response) => {
   try {
     if (!clientEventId || !expenseAmount) {
       logger.warn(`[${requestId}] Missing required fields`, { tenantId });
+      return res.status(400).json({ message: 'Client Event ID and Expense Amount are required' });
+    }
+
+    if (!crewId) {
       logger.warn(`[${requestId}] Crew ID missing`, { tenantId });
       return res.status(400).json({ message: 'Crew ID is required. Use "-1" for non-salary expenses' });
     }
 
     if (!tenantId) {
       logger.warn(`[${requestId}] Tenant ID missing`);
-      return res.status(400).json({ message: 'Crew ID is required. Use "-1" for non-salary expenses' });
-    }
-
-    if (!tenantId) {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -47,6 +47,8 @@ export const createEventExpense = async (req: AuthRequest, res: Response) => {
       expenseAmount,
       paymentDate,
       addedBy: userId
+    });
+
     logAudit({
       action: auditEvents.TENANT_UPDATED,
       entityType: 'EventExpense',
@@ -60,6 +62,22 @@ export const createEventExpense = async (req: AuthRequest, res: Response) => {
 
     logger.info(`[${requestId}] Event expense created`, { tenantId, eventExpenseId, expenseAmount });
 
+    return res.status(201).json({
+      message: 'Event expense created successfully',
+      eventExpense
+    });
+  } catch (err: any) {
+    logger.error(`[${requestId}] Error creating event expense`, { 
+      tenantId,
+      clientEventId,
+      error: err.message,
+      stack: err.stack 
+    });
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getAllEventExpenses = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
   const tenantId = req.user?.tenantId;
 
@@ -85,20 +103,12 @@ export const createEventExpense = async (req: AuthRequest, res: Response) => {
       tenantId,
       error: err.message,
       stack: err.stack 
-    }
+    });
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
 
-export const getAllEventExpenses = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
-
-    if (!tenantId) {
-      return res.status(400).json({ message: 'Tenant ID is required' });
-    }
-
-    const eventExpenses = await EventExpense.find({ tenantId }).sort({ createdAt: -1 }).lean();
-
-    return res.status(200).json({
-      message: 'Event expenses retrieved successfully',
+export const getEventExpenseById = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
   const { eventExpenseId } = req.params;
   const tenantId = req.user?.tenantId;
@@ -122,6 +132,18 @@ export const getAllEventExpenses = async (req: AuthRequest, res: Response) => {
     logger.info(`[${requestId}] Event expense retrieved`, { tenantId, eventExpenseId });
 
     return res.status(200).json({ eventExpense });
+  } catch (err: any) {
+    logger.error(`[${requestId}] Error fetching event expense`, { 
+      tenantId,
+      eventExpenseId,
+      error: err.message,
+      stack: err.stack 
+    });
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const getEventExpensesByClientEvent = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
   const { clientEventId } = req.params;
   const tenantId = req.user?.tenantId;
@@ -149,12 +171,13 @@ export const getAllEventExpenses = async (req: AuthRequest, res: Response) => {
       clientEventId,
       error: err.message,
       stack: err.stack 
-    }
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
-exconst requestId = nanoid(8);
+export const updateEventExpense = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid(8);
   const { eventExpenseId } = req.params;
   const updates = req.body;
   const tenantId = req.user?.tenantId;
@@ -203,6 +226,18 @@ exconst requestId = nanoid(8);
       message: 'Event expense updated successfully',
       eventExpense: updatedEventExpense
     });
+  } catch (err: any) {
+    logger.error(`[${requestId}] Error updating event expense`, { 
+      tenantId,
+      eventExpenseId,
+      error: err.message,
+      stack: err.stack 
+    });
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const deleteEventExpense = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
   const { eventExpenseId } = req.params;
   const tenantId = req.user?.tenantId;
@@ -249,42 +284,7 @@ exconst requestId = nanoid(8);
       eventExpenseId,
       error: err.message,
       stack: err.stack 
-    }
-
-    return res.status(200).json({
-      message: 'Event expense updated successfully',
-      eventExpense: updatedEventExpense
     });
-  } catch (err: any) {
-    console.error('Update event expense error:', err);
-    return res.status(500).json({ message: 'Internal server error' });
-  }
-};
-
-export const deleteEventExpense = async (req: AuthRequest, res: Response) => {
-  try {
-    const { eventExpenseId } = req.params;
-    const tenantId = req.user?.tenantId;
-
-    const eventExpense = await EventExpense.findOne({ eventExpenseId });
-
-    if (!eventExpense) {
-      return res.status(404).json({ message: 'Event expense not found' });
-    }
-
-    // Check authorization
-    if (eventExpense.tenantId !== tenantId) {
-      return res.status(403).json({ message: 'Access denied. You can only delete your own tenant event expenses.' });
-    }
-
-    await EventExpense.deleteOne({ eventExpenseId });
-
-    return res.status(200).json({
-      message: 'Event expense deleted successfully',
-      eventExpenseId
-    });
-  } catch (err: any) {
-    console.error('Delete event expense error:', err);
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

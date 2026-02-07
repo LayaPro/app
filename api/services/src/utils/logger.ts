@@ -46,6 +46,16 @@ const transports = [
   }),
 ];
 
+// Specialized transport for cron jobs
+const cronJobsTransport = new winston.transports.File({
+  filename: path.join(process.cwd(), 'logs', 'cronJobs.log'),
+});
+
+// Specialized transport for images (ImageController)
+const imagesTransport = new winston.transports.File({
+  filename: path.join(process.cwd(), 'logs', 'images.log'),
+});
+
 // Create the logger
 const logger = winston.createLogger({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
@@ -56,12 +66,27 @@ const logger = winston.createLogger({
 
 // Create specialized loggers for different modules
 export const createModuleLogger = (module: string) => {
+  // Determine if this is a cron job module
+  const isCronJob = module.includes('Cron') || module.includes('Job') || module.includes('Updater') || module.includes('Checker');
+  
+  // Create module-specific logger
+  const moduleLogger = winston.createLogger({
+    level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+    levels,
+    format,
+    transports: isCronJob 
+      ? [...transports, cronJobsTransport] 
+      : module === 'ImageController' 
+        ? [...transports, imagesTransport]
+        : transports,
+  });
+
   return {
-    error: (message: string, meta?: any) => logger.error(`[${module}] ${message}`, meta),
-    warn: (message: string, meta?: any) => logger.warn(`[${module}] ${message}`, meta),
-    info: (message: string, meta?: any) => logger.info(`[${module}] ${message}`, meta),
-    http: (message: string, meta?: any) => logger.http(`[${module}] ${message}`, meta),
-    debug: (message: string, meta?: any) => logger.debug(`[${module}] ${message}`, meta),
+    error: (message: string, meta?: any) => moduleLogger.error(`[${module}] ${message}`, meta),
+    warn: (message: string, meta?: any) => moduleLogger.warn(`[${module}] ${message}`, meta),
+    info: (message: string, meta?: any) => moduleLogger.info(`[${module}] ${message}`, meta),
+    http: (message: string, meta?: any) => moduleLogger.http(`[${module}] ${message}`, meta),
+    debug: (message: string, meta?: any) => moduleLogger.debug(`[${module}] ${message}`, meta),
   };
 };
 

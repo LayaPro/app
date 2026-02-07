@@ -1,6 +1,9 @@
 import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('SocketService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
@@ -26,6 +29,7 @@ export const initializeSocketIO = (httpServer: HTTPServer) => {
     const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
 
     if (!token) {
+      logger.warn('Socket connection attempted without token');
       return next(new Error('Authentication required'));
     }
 
@@ -35,22 +39,23 @@ export const initializeSocketIO = (httpServer: HTTPServer) => {
       socket.user = decoded;
       next();
     } catch (error) {
+      logger.warn('Socket authentication failed with invalid token');
       next(new Error('Invalid token'));
     }
   });
 
   io.on('connection', (socket: AuthenticatedSocket) => {
-    console.log(`✅ User connected: ${socket.userId}`);
+    logger.info('User connected', { userId: socket.userId, tenantId: socket.user?.tenantId });
 
     // Join user-specific room
     if (socket.userId) {
       socket.join(`user:${socket.userId}`);
-      console.log(`👤 User ${socket.userId} joined their room`);
+      logger.debug('User joined room', { userId: socket.userId, room: `user:${socket.userId}` });
     }
 
     // Handle disconnection
     socket.on('disconnect', (reason) => {
-      console.log(`❌ User ${socket.userId} disconnected: ${reason}`);
+      logger.info('User disconnected', { userId: socket.userId, reason });
     });
 
     // Ping/pong for connection health
@@ -59,7 +64,11 @@ export const initializeSocketIO = (httpServer: HTTPServer) => {
     });
   });
 
-  console.log('🚀 Socket.IO server initialized');
+  logger.info('Socket.IO server initialized', {
+    cors: process.env.CLIENT_URL || 'http://localhost:5173',
+    pingTimeout: 60000,
+    pingInterval: 25000
+  });
   return io;
 };
 
@@ -73,42 +82,46 @@ export const getIO = (): Server => {
 // Send notification to specific user
 export const sendNotificationToUser = (userId: string, notification: any) => {
   if (!io) {
-    console.error('Socket.IO not initialized');
+    logger.error('Attempted to send notification but Socket.IO not initialized', { userId });
     return;
   }
 
   io.to(`user:${userId}`).emit('notification', notification);
-  console.log(`📨 Notification sent to user ${userId}:`, notification.title);
+  logger.debug('Notification sent to user', { userId, title: notification.title, type: notification.type });
 };
 
 // Send notification to multiple users
 export const sendNotificationToUsers = (userIds: string[], notification: any) => {
   if (!io) {
-    console.error('Socket.IO not initialized');
+    logger.error('Attempted to send notifications but Socket.IO not initialized', { userCount: userIds.length });
     return;
   }
 
   userIds.forEach(userId => {
     io!.to(`user:${userId}`).emit('notification', notification);
   });
-  console.log(`📨 Notification sent to ${userIds.length} users:`, notification.title);
+  logger.debug('Notification sent to multiple users', { 
+    userCount: userIds.length, 
+    title: notification.title,
+    type: notification.type 
+  });
 };
 
 // Broadcast to all connected users
 export const broadcastNotification = (notification: any) => {
   if (!io) {
-    console.error('Socket.IO not initialized');
+    logger.error('Attempted to broadcast notification but Socket.IO not initialized');
     return;
   }
 
   io.emit('notification', notification);
-  console.log(`📢 Broadcast notification:`, notification.title);
+  logger.info('Broadcast notification sent', { title: notification.title, type: notification.type });
 };
 
 // Emit event status update to tenant users
 export const emitEventStatusUpdate = (tenantId: string, eventData: any) => {
   if (!io) {
-    console.error('Socket.IO not initialized');
+    logger.error('Attempted to emit event status update but Socket.IO not initialized', { tenantId });
     return;
   }
 
@@ -117,5 +130,9 @@ export const emitEventStatusUpdate = (tenantId: string, eventData: any) => {
     tenantId,
     ...eventData
   });
-  console.log(`📊 Event status update emitted for tenant ${tenantId}:`, eventData.clientEventId);
+  logger.debug('Event status update emitted', { 
+    tenantId, 
+    clientEventId: eventData.clientEventId,
+    statusCode: eventData.statusCode 
+  });
 };

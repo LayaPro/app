@@ -7,6 +7,10 @@ import Proposal from '../models/proposal';
 import Team from '../models/team';
 import Event from '../models/event';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
+import { nanoid } from 'nanoid';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('DashboardStatsController');
 
 interface StatsComparison {
   current: number;
@@ -27,10 +31,14 @@ const calculateComparison = (current: number, previous: number): StatsComparison
 };
 
 export const getDashboardStats = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching dashboard stats`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -130,6 +138,14 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     const proposalsComparison = calculateComparison(currentMonthProposals, lastMonthProposals);
     const eventsComparison = calculateComparison(currentMonthEvents, lastMonthEvents);
 
+    logger.info(`[${requestId}] Dashboard stats retrieved`, { 
+      tenantId,
+      totalProjects,
+      activeProjects,
+      totalRevenue,
+      pendingReceivable 
+    });
+
     return res.status(200).json({
       message: 'Dashboard stats retrieved successfully',
       stats: {
@@ -149,16 +165,24 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
       }
     });
   } catch (err: any) {
-    console.error('Get dashboard stats error:', err);
+    logger.error(`[${requestId}] Error fetching dashboard stats`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching upcoming events`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -232,21 +256,35 @@ export const getUpcomingEvents = async (req: AuthRequest, res: Response) => {
     // Limit to 10 events
     const limitedEvents = enrichedEvents.slice(0, 10);
 
+    logger.info(`[${requestId}] Upcoming events retrieved`, { 
+      tenantId,
+      count: limitedEvents.length,
+      ongoingCount: limitedEvents.filter(e => e.isOngoing).length 
+    });
+
     return res.status(200).json({
       message: 'Upcoming events retrieved successfully',
       upcomingEvents: limitedEvents
     });
   } catch (err: any) {
-    console.error('Get upcoming events error:', err);
+    logger.error(`[${requestId}] Error fetching upcoming events`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getTeamAssignments = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching team assignments`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -287,31 +325,45 @@ export const getTeamAssignments = async (req: AuthRequest, res: Response) => {
     // Sort by events count (most assigned on top)
     teamWithAssignments.sort((a, b) => b.eventsCount - a.eventsCount);
 
+    logger.info(`[${requestId}] Team assignments retrieved`, { 
+      tenantId,
+      teamMembersCount: teamWithAssignments.length 
+    });
+
     return res.status(200).json({
       message: 'Team assignments retrieved successfully',
       teamMembers: teamWithAssignments
     });
   } catch (err: any) {
-    console.error('Get team assignments error:', err);
+    logger.error(`[${requestId}] Error fetching team assignments`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getMonthlySales = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
+
+  logger.info(`[${requestId}] Fetching monthly sales`, { tenantId });
+
   try {
-    const tenantId = req.user?.tenantId;
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     const { year } = req.query;
     const selectedYear = year ? parseInt(year as string) : new Date().getFullYear();
 
-    console.log(`[Monthly Sales] Fetching sales for year ${selectedYear}, tenant: ${tenantId}`);
+    logger.info(`[${requestId}] Fetching sales for year`, { tenantId, selectedYear });
 
     // Get all finance records with transactions
     const finances = await ProjectFinance.find({ tenantId }).lean();
-    console.log(`[Monthly Sales] Found ${finances.length} finance records`);
+    logger.info(`[${requestId}] Found finance records`, { tenantId, count: finances.length });
 
     // Initialize monthly sales array
     const monthlySales = Array(12).fill(0).map((_, index) => ({
@@ -325,18 +377,14 @@ export const getMonthlySales = async (req: AuthRequest, res: Response) => {
     // Aggregate data by month from transactions
     finances.forEach(finance => {
       if (finance.transactions && finance.transactions.length > 0) {
-        console.log(`[Monthly Sales] Finance ${finance.financeId} has ${finance.transactions.length} transactions`);
         finance.transactions.forEach(transaction => {
           if (transaction.nature === 'received') {
             totalTransactionsProcessed++;
             const transactionDate = new Date(transaction.datetime);
             const transactionYear = transactionDate.getFullYear();
             
-            console.log(`[Monthly Sales] Transaction: ${transaction.transactionId}, amount: ${transaction.amount}, date: ${transactionDate.toISOString()}, year: ${transactionYear}`);
-            
             if (transactionYear === selectedYear) {
               const month = transactionDate.getMonth();
-              console.log(`[Monthly Sales] Adding ${transaction.amount} to month ${month} (${monthlySales[month].month})`);
               monthlySales[month].revenue += transaction.amount || 0;
               monthlySales[month].projects.add(finance.projectId);
             }
@@ -345,7 +393,10 @@ export const getMonthlySales = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    console.log(`[Monthly Sales] Processed ${totalTransactionsProcessed} received transactions`);
+    logger.info(`[${requestId}] Processed transactions`, { 
+      tenantId, 
+      totalTransactionsProcessed 
+    });
 
     // Convert project sets to counts
     const finalMonthlySales = monthlySales.map(month => ({
@@ -354,13 +405,16 @@ export const getMonthlySales = async (req: AuthRequest, res: Response) => {
       projects: month.projects.size
     }));
 
-    console.log('[Monthly Sales] Final monthly sales:', JSON.stringify(finalMonthlySales, null, 2));
-
     // Calculate totals
     const totalRevenue = finalMonthlySales.reduce((sum, m) => sum + m.revenue, 0);
     const totalProjects = finalMonthlySales.reduce((sum, m) => sum + m.projects, 0);
 
-    console.log(`[Monthly Sales] Total revenue: ${totalRevenue}, Total projects: ${totalProjects}`);
+    logger.info(`[${requestId}] Monthly sales calculated`, { 
+      tenantId,
+      selectedYear,
+      totalRevenue,
+      totalProjects 
+    });
 
     return res.status(200).json({
       year: selectedYear,
@@ -369,7 +423,11 @@ export const getMonthlySales = async (req: AuthRequest, res: Response) => {
       totalProjects
     });
   } catch (err: any) {
-    console.error('Get monthly sales error:', err);
+    logger.error(`[${requestId}] Error fetching monthly sales`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

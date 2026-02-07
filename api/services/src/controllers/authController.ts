@@ -5,6 +5,11 @@ import crypto from 'crypto';
 import User from '../models/user';
 import Role from '../models/role';
 import { sendActivationEmail, sendPasswordResetEmail } from '../services/emailService';
+import { nanoid } from 'nanoid';
+import { createModuleLogger } from '../utils/logger';
+import { logAudit, auditEvents } from '../utils/auditLogger';
+
+const logger = createModuleLogger('AuthController');
 
 const JWT_SECRET: Secret = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const JWT_EXPIRES_IN: number = Number(process.env.JWT_EXPIRES_IN) || 7 * 24 * 60 * 60;
@@ -13,7 +18,7 @@ const JWT_EXPIRES_IN: number = Number(process.env.JWT_EXPIRES_IN) || 7 * 24 * 60
 const SUPER_ADMIN_EMAIL = process.env.SUPER_ADMIN_EMAIL || 'superadmin@laya.pro';
 const SUPER_ADMIN_PASSWORD = process.env.SUPER_ADMIN_PASSWORD || 'LayaPro@SuperAdmin2026';
 
-console.log('[Auth Controller] JWT_SECRET loaded:', JWT_SECRET?.substring(0, 10) + '...');
+logger.info('JWT configuration loaded', { secretLength: JWT_SECRET?.toString().length });
 
 interface LoginRequest {
   email: string;
@@ -21,17 +26,21 @@ interface LoginRequest {
 }
 
 export const login = async (req: Request, res: Response) => {
-  try {
-    const { email, password }: LoginRequest = req.body;
+  const requestId = nanoid(8);
+  const { email, password }: LoginRequest = req.body;
 
+  logger.info(`[${requestId}] Login attempt`, { email });
+
+  try {
     // Validate input
     if (!email || !password) {
+      logger.warn(`[${requestId}] Missing credentials`, { email });
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
     // Check for hardcoded Super Admin credentials first
     if (email.toLowerCase() === SUPER_ADMIN_EMAIL.toLowerCase() && password === SUPER_ADMIN_PASSWORD) {
-      console.log('[Auth] Super Admin login detected');
+      logger.info(`[${requestId}] Super Admin login`, { email });
       
       // Generate JWT token for super admin
       const payload = {
@@ -68,22 +77,26 @@ export const login = async (req: Request, res: Response) => {
     // Find user by email
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
+      logger.warn(`[${requestId}] User not found`, { email });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     // Check if user is active
     if (!user.isActive) {
+      logger.warn(`[${requestId}] Account deactivated`, { email, userId: user.userId });
       return res.status(403).json({ message: 'Account is deactivated' });
     }
 
     // Check if password is set (account activated)
     if (!user.passwordHash) {
+      logger.warn(`[${requestId}] Account not activated`, { email, userId: user.userId });
       return res.status(403).json({ message: 'Please activate your account first' });
     }
 
     // Verify password
     const isPasswordValid = await bcrypt.compare(password, user.passwordHash);
     if (!isPasswordValid) {
+      logger.warn(`[${requestId}] Invalid password`, { email, userId: user.userId });
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
@@ -108,6 +121,7 @@ export const login = async (req: Request, res: Response) => {
     // Get user role
     const role = await Role.findOne({ roleId: user.roleId });
     if (!role) {
+      logger.error(`[${requestId}] Role not found`, { email, userId: user.userId, roleId: user.roleId });
       return res.status(500).json({ message: 'User role not found' });
     }
 
@@ -130,6 +144,19 @@ export const login = async (req: Request, res: Response) => {
     
     const token = jwt.sign(payload, JWT_SECRET, options);
 
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'User',
+      entityId: user.userId,
+      tenantId: user.tenantId,
+      performedBy: user.userId,
+      changes: {},
+      metadata: { action: 'login', email: user.email },
+      ipAddress: req.ip
+    });
+
+    logger.info(`[${requestId}] Login successful`, { email, userId: user.userId, tenantId: user.tenantId });
+
     // Return success response
     return res.status(200).json({
       message: 'Login successful',
@@ -146,28 +173,35 @@ export const login = async (req: Request, res: Response) => {
       }
     });
   } catch (err: any) {
-    console.error('Login error:', err);
+    logger.error(`[${requestId}] Login error`, { email, error: err.message, stack: err.stack });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const logout = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  logger.info(`[${requestId}] Logout`);
   // For JWT, logout is typically handled client-side by removing the token
   // Optionally, you can implement token blacklisting here
   return res.status(200).json({ message: 'Logout successful' });
 };
 
 export const getCurrentUser = async (req: Request, res: Response) => {
-  try {
-    // @ts-ignore - userId is added by authenticate middleware
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  // @ts-ignore - userId is added by authenticate middleware
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Fetching current user`, { userId });
+
+  try {
     if (!userId) {
+      logger.warn(`[${requestId}] No userId in request`);
       return res.status(401).json({ message: 'Authentication required' });
     }
 
     // Check if it's the hardcoded super admin
     if (userId === 'super-admin-001') {
+      logger.info(`[${requestId}] Super admin user retrieved`);
       return res.json({
         userId: 'super-admin-001',
         email: SUPER_ADMIN_EMAIL,
@@ -183,10 +217,13 @@ export const getCurrentUser = async (req: Request, res: Response) => {
 
     const user = await User.findOne({ userId });
     if (!user) {
+      logger.warn(`[${requestId}] User not found`, { userId });
       return res.status(404).json({ message: 'User not found' });
     }
 
     const role = await Role.findOne({ roleId: user.roleId });
+
+    logger.info(`[${requestId}] Current user retrieved`, { userId, tenantId: user.tenantId });
 
     return res.json({
       userId: user.userId,
@@ -199,16 +236,20 @@ export const getCurrentUser = async (req: Request, res: Response) => {
       tenantId: user.tenantId,
       isSuperAdmin: user.isSuperAdmin || false
     });
-  } catch (error) {
-    console.error('Error getting current user:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error getting current user`, { userId, error: error.message, stack: error.stack });
     return res.status(500).json({ message: 'Server error' });
   }
 };
 
 export const verifyToken = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  logger.info(`[${requestId}] Verifying token`);
+
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn(`[${requestId}] No token provided`);
       return res.status(401).json({ message: 'No token provided' });
     }
 
@@ -218,8 +259,11 @@ export const verifyToken = async (req: Request, res: Response) => {
     // Optionally verify user still exists and is active
     const user = await User.findOne({ userId: decoded.userId });
     if (!user || !user.isActive) {
+      logger.warn(`[${requestId}] Invalid or inactive user`, { userId: decoded.userId });
       return res.status(401).json({ message: 'Invalid token' });
     }
+
+    logger.info(`[${requestId}] Token verified`, { userId: decoded.userId, tenantId: decoded.tenantId });
 
     return res.status(200).json({
       valid: true,
@@ -232,14 +276,19 @@ export const verifyToken = async (req: Request, res: Response) => {
       }
     });
   } catch (err: any) {
+    logger.warn(`[${requestId}] Token verification failed`, { error: err.message });
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
 export const refreshToken = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  logger.info(`[${requestId}] Refreshing token`);
+
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn(`[${requestId}] No token provided for refresh`);
       return res.status(401).json({ message: 'No token provided' });
     }
 
@@ -249,12 +298,14 @@ export const refreshToken = async (req: Request, res: Response) => {
     // Verify user still exists and is active
     const user = await User.findOne({ userId: decoded.userId });
     if (!user || !user.isActive) {
+      logger.warn(`[${requestId}] Invalid or inactive user for refresh`, { userId: decoded.userId });
       return res.status(401).json({ message: 'Invalid token' });
     }
 
     // Get user role
     const role = await Role.findOne({ roleId: user.roleId });
     if (!role) {
+      logger.error(`[${requestId}] Role not found for refresh`, { userId: user.userId, roleId: user.roleId });
       return res.status(500).json({ message: 'User role not found' });
     }
 
@@ -273,20 +324,27 @@ export const refreshToken = async (req: Request, res: Response) => {
     
     const newToken = jwt.sign(payload, JWT_SECRET, options);
 
+    logger.info(`[${requestId}] Token refreshed`, { userId: user.userId, tenantId: user.tenantId });
+
     return res.status(200).json({
       message: 'Token refreshed successfully',
       token: newToken
     });
   } catch (err: any) {
+    logger.warn(`[${requestId}] Token refresh failed`, { error: err.message });
     return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
 export const forgotPassword = async (req: Request, res: Response) => {
-  try {
-    const { email } = req.body;
+  const requestId = nanoid(8);
+  const { email } = req.body;
 
+  logger.info(`[${requestId}] Forgot password request`, { email });
+
+  try {
     if (!email) {
+      logger.warn(`[${requestId}] Email missing in forgot password`);
       return res.status(400).json({ message: 'Email is required' });
     }
 
@@ -294,6 +352,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       // Don't reveal if user exists or not (security best practice)
+      logger.info(`[${requestId}] Forgot password - user not found`, { email });
       return res.status(200).json({ 
         message: 'If the email exists, a password reset link has been sent' 
       });
@@ -307,6 +366,8 @@ export const forgotPassword = async (req: Request, res: Response) => {
     user.resetPasswordExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
     await user.save();
 
+    logger.info(`[${requestId}] Password reset token generated`, { email, userId: user.userId });
+
     // In production, send email with reset link containing the resetToken
     // const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
     // await sendEmail({ to: user.email, subject: 'Password Reset', html: resetUrl });
@@ -317,20 +378,25 @@ export const forgotPassword = async (req: Request, res: Response) => {
       resetToken // Send this via email in production
     });
   } catch (err: any) {
-    console.error('Forgot password error:', err);
+    logger.error(`[${requestId}] Forgot password error`, { email, error: err.message, stack: err.stack });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const resetPassword = async (req: Request, res: Response) => {
-  try {
-    const { token, newPassword } = req.body;
+  const requestId = nanoid(8);
+  const { token, newPassword } = req.body;
 
+  logger.info(`[${requestId}] Reset password attempt`);
+
+  try {
     if (!token || !newPassword) {
+      logger.warn(`[${requestId}] Missing token or password`);
       return res.status(400).json({ message: 'Token and new password are required' });
     }
 
     if (newPassword.length < 8) {
+      logger.warn(`[${requestId}] Password too short`);
       return res.status(400).json({ message: 'Password must be at least 8 characters long' });
     }
 
@@ -344,6 +410,7 @@ export const resetPassword = async (req: Request, res: Response) => {
     });
 
     if (!user) {
+      logger.warn(`[${requestId}] Invalid or expired reset token`);
       return res.status(400).json({ message: 'Invalid or expired reset token' });
     }
 
@@ -357,24 +424,42 @@ export const resetPassword = async (req: Request, res: Response) => {
     user.tokenVersion = (user.tokenVersion || 0) + 1; // Invalidate existing tokens
     await user.save();
 
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'User',
+      entityId: user.userId,
+      tenantId: user.tenantId,
+      performedBy: user.userId,
+      changes: {},
+      metadata: { action: 'password_reset' },
+      ipAddress: req.ip
+    });
+
+    logger.info(`[${requestId}] Password reset successful`, { userId: user.userId, email: user.email });
+
     return res.status(200).json({
       message: 'Password reset successful. Please login with your new password.'
     });
   } catch (err: any) {
-    console.error('Reset password error:', err);
+    logger.error(`[${requestId}] Reset password error`, { error: err.message, stack: err.stack });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const setupPassword = async (req: Request, res: Response) => {
-  try {
-    const { token, password } = req.body;
+  const requestId = nanoid(8);
+  const { token, password } = req.body;
 
+  logger.info(`[${requestId}] Setup password attempt`);
+
+  try {
     if (!token || !password) {
+      logger.warn(`[${requestId}] Missing token or password`);
       return res.status(400).json({ message: 'Token and password are required' });
     }
 
     if (password.length < 8) {
+      logger.warn(`[${requestId}] Password too short`);
       return res.status(400).json({ message: 'Password must be at least 8 characters long' });
     }
 
@@ -396,6 +481,7 @@ export const setupPassword = async (req: Request, res: Response) => {
     }
 
     if (!user) {
+      logger.warn(`[${requestId}] Invalid or expired setup token`);
       return res.status(400).json({ message: 'Invalid or expired token' });
     }
 
@@ -411,26 +497,44 @@ export const setupPassword = async (req: Request, res: Response) => {
     user.activationTokenExpires = null;
     await user.save();
 
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'User',
+      entityId: user.userId,
+      tenantId: user.tenantId,
+      performedBy: user.userId,
+      changes: {},
+      metadata: { action: 'password_setup', activated: true },
+      ipAddress: req.ip
+    });
+
+    logger.info(`[${requestId}] Password setup successful`, { userId: user.userId, email: user.email });
+
     return res.status(200).json({
       message: 'Password setup successful. You can now login with your credentials.'
     });
   } catch (err: any) {
-    console.error('Setup password error:', err);
+    logger.error(`[${requestId}] Setup password error`, { error: err.message, stack: err.stack });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const sendActivationLink = async (req: Request, res: Response) => {
-  try {
-    const { userId } = req.body;
+  const requestId = nanoid(8);
+  const { userId } = req.body;
 
+  logger.info(`[${requestId}] Sending activation link`, { userId });
+
+  try {
     if (!userId) {
+      logger.warn(`[${requestId}] User ID missing`);
       return res.status(400).json({ message: 'User ID is required' });
     }
 
     // Find user
     const user = await User.findOne({ userId });
     if (!user) {
+      logger.warn(`[${requestId}] User not found`, { userId });
       return res.status(404).json({ message: 'User not found' });
     }
 
@@ -445,30 +549,38 @@ export const sendActivationLink = async (req: Request, res: Response) => {
     // Send activation email
     await sendActivationEmail(user.email, `${user.firstName} ${user.lastName}`, activationToken);
 
+    logger.info(`[${requestId}] Activation link sent`, { userId, email: user.email });
+
     return res.status(200).json({
       message: 'Activation link sent successfully'
     });
   } catch (err: any) {
-    console.error('Send activation link error:', err);
+    logger.error(`[${requestId}] Send activation link error`, { userId, error: err.message, stack: err.stack });
     return res.status(500).json({ message: 'Failed to send activation link' });
   }
 };
 
 export const resendActivationLink = async (req: Request, res: Response) => {
-  try {
-    const { email } = req.body;
+  const requestId = nanoid(8);
+  const { email } = req.body;
 
+  logger.info(`[${requestId}] Resending activation link`, { email });
+
+  try {
     if (!email) {
+      logger.warn(`[${requestId}] Email missing`);
       return res.status(400).json({ message: 'Email is required' });
     }
 
     // Find user
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
+      logger.warn(`[${requestId}] User not found for resend`, { email });
       return res.status(404).json({ message: 'User not found' });
     }
 
     if (user.isActivated) {
+      logger.warn(`[${requestId}] Account already activated`, { email, userId: user.userId });
       return res.status(400).json({ message: 'Account is already activated' });
     }
 
@@ -483,11 +595,13 @@ export const resendActivationLink = async (req: Request, res: Response) => {
     // Send activation email
     await sendActivationEmail(user.email, `${user.firstName} ${user.lastName}`, activationToken);
 
+    logger.info(`[${requestId}] Activation link resent`, { email, userId: user.userId });
+
     return res.status(200).json({
       message: 'Activation link resent successfully'
     });
   } catch (err: any) {
-    console.error('Resend activation link error:', err);
+    logger.error(`[${requestId}] Resend activation link error`, { email, error: err.message, stack: err.stack });
     return res.status(500).json({ message: 'Failed to resend activation link' });
   }
 };

@@ -4,6 +4,9 @@ import User from '../models/user';
 import Team from '../models/team';
 import Role from '../models/role';
 import { NotificationService } from './notificationService';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('DueDateNotificationService');
 
 /**
  * Service for checking and sending due date notifications
@@ -60,12 +63,14 @@ class DueDateNotificationService {
    */
   async checkEditingDueDates(): Promise<void> {
     try {
-      console.log('[DueDateNotification] Checking editing due dates...');
+      logger.info('Checking editing due dates');
 
       // Get all events with editing due dates
       const events = await ClientEvent.find({
         editingDueDate: { $exists: true, $ne: null }
       }).populate('projectId');
+
+      logger.debug('Found events with editing due dates', { count: events.length });
 
       for (const event of events) {
         if (!event.editingDueDate || !this.isDateApproaching(event.editingDueDate)) {
@@ -82,6 +87,15 @@ class DueDateNotificationService {
 
         // Get event name
         const eventName = await this.getEventName(event.eventId, tenantId);
+
+        logger.info('Editing due date approaching', {
+          tenantId,
+          eventId: event.clientEventId,
+          projectId: event.projectId,
+          projectName,
+          eventName,
+          dueDate: dueDateFormatted
+        });
 
         // Notify admins
         const adminUsers = await this.getAdminUsers(tenantId);
@@ -111,10 +125,20 @@ class DueDateNotificationService {
           }
         }
 
-        console.log(`[DueDateNotification] Notified about editing due date for event ${event.clientEventId}`);
+        logger.info('Notified about editing due date', {
+          tenantId,
+          eventId: event.clientEventId,
+          adminsNotified: adminUsers.length,
+          editorNotified: !!event.albumEditor
+        });
       }
-    } catch (error) {
-      console.error('[DueDateNotification] Error checking editing due dates:', error);
+
+      logger.info('Editing due date check completed');
+    } catch (error: any) {
+      logger.error('Error checking editing due dates', {
+        error: error.message,
+        stack: error.stack
+      });
     }
   }
 
@@ -123,12 +147,14 @@ class DueDateNotificationService {
    */
   async checkAlbumDesignDueDates(): Promise<void> {
     try {
-      console.log('[DueDateNotification] Checking album design due dates...');
+      logger.info('Checking album design due dates');
 
       // Get all events with album design due dates
       const events = await ClientEvent.find({
         albumDesignDueDate: { $exists: true, $ne: null }
       }).populate('projectId');
+
+      logger.debug('Found events with album design due dates', { count: events.length });
 
       for (const event of events) {
         if (!event.albumDesignDueDate || !this.isDateApproaching(event.albumDesignDueDate)) {
@@ -145,6 +171,15 @@ class DueDateNotificationService {
 
         // Get event name
         const eventName = await this.getEventName(event.eventId, tenantId);
+
+        logger.info('Album design due date approaching', {
+          tenantId,
+          eventId: event.clientEventId,
+          projectId: event.projectId,
+          projectName,
+          eventName,
+          dueDate: dueDateFormatted
+        });
 
         // Notify admins
         const adminUsers = await this.getAdminUsers(tenantId);
@@ -174,10 +209,20 @@ class DueDateNotificationService {
           }
         }
 
-        console.log(`[DueDateNotification] Notified about album design due date for event ${event.clientEventId}`);
+        logger.info('Notified about album design due date', {
+          tenantId,
+          eventId: event.clientEventId,
+          adminsNotified: adminUsers.length,
+          designerNotified: !!event.albumDesigner
+        });
       }
-    } catch (error) {
-      console.error('[DueDateNotification] Error checking album design due dates:', error);
+
+      logger.info('Album design due date check completed');
+    } catch (error: any) {
+      logger.error('Error checking album design due dates', {
+        error: error.message,
+        stack: error.stack
+      });
     }
   }
 
@@ -186,12 +231,14 @@ class DueDateNotificationService {
    */
   async checkProjectDeliveryDueDates(): Promise<void> {
     try {
-      console.log('[DueDateNotification] Checking project delivery due dates...');
+      logger.info('Checking project delivery due dates');
 
       // Get all projects with delivery due dates
       const projects = await Project.find({
         deliveryDueDate: { $exists: true, $ne: null }
       });
+
+      logger.debug('Found projects with delivery due dates', { count: projects.length });
 
       for (const project of projects) {
         if (!project.deliveryDueDate || !this.isDateApproaching(project.deliveryDueDate)) {
@@ -201,6 +248,13 @@ class DueDateNotificationService {
         const tenantId = project.tenantId;
         const projectName = project.projectName || 'Unknown Project';
         const dueDateFormatted = this.formatDate(project.deliveryDueDate);
+
+        logger.info('Project delivery due date approaching', {
+          tenantId,
+          projectId: project.projectId,
+          projectName,
+          dueDate: dueDateFormatted
+        });
 
         // Notify admins
         const adminUsers = await this.getAdminUsers(tenantId);
@@ -215,10 +269,19 @@ class DueDateNotificationService {
           });
         }
 
-        console.log(`[DueDateNotification] Notified about delivery due date for project ${project.projectId}`);
+        logger.info('Notified about project delivery due date', {
+          tenantId,
+          projectId: project.projectId,
+          adminsNotified: adminUsers.length
+        });
       }
-    } catch (error) {
-      console.error('[DueDateNotification] Error checking project delivery due dates:', error);
+
+      logger.info('Project delivery due date check completed');
+    } catch (error: any) {
+      logger.error('Error checking project delivery due dates', {
+        error: error.message,
+        stack: error.stack
+      });
     }
   }
 
@@ -231,8 +294,12 @@ class DueDateNotificationService {
       const event = await Event.findOne({ eventId, tenantId });
       const name = event?.eventDesc || 'Unknown Event';
       return name;
-    } catch (error) {
-      console.error('[DueDateNotification] Error getting event name:', error);
+    } catch (error: any) {
+      logger.error('Error getting event name', {
+        tenantId,
+        eventId,
+        error: error.message
+      });
       return 'Unknown Event';
     }
   }
@@ -241,13 +308,13 @@ class DueDateNotificationService {
    * Run all due date checks
    */
   async checkAllDueDates(): Promise<void> {
-    console.log('[DueDateNotification] Starting due date checks...');
+    logger.info('Starting all due date checks');
     await Promise.all([
       this.checkEditingDueDates(),
       this.checkAlbumDesignDueDates(),
       this.checkProjectDeliveryDueDates()
     ]);
-    console.log('[DueDateNotification] Completed due date checks');
+    logger.info('Completed all due date checks');
   }
 }
 

@@ -1,5 +1,8 @@
 import { Notification, INotification } from '../models/notification';
 import { sendNotificationToUser, sendNotificationToUsers } from './socketService';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('NotificationService');
 
 export interface CreateNotificationInput {
   userId: string | string[];
@@ -19,6 +22,13 @@ export class NotificationService {
     const userIds = Array.isArray(input.userId) ? input.userId : [input.userId];
     const notifications: INotification[] = [];
 
+    logger.info('Creating notifications', { 
+      tenantId: input.tenantId,
+      type: input.type,
+      userCount: userIds.length,
+      title: input.title 
+    });
+
     for (const userId of userIds) {
       // Check for duplicate notification in the last 10 seconds (prevents accidental double-sends)
       const tenSecondsAgo = new Date(Date.now() - 10 * 1000);
@@ -32,7 +42,7 @@ export class NotificationService {
       });
 
       if (existingNotification) {
-        console.log(`[NotificationService] Duplicate notification prevented for user ${userId}`);
+        logger.debug('Duplicate notification prevented', { tenantId: input.tenantId, userId, type: input.type });
         continue;
       }
 
@@ -50,7 +60,7 @@ export class NotificationService {
       notifications.push(notification);
 
       // Send real-time notification via Socket.io
-      console.log(`[NotificationService] Sending notification to user ${userId} via Socket.io`);
+      logger.debug('Sending notification via Socket.io', { tenantId: input.tenantId, userId, type: input.type });
       sendNotificationToUser(userId, {
         id: notification._id,
         type: notification.type,
@@ -61,8 +71,13 @@ export class NotificationService {
         createdAt: notification.createdAt,
         read: false
       });
-      console.log(`[NotificationService] Socket notification sent for user ${userId}`);
     }
+
+    logger.info('Notifications created successfully', { 
+      tenantId: input.tenantId,
+      type: input.type,
+      count: notifications.length 
+    });
 
     return notifications;
   }
