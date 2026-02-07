@@ -10,6 +10,7 @@ import { ROUTES } from './utils/constants.js';
 import { ToastProvider } from './context/ToastContext.js';
 import { NotificationProvider } from './context/NotificationContext.js';
 import { ToastContainer } from './components/ui/ToastContainer.js';
+import { GoogleCallback } from './pages/GoogleCallback/index.js';
 
 // Page imports
 import Dashboard from './pages/Dashboard/index.js';
@@ -37,19 +38,88 @@ import Equipments from './pages/Equipments/index.js';
 import EventsSetup from './pages/EventsSetup/index.js';
 import GallerySetup from './pages/GallerySetup/index.js';
 import ProjectsSetup from './pages/ProjectsSetup/index.js';
+import { useEffect, useState } from 'react';
+import { useAppDispatch } from './store/index.js';
+import { setCredentials } from './store/slices/authSlice.js';
 
 // Organization page
 import Organization from './pages/Organization/index.js';
 
 function App() {
+  const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const sidebarCollapsed = useAppSelector((state) => state.ui.sidebarCollapsed);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
+  // Check for auth data in URL parameters (from marketing site redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const token = params.get('token');
+    const userStr = params.get('user');
+    const tenantId = params.get('tenantId');
+
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        
+        // Clear any existing auth data first
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        // Store new auth data in localStorage
+        localStorage.setItem('token', token);
+        localStorage.setItem('user', userStr);
+        if (tenantId) {
+          localStorage.setItem('tenantId', tenantId);
+        }
+
+        // Update Redux state
+        dispatch(setCredentials({ user, token }));
+
+        // Clean up URL and force reload to ensure fresh state
+        window.history.replaceState({}, document.title, window.location.pathname);
+        window.location.reload();
+      } catch (error) {
+        console.error('Failed to parse auth data from URL:', error);
+        setIsCheckingAuth(false);
+      }
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [dispatch]);
+
+  // Show loading while checking for auth data in URL
+  if (isCheckingAuth) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        minHeight: '100vh',
+        background: 'var(--bg-primary)'
+      }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ 
+            width: '48px', 
+            height: '48px', 
+            border: '4px solid var(--border-color)',
+            borderTopColor: 'var(--color-primary)',
+            borderRadius: '50%',
+            animation: 'spin 0.8s linear infinite',
+            margin: '0 auto'
+          }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
 
   // Public routes (no auth required)
   const PublicRoutes = () => (
     <Routes>
       <Route path="/setup-password" element={<SetupPassword />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/auth/google/callback" element={<GoogleCallback />} />
       <Route path="*" element={<Login />} />
     </Routes>
   );

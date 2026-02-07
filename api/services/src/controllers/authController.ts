@@ -606,6 +606,350 @@ export const resendActivationLink = async (req: Request, res: Response) => {
   }
 };
 
+export const signup = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  
+  try {
+    const { tenantName, email, password, fullName } = req.body;
+
+    logger.info(`[${requestId}] Signup request received`, { email, tenantName });
+
+    // Validate input
+    if (!tenantName || !email || !password || !fullName) {
+      logger.warn(`[${requestId}] Missing required fields`);
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    if (existingUser) {
+      logger.warn(`[${requestId}] User already exists`, { email });
+      return res.status(400).json({ message: 'User already exists with this email' });
+    }
+
+    // Import Tenant model dynamically
+    const Tenant = require('../models/tenant').default;
+
+    // Parse name for tenant creation
+    const nameParts = fullName.split(' ');
+    const firstName = nameParts[0] || fullName;
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    // Generate tenant ID and S3 folder name
+    const tenantId = nanoid(12);
+    const sanitizedTenantName = tenantName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const s3TenantFolderName = `${nanoid(10)}_${sanitizedTenantName}`;
+    const tenantUsername = email.split('@')[0].toLowerCase() + '_' + nanoid(6);
+
+    // Set subscription dates
+    const subscriptionStartDate = new Date();
+    const subscriptionEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days trial
+
+    // Create tenant
+    const tenant = await Tenant.create({
+      tenantId,
+      tenantFirstName: firstName,
+      tenantLastName: lastName,
+      tenantCompanyName: tenantName,
+      tenantUsername,
+      tenantEmailAddress: email.toLowerCase(),
+      countryCode: '+91',
+      tenantPhoneNumber: '',
+      isActive: true,
+      subscriptionPlan: 'FREE',
+      subscriptionStartDate,
+      subscriptionEndDate,
+      s3TenantFolderName,
+      createdBy: 'system',
+      updatedBy: 'system',
+    });
+
+    logger.info(`[${requestId}] Tenant created`, { tenantId: tenant._id, tenantName });
+
+    // Find existing Admin role (global role with tenantId: '-1')
+    let adminRole = await Role.findOne({ name: 'Admin', tenantId: '-1' });
+    
+    if (!adminRole) {
+      // If no global admin role exists, create one
+      adminRole = await Role.create({
+        roleId: nanoid(12),
+        name: 'Admin',
+        tenantId: '-1',
+        description: 'Full control of entire system',
+      });
+      logger.info(`[${requestId}] Admin role created`, { roleId: adminRole.roleId });
+    } else {
+      logger.info(`[${requestId}] Using existing Admin role`, { roleId: adminRole.roleId });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Parse name for user creation
+    const userNameParts = fullName.split(' ');
+    const userFirstName = userNameParts[0] || fullName;
+    const userLastName = userNameParts.slice(1).join(' ') || 'User';
+
+    // Create user
+    const user = await User.create({
+      userId: nanoid(),
+      firstName: userFirstName,
+      lastName: userLastName,
+      email: email.toLowerCase(),
+      passwordHash: hashedPassword,
+      tenantId: tenant.tenantId,
+      roleId: adminRole.roleId,
+      isActive: true,
+      isActivated: true,
+    });
+
+    logger.info(`[${requestId}] User created`, { userId: user.userId, email, tenantId: tenant.tenantId });
+
+    // Log audit trail
+    await logAudit({
+      action: auditEvents.USER_CREATED,
+      entityType: 'User',
+      entityId: user.userId,
+      userId: user.userId,
+      tenantId: tenant.tenantId,
+      metadata: { email, tenantName, signupMethod: 'email', requestId },
+    });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.userId, tenantId: tenant.tenantId, roleId: adminRole.roleId },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    logger.info(`[${requestId}] Signup successful`, { userId: user.userId, tenantId: tenant.tenantId });
+
+    res.status(201).json({
+      message: 'Account created successfully',
+      token,
+      user: {
+        userId: user.userId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roleId: adminRole.roleId,
+        roleName: 'Admin',
+        tenantId: tenant.tenantId,
+      },
+      tenant: {
+        id: tenant.tenantId,
+        name: tenant.tenantCompanyName,
+        status: tenant.subscriptionPlan,
+      },
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Signup error`, { error: error.message, stack: error.stack });
+    res.status(500).json({ message: 'Error creating account. Please try again.' });
+  }
+};
+
+export const googleCallback = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  
+  try {
+    const { code, redirectUri } = req.body;
+
+    logger.info(`[${requestId}] Google OAuth callback received`);
+
+    if (!code) {
+      return res.status(400).json({ message: 'Authorization code is required' });
+    }
+
+    // Validate redirect URI (whitelist)
+    const allowedRedirectUris = [
+      'http://localhost:3002/auth/google/callback', // Marketing site
+      'http://localhost:5173/auth/google/callback', // Admin app
+      process.env.GOOGLE_REDIRECT_URI, // Production
+    ].filter(Boolean);
+
+    const finalRedirectUri = redirectUri && allowedRedirectUris.includes(redirectUri) 
+      ? redirectUri 
+      : process.env.GOOGLE_REDIRECT_URI;
+
+    logger.debug(`[${requestId}] Using redirect URI: ${finalRedirectUri}`);
+
+    // Exchange code for tokens
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: finalRedirectUri,
+        grant_type: 'authorization_code',
+      }),
+    });
+
+    const tokens = await tokenResponse.json();
+
+    if (!tokens.access_token) {
+      logger.error(`[${requestId}] Failed to get access token from Google`);
+      return res.status(400).json({ message: 'Failed to authenticate with Google' });
+    }
+
+    // Get user info from Google
+    const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: {
+        Authorization: `Bearer ${tokens.access_token}`,
+      },
+    });
+
+    const googleUser = await userInfoResponse.json();
+    const email = googleUser.email.toLowerCase();
+    const fullName = googleUser.name;
+
+    logger.info(`[${requestId}] Google user info retrieved`, { email, name: fullName });
+
+    // Check if user already exists
+    let user = await User.findOne({ email });
+    let tenant;
+
+    const Tenant = require('../models/tenant').default;
+
+    if (user) {
+      // Existing user - just login
+      tenant = await Tenant.findOne({ tenantId: user.tenantId });
+      logger.info(`[${requestId}] Existing user logged in via Google`, { userId: user.userId, tenantId: tenant?.tenantId });
+      
+      await logAudit({
+        action: 'USER_LOGIN',
+        entityType: 'User',
+        entityId: user.userId,
+        userId: user.userId,
+        tenantId: tenant?.tenantId || user.tenantId,
+        metadata: { loginMethod: 'google', requestId },
+      });
+    } else {
+      // New user - create tenant and user
+      // Parse name for tenant creation
+      const nameParts = fullName.split(' ');
+      const firstName = nameParts[0] || fullName;
+      const lastName = nameParts.slice(1).join(' ') || '';
+
+      // Generate tenant ID and S3 folder name
+      const tenantId = nanoid(12);
+      const sanitizedName = fullName.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+      const s3TenantFolderName = `${nanoid(10)}_${sanitizedName}`;
+      const tenantUsername = email.split('@')[0].toLowerCase() + '_' + nanoid(6);
+
+      // Set subscription dates
+      const subscriptionStartDate = new Date();
+      const subscriptionEndDate = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000); // 14 days trial
+
+      tenant = await Tenant.create({
+        tenantId,
+        tenantFirstName: firstName,
+        tenantLastName: lastName,
+        tenantCompanyName: `${fullName}'s Studio`,
+        tenantUsername,
+        tenantEmailAddress: email,
+        countryCode: '+91',
+        tenantPhoneNumber: '',
+        isActive: true,
+        subscriptionPlan: 'FREE',
+        subscriptionStartDate,
+        subscriptionEndDate,
+        s3TenantFolderName,
+        createdBy: 'google-oauth',
+        updatedBy: 'google-oauth',
+      });
+
+      logger.info(`[${requestId}] Tenant created via Google signup`, { tenantId: tenant.tenantId });
+
+      // Find existing Admin role (global role with tenantId: '-1')
+      let adminRole = await Role.findOne({ name: 'Admin', tenantId: '-1' });
+      
+      if (!adminRole) {
+        // If no global admin role exists, create one
+        adminRole = await Role.create({
+          roleId: nanoid(12),
+          name: 'Admin',
+          tenantId: '-1',
+          description: 'Full control of entire system',
+        });
+        logger.info(`[${requestId}] Admin role created`, { roleId: adminRole.roleId });
+      } else {
+        logger.info(`[${requestId}] Using existing Admin role`, { roleId: adminRole.roleId });
+      }
+
+      // Create user
+      const userNameParts = fullName.split(' ');
+      const userFirstName = userNameParts[0] || fullName;
+      const userLastName = userNameParts.slice(1).join(' ') || 'User';
+      
+      user = await User.create({
+        userId: nanoid(),
+        firstName: userFirstName,
+        lastName: userLastName,
+        email,
+        tenantId: tenant.tenantId,
+        roleId: adminRole.roleId,
+        isActive: true,
+        isActivated: true,
+      });
+
+      logger.info(`[${requestId}] User created via Google signup`, { userId: user.userId, tenantId: tenant.tenantId });
+
+      await logAudit({
+        action: auditEvents.USER_CREATED,
+        entityType: 'User',
+        entityId: user.userId,
+        userId: user.userId,
+        tenantId: tenant.tenantId,
+        metadata: { email, signupMethod: 'google', requestId },
+      });
+    }
+
+    // Get user role
+    const role = await Role.findOne({ roleId: user.roleId });
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { userId: user.userId, tenantId: tenant.tenantId, roleId: user.roleId },
+      JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    logger.info(`[${requestId}] Google OAuth successful`, { userId: user.userId, tenantId: tenant.tenantId });
+
+    res.status(200).json({
+      message: 'Authentication successful',
+      token,
+      user: {
+        userId: user.userId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        roleId: user.roleId,
+        roleName: role?.name || 'Admin',
+        tenantId: tenant.tenantId,
+      },
+      tenant: {
+        id: tenant.tenantId,
+        name: tenant.tenantCompanyName,
+        status: tenant.subscriptionPlan,
+      },
+    });
+  } catch (error: any) {
+    console.error(`[${requestId}] Google OAuth full error:`, error);
+    logger.error(`[${requestId}] Google OAuth error`, { 
+      message: error.message, 
+      stack: error.stack,
+      name: error.name,
+      fullError: JSON.stringify(error, null, 2)
+    });
+    res.status(500).json({ message: 'Error during Google authentication. Please try again.' });
+  }
+};
+
 export default { 
   login, 
   logout,
@@ -616,5 +960,8 @@ export default {
   resetPassword,
   setupPassword,
   sendActivationLink,
-  resendActivationLink
+  resendActivationLink,
+  signup,
+  googleCallback
 };
+

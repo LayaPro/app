@@ -86,6 +86,8 @@ app.post('/reset-password', authController.resetPassword);
 app.post('/setup-password', authController.setupPassword);
 app.post('/send-activation-link', authenticate, authController.sendActivationLink);
 app.post('/resend-activation-link', authController.resendActivationLink);
+app.post('/auth/signup', authController.signup);
+app.post('/auth/google/callback', authController.googleCallback);
 
 // ---------- Roles routes ----------
 app.post('/create-role', authenticate, roleController.createRole);

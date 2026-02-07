@@ -94,6 +94,61 @@
   flex-shrink: 0;
 }
 
+/* Divider */
+.divider {
+  position: relative;
+  text-align: center;
+  margin: 24px 0;
+}
+
+.divider::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background-color: var(--border-color);
+}
+
+.divider span {
+  position: relative;
+  display: inline-block;
+  padding: 0 16px;
+  background-color: var(--bg-primary);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* Google Button */
+.googleButton {
+  width: 100%;
+  padding: 12px 24px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 15px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.googleButton:hover {
+  background-color: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.googleIcon {
+  width: 20px;
+  height: 20px;
+}
+
 /* Footer */
 .footer {
   margin-top: 32px;
