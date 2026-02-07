@@ -19,33 +19,51 @@ import pMap from 'p-map';
 import exifr from 'exifr';
 import { NotificationUtils } from '../services/notificationUtils';
 import { updateTenantStorageUsage } from '../utils/storageCalculator';
+import { createModuleLogger } from '../utils/logger';
+import { logAudit, auditEvents } from '../utils/auditLogger';
+import { 
+  logImageUpload, 
+  logBatchUpload, 
+  logImageDeletion, 
+  logBulkDeletion, 
+  logImageError, 
+  logImageApproval, 
+  logClientSelection 
+} from '../utils/imageLogger';
+
+const logger = createModuleLogger('ImageController');
 
 export const createImage = async (req: AuthRequest, res: Response) => {
-  try {
-    const {
-      projectId,
-      clientEventId,
-      originalUrl,
-      compressedUrl,
-      thumbnailUrl,
-      fileName,
-      fileSize,
-      mimeType,
-      width,
-      height,
-      eventDeliveryStatusId,
-      tags
-    } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const {
+    projectId,
+    clientEventId,
+    originalUrl,
+    compressedUrl,
+    thumbnailUrl,
+    fileName,
+    fileSize,
+    mimeType,
+    width,
+    height,
+    eventDeliveryStatusId,
+    tags
+  } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Creating image`, { tenantId, fileName });
+
+  try {
     if (!projectId || !clientEventId || !originalUrl || !fileName || !fileSize || !mimeType) {
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId });
       return res.status(400).json({ 
         message: 'Project ID, Client Event ID, Original URL, File Name, File Size, and MIME Type are required' 
       });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -70,33 +88,61 @@ export const createImage = async (req: AuthRequest, res: Response) => {
       uploadedAt: new Date()
     });
 
+    logImageUpload({
+      requestId,
+      tenantId,
+      imageId,
+      projectId,
+      clientEventId,
+      fileName,
+      fileSize,
+      mimeType,
+      width,
+      height,
+      originalUrl,
+      compressedUrl,
+      thumbnailUrl,
+      uploadedBy: userId
+    });
+
+    logger.info(`[${requestId}] Image created`, { tenantId, imageId, fileName });
+
     // Update storage usage asynchronously
-    console.log(`[Storage] Updating storage for tenant ${tenantId} after image upload`);
     updateTenantStorageUsage(tenantId)
-      .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
-      .catch(err => console.error('[Storage] Error updating storage after image upload:', err));
+      .then(storageUsed => logger.info(`[${requestId}] Storage updated`, { tenantId, storageUsedGB: storageUsed }))
+      .catch(err => logger.error(`[${requestId}] Error updating storage`, { tenantId, error: err.message }));
 
     return res.status(201).json({
       message: 'Image created successfully',
       image
     });
   } catch (err: any) {
-    console.error('Create image error:', err);
+    logger.error(`[${requestId}] Error creating image`, { 
+      tenantId,
+      fileName,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
-  try {
-    const { images } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { images } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Bulk creating images`, { tenantId, count: images?.length });
+
+  try {
     if (!Array.isArray(images) || images.length === 0) {
+      logger.warn(`[${requestId}] Images array missing or empty`, { tenantId });
       return res.status(400).json({ message: 'Images array is required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -115,10 +161,11 @@ export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
 
     const createdImages = await Image.insertMany(imagesToCreate);
 
+    logger.info(`[${requestId}] Bulk images created`, { tenantId, count: createdImages.length });
+
     // Check if we should update event status to REVIEW_ONGOING
     if (clientEventId) {
       const totalImagesForEvent = await Image.countDocuments({ clientEventId, tenantId });
-      console.log(`[BulkCreateImages] Event ${clientEventId} now has ${totalImagesForEvent} images`);
       
       // If event now has at least 10 images, set status to REVIEW_ONGOING
       if (totalImagesForEvent >= 10) {
@@ -146,19 +193,18 @@ export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
                 }
               }
             );
-            console.log(`[BulkCreateImages] ✓ Event ${clientEventId} status updated to REVIEW_ONGOING`);
+            logger.info(`[${requestId}] Event status updated to REVIEW_ONGOING`, { tenantId, clientEventId });
           }
         } else {
-          console.log(`[BulkCreateImages] Event ${clientEventId} not in EDITING_ONGOING status, skipping status update`);
+          logger.info(`[${requestId}] Event not in EDITING_ONGOING status, skipping update`, { tenantId, clientEventId });
         }
       }
     }
 
     // Update storage usage asynchronously
-    console.log(`[Storage] Updating storage for tenant ${tenantId} after bulk upload of ${createdImages.length} images`);
     updateTenantStorageUsage(tenantId)
-      .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
-      .catch(err => console.error('[Storage] Error updating storage after bulk image upload:', err));
+      .then(storageUsed => logger.info(`[${requestId}] Storage updated`, { tenantId, storageUsedGB: storageUsed }))
+      .catch(err => logger.error(`[${requestId}] Error updating storage`, { tenantId, error: err.message }));
 
     return res.status(201).json({
       message: `${createdImages.length} images created successfully`,
@@ -166,20 +212,31 @@ export const bulkCreateImages = async (req: AuthRequest, res: Response) => {
       images: createdImages
     });
   } catch (err: any) {
-    console.error('Bulk create images error:', err);
+    logger.error(`[${requestId}] Error bulk creating images`, { 
+      tenantId,
+      count: images?.length,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getAllImages = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching all images`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     const images = await Image.find({ tenantId }).sort({ uploadedAt: -1 }).lean();
+
+    logger.info(`[${requestId}] Images retrieved`, { tenantId, count: images.length });
 
     return res.status(200).json({
       message: 'Images retrieved successfully',
@@ -187,26 +244,35 @@ export const getAllImages = async (req: AuthRequest, res: Response) => {
       images
     });
   } catch (err: any) {
-    console.error('Get all images error:', err);
+    logger.error(`[${requestId}] Error fetching images`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getImagesByClientEvent = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId } = req.params;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const roleName = req.user?.roleName;
-    const { selectedByClient, markedAsFavorite } = req.query;
+  const requestId = nanoid(8);
+  const { clientEventId } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const roleName = req.user?.roleName;
+  const { selectedByClient, markedAsFavorite } = req.query;
 
+  logger.info(`[${requestId}] Fetching images by client event`, { tenantId, clientEventId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     // Check if user has access to this event
     const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
     if (!clientEvent) {
+      logger.warn(`[${requestId}] Client event not found`, { tenantId, clientEventId });
       return res.status(404).json({ message: 'Client event not found' });
     }
 
@@ -222,6 +288,7 @@ export const getImagesByClientEvent = async (req: AuthRequest, res: Response) =>
       const isDesigner = clientEvent.albumDesigner === userId || (memberId && clientEvent.albumDesigner === memberId);
       
       if (!isTeamMember && !isEditor && !isDesigner) {
+        logger.warn(`[${requestId}] Access denied`, { tenantId, clientEventId, userId });
         return res.status(403).json({ message: 'Access denied. You can only view images for events you are assigned to.' });
       }
     }
@@ -241,25 +308,36 @@ export const getImagesByClientEvent = async (req: AuthRequest, res: Response) =>
       .sort({ sortOrder: 1, uploadedAt: 1 })
       .lean();
 
+    logger.info(`[${requestId}] Images retrieved by event`, { tenantId, clientEventId, count: images.length });
+
     return res.status(200).json({
       message: 'Images retrieved successfully',
       count: images.length,
       images
     });
   } catch (err: any) {
-    console.error('Get images by client event error:', err);
+    logger.error(`[${requestId}] Error fetching images by event`, { 
+      tenantId,
+      clientEventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getImagesByProject = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const roleName = req.user?.roleName;
+  const requestId = nanoid(8);
+  const { projectId } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const roleName = req.user?.roleName;
 
+  logger.info(`[${requestId}] Fetching images by project`, { tenantId, projectId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -269,6 +347,7 @@ export const getImagesByProject = async (req: AuthRequest, res: Response) => {
     if (!isAdmin) {
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
       if (!teamMember) {
+        logger.warn(`[${requestId}] Access denied - not a team member`, { tenantId, projectId, userId });
         return res.status(403).json({ message: 'Access denied. You are not a team member.' });
       }
 
@@ -279,6 +358,7 @@ export const getImagesByProject = async (req: AuthRequest, res: Response) => {
       }).lean();
 
       if (assignedEvents.length === 0) {
+        logger.warn(`[${requestId}] Access denied - no assigned events`, { tenantId, projectId, userId });
         return res.status(403).json({ message: 'Access denied. You have no assigned events in this project.' });
       }
 
@@ -290,6 +370,8 @@ export const getImagesByProject = async (req: AuthRequest, res: Response) => {
         clientEventId: { $in: assignedEventIds }
       }).sort({ uploadedAt: -1 }).lean();
 
+      logger.info(`[${requestId}] Images retrieved for assigned events`, { tenantId, projectId, count: images.length });
+
       return res.status(200).json({
         message: 'Images retrieved successfully',
         count: images.length,
@@ -300,53 +382,77 @@ export const getImagesByProject = async (req: AuthRequest, res: Response) => {
     // Admin sees all images in the project
     const images = await Image.find({ projectId, tenantId }).sort({ uploadedAt: -1 }).lean();
 
+    logger.info(`[${requestId}] Images retrieved`, { tenantId, projectId, count: images.length });
+
     return res.status(200).json({
       message: 'Images retrieved successfully',
       count: images.length,
       images
     });
   } catch (err: any) {
-    console.error('Get images by project error:', err);
+    logger.error(`[${requestId}] Error fetching images by project`, { 
+      tenantId,
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getImageById = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageId } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { imageId } = req.params;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching image by ID`, { tenantId, imageId });
+
+  try {
     const image = await Image.findOne({ imageId });
 
     if (!image) {
+      logger.warn(`[${requestId}] Image not found`, { tenantId, imageId });
       return res.status(404).json({ message: 'Image not found' });
     }
 
     // Check authorization
     if (image.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, imageId });
       return res.status(403).json({ message: 'Access denied. You can only view your own tenant images.' });
     }
 
+    logger.info(`[${requestId}] Image retrieved`, { tenantId, imageId });
+
     return res.status(200).json({ image });
   } catch (err: any) {
-    console.error('Get image error:', err);
+    logger.error(`[${requestId}] Error fetching image`, { 
+      tenantId,
+      imageId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getImageProperties = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageId } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { imageId } = req.params;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching image properties`, { tenantId, imageId });
+
+  try {
     const image = await Image.findOne({ imageId }).lean();
 
     if (!image) {
+      logger.warn(`[${requestId}] Image not found`, { tenantId, imageId });
       return res.status(404).json({ message: 'Image not found' });
     }
 
     // Check authorization
     if (image.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, imageId });
       return res.status(403).json({ message: 'Access denied. You can only view your own tenant images.' });
     }
 
@@ -375,20 +481,30 @@ export const getImageProperties = async (req: AuthRequest, res: Response) => {
       updatedAt: image.updatedAt,
     };
 
+    logger.info(`[${requestId}] Image properties retrieved`, { tenantId, imageId });
+
     return res.status(200).json({ image: properties });
   } catch (err: any) {
-    console.error('Get image properties error:', err);
+    logger.error(`[${requestId}] Error fetching image properties`, { 
+      tenantId,
+      imageId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 
 export const updateImage = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageId } = req.params;
-    const updates = req.body;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { imageId } = req.params;
+  const updates = req.body;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Updating image`, { tenantId, imageId });
+
+  try {
     // Don't allow updating core fields
     delete updates.imageId;
     delete updates.tenantId;
@@ -400,11 +516,13 @@ export const updateImage = async (req: AuthRequest, res: Response) => {
     const image = await Image.findOne({ imageId });
 
     if (!image) {
+      logger.warn(`[${requestId}] Image not found`, { tenantId, imageId });
       return res.status(404).json({ message: 'Image not found' });
     }
 
     // Check authorization
     if (image.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, imageId });
       return res.status(403).json({ message: 'Access denied. You can only update your own tenant images.' });
     }
 
@@ -414,26 +532,38 @@ export const updateImage = async (req: AuthRequest, res: Response) => {
       { new: true, runValidators: true }
     );
 
+    logger.info(`[${requestId}] Image updated`, { tenantId, imageId });
+
     return res.status(200).json({
       message: 'Image updated successfully',
       image: updatedImage
     });
   } catch (err: any) {
-    console.error('Update image error:', err);
+    logger.error(`[${requestId}] Error updating image`, { 
+      tenantId,
+      imageId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const bulkUpdateImages = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageIds, updates } = req.body;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { imageIds, updates } = req.body;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Bulk updating images`, { tenantId, count: imageIds?.length });
+
+  try {
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      logger.warn(`[${requestId}] Image IDs array missing or empty`, { tenantId });
       return res.status(400).json({ message: 'Image IDs array is required' });
     }
 
     if (!updates || typeof updates !== 'object') {
+      logger.warn(`[${requestId}] Updates object missing`, { tenantId });
       return res.status(400).json({ message: 'Updates object is required' });
     }
 
@@ -450,39 +580,68 @@ export const bulkUpdateImages = async (req: AuthRequest, res: Response) => {
       { $set: updates }
     );
 
+    logger.info(`[${requestId}] Images bulk updated`, { 
+      tenantId, 
+      matched: result.matchedCount, 
+      modified: result.modifiedCount 
+    });
+
     return res.status(200).json({
       message: 'Images updated successfully',
       matchedCount: result.matchedCount,
       modifiedCount: result.modifiedCount
     });
   } catch (err: any) {
-    console.error('Bulk update images error:', err);
+    logger.error(`[${requestId}] Error bulk updating images`, { 
+      tenantId,
+      count: imageIds?.length,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const deleteImage = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageId } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { imageId } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Deleting image`, { tenantId, imageId });
+
+  try {
     const image = await Image.findOne({ imageId });
 
     if (!image) {
+      logger.warn(`[${requestId}] Image not found`, { tenantId, imageId });
       return res.status(404).json({ message: 'Image not found' });
     }
 
     // Check authorization
     if (image.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, imageId });
       return res.status(403).json({ message: 'Access denied. You can only delete your own tenant images.' });
     }
 
     await Image.deleteOne({ imageId });
 
+    logImageDeletion({
+      requestId,
+      tenantId,
+      imageId,
+      projectId: image.projectId,
+      clientEventId: image.clientEventId,
+      fileName: image.fileName,
+      deletedBy: userId
+    });
+
+    logger.info(`[${requestId}] Image deleted`, { tenantId, imageId });
+
     // Update storage usage asynchronously
     if (tenantId) {
       updateTenantStorageUsage(tenantId).catch(err => 
-        console.error('Error updating storage after image deletion:', err)
+        logger.error(`[${requestId}] Error updating storage`, { tenantId, error: err.message })
       );
     }
 
@@ -491,17 +650,27 @@ export const deleteImage = async (req: AuthRequest, res: Response) => {
       imageId
     });
   } catch (err: any) {
-    console.error('Delete image error:', err);
+    logger.error(`[${requestId}] Error deleting image`, { 
+      tenantId,
+      imageId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageIds } = req.body;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { imageIds } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Bulk deleting images`, { tenantId, count: imageIds?.length });
+
+  try {
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      logger.warn(`[${requestId}] Image IDs array missing or empty`, { tenantId });
       return res.status(400).json({ message: 'Image IDs array is required' });
     }
 
@@ -512,6 +681,7 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
     }).lean();
 
     if (images.length === 0) {
+      logger.warn(`[${requestId}] No images found to delete`, { tenantId, imageIds });
       return res.status(404).json({ message: 'No images found to delete' });
     }
 
@@ -526,6 +696,7 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
     // Delete from S3 (both standard and Glacier)
     if (s3Urls.length > 0) {
       await bulkDeleteFromS3(s3Urls);
+      logger.info(`[${requestId}] S3 files deleted`, { tenantId, count: s3Urls.length });
     }
 
     // Delete from database
@@ -534,12 +705,24 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
       tenantId
     });
 
+    // Log bulk deletion
+    logBulkDeletion({
+      requestId,
+      tenantId: tenantId!,
+      projectId: images[0]?.projectId,
+      clientEventId: images[0]?.clientEventId,
+      imageIds,
+      count: result.deletedCount,
+      deletedBy: userId
+    });
+
+    logger.info(`[${requestId}] Images deleted from database`, { tenantId, count: result.deletedCount });
+
     // Update storage usage asynchronously
     if (tenantId) {
-      console.log(`[Storage] Updating storage for tenant ${tenantId} after deleting ${result.deletedCount} images`);
       updateTenantStorageUsage(tenantId)
-        .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
-        .catch(err => console.error('[Storage] Error updating storage after bulk delete:', err));
+        .then(storageUsed => logger.info(`[${requestId}] Storage updated`, { tenantId, storageUsedGB: storageUsed }))
+        .catch(err => logger.error(`[${requestId}] Error updating storage`, { tenantId, error: err.message }));
     }
 
     return res.status(200).json({
@@ -548,32 +731,46 @@ export const bulkDeleteImages = async (req: AuthRequest, res: Response) => {
       s3FilesDeleted: s3Urls.length
     });
   } catch (err: any) {
-    console.error('Bulk delete images error:', err);
+    logger.error(`[${requestId}] Error bulk deleting images`, { 
+      tenantId,
+      count: imageIds?.length,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Batch upload endpoint with compression
 export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId, clientEventId, eventDeliveryStatusId, skipNotification } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const startTime = Date.now();
+  const { projectId, clientEventId, eventDeliveryStatusId, skipNotification } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Starting batch image upload`, { tenantId, projectId, clientEventId });
+
+  try {
     if (!projectId || !clientEventId) {
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId, projectId, clientEventId });
       return res.status(400).json({ 
         message: 'Project ID and Client Event ID are required' 
       });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
+      logger.warn(`[${requestId}] No images provided`, { tenantId });
       return res.status(400).json({ message: 'No images provided' });
     }
+
+    logger.info(`[${requestId}] Processing ${files.length} images`, { tenantId, projectId, clientEventId });
 
     // Fetch project
     const project = await Project.findOne({ projectId, tenantId });
@@ -609,7 +806,7 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
     // Build full folder path: tenant/project/event
     const folderPrefix = `${tenant.s3TenantFolderName}/${project.s3ProjectFolderName}/${clientEvent.s3EventFolderName}`;
 
-    console.log(`Starting batch upload of ${files.length} images to bucket: ${s3BucketName}, path: ${folderPrefix}`);
+    logger.info(`[${requestId}] S3 path configured`, { tenantId, bucket: s3BucketName, path: folderPrefix });
 
     // Fetch event to get event name
     const event = await Event.findOne({ eventId: clientEvent.eventId });
@@ -651,8 +848,6 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           // Get original buffer
           const originalBuffer = file.buffer;
           const originalMetadata = await require('sharp')(originalBuffer).metadata();
-          
-          console.log(`[Upload] ${file.originalname}: file.size=${file.size}, buffer.length=${originalBuffer.length}`);
 
           // Extract dates from EXIF data using exifr
           let capturedAt: Date | undefined;
@@ -668,18 +863,9 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
               
               // DateTime or ModifyDate - last modified date
               editedAt = exifData.DateTime || exifData.ModifyDate;
-              
-              console.log(`EXIF dates for ${file.originalname}:`, {
-                DateTimeOriginal: exifData.DateTimeOriginal,
-                CreateDate: exifData.CreateDate,
-                DateTime: exifData.DateTime,
-                ModifyDate: exifData.ModifyDate,
-                capturedAt,
-                editedAt
-              });
             }
           } catch (exifError) {
-            console.log(`Could not parse EXIF dates for ${file.originalname}:`, exifError);
+            // EXIF parsing errors are not critical
           }
 
           // Compress image
@@ -709,7 +895,6 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           let image;
           if (existingImage) {
             // Update existing image record
-            console.log(`↻ Updating existing: ${file.originalname}`);
             image = await Image.findOneAndUpdate(
               { imageId: existingImage.imageId },
               {
@@ -753,7 +938,22 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
             });
           }
 
-          console.log(`✓ Uploaded: ${file.originalname}`);
+          // Log individual image upload to dedicated image log
+          logImageUpload({
+            requestId,
+            tenantId,
+            imageId: image?.imageId || existingImage?.imageId || 'unknown',
+            projectId,
+            clientEventId,
+            fileName: file.originalname,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            width: originalMetadata.width,
+            height: originalMetadata.height,
+            originalUrl: uploadResult.originalUrl,
+            compressedUrl: uploadResult.compressedUrl,
+            uploadedBy: userId
+          });
 
           return {
             success: true,
@@ -763,7 +963,15 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
             compressedUrl: uploadResult.compressedUrl,
           };
         } catch (error) {
-          console.error(`✗ Failed: ${file.originalname}`, error);
+          // Log error to dedicated image log
+          logImageError({
+            requestId,
+            tenantId,
+            operation: 'BATCH_UPLOAD',
+            fileName: file.originalname,
+            error: error instanceof Error ? error.message : 'Upload failed',
+            stack: error instanceof Error ? error.stack : undefined
+          });
           
           // Create database record for failed upload
           try {
@@ -783,7 +991,11 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
               uploadedAt: new Date(),
             });
           } catch (dbError) {
-            console.error(`Failed to save error record for ${file.originalname}:`, dbError);
+            logger.error(`[${requestId}] Failed to save error record`, { 
+              tenantId, 
+              fileName: file.originalname, 
+              error: dbError instanceof Error ? dbError.message : 'Unknown error' 
+            });
           }
           
           return {
@@ -800,10 +1012,34 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
     const failed = results.filter((r) => !r.success);
 
     const totalBytes = files.reduce((sum, file) => sum + file.size, 0);
-    const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
-    console.log(`Batch upload completed: ${successful.length} successful, ${failed.length} failed. Total size: ${totalMB} MB (${totalBytes} bytes)`);
+    const processingTime = Date.now() - startTime;
+
+    // Log batch completion to dedicated image log
+    logBatchUpload({
+      requestId,
+      tenantId,
+      projectId,
+      clientEventId,
+      projectName: project.projectName,
+      eventName: event.eventDesc,
+      totalImages: files.length,
+      successfulUploads: successful.length,
+      failedUploads: failed.length,
+      totalSize: totalBytes,
+      uploadedBy: userId,
+      processingTime
+    });
+
+    logger.info(`[${requestId}] Batch upload completed`, { 
+      tenantId, 
+      successful: successful.length, 
+      failed: failed.length,
+      totalSizeMB: (totalBytes / (1024 * 1024)).toFixed(2),
+      processingTimeMs: processingTime
+    });
 
     // Send notification to admins if any images were successfully uploaded (unless explicitly skipped)
+    // Also create audit log only when notification is sent (final batch)
     if (successful.length > 0 && !skipNotification) {
       try {
         // Get editor name
@@ -825,8 +1061,35 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           successful.length,
           userId
         );
+        logger.info(`[${requestId}] Notification sent`, { tenantId, editorName, imageCount: successful.length });
+
+        // Create audit log only once when all images are uploaded (same condition as notification)
+        logAudit({
+          action: auditEvents.TENANT_UPDATED,
+          entityType: 'Images',
+          entityId: clientEventId,
+          tenantId,
+          performedBy: userId || 'System',
+          changes: {},
+          metadata: {
+            operation: 'BATCH_UPLOAD',
+            projectId,
+            projectName: project.projectName,
+            clientEventId,
+            eventName: event.eventDesc,
+            totalImages: files.length,
+            successfulUploads: successful.length,
+            failedUploads: failed.length,
+            totalSizeBytes: totalBytes,
+            processingTimeMs: processingTime
+          },
+          ipAddress: req.ip
+        });
       } catch (notifError) {
-        console.error('Error sending images uploaded notification:', notifError);
+        logger.error(`[${requestId}] Error sending notification`, { 
+          tenantId, 
+          error: notifError instanceof Error ? notifError.message : 'Unknown error' 
+        });
         // Don't fail the request if notification fails
       }
     }
@@ -834,7 +1097,6 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
     // Check if we should update event status to REVIEW_ONGOING
     if (clientEventId && successful.length > 0) {
       const totalImagesForEvent = await Image.countDocuments({ clientEventId, tenantId });
-      console.log(`[UploadBatchImages] Event ${clientEventId} now has ${totalImagesForEvent} images`);
       
       // If event now has at least 10 images, set status to REVIEW_ONGOING
       if (totalImagesForEvent >= 10) {
@@ -844,17 +1106,6 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           tenantId: { $in: [tenantId, -1] },
           statusCode: 'EDITING_ONGOING'
         });
-        
-        console.log(`[UploadBatchImages] Current event status ID: ${currentEvent?.eventDeliveryStatusId}, EDITING_ONGOING status ID: ${editingOngoingStatus?.statusId}`);
-        
-        // Get the actual status name for debugging
-        if (currentEvent?.eventDeliveryStatusId) {
-          const actualStatus = await EventDeliveryStatus.findOne({
-            tenantId: { $in: [tenantId, -1] },
-            statusId: currentEvent.eventDeliveryStatusId
-          });
-          console.log(`[UploadBatchImages] Event is currently in status: ${actualStatus?.statusCode} (${actualStatus?.statusDescription})`);
-        }
         
         // Only update if current status is EDITING_ONGOING
         if (currentEvent && editingOngoingStatus && currentEvent.eventDeliveryStatusId === editingOngoingStatus.statusId) {
@@ -873,20 +1124,17 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
                 }
               }
             );
-            console.log(`[UploadBatchImages] ✓ Event ${clientEventId} status updated to REVIEW_ONGOING`);
+            logger.info(`[${requestId}] Event status updated to REVIEW_ONGOING`, { tenantId, clientEventId, totalImages: totalImagesForEvent });
           }
-        } else {
-          console.log(`[UploadBatchImages] Event ${clientEventId} not in EDITING_ONGOING status, skipping status update`);
         }
       }
     }
 
     // Update storage usage asynchronously
     if (tenantId && successful.length > 0) {
-      console.log(`[Storage] Updating storage for tenant ${tenantId} after batch upload of ${successful.length} images`);
       updateTenantStorageUsage(tenantId)
-        .then(storageUsed => console.log(`[Storage] Updated successfully: ${storageUsed} GB`))
-        .catch(err => console.error('[Storage] Error updating storage after batch upload:', err));
+        .then(storageUsed => logger.info(`[${requestId}] Storage updated`, { tenantId, storageUsedGB: storageUsed }))
+        .catch(err => logger.error(`[${requestId}] Error updating storage`, { tenantId, error: err.message }));
     }
 
     res.status(200).json({
@@ -900,7 +1148,11 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('Batch upload error:', error);
+    logger.error(`[${requestId}] Batch upload error`, { 
+      tenantId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(500).json({ 
       message: 'Failed to upload images', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -909,17 +1161,22 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
 };
 
 export const reorderImages = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId, imageIds } = req.body;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { clientEventId, imageIds } = req.body;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Reordering images`, { tenantId, clientEventId, count: imageIds?.length });
+
+  try {
     if (!clientEventId || !imageIds || !Array.isArray(imageIds)) {
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId });
       return res.status(400).json({ 
         message: 'Client Event ID and imageIds array are required' 
       });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -934,12 +1191,19 @@ export const reorderImages = async (req: AuthRequest, res: Response) => {
 
     await Promise.all(updatePromises);
 
+    logger.info(`[${requestId}] Images reordered`, { tenantId, clientEventId, count: imageIds.length });
+
     res.status(200).json({ 
       message: 'Images reordered successfully',
       imageIds 
     });
   } catch (error) {
-    console.error('Error reordering images:', error);
+    logger.error(`[${requestId}] Error reordering images`, { 
+      tenantId,
+      clientEventId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(500).json({ 
       message: 'Failed to reorder images', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -949,6 +1213,10 @@ export const reorderImages = async (req: AuthRequest, res: Response) => {
 
 // Reupload edited images - updates existing records
 export const reuploadImages = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+
   try {
     // Parse imageIds from FormData (sent as JSON string)
     let imageIds: string[] = [];
@@ -958,27 +1226,30 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
           ? JSON.parse(req.body.imageIds) 
           : req.body.imageIds;
       } catch (e) {
+        logger.warn(`[${requestId}] Invalid image selection data`, { tenantId });
         return res.status(400).json({ 
           message: 'Invalid image selection data' 
         });
       }
     }
 
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+    logger.info(`[${requestId}] Reuploading images`, { tenantId, count: imageIds.length });
 
     if (!imageIds || !Array.isArray(imageIds) || imageIds.length === 0) {
+      logger.warn(`[${requestId}] No images selected`, { tenantId });
       return res.status(400).json({ 
         message: 'Please select images to re-upload' 
       });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Unable to verify your account. Please log in again.' });
     }
 
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
+      logger.warn(`[${requestId}] No files provided`, { tenantId });
       return res.status(400).json({ message: 'Please select files to upload' });
     }
 
@@ -1032,7 +1303,7 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
     // Build full folder path: tenant/project/event
     const folderPrefix = `${tenant.s3TenantFolderName}/${project.s3ProjectFolderName}/${clientEvent.s3EventFolderName}`;
 
-    console.log(`Processing reupload to path: ${folderPrefix}`);
+    logger.info(`[${requestId}] Processing reupload`, { tenantId, path: folderPrefix, fileCount: files.length });
 
     // Get "Re-edit done" status
     const reEditDoneStatus = await ImageStatus.findOne({ 
@@ -1041,12 +1312,10 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
     });
 
     if (!reEditDoneStatus) {
-      console.warn('⚠ RE_EDIT_DONE status not found. Status will not be updated.');
+      logger.warn(`[${requestId}] RE_EDIT_DONE status not found`, { tenantId });
     } else {
-      console.log(`✓ Found RE_EDIT_DONE status: ${reEditDoneStatus.statusId}`);
+      logger.info(`[${requestId}] RE_EDIT_DONE status found`, { tenantId, statusId: reEditDoneStatus.statusId });
     }
-
-    console.log(`Processing ${files.length} files for reupload...`);
 
     // Create a map of filename -> existing image for matching
     const imagesByFilename = new Map<string, any>();
@@ -1063,7 +1332,6 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
           const existingImage = imagesByFilename.get(file.originalname);
           
           if (!existingImage) {
-            console.log(`⚠ No matching image found for: ${file.originalname}`);
             return {
               success: false,
               fileName: file.originalname,
@@ -1088,7 +1356,7 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
               editedAt = exifData.DateTime || exifData.ModifyDate;
             }
           } catch (exifError) {
-            console.log(`Could not parse EXIF dates for ${file.originalname}`);
+            // EXIF parsing errors are not critical
           }
 
           // Compress image
@@ -1132,7 +1400,22 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
             updateData
           );
 
-          console.log(`✓ Re-uploaded: ${file.originalname}`);
+          logImageUpload({
+            requestId,
+            tenantId,
+            imageId: existingImage.imageId,
+            projectId: existingImage.projectId,
+            clientEventId: existingImage.clientEventId,
+            fileName: file.originalname,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            width: originalMetadata.width,
+            height: originalMetadata.height,
+            originalUrl: uploadResult.originalUrl,
+            compressedUrl: uploadResult.compressedUrl,
+            thumbnailUrl: undefined,
+            uploadedBy: userId
+          });
 
           return {
             success: true,
@@ -1142,7 +1425,13 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
             compressedUrl: uploadResult.compressedUrl,
           };
         } catch (error) {
-          console.error(`✗ Failed to reupload: ${file.originalname}`, error);
+          logImageError({
+            requestId,
+            tenantId,
+            operation: 'REUPLOAD',
+            fileName: file.originalname,
+            error: error instanceof Error ? error.message : 'Upload failed'
+          });
           return {
             success: false,
             fileName: file.originalname,
@@ -1155,6 +1444,12 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
 
     const successful = results.filter(r => r.success);
     const failed = results.filter(r => !r.success);
+
+    logger.info(`[${requestId}] Reupload completed`, { 
+      tenantId, 
+      successful: successful.length, 
+      failed: failed.length 
+    });
 
     // Send notification to admins if any images were successfully reuploaded
     if (successful.length > 0) {
@@ -1174,8 +1469,12 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
           event.eventDesc,
           successful.length
         );
+        logger.info(`[${requestId}] Re-edit notification sent`, { tenantId, editorName, count: successful.length });
       } catch (notifError) {
-        console.error('Failed to send re-edit completion notification:', notifError);
+        logger.error(`[${requestId}] Error sending notification`, { 
+          tenantId, 
+          error: notifError instanceof Error ? notifError.message : 'Unknown error' 
+        });
         // Don't fail the request if notification fails
       }
     }
@@ -1187,19 +1486,27 @@ export const reuploadImages = async (req: AuthRequest, res: Response) => {
       results,
     });
   } catch (err: any) {
-    console.error('Reupload images error:', err);
+    logger.error(`[${requestId}] Error reuploading images`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Approve images endpoint
 export const approveImages = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageIds } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { imageIds } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Approving images`, { tenantId, count: imageIds?.length });
+
+  try {
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      logger.warn(`[${requestId}] No images selected`, { tenantId });
       return res.status(400).json({ message: 'Please select images to approve' });
     }
 
@@ -1210,6 +1517,7 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
     });
 
     if (!approvedStatus) {
+      logger.warn(`[${requestId}] APPROVED status not found`, { tenantId });
       return res.status(404).json({ message: 'Approved status not found in the system' });
     }
 
@@ -1220,6 +1528,7 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
     });
 
     if (images.length !== imageIds.length) {
+      logger.warn(`[${requestId}] Some images not found`, { tenantId, requested: imageIds.length, found: images.length });
       return res.status(404).json({ 
         message: 'Some images not found. Please refresh and try again.' 
       });
@@ -1239,6 +1548,18 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
         } 
       }
     );
+
+    // Log image approval
+    logImageApproval({
+      requestId,
+      tenantId: tenantId!,
+      imageIds,
+      approvedBy: userId,
+      count: result.modifiedCount,
+      clientEventId: images[0]?.clientEventId || ''
+    });
+
+    logger.info(`[${requestId}] Images approved`, { tenantId, count: result.modifiedCount });
 
     // Send notification to editor
     if (result.modifiedCount > 0 && images.length > 0) {
@@ -1270,10 +1591,14 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
               result.modifiedCount,
               adminName
             );
+            logger.info(`[${requestId}] Approval notification sent`, { tenantId, editorUserId: editorMember.userId });
           }
         }
       } catch (notifError) {
-        console.error('Failed to send approval notification:', notifError);
+        logger.error(`[${requestId}] Error sending notification`, { 
+          tenantId, 
+          error: notifError instanceof Error ? notifError.message : 'Unknown error' 
+        });
         // Don't fail the request if notification fails
       }
     }
@@ -1283,7 +1608,12 @@ export const approveImages = async (req: AuthRequest, res: Response) => {
       approvedCount: result.modifiedCount
     });
   } catch (err: any) {
-    console.error('Approve images error:', err);
+    logger.error(`[${requestId}] Error approving images`, { 
+      tenantId,
+      count: imageIds?.length,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ 
       message: 'An error occurred while approving images. Please try again.' 
     });
@@ -1330,7 +1660,7 @@ const streamImagesAsZip = async (res: Response, images: any[], zipBaseName: stri
             name: sanitizeZipFileName(image.fileName || `${image.imageId}.jpg`, `${image.imageId}.jpg`),
           });
         } catch (error) {
-          console.error(`Failed to append image ${image.imageId} to download archive`, error);
+          // Skip images that fail to stream
         }
       }
 
@@ -1340,15 +1670,20 @@ const streamImagesAsZip = async (res: Response, images: any[], zipBaseName: stri
 };
 
 export const downloadSelectedImagesZip = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageIds } = req.body;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { imageIds } = req.body;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Downloading selected images`, { tenantId, count: imageIds?.length });
+
+  try {
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      logger.warn(`[${requestId}] Image IDs array missing`, { tenantId });
       return res.status(400).json({ message: 'Image IDs array is required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -1368,7 +1703,7 @@ export const downloadSelectedImagesZip = async (req: AuthRequest, res: Response)
     const zipName = `selected-${new Date().toISOString().split('T')[0]}`;
     await streamImagesAsZip(res, downloadableImages, zipName);
   } catch (error) {
-    console.error('Download selected images error:', error);
+    logger.error(`[${requestId}] Error downloading selected images`, { tenantId, error: error instanceof Error ? error.message : 'Unknown error', stack: error instanceof Error ? error.stack : undefined });
     if (!res.headersSent) {
       return res.status(500).json({ message: 'Failed to download selected images' });
     }
@@ -1377,16 +1712,21 @@ export const downloadSelectedImagesZip = async (req: AuthRequest, res: Response)
 };
 
 export const downloadEventImagesZip = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { clientEventId } = req.params;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Downloading event images`, { tenantId, clientEventId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId }).lean();
     if (!clientEvent) {
+      logger.warn(`[${requestId}] Client event not found`, { tenantId, clientEventId });
       return res.status(404).json({ message: 'Client event not found' });
     }
 
@@ -1396,6 +1736,7 @@ export const downloadEventImagesZip = async (req: AuthRequest, res: Response) =>
     const downloadableImages = images.filter((img) => img.originalUrl || img.compressedUrl);
 
     if (downloadableImages.length === 0) {
+      logger.warn(`[${requestId}] No downloadable images`, { tenantId, clientEventId });
       return res.status(404).json({ message: 'No downloadable images found for this event' });
     }
 
@@ -1409,9 +1750,18 @@ export const downloadEventImagesZip = async (req: AuthRequest, res: Response) =>
       'images',
     ].filter(Boolean) as string[];
 
+    logger.info(`[${requestId}] Streaming ${downloadableImages.length} event images`, { tenantId, clientEventId });
+
     await streamImagesAsZip(res, downloadableImages, zipNameParts.join('-') || `event-${clientEventId}`);
+
+    logger.info(`[${requestId}] Download completed`, { tenantId, clientEventId, count: downloadableImages.length });
   } catch (error) {
-    console.error('Download event images error:', error);
+    logger.error(`[${requestId}] Error downloading event images`, { 
+      tenantId,
+      clientEventId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     if (!res.headersSent) {
       return res.status(500).json({ message: 'Failed to download event images' });
     }
@@ -1421,16 +1771,21 @@ export const downloadEventImagesZip = async (req: AuthRequest, res: Response) =>
 
 // Mark images as selected by client (for customer portal)
 export const markImagesAsClientSelected = async (req: AuthRequest, res: Response) => {
-  try {
-    const { imageIds, selected = true } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { imageIds, selected = true } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Marking images as client selected`, { tenantId, count: imageIds?.length, selected });
+
+  try {
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
+      logger.warn(`[${requestId}] Image IDs array missing`, { tenantId });
       return res.status(400).json({ message: 'Image IDs array is required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -1440,34 +1795,62 @@ export const markImagesAsClientSelected = async (req: AuthRequest, res: Response
       { $set: { selectedByClient: selected } }
     );
 
+    // Get clientEventId from first image for logging
+    const firstImage = await Image.findOne({ imageId: imageIds[0], tenantId }).lean();
+
+    logClientSelection({
+      requestId,
+      tenantId,
+      imageIds,
+      count: result.modifiedCount,
+      clientEventId: firstImage?.clientEventId || ''
+    });
+
+    logger.info(`[${requestId}] Images marked as client selected`, { 
+      tenantId, 
+      count: result.modifiedCount, 
+      selected 
+    });
+
     return res.status(200).json({
       message: `${result.modifiedCount} image(s) ${selected ? 'selected' : 'deselected'} by client`,
       modifiedCount: result.modifiedCount
     });
   } catch (err: any) {
-    console.error('Mark images as client selected error:', err);
+    logger.error(`[${requestId}] Error marking images as client selected`, { 
+      tenantId,
+      count: imageIds?.length,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Finalize client selection - sets event status to CLIENT_SELECTION_DONE
 export const finalizeClientSelection = async (req: AuthRequest, res: Response) => {
-  try {
-    const { clientEventId } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { clientEventId } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Finalizing client selection`, { tenantId, clientEventId });
+
+  try {
     if (!clientEventId) {
+      logger.warn(`[${requestId}] Client Event ID missing`, { tenantId });
       return res.status(400).json({ message: 'Client Event ID is required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     // Verify event exists
     const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
     if (!clientEvent) {
+      logger.warn(`[${requestId}] Client event not found`, { tenantId, clientEventId });
       return res.status(404).json({ message: 'Client event not found' });
     }
 
@@ -1478,6 +1861,7 @@ export const finalizeClientSelection = async (req: AuthRequest, res: Response) =
     });
 
     if (!selectionDoneStatus) {
+      logger.warn(`[${requestId}] CLIENT_SELECTION_DONE status not found`, { tenantId });
       return res.status(404).json({ message: 'CLIENT_SELECTION_DONE status not found in system' });
     }
 
@@ -1499,6 +1883,8 @@ export const finalizeClientSelection = async (req: AuthRequest, res: Response) =
       selectedByClient: true
     });
 
+    logger.info(`[${requestId}] Client selection finalized`, { tenantId, clientEventId, selectedCount });
+
     return res.status(200).json({
       message: 'Client selection finalized successfully',
       clientEventId,
@@ -1506,22 +1892,32 @@ export const finalizeClientSelection = async (req: AuthRequest, res: Response) =
       statusId: selectionDoneStatus.statusId
     });
   } catch (err: any) {
-    console.error('Finalize client selection error:', err);
+    logger.error(`[${requestId}] Error finalizing client selection`, { 
+      tenantId,
+      clientEventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId, clientEventId, imageCount } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { projectId, clientEventId, imageCount } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Sending images uploaded notification`, { tenantId, projectId, clientEventId, imageCount });
+
+  try {
     if (!projectId || !clientEventId || !imageCount) {
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId });
       return res.status(400).json({ message: 'Project ID, Client Event ID, and image count are required' });
     }
 
     if (!tenantId || !userId) {
+      logger.warn(`[${requestId}] Tenant ID or User ID missing`, { tenantId });
       return res.status(400).json({ message: 'Tenant ID and User ID are required' });
     }
 
@@ -1548,9 +1944,17 @@ export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
       userId
     );
 
+    logger.info(`[${requestId}] Notification sent`, { tenantId, editorName, imageCount });
+
     res.status(200).json({ message: 'Notification sent successfully' });
   } catch (error) {
-    console.error('Error sending images uploaded notification:', error);
+    logger.error(`[${requestId}] Error sending notification`, { 
+      tenantId,
+      projectId,
+      clientEventId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(500).json({ 
       message: 'Failed to send notification', 
       error: error instanceof Error ? error.message : 'Unknown error' 
@@ -1559,16 +1963,21 @@ export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
 };
 
 export const notifyReEditRequested = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId, clientEventId, imageCount } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { projectId, clientEventId, imageCount } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Sending re-edit requested notification`, { tenantId, projectId, clientEventId, imageCount });
+
+  try {
     if (!projectId || !clientEventId || !imageCount) {
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId });
       return res.status(400).json({ message: 'Project ID, Client Event ID, and image count are required' });
     }
 
     if (!tenantId || !userId) {
+      logger.warn(`[${requestId}] Tenant ID or User ID missing`, { tenantId });
       return res.status(400).json({ message: 'Tenant ID and User ID are required' });
     }
 
@@ -1578,12 +1987,14 @@ export const notifyReEditRequested = async (req: AuthRequest, res: Response) => 
     const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
 
     if (!clientEvent?.albumEditor) {
+      logger.warn(`[${requestId}] No editor assigned`, { tenantId, clientEventId });
       return res.status(400).json({ message: 'No editor assigned to this event' });
     }
 
     // Get editor's userId from their memberId
     const editorMember = await Team.findOne({ memberId: clientEvent.albumEditor, tenantId });
     if (!editorMember?.userId) {
+      logger.warn(`[${requestId}] Editor user account not found`, { tenantId, clientEventId });
       return res.status(400).json({ message: 'Editor user account not found' });
     }
 
@@ -1607,9 +2018,17 @@ export const notifyReEditRequested = async (req: AuthRequest, res: Response) => 
       adminName
     );
 
+    logger.info(`[${requestId}] Re-edit notification sent`, { tenantId, editorUserId: editorMember.userId, imageCount });
+
     res.status(200).json({ message: 'Notification sent successfully' });
   } catch (error) {
-    console.error('Error sending re-edit requested notification:', error);
+    logger.error(`[${requestId}] Error sending re-edit notification`, { 
+      tenantId,
+      projectId,
+      clientEventId,
+      error: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined
+    });
     res.status(500).json({
       message: 'Failed to send notification',
       error: error instanceof Error ? error.message : 'Unknown error'

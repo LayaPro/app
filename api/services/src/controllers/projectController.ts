@@ -9,42 +9,50 @@ import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Proposal from '../models/proposal';
 import Tenant from '../models/tenant';
 import { AuthRequest } from '../middleware/auth';
+import { createModuleLogger } from '../utils/logger';
+import { logAudit, auditEvents } from '../utils/auditLogger';
 
 import { NotificationUtils } from '../services/notificationUtils';
 
-export const createProject = async (req: AuthRequest, res: Response) => {
-  console.log('[Project] ========== CREATE PROJECT REQUEST RECEIVED ==========');
-  try {
-    const {
-      projectName,
-      brideFirstName,
-      groomFirstName,
-      brideLastName,
-      groomLastName,
-      phoneNumber,
-      budget,
-      address,
-      referredBy,
-      projectDeliveryStatusId,
-      proposalId,
-      displayPic,
-      coverPhoto
-    } = req.body;
-    const tenantId = req.user?.tenantId;
-    
-    console.log('[Project] Request data:', { projectName, tenantId, proposalId });
+const logger = createModuleLogger('ProjectController');
 
+export const createProject = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid(8);
+  const {
+    projectName,
+    brideFirstName,
+    groomFirstName,
+    brideLastName,
+    groomLastName,
+    phoneNumber,
+    budget,
+    address,
+    referredBy,
+    projectDeliveryStatusId,
+    proposalId,
+    displayPic,
+    coverPhoto
+  } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+
+  logger.info(`[${requestId}] Creating project`, { tenantId, projectName, proposalId });
+
+  try {
     if (!projectName) {
+      logger.warn(`[${requestId}] Project name missing`, { tenantId });
       return res.status(400).json({ message: 'Project name is required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     // Fetch tenant to get company name
     const tenant = await Tenant.findOne({ tenantId });
     if (!tenant) {
+      logger.warn(`[${requestId}] Tenant not found`, { tenantId });
       return res.status(404).json({ message: 'Tenant not found' });
     }
 
@@ -55,8 +63,6 @@ export const createProject = async (req: AuthRequest, res: Response) => {
     const sanitizedTenantName = (tenant.tenantCompanyName || `${tenant.tenantFirstName}${tenant.tenantLastName}`)
       .replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const s3ProjectFolderName = `${nanoid(10)}_${sanitizedProjectName}_${sanitizedTenantName}`;
-    
-    console.log(`[Project] Creating project ${projectId} with folder: ${s3ProjectFolderName}`);
     
     const project = await Project.create({
       projectId,
@@ -87,37 +93,61 @@ export const createProject = async (req: AuthRequest, res: Response) => {
             updatedAt: new Date()
           }
         );
-        console.log('[Project] Updated proposal status to project_created:', proposalId);
-      } catch (proposalError) {
-        console.error('[Project] Failed to update proposal status:', proposalError);
+        logger.info(`[${requestId}] Updated proposal status to project_created`, { tenantId, proposalId });
+      } catch (proposalError: any) {
+        logger.error(`[${requestId}] Failed to update proposal status`, { tenantId, proposalId, error: proposalError.message });
         // Don't fail the project creation if proposal update fails
       }
     }
+
+    logger.info(`[${requestId}] Project created`, { tenantId, projectId, projectName });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'Project',
+      entityId: projectId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {},
+      metadata: {
+        projectName,
+        proposalId,
+        s3ProjectFolderName
+      },
+      ipAddress: req.ip
+    });
 
     return res.status(201).json({
       message: 'Project created successfully',
       project
     });
   } catch (err: any) {
-    console.error('Create project error:', err);
+    logger.error(`[${requestId}] Error creating project`, { 
+      tenantId, 
+      projectName,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getAllProjects = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+  const roleName = req.user?.roleName;
+
+  logger.info(`[${requestId}] Fetching all projects`, { tenantId, userId, roleName });
+
   try {
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    const roleName = req.user?.roleName;
-
-    console.log('getAllProjects - User Info:', { userId, roleName, tenantId });
-
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     const isAdmin = roleName === 'Admin';
-    console.log('getAllProjects - isAdmin:', isAdmin);
 
     // For non-admin users, find their team member ID
     let memberId: string | undefined;
@@ -125,16 +155,11 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
       if (teamMember) {
         memberId = teamMember.memberId;
-        console.log('getAllProjects - Team Member ID:', memberId);
-      } else {
-        console.log('getAllProjects - No team member found for user');
       }
-      console.log('getAllProjects - User will see events where albumEditor or albumDesigner equals:', userId);
     }
 
     // Get all projects for the tenant
     const projects = await Project.find({ tenantId }).sort({ createdAt: -1 }).lean();
-    console.log('getAllProjects - Total projects:', projects.length);
 
     // Fetch related events and finance for each project
     const projectsWithDetails = await Promise.all(
@@ -164,21 +189,7 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
             query.$or.push({ albumDesigner: memberId });
           }
           
-          console.log(`Project ${project.projectName} - Query:`, JSON.stringify(query, null, 2));
           clientEvents = await ClientEvent.find(query).lean();
-          console.log(`Project ${project.projectName} - Found ${clientEvents.length} events for user`);
-          
-          // Debug: Check all events for this project
-          const allProjectEvents = await ClientEvent.find({ projectId: project.projectId }).lean();
-          if (allProjectEvents.length > 0) {
-            console.log(`Project ${project.projectName} - Total events in project: ${allProjectEvents.length}`);
-            allProjectEvents.forEach(event => {
-              console.log(`  Event: ${event.clientEventId}`);
-              console.log(`    teamMembersAssigned:`, event.teamMembersAssigned);
-              console.log(`    albumEditor: ${event.albumEditor} (matches userId: ${event.albumEditor === userId})`);
-              console.log(`    albumDesigner: ${event.albumDesigner} (matches userId: ${event.albumDesigner === userId})`);
-            });
-          }
         }
 
         const finance = await ProjectFinance.findOne({ projectId: project.projectId }).lean();
@@ -193,11 +204,6 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
         const eventsWithDetails = await Promise.all(
           clientEvents.map(async (ce) => {
             const event = await Event.findOne({ eventId: ce.eventId }).lean();
-            
-            // Log if duration is missing to help debug
-            if (ce.duration === undefined || ce.duration === null) {
-              console.log(`Warning: Event ${ce.clientEventId} missing duration field`);
-            }
             
             return {
               ...ce,
@@ -222,7 +228,7 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       ? projectsWithDetails 
       : projectsWithDetails.filter(project => project.events.length > 0);
 
-    console.log('getAllProjects - Filtered projects count:', filteredProjects.length);
+    logger.info(`[${requestId}] Projects retrieved`, { tenantId, count: filteredProjects.length, isAdmin });
 
     return res.status(200).json({
       message: 'Projects retrieved successfully',
@@ -230,40 +236,60 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       projects: filteredProjects
     });
   } catch (err: any) {
-    console.error('Get all projects error:', err);
+    logger.error(`[${requestId}] Error fetching projects`, { 
+      tenantId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getProjectById = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { projectId } = req.params;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching project`, { tenantId, projectId });
+
+  try {
     const project = await Project.findOne({ projectId });
 
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { tenantId, projectId });
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization: all users can only access their own tenant's projects
     if (project.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, projectId });
       return res.status(403).json({ message: 'Access denied. You can only view your own tenant projects.' });
     }
 
+    logger.info(`[${requestId}] Project retrieved`, { tenantId, projectId });
+
     return res.status(200).json({ project });
   } catch (err: any) {
-    console.error('Get project error:', err);
+    logger.error(`[${requestId}] Error fetching project`, { 
+      tenantId, 
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const updateProject = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const updates = req.body;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { projectId } = req.params;
+  const updates = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Updating project`, { tenantId, projectId });
+
+  try {
     // Don't allow updating projectId or tenantId
     delete updates.projectId;
     delete updates.tenantId;
@@ -271,13 +297,23 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
     const project = await Project.findOne({ projectId });
 
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { tenantId, projectId });
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization: all users can only update their own tenant's projects
     if (project.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, projectId });
       return res.status(403).json({ message: 'Access denied. You can only update your own tenant projects.' });
     }
+
+    // Track changes for audit
+    const changes: any = {};
+    Object.keys(updates).forEach(key => {
+      if (updates[key] !== undefined && (project as any)[key] !== updates[key]) {
+        changes[key] = { before: (project as any)[key], after: updates[key] };
+      }
+    });
 
     const updatedProject = await Project.findOneAndUpdate(
       { projectId },
@@ -285,69 +321,124 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
       { new: true, runValidators: true }
     );
 
+    logger.info(`[${requestId}] Project updated`, { tenantId, projectId });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'Project',
+      entityId: projectId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes,
+      metadata: {
+        projectName: project.projectName
+      },
+      ipAddress: req.ip
+    });
+
     return res.status(200).json({
       message: 'Project updated successfully',
       project: updatedProject
     });
   } catch (err: any) {
-    console.error('Update project error:', err);
+    logger.error(`[${requestId}] Error updating project`, { 
+      tenantId, 
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const deleteProject = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { projectId } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Deleting project`, { tenantId, projectId });
+
+  try {
     const project = await Project.findOne({ projectId });
 
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { tenantId, projectId });
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization: all users can only delete their own tenant's projects
     if (project.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, projectId });
       return res.status(403).json({ message: 'Access denied. You can only delete your own tenant projects.' });
     }
 
+    // Store data for audit
+    const projectData = {
+      projectName: project.projectName,
+      s3ProjectFolderName: project.s3ProjectFolderName
+    };
+
     await Project.deleteOne({ projectId });
+
+    logger.info(`[${requestId}] Project deleted`, { tenantId, projectId });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_DELETED,
+      entityType: 'Project',
+      entityId: projectId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {},
+      metadata: projectData,
+      ipAddress: req.ip
+    });
 
     return res.status(200).json({
       message: 'Project deleted successfully',
       projectId
     });
   } catch (err: any) {
-    console.error('Delete project error:', err);
+    logger.error(`[${requestId}] Error deleting project`, { 
+      tenantId, 
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const createProjectWithDetails = async (req: AuthRequest, res: Response) => {
-  console.log('[ProjectWithDetails] ========== CREATE PROJECT WITH DETAILS REQUEST ==========');
+  const requestId = nanoid(8);
+  const { project: projectData, events, finance } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+
+  logger.info(`[${requestId}] Creating project with details`, { 
+    tenantId, 
+    projectName: projectData?.projectName,
+    eventsCount: events?.length,
+    hasFinance: !!finance
+  });
+
   try {
-    const { project: projectData, events, finance } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-
-    console.log('[ProjectWithDetails] Request data:', { 
-      projectName: projectData?.projectName, 
-      tenantId,
-      eventsCount: events?.length,
-      hasFinance: !!finance
-    });
-
     if (!projectData.projectName) {
+      logger.warn(`[${requestId}] Project name missing`, { tenantId });
       return res.status(400).json({ message: 'Project name is required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     // Fetch tenant to get company name
     const tenant = await Tenant.findOne({ tenantId });
     if (!tenant) {
+      logger.warn(`[${requestId}] Tenant not found`, { tenantId });
       return res.status(404).json({ message: 'Tenant not found' });
     }
 
@@ -358,8 +449,6 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
     const sanitizedTenantName = (tenant.tenantCompanyName || `${tenant.tenantFirstName}${tenant.tenantLastName}`)
       .replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const s3ProjectFolderName = `${nanoid(10)}_${sanitizedProjectName}_${sanitizedTenantName}`;
-    
-    console.log(`[ProjectWithDetails] Creating project ${projectId} with folder: ${s3ProjectFolderName}`);
     
     // Create project
     const project = await Project.create({
@@ -393,9 +482,9 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
             updatedAt: new Date()
           }
         );
-        console.log('[ProjectWithDetails] Updated proposal status to project_created:', projectData.proposalId);
-      } catch (proposalError) {
-        console.error('[ProjectWithDetails] Failed to update proposal status:', proposalError);
+        logger.info(`[${requestId}] Updated proposal status to project_created`, { tenantId, proposalId: projectData.proposalId });
+      } catch (proposalError: any) {
+        logger.error(`[${requestId}] Failed to update proposal status`, { tenantId, proposalId: projectData.proposalId, error: proposalError.message });
         // Don't fail the project creation if proposal update fails
       }
     }
@@ -489,6 +578,31 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       });
     }
 
+    logger.info(`[${requestId}] Project with details created`, { 
+      tenantId, 
+      projectId,
+      projectName: projectData.projectName,
+      eventsCreated: createdEvents.length,
+      financeCreated: !!projectFinance
+    });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'Project',
+      entityId: projectId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {},
+      metadata: {
+        projectName: projectData.projectName,
+        s3ProjectFolderName,
+        eventsCount: createdEvents.length,
+        hasFinance: !!projectFinance
+      },
+      ipAddress: req.ip
+    });
+
     return res.status(201).json({
       message: 'Project created successfully',
       project,
@@ -496,26 +610,41 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       finance: projectFinance,
     });
   } catch (err: any) {
-    console.error('Create project with details error:', err);
+    logger.error(`[${requestId}] Error creating project with details`, { 
+      tenantId,
+      projectName: projectData?.projectName,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 };
 
 export const updateProjectWithDetails = async (req: AuthRequest, res: Response) => {
-  try {
-    const { projectId } = req.params;
-    const { project: projectData, events, finance } = req.body;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
+  const requestId = nanoid(8);
+  const { projectId } = req.params;
+  const { project: projectData, events, finance } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Updating project with details`, { 
+    tenantId, 
+    projectId,
+    eventsCount: events?.length,
+    hasFinance: !!finance
+  });
+
+  try {
     // Find existing project
     const existingProject = await Project.findOne({ projectId });
     if (!existingProject) {
+      logger.warn(`[${requestId}] Project not found`, { tenantId, projectId });
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization
     if (existingProject.tenantId !== tenantId) {
+      logger.warn(`[${requestId}] Access denied`, { tenantId, projectId });
       return res.status(403).json({ message: 'Access denied' });
     }
 
@@ -625,13 +754,39 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
       }
     }
 
+    logger.info(`[${requestId}] Project with details updated`, { 
+      tenantId, 
+      projectId,
+      financeUpdated: !!projectFinance
+    });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'Project',
+      entityId: projectId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {},
+      metadata: {
+        projectName: existingProject.projectName,
+        hasFinance: !!projectFinance
+      },
+      ipAddress: req.ip
+    });
+
     return res.status(200).json({
       message: 'Project updated successfully',
       project: updatedProject,
       finance: projectFinance,
     });
   } catch (err: any) {
-    console.error('Update project with details error:', err);
+    logger.error(`[${requestId}] Error updating project with details`, { 
+      tenantId,
+      projectId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 };

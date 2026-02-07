@@ -126,13 +126,6 @@ app.delete('/delete-event-delivery-status/:statusId', authenticate, requireAdmin
 // ---------- Image Status routes ----------
 app.get('/get-all-image-statuses', authenticate, imageStatusController.getAllImageStatuses);
 
-// ---------- Project Delivery Status routes ----------
-app.post('/create-project-delivery-status', authenticate, requireAdmin, projectDeliveryStatusController.createProjectDeliveryStatus);
-app.get('/get-all-project-delivery-statuses', authenticate, requireAdmin, projectDeliveryStatusController.getAllProjectDeliveryStatuses);
-app.get('/get-project-delivery-status/:statusId', authenticate, requireAdmin, projectDeliveryStatusController.getProjectDeliveryStatusById);
-app.put('/update-project-delivery-status/:statusId', authenticate, requireAdmin, projectDeliveryStatusController.updateProjectDeliveryStatus);
-app.delete('/delete-project-delivery-status/:statusId', authenticate, requireAdmin, projectDeliveryStatusController.deleteProjectDeliveryStatus);
-
 // ---------- Equipment routes ----------
 app.post('/create-equipment', authenticate, requireAdmin, (req, res, next) => {
   console.log('=== EQUIPMENT ROUTE HIT ===');
