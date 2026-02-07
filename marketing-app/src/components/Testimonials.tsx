@@ -1,6 +1,7 @@
 "use client";
 
 import { Star, Quote } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 const testimonials = [
   {
@@ -66,8 +67,39 @@ function TestimonialCard({
   testimonial: (typeof testimonials)[0];
   index: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("animated");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "50px" }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, []);
+
+  const delayClass =
+    index % 3 === 0 ? "delay-100" : index % 3 === 1 ? "delay-200" : "delay-300";
+
   return (
-    <div className="bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 relative">
+    <div
+      ref={ref}
+      className={`animate-on-scroll ${delayClass} bg-white p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 relative hover-lift`}
+    >
       {/* Quote Icon */}
       <Quote className="absolute top-6 right-6 w-8 h-8 text-purple-200" />
 
@@ -100,6 +132,32 @@ function TestimonialCard({
 }
 
 export function Testimonials() {
+  const headerRef = useRef<HTMLDivElement>(null);
+  const statsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("animated");
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    [headerRef, statsRef].forEach((ref) => {
+      if (ref.current) observer.observe(ref.current);
+    });
+
+    return () => {
+      [headerRef, statsRef].forEach((ref) => {
+        if (ref.current) observer.unobserve(ref.current);
+      });
+    };
+  }, []);
+
   return (
     <section
       id="testimonials"
@@ -107,7 +165,7 @@ export function Testimonials() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div ref={headerRef} className="animate-on-scroll text-center mb-16">
           <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-4">
             Testimonials
           </span>
@@ -134,17 +192,20 @@ export function Testimonials() {
         </div>
 
         {/* Stats Section */}
-        <div className="mt-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 md:p-12 text-white">
+        <div
+          ref={statsRef}
+          className="animate-on-scroll delay-300 mt-20 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl p-8 md:p-12 text-white"
+        >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
-            <div>
+            <div className="scale-in delay-100">
               <div className="text-4xl md:text-5xl font-bold mb-2">98%</div>
               <div className="text-purple-100">Customer Satisfaction</div>
             </div>
-            <div>
+            <div className="scale-in delay-200">
               <div className="text-4xl md:text-5xl font-bold mb-2">4.9/5</div>
               <div className="text-purple-100">Average Rating</div>
             </div>
-            <div>
+            <div className="scale-in delay-300">
               <div className="text-4xl md:text-5xl font-bold mb-2">500+</div>
               <div className="text-purple-100">Active Studios</div>
             </div>

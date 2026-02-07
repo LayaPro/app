@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Menu, X, Camera } from "lucide-react";
 
 export function Navbar() {
@@ -25,9 +24,7 @@ export function Navbar() {
   ];
 
   return (
-    <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
+    <nav
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
           ? "bg-white/80 backdrop-blur-md shadow-md"
@@ -57,9 +54,9 @@ export function Navbar() {
             ))}
             <Link
               href="/signup"
-              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2.5 rounded-full hover:shadow-lg hover:scale-105 transition-all font-semibold"
+              className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2.5 rounded-full hover:shadow-lg hover-scale transition-all font-semibold"
             >
-              Try for Free
+              Get Started
             </Link>
           </div>
 
@@ -69,41 +66,37 @@ export function Navbar() {
             className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
             {isMobileMenuOpen ? (
-              <X className="w-6 h-6" />
+              <X className="w-6 h-6 text-gray-700" />
             ) : (
-              <Menu className="w-6 h-6" />
+              <Menu className="w-6 h-6 text-gray-700" />
             )}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="md:hidden pb-4 space-y-3"
-          >
-            {navLinks.map((link) => (
+          <div className="md:hidden pb-6 animate-on-scroll animated">
+            <div className="flex flex-col space-y-4">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="text-gray-700 hover:text-purple-600 transition-colors font-medium px-4 py-2"
+                >
+                  {link.label}
+                </Link>
+              ))}
               <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="block px-4 py-2 text-gray-700 hover:bg-purple-50 rounded-lg transition-colors"
+                href="/signup"
+                className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-full hover:shadow-lg transition-all font-semibold text-center mx-4"
               >
-                {link.label}
+                Get Started
               </Link>
-            ))}
-            <Link
-              href="/signup"
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="block text-center bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2.5 rounded-full hover:shadow-lg transition-all font-semibold"
-            >
-              Try for Free
-            </Link>
-          </motion.div>
+            </div>
+          </div>
         )}
       </div>
-    </motion.nav>
+    </nav>
   );
 }

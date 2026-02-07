@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Sparkles, Zap, Crown } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 const plans = [
   {
@@ -65,8 +66,33 @@ function PricingCard({
   plan: (typeof plans)[0];
   index: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("animated");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "50px" }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, []);
+
   return (
-    <div className={`relative ${plan.popular ? "lg:-mt-4" : ""}`}>
+    <div ref={ref} className={`relative ${plan.popular ? "lg:-mt-4" : ""} animate-on-scroll delay-${index * 150 + 100}`}>
       {plan.popular && (
         <div className="absolute -top-5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-lg">
           Most Popular
@@ -74,7 +100,7 @@ function PricingCard({
       )}
 
       <div
-        className={`relative bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden ${
+        className={`relative bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden hover-lift ${
           plan.popular
             ? "border-2 border-purple-500 lg:scale-105"
             : "border border-gray-200"
@@ -84,7 +110,7 @@ function PricingCard({
         <div className="p-8">
           {/* Icon */}
           <div
-            className={`w-14 h-14 rounded-xl bg-gradient-to-br ${plan.color} flex items-center justify-center mb-6`}
+            className={`w-14 h-14 rounded-xl bg-gradient-to-br ${plan.color} flex items-center justify-center mb-6 hover-rotate`}
           >
             <plan.icon className="w-7 h-7 text-white" />
           </div>
@@ -102,9 +128,9 @@ function PricingCard({
           {/* CTA Button */}
           <a
             href="/signup"
-            className={`block w-full text-center py-3 px-6 rounded-xl font-semibold transition-all ${
+            className={`block w-full text-center py-3 px-6 rounded-xl font-semibold transition-all hover-scale ${
               plan.popular
-                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl hover:scale-105"
+                ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg hover:shadow-xl"
                 : "bg-gray-100 text-gray-900 hover:bg-gray-200"
             }`}
           >
@@ -127,6 +153,31 @@ function PricingCard({
 }
 
 export function Pricing() {
+  const headerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("animated");
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    if (headerRef.current) {
+      observer.observe(headerRef.current);
+    }
+
+    return () => {
+      if (headerRef.current) {
+        observer.unobserve(headerRef.current);
+      }
+    };
+  }, []);
+
   return (
     <section
       id="pricing"
@@ -134,7 +185,7 @@ export function Pricing() {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div ref={headerRef} className="animate-on-scroll text-center mb-16">
           <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-4">
             Pricing
           </span>

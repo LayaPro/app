@@ -14,6 +14,7 @@ import {
   Clock,
   CheckCircle,
 } from "lucide-react";
+import { useEffect, useRef } from "react";
 
 const features = [
   {
@@ -109,11 +110,42 @@ function FeatureCard({
   feature: (typeof features)[0];
   index: number;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("animated");
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: "50px" }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, []);
+
+  const delayClass =
+    index % 3 === 0 ? "delay-100" : index % 3 === 1 ? "delay-200" : "delay-300";
+
   return (
-    <div className="group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-200">
+    <div
+      ref={ref}
+      className={`animate-on-scroll ${delayClass} group relative bg-white p-8 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100 hover:border-purple-200 hover-lift`}
+    >
       <div className="flex flex-col h-full">
         <div
-          className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}
+          className={`w-14 h-14 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center mb-6 hover-rotate`}
         >
           <feature.icon className="w-7 h-7 text-white" />
         </div>
@@ -123,7 +155,6 @@ function FeatureCard({
         <p className="text-gray-600 leading-relaxed">{feature.description}</p>
       </div>
 
-      {/* Hover effect gradient border */}
       <div
         className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-300 pointer-events-none`}
       />
@@ -132,14 +163,39 @@ function FeatureCard({
 }
 
 export function Features() {
+  const headerRef = useRef<HTMLDivElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add("animated");
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    [headerRef, ctaRef].forEach((ref) => {
+      if (ref.current) observer.observe(ref.current);
+    });
+
+    return () => {
+      [headerRef, ctaRef].forEach((ref) => {
+        if (ref.current) observer.unobserve(ref.current);
+      });
+    };
+  }, []);
+
   return (
     <section
       id="features"
       className="py-20 md:py-32 bg-gradient-to-b from-white to-purple-50/30"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-16">
+        <div ref={headerRef} className="animate-on-scroll text-center mb-16">
           <span className="inline-block px-4 py-2 bg-purple-100 text-purple-700 rounded-full text-sm font-semibold mb-4">
             Features
           </span>
@@ -155,21 +211,22 @@ export function Features() {
           </p>
         </div>
 
-        {/* Features Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {features.map((feature, index) => (
             <FeatureCard key={index} feature={feature} index={index} />
           ))}
         </div>
 
-        {/* Bottom CTA */}
-        <div className="text-center mt-16">
+        <div
+          ref={ctaRef}
+          className="animate-on-scroll delay-300 text-center mt-16"
+        >
           <p className="text-gray-600 mb-6">
             And many more features to help you grow your business
           </p>
           <a
             href="#pricing"
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
+            className="inline-flex items-center space-x-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover-scale transition-all"
           >
             <span>See Pricing Plans</span>
           </a>
