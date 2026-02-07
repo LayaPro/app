@@ -13,9 +13,18 @@ import Team from '../models/team';
 import { AuthRequest } from '../middleware/auth';
 import { sendProposalEmail } from '../services/emailService';
 import { NotificationUtils } from '../services/notificationUtils';
+import { createModuleLogger } from '../utils/logger';
+import { logAudit, auditEvents } from '../utils/auditLogger';
+
+const logger = createModuleLogger('ProposalController');
 
 export const createProposal = async (req: AuthRequest, res: Response) => {
-  console.log('[Proposal] ========== CREATE PROPOSAL REQUEST RECEIVED ==========');
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+
+  logger.info(`[${requestId}] Creating proposal`, { tenantId, userId });
+
   try {
     const {
       clientName,
@@ -32,25 +41,25 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
       validUntil
     } = req.body;
     
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-    
-    console.log('[Proposal] Request data:', { projectName, clientEmail, tenantId });
 
     // Validation
     if (!clientName || !clientEmail || !projectName) {
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId });
       return res.status(400).json({ message: 'Client name, email, and project name are required' });
     }
 
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`, { tenantId });
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     if (!totalAmount || totalAmount <= 0) {
+      logger.warn(`[${requestId}] Invalid total amount`, { tenantId, totalAmount });
       return res.status(400).json({ message: 'Total amount must be greater than 0' });
     }
 
     if (!events || events.length === 0) {
+      logger.warn(`[${requestId}] No events provided`, { tenantId });
       return res.status(400).json({ message: 'At least one event is required' });
     }
 
@@ -80,7 +89,13 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
 
     const proposalId = `proposal_${nanoid()}`;
     
-    console.log(`[Proposal] Creating proposal ${proposalId} with access code: ${accessCode} and PIN: ${accessPin}`);
+    logger.debug(`[${requestId}] Creating proposal with accessCode`, { 
+      tenantId, 
+      proposalId, 
+      accessCode,
+      clientEmail,
+      projectName 
+    });
     
     const proposal = await Proposal.create({
       proposalId,
@@ -103,14 +118,46 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
       createdBy: userId
     });
 
-    console.log('[Proposal] Proposal created successfully:', proposalId);
+    logger.info(`[${requestId}] Proposal created successfully`, { 
+      tenantId, 
+      proposalId, 
+      clientName,
+      projectName,
+      totalAmount 
+    });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'Proposal',
+      entityId: proposalId,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {
+        clientName,
+        clientEmail,
+        projectName,
+        totalAmount,
+        status: 'draft'
+      },
+      metadata: {
+        accessCode,
+        eventsCount: events.length,
+        validUntil
+      },
+      ipAddress: req.ip
+    });
 
     return res.status(201).json({
       message: 'Proposal created successfully',
       proposal
     });
   } catch (err: any) {
-    console.error('[Proposal] Create proposal error:', err);
+    logger.error(`[${requestId}] Error creating proposal`, { 
+      tenantId, 
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ 
       message: 'Internal server error',
       error: err.message 
@@ -119,10 +166,14 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
 };
 
 export const getAllProposals = async (req: AuthRequest, res: Response) => {
-  try {
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching all proposals`, { tenantId });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`, { tenantId });
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
@@ -151,55 +202,63 @@ export const getAllProposals = async (req: AuthRequest, res: Response) => {
       proposals = await Proposal.find(query).sort({ createdAt: -1 });
     }
 
+    logger.info(`[${requestId}] Proposals retrieved`, { tenantId, count: proposals.length });
+
     return res.status(200).json({
       proposals,
       count: proposals.length
     });
   } catch (err: any) {
-    console.error('[Proposal] Get all proposals error:', err);
+    logger.error(`[${requestId}] Error fetching proposals`, { 
+      tenantId, 
+      error: err.message 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const getProposalById = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { id } = req.params;
+  const tenantId = req.user?.tenantId;
 
+  logger.info(`[${requestId}] Fetching proposal`, { tenantId, proposalId: id });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`, { tenantId, proposalId: id });
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     const proposal = await Proposal.findOne({ proposalId: id, tenantId });
 
     if (!proposal) {
+      logger.warn(`[${requestId}] Proposal not found`, { tenantId, proposalId: id });
       return res.status(404).json({ message: 'Proposal not found' });
     }
 
+    logger.info(`[${requestId}] Proposal retrieved`, { tenantId, proposalId: id });
+
     return res.status(200).json({ proposal });
   } catch (err: any) {
-    console.error('[Proposal] Get proposal error:', err);
+    logger.error(`[${requestId}] Error fetching proposal`, { 
+      tenantId, 
+      proposalId: id,
+      error: err.message 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const updateProposal = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid(8);
+  const { id } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+
+  logger.info(`[${requestId}] Updating proposal`, { tenantId, proposalId: id });
+
   try {
-    const { id } = req.params;
-    const tenantId = req.user?.tenantId;
-    const userId = req.user?.userId;
-
-    if (!tenantId) {
-      return res.status(400).json({ message: 'Tenant ID is required' });
-    }
-
-    const proposal = await Proposal.findOne({ proposalId: id, tenantId });
-
-    if (!proposal) {
-      return res.status(404).json({ message: 'Proposal not found' });
-    }
-
-    // Update fields
     const {
       clientName,
       clientEmail,
@@ -216,19 +275,51 @@ export const updateProposal = async (req: AuthRequest, res: Response) => {
       status
     } = req.body;
 
-    if (clientName) proposal.clientName = clientName;
-    if (clientEmail) proposal.clientEmail = clientEmail;
-    if (clientPhone !== undefined) proposal.clientPhone = clientPhone;
-    if (projectName) proposal.projectName = projectName;
+    if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`, { tenantId, proposalId: id });
+      return res.status(400).json({ message: 'Tenant ID is required' });
+    }
+
+    const proposal = await Proposal.findOne({ proposalId: id, tenantId });
+
+    if (!proposal) {
+      logger.warn(`[${requestId}] Proposal not found`, { tenantId, proposalId: id });
+      return res.status(404).json({ message: 'Proposal not found' });
+    }
+
+    const changes: any = {};
+    const oldStatus = proposal.status;
+
+    // Update fields
+    if (clientName) {
+      changes.clientName = { before: proposal.clientName, after: clientName };
+      proposal.clientName = clientName;
+    }
+    if (clientEmail) {
+      changes.clientEmail = { before: proposal.clientEmail, after: clientEmail };
+      proposal.clientEmail = clientEmail;
+    }
+    if (clientPhone !== undefined) {
+      changes.clientPhone = { before: proposal.clientPhone, after: clientPhone };
+      proposal.clientPhone = clientPhone;
+    }
+    if (projectName) {
+      changes.projectName = { before: proposal.projectName, after: projectName };
+      proposal.projectName = projectName;
+    }
     if (weddingDate !== undefined) proposal.weddingDate = weddingDate;
     if (venue !== undefined) proposal.venue = venue;
     if (events) proposal.events = events;
     if (termsOfService !== undefined) proposal.termsOfService = termsOfService;
     if (paymentTerms !== undefined) proposal.paymentTerms = paymentTerms;
     if (deliverables) proposal.deliverables = deliverables;
-    if (totalAmount) proposal.totalAmount = totalAmount;
+    if (totalAmount) {
+      changes.totalAmount = { before: proposal.totalAmount, after: totalAmount };
+      proposal.totalAmount = totalAmount;
+    }
     if (validUntil) proposal.validUntil = new Date(validUntil);
     if (status) {
+      changes.status = { before: proposal.status, after: status };
       proposal.status = status;
       
       // Update status timestamps
@@ -244,56 +335,134 @@ export const updateProposal = async (req: AuthRequest, res: Response) => {
     proposal.updatedBy = userId;
     await proposal.save();
 
+    logger.info(`[${requestId}] Proposal updated`, { 
+      tenantId, 
+      proposalId: id,
+      statusChanged: oldStatus !== proposal.status
+    });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_UPDATED,
+      entityType: 'Proposal',
+      entityId: id,
+      tenantId,
+      performedBy: userId || 'System',
+      changes,
+      metadata: {
+        oldStatus,
+        newStatus: proposal.status
+      },
+      ipAddress: req.ip
+    });
+
     return res.status(200).json({
       message: 'Proposal updated successfully',
       proposal
     });
   } catch (err: any) {
-    console.error('[Proposal] Update proposal error:', err);
+    logger.error(`[${requestId}] Error updating proposal`, { 
+      tenantId, 
+      proposalId: id,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const deleteProposal = async (req: AuthRequest, res: Response) => {
-  try {
-    const { id } = req.params;
-    const tenantId = req.user?.tenantId;
+  const requestId = nanoid(8);
+  const { id } = req.params;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
 
+  logger.info(`[${requestId}] Deleting proposal`, { tenantId, proposalId: id });
+
+  try {
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`, { tenantId, proposalId: id });
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
-    const proposal = await Proposal.findOneAndDelete({ proposalId: id, tenantId });
+    // First find to get data for audit log
+    const proposal = await Proposal.findOne({ proposalId: id, tenantId });
 
     if (!proposal) {
+      logger.warn(`[${requestId}] Proposal not found`, { tenantId, proposalId: id });
       return res.status(404).json({ message: 'Proposal not found' });
     }
+
+    // Store data before deletion
+    const proposalData = {
+      clientName: proposal.clientName,
+      clientEmail: proposal.clientEmail,
+      projectName: proposal.projectName,
+      status: proposal.status,
+      totalAmount: proposal.totalAmount
+    };
+
+    // Delete it
+    await Proposal.deleteOne({ proposalId: id, tenantId });
+
+    logger.info(`[${requestId}] Proposal deleted`, { 
+      tenantId, 
+      proposalId: id,
+      clientName: proposalData.clientName,
+      projectName: proposalData.projectName 
+    });
+
+    // Audit log
+    logAudit({
+      action: auditEvents.TENANT_DELETED,
+      entityType: 'Proposal',
+      entityId: id,
+      tenantId,
+      performedBy: userId || 'System',
+      changes: {},
+      metadata: proposalData,
+      ipAddress: req.ip
+    });
 
     return res.status(200).json({
       message: 'Proposal deleted successfully'
     });
   } catch (err: any) {
-    console.error('[Proposal] Delete proposal error:', err);
+    logger.error(`[${requestId}] Error deleting proposal`, { 
+      tenantId, 
+      proposalId: id,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const verifyProposalPin = async (req: AuthRequest, res: Response) => {
-  try {
-    const { accessCode } = req.params;
-    const { pin } = req.body;
+  const requestId = nanoid(8);
+  const { accessCode } = req.params;
+  const { pin } = req.body;
 
+  logger.info(`[${requestId}] Verifying proposal PIN`, { accessCode });
+
+  try {
     if (!pin) {
+      logger.warn(`[${requestId}] PIN missing`, { accessCode });
       return res.status(400).json({ message: 'PIN is required' });
     }
 
     const proposal = await Proposal.findOne({ accessCode });
 
     if (!proposal) {
+      logger.warn(`[${requestId}] Proposal not found`, { accessCode });
       return res.status(404).json({ message: 'Proposal not found' });
     }
 
     if (proposal.accessPin !== pin) {
+      logger.warn(`[${requestId}] Invalid PIN`, { 
+        tenantId: proposal.tenantId,
+        accessCode 
+      });
       return res.status(401).json({ message: 'Invalid PIN' });
     }
 
@@ -303,6 +472,12 @@ export const verifyProposalPin = async (req: AuthRequest, res: Response) => {
     // Return proposal data without the PIN
     const proposalData = proposal.toObject();
     const { accessPin, ...proposalWithoutPin } = proposalData;
+
+    logger.info(`[${requestId}] PIN verified successfully`, { 
+      tenantId: proposal.tenantId,
+      proposalId: proposal.proposalId,
+      accessCode 
+    });
 
     return res.status(200).json({
       message: 'PIN verified successfully',
@@ -315,22 +490,28 @@ export const verifyProposalPin = async (req: AuthRequest, res: Response) => {
       } : null
     });
   } catch (err: any) {
-    console.error('[Proposal] Verify PIN error:', err);
+    logger.error(`[${requestId}] Error verifying PIN`, { 
+      accessCode,
+      error: err.message 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const updateProposalStatus = async (req: AuthRequest, res: Response) => {
-  console.log('[Proposal] ========== UPDATE PROPOSAL STATUS REQUEST ==========');
+  const requestId = nanoid(8);
+  const { id } = req.params;
+  const { status } = req.body;
+  const tenantId = req.user?.tenantId;
+  const userId = req.user?.userId;
+
+  logger.info(`[${requestId}] Updating proposal status`, { tenantId, proposalId: id, status });
+
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-
-    console.log('[Proposal] Update status:', { id, status });
-
     // Validate status
     const validStatuses = ['draft', 'sent', 'accepted', 'rejected', 'expired', 'project_created'];
     if (!validStatuses.includes(status)) {
+      logger.warn(`[${requestId}] Invalid status`, { tenantId, proposalId: id, status });
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
@@ -342,48 +523,86 @@ export const updateProposalStatus = async (req: AuthRequest, res: Response) => {
     );
 
     if (!proposal) {
+      logger.warn(`[${requestId}] Proposal not found`, { tenantId, proposalId: id });
       return res.status(404).json({ message: 'Proposal not found' });
     }
 
-    console.log('[Proposal] Status updated successfully:', proposal._id);
+    logger.info(`[${requestId}] Proposal status updated`, { 
+      tenantId: proposal.tenantId,
+      proposalId: proposal.proposalId,
+      newStatus: status 
+    });
+
+    // Audit log for status change
+    logAudit({
+      action: auditEvents.TENANT_STATUS_CHANGED,
+      entityType: 'Proposal',
+      entityId: proposal.proposalId,
+      tenantId: proposal.tenantId,
+      performedBy: userId || 'System',
+      changes: {
+        status: { after: status }
+      },
+      metadata: {
+        clientName: proposal.clientName,
+        projectName: proposal.projectName
+      },
+      ipAddress: req.ip
+    });
 
     return res.status(200).json({
       message: 'Proposal status updated successfully',
       proposal
     });
   } catch (err: any) {
-    console.error('[Proposal] Update status error:', err);
+    logger.error(`[${requestId}] Error updating proposal status`, { 
+      tenantId,
+      proposalId: id,
+      status,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const sendProposal = async (req: AuthRequest, res: Response) => {
-  console.log('[Proposal] ========== SEND PROPOSAL REQUEST ==========');
+  const requestId = nanoid(8);
+  const { id } = req.params;
+  const tenantId = req.user?.tenantId;
+
+  logger.info(`[${requestId}] Sending proposal`, { tenantId, proposalId: id });
+
   try {
-    const { id } = req.params;
-    const tenantId = req.user?.tenantId;
-
-    console.log('[Proposal] Send proposal ID:', id);
-
     if (!tenantId) {
+      logger.warn(`[${requestId}] Tenant ID missing`, { tenantId, proposalId: id });
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     // Get proposal by proposalId
     const proposal = await Proposal.findOne({ proposalId: id, tenantId });
     if (!proposal) {
+      logger.warn(`[${requestId}] Proposal not found`, { tenantId, proposalId: id });
       return res.status(404).json({ message: 'Proposal not found' });
     }
 
     // Get organization details
     const organization = await Organization.findOne({ tenantId });
     if (!organization) {
+      logger.warn(`[${requestId}] Organization not found`, { tenantId, proposalId: id });
       return res.status(404).json({ message: 'Organization not found' });
     }
 
     // Construct proposal URL
     const customerAppUrl = process.env.CUSTOMER_APP_URL || 'http://localhost:5174';
     const proposalUrl = `${customerAppUrl}/proposal/${proposal.accessCode}`;
+
+    logger.debug(`[${requestId}] Sending proposal email`, { 
+      tenantId,
+      proposalId: id,
+      clientEmail: proposal.clientEmail,
+      proposalUrl 
+    });
 
     // Send email
     await sendProposalEmail(
@@ -400,14 +619,23 @@ export const sendProposal = async (req: AuthRequest, res: Response) => {
     proposal.updatedAt = new Date();
     await proposal.save();
 
-    console.log('[Proposal] Proposal sent successfully to:', proposal.clientEmail);
+    logger.info(`[${requestId}] Proposal sent successfully`, { 
+      tenantId,
+      proposalId: id,
+      clientEmail: proposal.clientEmail 
+    });
 
     return res.status(200).json({
       message: 'Proposal sent successfully',
       proposal
     });
   } catch (err: any) {
-    console.error('[Proposal] Send proposal error:', err);
+    logger.error(`[${requestId}] Error sending proposal`, { 
+      tenantId,
+      proposalId: id,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 };
@@ -420,11 +648,15 @@ export const sendProposal = async (req: AuthRequest, res: Response) => {
  * - Project stage: Show timeline with events
  */
 export const getCustomerPortalData = async (req: AuthRequest, res: Response) => {
-  try {
-    const { accessCode } = req.params;
-    const { pin } = req.body;
+  const requestId = nanoid(8);
+  const { accessCode } = req.params;
+  const { pin } = req.body;
 
+  logger.info(`[${requestId}] Fetching customer portal data`, { accessCode });
+
+  try {
     if (!pin) {
+      logger.warn(`[${requestId}] PIN missing`, { accessCode });
       return res.status(400).json({ message: 'PIN is required' });
     }
 
@@ -432,10 +664,15 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
     const proposal = await Proposal.findOne({ accessCode });
 
     if (!proposal) {
+      logger.warn(`[${requestId}] Portal not found`, { accessCode });
       return res.status(404).json({ message: 'Portal not found' });
     }
 
     if (proposal.accessPin !== pin) {
+      logger.warn(`[${requestId}] Invalid PIN`, { 
+        tenantId: proposal.tenantId,
+        accessCode 
+      });
       return res.status(401).json({ message: 'Invalid PIN' });
     }
 
@@ -481,7 +718,6 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
         });
 
         const galleryStatusIds = galleryStatuses.map(s => s.statusId);
-        console.log('[Customer Portal] Gallery status IDs:', galleryStatusIds);
 
         // Check if any event has a gallery-ready status
         const hasPublishedAlbum = await ClientEvent.exists({ 
@@ -489,12 +725,10 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
           eventDeliveryStatusId: { $in: galleryStatusIds }
         });
 
-        console.log('[Customer Portal] Has published album:', hasPublishedAlbum);
 
         if (hasPublishedAlbum) {
           // Show gallery view with published album images
           portalStage = 'gallery';
-          console.log('[Customer Portal] Switching to GALLERY stage');
 
           // Fetch ALL events for this project
           const allEvents = await ClientEvent.find({
@@ -511,7 +745,6 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
           })
           .sort({ sortOrder: 1 });
 
-          console.log('[Customer Portal] Found images across all events:', allEventImages.length);
 
           // Add eventId and selectedByClient to each image
           const imagesWithEventId = allEventImages.map(img => ({
@@ -628,8 +861,12 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
       portalStage = 'proposal';
     }
 
-    console.log('[Customer Portal] Final portalStage:', portalStage);
-    console.log('[Customer Portal] Gallery data:', galleryData ? `${galleryData.albumImages?.length} images` : 'null');
+    logger.info(`[${requestId}] Customer portal data retrieved`, { 
+      tenantId: proposal.tenantId,
+      proposalId: proposal.proposalId,
+      accessCode,
+      portalStage 
+    });
 
     return res.status(200).json({
       message: 'Portal data retrieved successfully',
@@ -646,36 +883,41 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
       } : null
     });
   } catch (err: any) {
-    console.error('[Proposal] Get customer portal data error:', err);
+    logger.error(`[${requestId}] Error fetching customer portal data`, { 
+      accessCode,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 // Toggle image selection for customer portal (PIN authenticated)
 export const toggleImageSelection = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  const { imageIds, selected = true } = req.body;
+  const pin = req.headers['x-portal-pin'] as string;
+
+  logger.info(`[${requestId}] Toggling image selection`, { 
+    imageCount: imageIds?.length,
+    selected 
+  });
+
   try {
-    const { imageIds, selected = true } = req.body;
-    const pin = req.headers['x-portal-pin'] as string;
-
-    console.log('[Customer Portal] Toggle image selection request received');
-    console.log('[Customer Portal] Headers:', req.headers);
-    console.log('[Customer Portal] Body:', { imageIds, selected });
-    console.log('[Customer Portal] PIN from header:', pin);
-
     if (!Array.isArray(imageIds) || imageIds.length === 0) {
-      console.log('[Customer Portal] Invalid imageIds:', imageIds);
+      logger.warn(`[${requestId}] Invalid image IDs`);
       return res.status(400).json({ message: 'Image IDs array is required' });
     }
 
     if (!pin) {
-      console.log('[Customer Portal] PIN is missing from headers');
+      logger.warn(`[${requestId}] PIN missing`);
       return res.status(401).json({ message: 'PIN is required' });
     }
 
     // Verify PIN is valid by finding a proposal with this PIN
     const proposal = await Proposal.findOne({ accessPin: pin });
-    console.log('[Customer Portal] Proposal found:', proposal ? proposal.proposalId : 'not found');
     if (!proposal) {
+      logger.warn(`[${requestId}] Invalid PIN`);
       return res.status(401).json({ message: 'Invalid PIN' });
     }
 
@@ -684,8 +926,11 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
       proposalId: proposal.proposalId,
       tenantId: proposal.tenantId 
     });
-    console.log('[Customer Portal] Project found:', project ? project.projectId : 'not found');
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { 
+        tenantId: proposal.tenantId,
+        proposalId: proposal.proposalId 
+      });
       return res.status(404).json({ message: 'Project not found' });
     }
 
@@ -696,7 +941,9 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
     });
 
     if (!clientSelectedStatus && selected) {
-      console.log('[Customer Portal] CLIENT_SELECTED status not found');
+      logger.warn(`[${requestId}] CLIENT_SELECTED status not found`, { 
+        tenantId: project.tenantId 
+      });
       return res.status(404).json({ message: 'CLIENT_SELECTED status not found' });
     }
 
@@ -707,12 +954,13 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
     });
 
     if (!approvedStatus && !selected) {
-      console.log('[Customer Portal] APPROVED status not found');
+      logger.warn(`[${requestId}] APPROVED status not found`, { 
+        tenantId: project.tenantId 
+      });
       return res.status(404).json({ message: 'APPROVED status not found' });
     }
 
     // Update images with both selectedByClient flag and imageStatusId
-    console.log('[Customer Portal] Updating images:', { imageIds, tenantId: project.tenantId, selected });
     const updateData: any = { selectedByClient: selected };
     
     // If selecting, set status to CLIENT_SELECTED
@@ -728,7 +976,11 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
       { $set: updateData }
     );
 
-    console.log('[Customer Portal] Images updated:', { modifiedCount: result.modifiedCount });
+    logger.info(`[${requestId}] Images ${selected ? 'selected' : 'deselected'}`, { 
+      tenantId: project.tenantId,
+      projectId: project.projectId,
+      modifiedCount: result.modifiedCount 
+    });
 
     // Send notifications to admins based on selection progress
     if (selected && result.modifiedCount > 0) {
@@ -740,7 +992,6 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
         });
         
         if (!sampleImage || !sampleImage.clientEventId) {
-          console.log('[Customer Portal] Could not determine event from images');
           return res.status(200).json({
             message: `${result.modifiedCount} image(s) ${selected ? 'selected' : 'deselected'}`,
             modifiedCount: result.modifiedCount
@@ -804,7 +1055,6 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
           );
         }
       } catch (notifError) {
-        console.error('[Customer Portal] Failed to send client selection notification:', notifError);
         // Don't fail the request if notification fails
       }
     }
@@ -814,30 +1064,36 @@ export const toggleImageSelection = async (req: Request, res: Response) => {
       modifiedCount: result.modifiedCount
     });
   } catch (err: any) {
-    console.error('[Customer Portal] Toggle image selection error:', err);
+    logger.error(`[${requestId}] Error toggling image selection`, { 
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const markEventSelectionDone = async (req: Request, res: Response) => {
-  try {
-    const { eventId } = req.body;
-    const pin = req.headers['x-portal-pin'] as string;
+  const requestId = nanoid(8);
+  const { eventId } = req.body;
+  const pin = req.headers['x-portal-pin'] as string;
 
-    console.log('[Customer Portal] Mark event selection done request received');
-    console.log('[Customer Portal] EventId:', eventId, 'PIN:', pin);
+  logger.info(`[${requestId}] Marking event selection done`, { eventId });
 
+  try { 
     if (!eventId) {
+      logger.warn(`[${requestId}] Event ID missing`);
       return res.status(400).json({ message: 'Event ID is required' });
     }
 
     if (!pin) {
+      logger.warn(`[${requestId}] PIN missing`);
       return res.status(401).json({ message: 'PIN is required' });
     }
 
     // Verify PIN
     const proposal = await Proposal.findOne({ accessPin: pin });
     if (!proposal) {
+      logger.warn(`[${requestId}] Invalid PIN`);
       return res.status(401).json({ message: 'Invalid PIN' });
     }
 
@@ -847,6 +1103,10 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
       tenantId: proposal.tenantId 
     });
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { 
+        tenantId: proposal.tenantId,
+        proposalId: proposal.proposalId 
+      });
       return res.status(404).json({ message: 'Project not found' });
     }
 
@@ -856,9 +1116,11 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
       tenantId: { $in: [project.tenantId, -1] }
     });
 
-    console.log('[Customer Portal] CLIENT_SELECTION_DONE status found:', clientSelectionDoneStatus);
 
     if (!clientSelectionDoneStatus) {
+      logger.warn(`[${requestId}] CLIENT_SELECTION_DONE status not found`, { 
+        tenantId: project.tenantId 
+      });
       return res.status(404).json({ message: 'CLIENT_SELECTION_DONE status not found' });
     }
 
@@ -867,7 +1129,6 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
       clientEventId: eventId,
       tenantId: project.tenantId
     });
-    console.log('[Customer Portal] Existing event:', existingEvent);
 
     // Update event status
     const result = await ClientEvent.updateOne(
@@ -875,7 +1136,12 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
       { $set: { eventDeliveryStatusId: clientSelectionDoneStatus.statusId } }
     );
 
-    console.log('[Customer Portal] Event status updated:', result);
+    logger.info(`[${requestId}] Event marked as selection done`, { 
+      tenantId: project.tenantId,
+      projectId: project.projectId,
+      eventId,
+      modifiedCount: result.modifiedCount 
+    });
 
     // Send notification to admins
     if (result.modifiedCount > 0) {
@@ -907,7 +1173,6 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
           selectedCount
         );
       } catch (notifError) {
-        console.error('[Customer Portal] Failed to send selection finalized notification:', notifError);
         // Don't fail the request if notification fails
       }
     }
@@ -917,30 +1182,37 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
       modifiedCount: result.modifiedCount
     });
   } catch (err: any) {
-    console.error('[Customer Portal] Mark event selection done error:', err);
+    logger.error(`[${requestId}] Error marking event selection done`, { 
+      eventId: req.body.eventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const approveAlbum = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  const { eventId } = req.body;
+  const pin = req.headers['x-portal-pin'] as string;
+
+  logger.info(`[${requestId}] Approving album`, { eventId });
+
   try {
-    const { eventId } = req.body;
-    const pin = req.headers['x-portal-pin'] as string;
-
-    console.log('[Customer Portal] Approve album request received');
-    console.log('[Customer Portal] EventId:', eventId, 'PIN:', pin);
-
     if (!eventId) {
+      logger.warn(`[${requestId}] Event ID missing`);
       return res.status(400).json({ message: 'Event ID is required' });
     }
 
     if (!pin) {
+      logger.warn(`[${requestId}] PIN missing`);
       return res.status(401).json({ message: 'PIN is required' });
     }
 
     // Verify PIN
     const proposal = await Proposal.findOne({ accessPin: pin });
     if (!proposal) {
+      logger.warn(`[${requestId}] Invalid PIN`);
       return res.status(401).json({ message: 'Invalid PIN' });
     }
 
@@ -950,6 +1222,10 @@ export const approveAlbum = async (req: Request, res: Response) => {
       tenantId: proposal.tenantId 
     });
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { 
+        tenantId: proposal.tenantId,
+        proposalId: proposal.proposalId 
+      });
       return res.status(404).json({ message: 'Project not found' });
     }
 
@@ -959,9 +1235,11 @@ export const approveAlbum = async (req: Request, res: Response) => {
       tenantId: { $in: [project.tenantId, -1] }
     });
 
-    console.log('[Customer Portal] ALBUM_PRINTING status found:', albumPrintingStatus);
 
     if (!albumPrintingStatus) {
+      logger.warn(`[${requestId}] ALBUM_PRINTING status not found`, { 
+        tenantId: project.tenantId 
+      });
       return res.status(404).json({ message: 'ALBUM_PRINTING status not found' });
     }
 
@@ -971,7 +1249,12 @@ export const approveAlbum = async (req: Request, res: Response) => {
       { $set: { eventDeliveryStatusId: albumPrintingStatus.statusId } }
     );
 
-    console.log('[Customer Portal] Album approved, event status updated:', result);
+    logger.info(`[${requestId}] Album approved`, { 
+      tenantId: project.tenantId,
+      projectId: project.projectId,
+      eventId,
+      modifiedCount: result.modifiedCount 
+    });
 
     // Send notification to admins and designer
     if (result.modifiedCount > 0) {
@@ -990,7 +1273,6 @@ export const approveAlbum = async (req: Request, res: Response) => {
           clientEvent?.albumDesigner
         );
       } catch (notifError) {
-        console.error('[Customer Portal] Failed to send album approval notification:', notifError);
         // Don't fail the request if notification fails
       }
     }
@@ -1000,29 +1282,37 @@ export const approveAlbum = async (req: Request, res: Response) => {
       modifiedCount: result.modifiedCount
     });
   } catch (err: any) {
-    console.error('[Customer Portal] Approve album error:', err);
+    logger.error(`[${requestId}] Error approving album`, { 
+      eventId: req.body.eventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
 export const notifyAlbumView = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  const { eventId } = req.body;
+  const pin = req.headers['x-portal-pin'] as string;
+
+  logger.info(`[${requestId}] Notifying album view`, { eventId });
+
   try {
-    const { eventId } = req.body;
-    const pin = req.headers['x-portal-pin'] as string;
-
-    console.log('[Customer Portal] Album view notification request');
-
     if (!eventId) {
+      logger.warn(`[${requestId}] Event ID missing`);
       return res.status(400).json({ message: 'Event ID is required' });
     }
 
     if (!pin) {
+      logger.warn(`[${requestId}] PIN missing`);
       return res.status(401).json({ message: 'PIN is required' });
     }
 
     // Verify PIN
     const proposal = await Proposal.findOne({ accessPin: pin });
     if (!proposal) {
+      logger.warn(`[${requestId}] Invalid PIN`);
       return res.status(401).json({ message: 'Invalid PIN' });
     }
 
@@ -1032,6 +1322,10 @@ export const notifyAlbumView = async (req: Request, res: Response) => {
       tenantId: proposal.tenantId 
     });
     if (!project) {
+      logger.warn(`[${requestId}] Project not found`, { 
+        tenantId: proposal.tenantId,
+        proposalId: proposal.proposalId 
+      });
       return res.status(404).json({ message: 'Project not found' });
     }
 
@@ -1040,6 +1334,10 @@ export const notifyAlbumView = async (req: Request, res: Response) => {
       tenantId: project.tenantId 
     });
     if (!clientEvent) {
+      logger.warn(`[${requestId}] Event not found`, { 
+        tenantId: project.tenantId,
+        eventId 
+      });
       return res.status(404).json({ message: 'Event not found' });
     }
 
@@ -1053,9 +1351,19 @@ export const notifyAlbumView = async (req: Request, res: Response) => {
       event?.eventDesc || 'event'
     );
 
+    logger.info(`[${requestId}] Album view notification sent`, { 
+      tenantId: project.tenantId,
+      projectId: project.projectId,
+      eventId 
+    });
+
     return res.status(200).json({ message: 'Notification sent successfully' });
   } catch (err: any) {
-    console.error('[Customer Portal] Album view notification error:', err);
+    logger.error(`[${requestId}] Error sending album view notification`, { 
+      eventId: req.body.eventId,
+      error: err.message,
+      stack: err.stack 
+    });
     return res.status(500).json({ message: 'Internal server error' });
   }
 };

@@ -10,13 +10,22 @@ import { TenantSubscription } from '../models/tenantSubscription';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
 import { ensureMainBucketExists } from '../utils/s3Bucket';
+import { createModuleLogger } from '../utils/logger';
+import { logAudit, auditEvents } from '../utils/auditLogger';
+
+const logger = createModuleLogger('SuperAdminController');
 
 /**
  * Get all tenants with statistics
+ * Note: Read operations are NOT audited - only logged for debugging
  */
 export const getAllTenants = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  logger.info(`[${requestId}] Fetching all tenants with statistics`);
+
   try {
     const tenants = await Tenant.find().sort({ createdAt: -1 });
+    logger.debug(`[${requestId}] Found ${tenants.length} tenants`);
 
     // Fetch statistics for each tenant
     const tenantsWithStats = await Promise.all(
@@ -45,29 +54,51 @@ export const getAllTenants = async (req: Request, res: Response) => {
       })
     );
 
+    logger.info(`[${requestId}] Tenants retrieved successfully`, {
+      count: tenantsWithStats.length,
+      activeTenants: tenantsWithStats.filter(t => t.isActive).length
+    });
+
     return res.json(tenantsWithStats);
-  } catch (error) {
-    console.error('Error fetching tenants:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to fetch tenants`, {
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({ message: 'Failed to fetch tenants' });
   }
 };
 
 /**
  * Get single tenant details
+ * Note: Read operations are NOT audited - only logged for debugging
  */
 export const getTenantById = async (req: Request, res: Response) => {
-  try {
-    const { tenantId } = req.params;
+  const requestId = nanoid(8);
+  const { tenantId } = req.params;
 
+  logger.info(`[${requestId}] Fetching tenant details`, { tenantId });
+
+  try {
     const tenant = await Tenant.findOne({ tenantId });
 
     if (!tenant) {
+      logger.warn(`[${requestId}] Tenant not found`, { tenantId });
       return res.status(404).json({ message: 'Tenant not found' });
     }
+
+    logger.debug(`[${requestId}] Fetching tenant statistics`, { tenantId });
 
     const projectCount = await Project.countDocuments({ tenantId: tenant.tenantId });
     const images = await Image.find({ tenantId: tenant.tenantId });
     const storageUsed = images.reduce((total, img) => total + (img.fileSize || 0), 0);
+
+    logger.info(`[${requestId}] Tenant details retrieved successfully`, {
+      tenantId,
+      tenantName: tenant.tenantCompanyName,
+      projectCount,
+      storageUsedBytes: storageUsed
+    });
 
     return res.json({
       tenantId: tenant.tenantId,
@@ -84,8 +115,12 @@ export const getTenantById = async (req: Request, res: Response) => {
         storageUsed,
       },
     });
-  } catch (error) {
-    console.error('Error fetching tenant:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to fetch tenant`, {
+      tenantId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({ message: 'Failed to fetch tenant' });
   }
 };
@@ -94,28 +129,52 @@ export const getTenantById = async (req: Request, res: Response) => {
  * Create new tenant
  */
 export const createTenant = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  logger.info(`[${requestId}] Tenant creation request initiated by super admin`, {
+    timestamp: new Date().toISOString()
+  });
+
   try {
     const { name, contactPerson, email, phone, address, planCode } = req.body;
 
+    logger.debug(`[${requestId}] Request payload received`, {
+      name,
+      email,
+      planCode: planCode || 'FREE'
+    });
+
     if (!name || !email) {
+      logger.warn(`[${requestId}] Validation failed: Missing required fields`, {
+        hasName: !!name,
+        hasEmail: !!email
+      });
       return res.status(400).json({ message: 'Tenant name and email are required' });
     }
 
     // Ensure main S3 bucket exists (creates if first tenant)
+    logger.debug(`[${requestId}] Ensuring S3 bucket exists`);
     try {
       await ensureMainBucketExists();
-    } catch (s3Error) {
-      console.error('[Super Admin] Failed to ensure S3 bucket exists:', s3Error);
+      logger.debug(`[${requestId}] S3 bucket verified`);
+    } catch (s3Error: any) {
+      logger.error(`[${requestId}] S3 bucket initialization failed`, {
+        error: s3Error.message,
+        stack: s3Error.stack
+      });
       return res.status(500).json({ 
         message: 'Failed to initialize storage bucket. Please check AWS configuration.' 
       });
     }
 
     // Check if tenant with same email exists
+    logger.debug(`[${requestId}] Checking for duplicate email`);
     const existingTenant = await Tenant.findOne({ tenantEmailAddress: email.toLowerCase() });
     
     if (existingTenant) {
-      console.log('[Super Admin] Tenant with email already exists:', existingTenant.tenantId);
+      logger.warn(`[${requestId}] Tenant creation failed: Duplicate email`, {
+        email,
+        existingTenantId: existingTenant.tenantId
+      });
       return res.status(409).json({ 
         message: 'A tenant with this email already exists',
         existingTenantId: existingTenant.tenantId 
@@ -127,30 +186,34 @@ export const createTenant = async (req: Request, res: Response) => {
     const firstName = nameParts[0] || '';
     const lastName = nameParts.slice(1).join(' ') || '';
 
-    // Generate username from email
-    const username = email.split('@')[0] + '_' + nanoid(4);
     const tenantId = nanoid(12);
     
     // Generate S3 folder name: guid_TENANTNAME
     const sanitizedCompanyName = name.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
     const s3TenantFolderName = `${nanoid(10)}_${sanitizedCompanyName}`;
 
+    logger.info(`[${requestId}] Creating tenant`, {
+      tenantId,
+      s3FolderName: s3TenantFolderName
+    });
+
     // Set subscription dates: start = now, end = 1 year from now
     const subscriptionStartDate = new Date();
     const subscriptionEndDate = new Date();
     subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+
+    const selectedPlanCode = planCode || 'FREE'; // Default to basic if not provided
 
     const newTenant = new Tenant({
       tenantId,
       tenantFirstName: firstName,
       tenantLastName: lastName,
       tenantCompanyName: name,
-      tenantUsername: username,
       tenantEmailAddress: email.toLowerCase(),
-      countryCode: '+1',
+      countryCode: '+91',
       tenantPhoneNumber: phone || '',
       isActive: true,
-      subscriptionPlan: 'basic',
+      subscriptionPlan: selectedPlanCode,
       subscriptionStartDate,
       subscriptionEndDate,
       s3TenantFolderName,
@@ -159,10 +222,17 @@ export const createTenant = async (req: Request, res: Response) => {
     });
 
     await newTenant.save();
+    logger.info(`[${requestId}] Tenant created successfully`, {
+      tenantId,
+      companyName: name,
+      email
+    });
 
     // Find or create Admin role for the tenant
+    logger.debug(`[${requestId}] Fetching or creating admin role`);
     let adminRole = await Role.findOne({ name: 'Admin' });
     if (!adminRole) {
+      logger.info(`[${requestId}] Admin role not found, creating new role`);
       adminRole = new Role({
         roleId: nanoid(12),
         name: 'Admin',
@@ -171,12 +241,17 @@ export const createTenant = async (req: Request, res: Response) => {
         isActive: true,
       });
       await adminRole.save();
+      logger.info(`[${requestId}] Admin role created`, { roleId: adminRole.roleId });
+    } else {
+      logger.debug(`[${requestId}] Using existing admin role`, { roleId: adminRole.roleId });
     }
 
     // Create admin user for the tenant with email as password
     const tempPassword = email.toLowerCase(); // Use email as initial password
     const salt = await bcrypt.genSalt(10);
     const hash = await bcrypt.hash(tempPassword, salt);
+
+    logger.debug(`[${requestId}] Creating admin user with email as initial password`);
 
     const adminUser = new User({
       tenantId,
@@ -194,8 +269,14 @@ export const createTenant = async (req: Request, res: Response) => {
     });
 
     await adminUser.save();
+    logger.info(`[${requestId}] Admin user created successfully`, {
+      userId: adminUser.userId,
+      email: adminUser.email,
+      isActivated: false
+    });
 
     // Create organization for the tenant
+    logger.debug(`[${requestId}] Creating organization for tenant`);
     const organizationId = `org_${nanoid()}`;
     await Organization.create({
       organizationId,
@@ -207,9 +288,11 @@ export const createTenant = async (req: Request, res: Response) => {
       createdBy: adminUser.userId,
       updatedBy: adminUser.userId
     });
+    logger.info(`[${requestId}] Organization created`, { organizationId });
 
     // Assign subscription plan to new tenant
-    const selectedPlanCode = planCode || 'FREE';
+    logger.debug(`[${requestId}] Assigning subscription plan`, { planCode: selectedPlanCode });
+    
     const selectedPlan = await SubscriptionPlan.findOne({ planCode: selectedPlanCode });
     
     if (selectedPlan) {
@@ -223,10 +306,47 @@ export const createTenant = async (req: Request, res: Response) => {
         startDate: new Date(),
         isAutoRenewal: false,
       });
-      console.log(`[Super Admin] Assigned ${selectedPlan.planName} plan to tenant ${tenantId}`);
+      logger.info(`[${requestId}] Subscription assigned successfully`, {
+        tenantId,
+        planCode: selectedPlan.planCode,
+        planName: selectedPlan.planName,
+        storageLimit: selectedPlan.storageLimit
+      });
     } else {
-      console.warn(`[Super Admin] ${selectedPlanCode} plan not found. Tenant ${tenantId} created without subscription.`);
+      logger.warn(`[${requestId}] Subscription plan not found`, {
+        tenantId,
+        requestedPlanCode: selectedPlanCode
+      });
     }
+
+    logger.info(`[${requestId}] Tenant creation completed successfully`, {
+      tenantId,
+      adminUserId: adminUser.userId,
+      organizationId,
+      planCode: selectedPlan?.planCode || 'NONE'
+    });
+
+    // Audit log for tenant creation
+    logAudit({
+      action: auditEvents.TENANT_CREATED,
+      entityType: 'Tenant',
+      entityId: tenantId,
+      tenantId: tenantId,
+      performedBy: 'Super Admin',
+      changes: {
+        name: newTenant.tenantCompanyName,
+        email: newTenant.tenantEmailAddress,
+        phone: newTenant.tenantPhoneNumber,
+        subscriptionPlan: selectedPlan?.planCode || 'NONE',
+        adminUser: adminUser.email,
+      },
+      metadata: {
+        organizationId,
+        adminUserId: adminUser.userId,
+        storageLimit: selectedPlan?.storageLimit,
+      },
+      ipAddress: req.ip,
+    });
 
     return res.status(201).json({
       message: 'Tenant created successfully. Login with email as password, then set new password.',
@@ -241,8 +361,12 @@ export const createTenant = async (req: Request, res: Response) => {
         tempPassword: tempPassword, // Return for reference
       },
     });
-  } catch (error) {
-    console.error('Error creating tenant:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Tenant creation failed`, {
+      error: error.message,
+      stack: error.stack,
+      code: error.code
+    });
     return res.status(500).json({ message: 'Failed to create tenant' });
   }
 };
@@ -251,39 +375,95 @@ export const createTenant = async (req: Request, res: Response) => {
  * Update tenant
  */
 export const updateTenant = async (req: Request, res: Response) => {
+  const requestId = nanoid(8);
+  const { tenantId } = req.params;
+  
+  logger.info(`[${requestId}] Tenant update request initiated`, {
+    tenantId,
+    fieldsToUpdate: Object.keys(req.body)
+  });
+
   try {
-    const { tenantId } = req.params;
-    const { name, contactPerson, email, phone } = req.body;
+    const { phone, planCode } = req.body;
 
     const tenant = await Tenant.findOne({ tenantId });
 
     if (!tenant) {
+      logger.warn(`[${requestId}] Tenant not found for update`, { tenantId });
       return res.status(404).json({ message: 'Tenant not found' });
     }
 
-    // Check if new email conflicts with another tenant
-    if (email && email !== tenant.tenantEmailAddress) {
-      const existingTenant = await Tenant.findOne({ 
-        tenantEmailAddress: email.toLowerCase(), 
-        tenantId: { $ne: tenantId } 
-      });
-      if (existingTenant) {
-        return res.status(409).json({ message: 'Tenant with this email already exists' });
+    // Update fields
+    const updates: string[] = [];
+    
+    if (phone !== undefined) {
+      tenant.tenantPhoneNumber = phone;
+      updates.push('phone');
+    }
+    
+    if (planCode !== undefined) {
+      tenant.subscriptionPlan = planCode;
+      updates.push('subscriptionPlan');
+      
+      // Also update the TenantSubscription if plan is being changed
+      const selectedPlan = await SubscriptionPlan.findOne({ planCode });
+      if (selectedPlan) {
+        await TenantSubscription.findOneAndUpdate(
+          { tenantId },
+          {
+            planId: selectedPlan.planId,
+            storageLimit: selectedPlan.storageLimit,
+            subscriptionStatus: 'ACTIVE',
+            paymentStatus: selectedPlan.planCode === 'FREE' ? 'FREE' : 'PENDING',
+          },
+          { upsert: true }
+        );
+        logger.info(`[${requestId}] Subscription plan updated`, {
+          tenantId,
+          newPlanCode: planCode,
+          storageLimit: selectedPlan.storageLimit
+        });
+      } else {
+        logger.warn(`[${requestId}] Plan code not found in subscription plans`, {
+          tenantId,
+          requestedPlanCode: planCode
+        });
       }
     }
-
-    // Update fields
-    if (name) tenant.tenantCompanyName = name;
-    if (contactPerson) {
-      const nameParts = contactPerson.split(' ');
-      tenant.tenantFirstName = nameParts[0] || '';
-      tenant.tenantLastName = nameParts.slice(1).join(' ') || '';
-    }
-    if (email !== undefined) tenant.tenantEmailAddress = email.toLowerCase();
-    if (phone !== undefined) tenant.tenantPhoneNumber = phone;
+    
     tenant.updatedBy = 'super-admin';
 
     await tenant.save();
+
+    logger.info(`[${requestId}] Tenant updated successfully`, {
+      tenantId,
+      updatedFields: updates
+    });
+
+    // Audit log for tenant update
+    const changes: any = {};
+    if (phone !== undefined) {
+      changes.phone = { after: phone };
+    }
+    if (planCode !== undefined) {
+      changes.planCode = { after: planCode };
+    }
+
+    if (Object.keys(changes).length > 0) {
+      logAudit({
+        action: planCode !== undefined ? auditEvents.PLAN_UPGRADED : auditEvents.TENANT_UPDATED,
+        entityType: 'Tenant',
+        entityId: tenantId,
+        tenantId,
+        performedBy: 'Super Admin',
+        changes,
+        metadata: {
+          tenantName: tenant.tenantCompanyName,
+          tenantEmail: tenant.tenantEmailAddress,
+        },
+        ipAddress: req.ip,
+      });
+    }
 
     return res.json({
       message: 'Tenant updated successfully',
@@ -291,10 +471,16 @@ export const updateTenant = async (req: Request, res: Response) => {
         tenantId: tenant.tenantId,
         name: tenant.tenantCompanyName,
         email: tenant.tenantEmailAddress,
+        phone: tenant.tenantPhoneNumber,
+        plan: tenant.subscriptionPlan,
       },
     });
-  } catch (error) {
-    console.error('Error updating tenant:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Tenant update failed`, {
+      tenantId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({ message: 'Failed to update tenant' });
   }
 };
@@ -303,29 +489,70 @@ export const updateTenant = async (req: Request, res: Response) => {
  * Activate/Deactivate tenant
  */
 export const toggleTenantStatus = async (req: Request, res: Response) => {
-  try {
-    const { tenantId } = req.params;
-    const { isActive } = req.body;
+  const requestId = nanoid(8);
+  const { tenantId } = req.params;
+  const { isActive } = req.body;
+  
+  logger.info(`[${requestId}] Tenant status toggle request`, {
+    tenantId,
+    newStatus: isActive ? 'ACTIVE' : 'INACTIVE'
+  });
 
+  try {
     if (typeof isActive !== 'boolean') {
+      logger.warn(`[${requestId}] Invalid isActive value`, {
+        tenantId,
+        providedValue: isActive,
+        expectedType: 'boolean'
+      });
       return res.status(400).json({ message: 'isActive must be a boolean' });
     }
 
     const tenant = await Tenant.findOne({ tenantId });
 
     if (!tenant) {
+      logger.warn(`[${requestId}] Tenant not found for status toggle`, { tenantId });
       return res.status(404).json({ message: 'Tenant not found' });
     }
 
+    const oldStatus = tenant.isActive;
     tenant.isActive = isActive;
     await tenant.save();
+
+    logger.info(`[${requestId}] Tenant status toggled successfully`, {
+      tenantId,
+      tenantName: tenant.tenantCompanyName,
+      oldStatus: oldStatus ? 'ACTIVE' : 'INACTIVE',
+      newStatus: isActive ? 'ACTIVE' : 'INACTIVE'
+    });
+
+    // Audit log for status change
+    logAudit({
+      action: auditEvents.TENANT_STATUS_CHANGED,
+      entityType: 'Tenant',
+      entityId: tenantId,
+      tenantId,
+      performedBy: 'Super Admin',
+      changes: {
+        isActive: { before: oldStatus, after: isActive },
+      },
+      metadata: {
+        tenantName: tenant.tenantCompanyName,
+        tenantEmail: tenant.tenantEmailAddress,
+      },
+      ipAddress: req.ip,
+    });
 
     return res.json({
       message: `Tenant ${isActive ? 'activated' : 'deactivated'} successfully`,
       tenant,
     });
-  } catch (error) {
-    console.error('Error toggling tenant status:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Tenant status toggle failed`, {
+      tenantId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({ message: 'Failed to update tenant status' });
   }
 };
@@ -334,19 +561,31 @@ export const toggleTenantStatus = async (req: Request, res: Response) => {
  * Delete tenant (soft delete by deactivating)
  */
 export const deleteTenant = async (req: Request, res: Response) => {
-  try {
-    const { tenantId } = req.params;
+  const requestId = nanoid(8);
+  const { tenantId } = req.params;
+  
+  logger.warn(`[${requestId}] Tenant deletion request initiated`, {
+    tenantId,
+    timestamp: new Date().toISOString()
+  });
 
+  try {
     const tenant = await Tenant.findOne({ tenantId });
 
     if (!tenant) {
+      logger.warn(`[${requestId}] Tenant not found for deletion`, { tenantId });
       return res.status(404).json({ message: 'Tenant not found' });
     }
 
     // Check if tenant has any projects
+    logger.debug(`[${requestId}] Checking for existing projects`, { tenantId });
     const projectCount = await Project.countDocuments({ tenantId });
 
     if (projectCount > 0) {
+      logger.warn(`[${requestId}] Deletion blocked: Tenant has existing projects`, {
+        tenantId,
+        projectCount
+      });
       return res.status(400).json({ 
         message: 'Cannot delete tenant with existing projects. Deactivate instead.',
         projectCount 
@@ -357,11 +596,40 @@ export const deleteTenant = async (req: Request, res: Response) => {
     tenant.isActive = false;
     await tenant.save();
 
+    logger.warn(`[${requestId}] Tenant soft deleted (deactivated)`, {
+      tenantId,
+      tenantName: tenant.tenantCompanyName,
+      email: tenant.tenantEmailAddress
+    });
+
+    // Audit log for tenant deletion
+    logAudit({
+      action: auditEvents.TENANT_DELETED,
+      entityType: 'Tenant',
+      entityId: tenantId,
+      tenantId,
+      performedBy: 'Super Admin',
+      changes: {
+        isActive: { before: true, after: false },
+        deletedAt: new Date().toISOString(),
+      },
+      metadata: {
+        tenantName: tenant.tenantCompanyName,
+        tenantEmail: tenant.tenantEmailAddress,
+        projectCount,
+      },
+      ipAddress: req.ip,
+    });
+
     return res.json({
       message: 'Tenant deactivated successfully',
     });
-  } catch (error) {
-    console.error('Error deleting tenant:', error);
+  } catch (error: any) {
+    logger.error(`[${requestId}] Tenant deletion failed`, {
+      tenantId,
+      error: error.message,
+      stack: error.stack
+    });
     return res.status(500).json({ message: 'Failed to delete tenant' });
   }
 };

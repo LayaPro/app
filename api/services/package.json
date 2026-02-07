@@ -30,7 +30,9 @@
     "p-map": "^7.0.2",
     "qrcode": "^1.5.3",
     "sharp": "^0.33.5",
-    "socket.io": "^4.8.3"
+    "socket.io": "^4.8.3",
+    "winston": "^3.19.0",
+    "winston-mongodb": "^7.0.1"
   },
   "devDependencies": {
     "@types/archiver": "^6.0.2",

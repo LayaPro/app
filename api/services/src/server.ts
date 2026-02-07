@@ -16,7 +16,6 @@ import cors from 'cors';
 import testController from './controllers/testController';
 import roleController from './controllers/roleController';
 import authController from './controllers/authController';
-import tenantController from './controllers/tenantController';
 import profileController from './controllers/profileController';
 import teamController from './controllers/teamController';
 import eventController from './controllers/eventController';
@@ -94,14 +93,6 @@ app.get('/get-all-roles', authenticate, roleController.getRoles);
 app.get('/get-roles', authenticate, roleController.getRoles);
 app.put('/update-role/:roleId', authenticate, requireAdmin, roleController.updateRole);
 app.delete('/delete-role/:roleId', authenticate, requireAdmin, roleController.deleteRole);
-
-// ---------- Tenants routes ----------
-app.post('/create-tenant', authenticate, requireAdmin, tenantController.createTenant);
-app.get('/get-all-tenants', authenticate, requireAdmin, tenantController.getAllTenants);
-app.get('/get-tenant/:tenantId', authenticate, tenantController.getTenantById);
-app.put('/update-tenant/:tenantId', authenticate, requireAdmin, tenantController.updateTenant);
-app.delete('/delete-tenant/:tenantId', authenticate, requireAdmin, tenantController.deleteTenant);
-app.patch('/toggle-tenant-status/:tenantId', authenticate, requireAdmin, tenantController.toggleTenantStatus);
 
 // ---------- Profile routes ----------
 app.post('/create-profile', authenticate, requireAdmin, profileController.createProfile);
