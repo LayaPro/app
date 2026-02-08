@@ -47,6 +47,9 @@ import { toggleStorageBreakdownModal } from './store/slices/uiSlice.js';
 // Organization page
 import Organization from './pages/Organization/index.js';
 
+// Search Results page
+import SearchResults from './pages/SearchResults/index.js';
+
 function App() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
@@ -189,6 +192,9 @@ function App() {
           
           {/* Organization */}
           <Route path={ROUTES.ORGANIZATION} element={<Organization />} />
+          
+          {/* Search Results */}
+          <Route path="/search" element={<SearchResults />} />
           
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
           

@@ -1148,3 +1148,21 @@ export const storageApi = {
     return handleResponse(response);
   },
 };
+
+// Search API
+export const searchApi = {
+  global: async (query: string, options?: { limit?: number; page?: number; type?: string }) => {
+    const params = new URLSearchParams({ q: query });
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.page) params.append('page', options.page.toString());
+    if (options?.type && options.type !== 'all') params.append('type', options.type);
+    
+    const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};

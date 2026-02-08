@@ -1,0 +1,508 @@
+.container {
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.backButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  margin-bottom: 24px;
+}
+
+.backButton:hover {
+  background: var(--bg-hover);
+  border-color: var(--color-primary);
+}
+
+.backButton svg {
+  flex-shrink: 0;
+}
+
+.mainCard {
+  background: var(--bg-primary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.searchInfo {
+  padding: 24px 24px 16px 24px;
+}
+
+.searchHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.searchHeader > div {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.searchHeader > div:first-child {
+  flex: 1;
+}
+
+.searchInfo h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 8px 0;
+}
+
+.searchInfo p {
+  font-size: 15px;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 24px 16px 24px;
+}
+
+.divider {
+  height: 1px;
+  background: var(--border-color);
+  margin: 0 24px 16px 24px;
+}
+
+.filterButton {
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.filterButton:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.filterButton.active {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.25);
+}
+
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 20px;
+  gap: 20px;
+}
+
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.loading p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.resultsList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  padding: 0 24px 24px 24px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.resultCard {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-radius: 8px;
+  animation: fadeInUp 0.4s ease-out backwards;
+}
+
+.resultCard:nth-child(1) { animation-delay: 0.05s; }
+.resultCard:nth-child(2) { animation-delay: 0.1s; }
+.resultCard:nth-child(3) { animation-delay: 0.15s; }
+.resultCard:nth-child(4) { animation-delay: 0.2s; }
+.resultCard:nth-child(5) { animation-delay: 0.25s; }
+.resultCard:nth-child(6) { animation-delay: 0.3s; }
+.resultCard:nth-child(7) { animation-delay: 0.35s; }
+.resultCard:nth-child(8) { animation-delay: 0.4s; }
+.resultCard:nth-child(9) { animation-delay: 0.45s; }
+.resultCard:nth-child(10) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.resultCard:hover {
+  background: rgba(102, 126, 234, 0.06);
+}
+
+.resultIcon {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.12), rgba(118, 75, 162, 0.12));
+  color: var(--color-primary);
+  transition: all 0.2s ease;
+}
+
+.resultImagePreview {
+  flex-shrink: 0;
+  width: 60px;
+  height: 44px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-secondary);
+}
+
+.resultImagePreview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.resultIcon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.resultCard:hover .resultIcon {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+}
+
+.resultContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.resultHeader {
+  margin-bottom: 4px;
+}
+
+.resultHeader h3 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.resultType {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+  color: var(--color-primary);
+  border-radius: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+}
+
+.resultCard:hover .resultType {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.2), rgba(118, 75, 162, 0.2));
+}
+
+.resultSubtitle {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-height: 1.5;
+}
+
+.resultAction {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  color: var(--text-tertiary);
+  transition: all 0.2s ease;
+}
+
+.resultAction svg {
+  width: 16px;
+  height: 16px;
+}
+
+.resultCard:hover .resultAction {
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  color: white;
+  transform: translateX(3px);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 100px 20px;
+  text-align: center;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.emptyState svg {
+  color: var(--text-tertiary);
+  margin-bottom: 24px;
+  opacity: 0.5;
+}
+
+.emptyState h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 12px 0;
+}
+
+.emptyState p {
+  font-size: 16px;
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 500;
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border-color);
+  gap: 20px;
+}
+
+.paginationButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: var(--bg-secondary);
+  border: 1.5px solid var(--border-color);
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+}
+
+.paginationButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginationButton svg {
+  flex-shrink: 0;
+}
+
+.paginationInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.pageNumber {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.resultRange {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.topPagination {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.topPagination .paginationButton {
+  padding: 8px;
+  min-width: auto;
+}
+
+.topPagination .paginationInfo {
+  gap: 2px;
+}
+
+.topPagination .pageNumber {
+  font-size: 14px;
+}
+
+.topPagination .resultRange {
+  font-size: 12px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .searchInfo h1 {
+    font-size: 22px;
+  }
+
+  .searchInfo {
+    padding: 20px;
+  }
+
+  .filters {
+    padding: 20px;
+    gap: 10px;
+  }
+
+  .filterButton {
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .resultCard {
+    padding: 18px;
+    gap: 16px;
+  }
+
+  .resultIcon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .resultHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .resultHeader h3 {
+    font-size: 16px;
+  }
+
+  .resultType {
+    font-size: 10px;
+    padding: 5px 12px;
+  }
+
+  .emptyState {
+    padding: 60px 20px;
+  }
+
+  .emptyState svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .emptyState h2 {
+    font-size: 20px;
+  }
+
+  .emptyState p {
+    font-size: 14px;
+  }
+
+  .pagination {
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px;
+  }
+
+  .paginationButton {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+  }
+}
