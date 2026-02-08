@@ -7,7 +7,7 @@ const bentoCards = [
     title: "Smart Event Management",
     description: "Schedule shoots, track milestones, and never miss a deadline. Automated reminders keep you on top of every event.",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="var(--accent)" strokeWidth="2" viewBox="0 0 24 24">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
         <line x1="16" y1="2" x2="16" y2="6" />
         <line x1="8" y1="2" x2="8" y2="6" />
@@ -15,70 +15,91 @@ const bentoCards = [
       </svg>
     ),
     span2: true,
+    color: "#6366f1",
+    colorLight: "rgba(99,102,241,0.08)",
+    emoji: "📅",
   },
   {
     title: "Client Portal",
     description: "Beautiful branded spaces for clients to view galleries, approve photos, and track progress in real-time.",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="var(--accent)" strokeWidth="2" viewBox="0 0 24 24">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
       </svg>
     ),
+    color: "#8b5cf6",
+    colorLight: "rgba(139,92,246,0.08)",
+    emoji: "👥",
   },
   {
     title: "Proposals & Quotes",
     description: "Create stunning proposals in minutes. Professional templates and instant approvals.",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="var(--accent)" strokeWidth="2" viewBox="0 0 24 24">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
         <polyline points="14 2 14 8 20 8" />
         <line x1="16" y1="13" x2="8" y2="13" />
         <line x1="16" y1="17" x2="8" y2="17" />
       </svg>
     ),
+    color: "#ec4899",
+    colorLight: "rgba(236,72,153,0.08)",
+    emoji: "📄",
   },
   {
     title: "Gallery Management",
     description: "Upload, organize, and share high-resolution photos effortlessly. Beautiful galleries that wow your clients every time they visit.",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="var(--accent)" strokeWidth="2" viewBox="0 0 24 24">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
         <circle cx="8.5" cy="8.5" r="1.5" />
         <polyline points="21 15 16 10 5 21" />
       </svg>
     ),
     span2: true,
+    color: "#f59e0b",
+    colorLight: "rgba(245,158,11,0.08)",
+    emoji: "🖼️",
   },
   {
     title: "Notifications",
     description: "Instant updates on client actions, payments, and milestones.",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="var(--accent)" strokeWidth="2" viewBox="0 0 24 24">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
       </svg>
     ),
+    color: "#22c55e",
+    colorLight: "rgba(34,197,94,0.08)",
+    emoji: "🔔",
   },
   {
     title: "Analytics",
     description: "Track revenue, monitor progress, and gain insights to grow.",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="var(--accent)" strokeWidth="2" viewBox="0 0 24 24">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
       </svg>
     ),
+    color: "#3b82f6",
+    colorLight: "rgba(59,130,246,0.08)",
+    emoji: "📊",
   },
   {
     title: "Enterprise Security",
     description: "Bank-level encryption, automatic backups, and role-based access.",
     icon: (
-      <svg width="24" height="24" fill="none" stroke="var(--accent)" strokeWidth="2" viewBox="0 0 24 24">
+      <svg width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     ),
+    color: "#ef4444",
+    colorLight: "rgba(239,68,68,0.08)",
+    emoji: "🛡️",
   },
 ];
 
@@ -179,34 +200,55 @@ export function Features() {
             Every tool you need to run your studio — from first contact to final delivery.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-[60px]" style={{ gridAutoRows: "minmax(260px, auto)" }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mt-[60px]" style={{ gridAutoRows: "minmax(280px, auto)" }}>
             {bentoCards.map((card, i) => (
               <div
                 key={i}
-                className={`bento-card bg-[var(--bg-card)] border border-[var(--border)] rounded-[20px] p-9 relative overflow-hidden transition-all duration-500 flex flex-col justify-end anim fade-up d${Math.min(i + 1, 7)} ${
+                className={`bento-card group bg-[var(--bg-card)] border border-[var(--border)] rounded-[24px] p-9 relative overflow-hidden transition-all duration-500 flex flex-col justify-end anim fade-up d${Math.min(i + 1, 7)} ${
                   card.span2 ? "lg:col-span-2" : ""
-                } hover:border-[rgba(99,102,241,0.15)] hover:-translate-y-1 hover:shadow-[0_20px_40px_-10px_rgba(0,0,0,0.08),0_0_20px_rgba(99,102,241,0.04)]`}
+                } hover:-translate-y-1.5 hover:shadow-[0_25px_50px_-12px_rgba(0,0,0,0.1)]`}
                 style={{
                   ["--gx" as string]: "50%",
                   ["--gy" as string]: "50%",
+                  ["--card-color" as string]: card.color,
+                  borderColor: "transparent",
+                  background: `linear-gradient(var(--bg-card), var(--bg-card)) padding-box, linear-gradient(135deg, ${card.colorLight}, transparent 50%) border-box`,
                 }}
               >
+                {/* Colored accent line at top */}
+                <div
+                  className="absolute top-0 left-8 right-8 h-[2px] rounded-full opacity-40 group-hover:opacity-80 transition-opacity duration-500"
+                  style={{ background: `linear-gradient(90deg, transparent, ${card.color}, transparent)` }}
+                />
+
                 {/* Hover glow effect */}
                 <div
-                  className="absolute inset-0 opacity-0 hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
                   style={{
-                    background: "radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(99,102,241,0.04) 0%, transparent 60%)",
+                    background: `radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), ${card.colorLight} 0%, transparent 60%)`,
                   }}
                 />
 
                 {/* Icon */}
-                <div className="w-[52px] h-[52px] rounded-[14px] flex items-center justify-center mb-5 relative">
-                  <div className="absolute -inset-0.5 rounded-[16px] bg-gradient-to-br from-[var(--accent)] to-[var(--accent-bright)] opacity-10" />
+                <div
+                  className="w-[56px] h-[56px] rounded-[16px] flex items-center justify-center mb-5 relative group-hover:scale-110 transition-transform duration-500"
+                  style={{ background: card.colorLight, color: card.color }}
+                >
+                  <div
+                    className="absolute inset-0 rounded-[16px] opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                    style={{ boxShadow: `0 8px 24px -4px ${card.colorLight}` }}
+                  />
                   <div className="relative z-10">{card.icon}</div>
                 </div>
 
-                <h3 className="font-heading text-[22px] font-normal mb-2.5 relative">{card.title}</h3>
-                <p className="text-[15px] text-[var(--text-muted)] leading-[1.7] relative">{card.description}</p>
+                <h3 className="font-heading text-[22px] font-normal mb-2.5 relative z-10 group-hover:translate-x-0.5 transition-transform duration-500">{card.title}</h3>
+                <p className="text-[15px] text-[var(--text-muted)] leading-[1.7] relative z-10">{card.description}</p>
+
+                {/* Bottom corner dot accent */}
+                <div
+                  className="absolute bottom-5 right-5 w-2 h-2 rounded-full opacity-20 group-hover:opacity-60 transition-all duration-500 group-hover:scale-150"
+                  style={{ background: card.color }}
+                />
               </div>
             ))}
           </div>
@@ -251,21 +293,11 @@ export function Features() {
                 {/* Visual */}
                 <div
                   className={`anim ${row.visualAnim} ${isEven ? "lg:order-1" : "lg:order-2"}`}
-                  style={{ perspective: "1800px" }}
                 >
                   <div
                     className="bg-[var(--bg-card)] border border-[var(--border)] rounded-[16px] overflow-hidden transition-transform duration-800 shadow-[0_30px_60px_-15px_rgba(0,0,0,0.1)] hover:scale-[1.02]"
                     style={{
-                      transform: isEven ? "rotateY(-12deg)" : "rotateY(12deg)",
                       transitionTimingFunction: "cubic-bezier(0.4, 0, 0.2, 1)",
-                    }}
-                    onMouseEnter={(e) => {
-                      const el = e.currentTarget;
-                      el.style.transform = isEven ? "rotateY(-6deg) scale(1.02)" : "rotateY(6deg) scale(1.02)";
-                    }}
-                    onMouseLeave={(e) => {
-                      const el = e.currentTarget;
-                      el.style.transform = isEven ? "rotateY(-12deg)" : "rotateY(12deg)";
                     }}
                   >
                     <div className="flex items-center gap-1.5 px-4 py-3 border-b border-[var(--border)]">

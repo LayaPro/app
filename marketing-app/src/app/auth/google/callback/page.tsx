@@ -75,12 +75,12 @@ export default function GoogleCallbackPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 flex items-center justify-center">
+    <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
       <div className="text-center">
         {error ? (
           <div className="space-y-4">
-            <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-              <svg className="w-8 h-8 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="w-16 h-16 mx-auto bg-red-50 rounded-full flex items-center justify-center">
+              <svg className="w-8 h-8 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
@@ -88,7 +88,7 @@ export default function GoogleCallbackPage() {
             <p className="text-gray-600">Redirecting you back to signup...</p>
           </div>
         ) : (
-          <Loader2 className="w-16 h-16 animate-spin text-purple-600" />
+          <Loader2 className="w-16 h-16 animate-spin text-[#6366f1]" />
         )}
       </div>
     </div>

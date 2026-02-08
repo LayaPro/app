@@ -16,7 +16,7 @@ export function Marquee() {
   const allItems = [...items, ...items];
 
   return (
-    <section className="py-[60px] border-t border-b border-[var(--border)] overflow-hidden">
+    <section className="py-[60px] border-t border-b border-[rgba(99,102,241,0.08)] overflow-hidden bg-gradient-to-r from-[rgba(99,102,241,0.04)] via-[rgba(99,102,241,0.07)] to-[rgba(99,102,241,0.04)]">
       <div
         className="flex w-max"
         style={{ animation: "marquee 30s linear infinite" }}

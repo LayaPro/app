@@ -4,16 +4,16 @@
   align-items: center;
   justify-content: center;
   padding: 20px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(139, 92, 246, 0.05));
+  background: var(--bg-secondary);
 }
 
 .loginCard {
   width: 100%;
   max-width: 440px;
   background-color: var(--bg-primary);
-  border-radius: 16px;
+  border-radius: 20px;
   padding: 48px 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-xl);
   border: 1px solid var(--border-color);
 }
 
@@ -33,12 +33,12 @@
   width: 64px;
   height: 64px;
   margin: 0 auto 16px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+  background: #6366f1;
   border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
 }
 
 .logo svg {
