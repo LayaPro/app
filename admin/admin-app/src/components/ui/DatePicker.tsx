@@ -416,12 +416,12 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                   >
                     <option 
                       value="AM" 
-                      disabled={!allowPast && value && (() => {
+                      disabled={(!allowPast && value && (() => {
                         const today = new Date();
                         const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
                         // Disable AM if it's currently PM (all AM times are in the past)
                         return value === todayStr && today.getHours() >= 12;
-                      })()}
+                      })()) || undefined}
                     >
                       AM
                     </option>

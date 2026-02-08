@@ -69,7 +69,7 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const { showToast } = useToast();
 
@@ -435,7 +435,7 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
               <div 
                 ref={menuRef} 
                 className={styles.actionsDropdown}
-                style={{ top: `${dropdownPosition.top}px`, left: `${dropdownPosition.left}px` }}
+                style={{ top: `${dropdownPosition?.top || 0}px`, left: `${dropdownPosition?.left || 0}px` }}
               >
               <button
                 className={styles.actionsDropdownItem}

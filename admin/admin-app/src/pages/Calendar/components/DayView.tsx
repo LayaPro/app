@@ -294,7 +294,7 @@ export const DayView: React.FC<DayViewProps> = ({
               const eventType = eventTypes.get(event.eventId);
               const project = projects.get(event.projectId);
               const fromDate = new Date(event.fromDatetime!);
-              const toDate = event.toDatetime ? new Date(event.toDatetime) : null;
+              const toDate = event.toDatetime ? new Date(event.toDatetime) : undefined;
               const color = getEventColor(fromDate, toDate);
               
               const formatTime = (d: Date) => d.toLocaleTimeString('en-US', {

@@ -28,7 +28,7 @@ export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
           
           // Pre-fill if empty
           if (!formData.addOns || formData.addOns.length === 0) {
-            const prefilledDeliverables = response.organization.deliverables.map(d => ({
+            const prefilledDeliverables = response.organization.deliverables.map((d: any) => ({
               name: d.name,
               description: d.description || '',
               price: 0,

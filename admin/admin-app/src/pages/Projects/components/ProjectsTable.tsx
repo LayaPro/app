@@ -36,6 +36,7 @@ interface Project {
   city?: string;
   referredBy?: string;
   budget?: number;
+  deliveryDueDate?: string;
   displayPic?: string;
   coverPhoto?: string;
   createdAt?: string;

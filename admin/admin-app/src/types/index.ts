@@ -75,6 +75,7 @@ export interface Project {
   address?: string;
   referredBy?: string;
   projectDeliveryStatusId?: string;
+  deliveryDueDate?: string;
   s3BucketName?: string;
   displayPic?: string;
   coverPhoto?: string;

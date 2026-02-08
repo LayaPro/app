@@ -129,8 +129,8 @@ export const AssignDesignerModal = forwardRef<AssignDesignerModalHandle, AssignD
     if (profileIds.length === 0) return '';
     
     const profileNames = profileIds
-      .map((id: string) => profiles.find(p => p.profileId === id)?.name)
-      .filter((name): name is string => !!name);
+      .map((id: string) => profiles.find((p: any) => p.profileId === id)?.name)
+      .filter((name: any): name is string => !!name);
     
     return profileNames.join(', ');
   };
