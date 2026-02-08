@@ -26,52 +26,39 @@ export default function GoogleCallbackPage() {
   }, [searchParams]);
 
   const handleGoogleCallback = async (code: string) => {
-    const maxRetries = 3;
-    let lastError: Error | null = null;
+    try {
+      const redirectUri = `${window.location.origin}/auth/google/callback`;
+      
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google/callback`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ code, redirectUri }),
+      });
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        const redirectUri = `${window.location.origin}/auth/google/callback`;
-        
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/google/callback`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ code, redirectUri }),
-        });
-
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.message || "Authentication failed");
-        }
-
+      if (!response.ok) {
         const data = await response.json();
-
-        // Success - redirect immediately
-        const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:5173";
-        const params = new URLSearchParams({
-          token: data.token,
-          user: JSON.stringify(data.user),
-          tenantId: data.tenant?.id || '',
-        });
-        
-        window.location.href = `${adminUrl}?${params.toString()}`;
-        return;
-      } catch (err: any) {
-        lastError = err;
-        if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, 500));
-          continue;
-        }
+        throw new Error(data.message || "Authentication failed");
       }
-    }
 
-    // Only show error if all retries failed
-    setError(lastError?.message || "Authentication failed. Please try again.");
-    setTimeout(() => {
-      window.location.href = "/signup";
-    }, 3000);
+      const data = await response.json();
+
+      // Success - redirect immediately
+      const adminUrl = process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:5173";
+      const params = new URLSearchParams({
+        token: data.token,
+        user: JSON.stringify(data.user),
+        tenantId: data.tenant?.id || '',
+      });
+      
+      window.location.href = `${adminUrl}?${params.toString()}`;
+    } catch (err: any) {
+      setError(err.message || "Authentication failed. Please try again.");
+      setTimeout(() => {
+        window.location.href = "/signup";
+      }, 3000);
+    }
   };
 
   return (

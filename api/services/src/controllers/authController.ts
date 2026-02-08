@@ -630,6 +630,16 @@ export const signup = async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'User already exists with this email' });
     }
 
+    // Check if tenant already exists with this email
+    const Tenant = require('../models/tenant').default;
+    const existingTenant = await Tenant.findOne({ tenantEmailAddress: email.toLowerCase() });
+    if (existingTenant) {
+      logger.warn(`[${requestId}] Tenant already exists with this email`, { email, tenantId: existingTenant.tenantId });
+      return res.status(400).json({ 
+        message: 'An account already exists with this email. Please login instead or use a different email.' 
+      });
+    }
+
     // Parse name for tenant creation
     const nameParts = fullName.split(' ');
     const firstName = nameParts[0] || fullName;
@@ -818,70 +828,131 @@ export const googleCallback = async (req: Request, res: Response) => {
         metadata: { loginMethod: 'google', requestId },
       });
     } else {
-      // New user - create tenant and user
-      // Parse name for tenant creation
-      const nameParts = fullName.split(' ');
-      const firstName = nameParts[0] || fullName;
-      const lastName = nameParts.slice(1).join(' ') || '';
+      // New user - use atomic findOne to prevent race conditions
+      try {
+        tenant = await Tenant.findOne({ tenantEmailAddress: email });
 
-      // Create tenant with subscription using common service
-      const tenantId = nanoid(12);
-      const result = await createTenantWithSubscription({
-        tenantId,
-        firstName,
-        lastName,
-        companyName: `${fullName}'s Studio`,
-        email,
-        planCode: 'FREE',
-        trialDays: 14,
-        createdBy: 'google-oauth',
-      });
-      tenant = result.tenant;
+        if (!tenant) {
+          // No existing tenant - create new tenant with transaction (already atomic)
+          logger.info(`[${requestId}] Creating new tenant for Google signup`, { email });
+          
+          // Parse name for tenant creation
+          const nameParts = fullName.split(' ');
+          const firstName = nameParts[0] || fullName;
+          const lastName = nameParts.slice(1).join(' ') || '';
 
-      logger.info(`[${requestId}] Tenant and subscription created via Google signup`, { tenantId: tenant.tenantId });
+          // Create tenant with subscription using transactional service
+          const tenantId = nanoid(12);
+          const result = await createTenantWithSubscription({
+            tenantId,
+            firstName,
+            lastName,
+            companyName: `${fullName}'s Studio`,
+            email,
+            planCode: 'FREE',
+            trialDays: 14,
+            createdBy: 'google-oauth',
+          });
+          tenant = result.tenant;
 
-      // Find existing Admin role (global role with tenantId: '-1')
-      let adminRole = await Role.findOne({ name: 'Admin', tenantId: '-1' });
-      
-      if (!adminRole) {
-        // If no global admin role exists, create one
-        adminRole = await Role.create({
-          roleId: nanoid(12),
-          name: 'Admin',
-          tenantId: '-1',
-          description: 'Full control of entire system',
+          logger.info(`[${requestId}] Tenant created successfully`, { tenantId: tenant.tenantId });
+        } else {
+          logger.info(`[${requestId}] Tenant already exists with this email`, { 
+            email, 
+            existingTenantId: tenant.tenantId 
+          });
+        }
+
+        // Double-check: verify no user exists for this tenant with this email
+        const existingUserForTenant = await User.findOne({ 
+          email, 
+          tenantId: tenant.tenantId 
         });
-        logger.info(`[${requestId}] Admin role created`, { roleId: adminRole.roleId });
-      } else {
-        logger.info(`[${requestId}] Using existing Admin role`, { roleId: adminRole.roleId });
+
+        if (existingUserForTenant) {
+          logger.warn(`[${requestId}] User already exists for this tenant, logging in`, { 
+            email, 
+            userId: existingUserForTenant.userId,
+            tenantId: tenant.tenantId 
+          });
+          // User exists - treat as login
+          user = existingUserForTenant;
+          
+          await logAudit({
+            action: 'USER_LOGIN',
+            entityType: 'User',
+            entityId: user.userId,
+            userId: user.userId,
+            tenantId: tenant.tenantId,
+            metadata: { loginMethod: 'google', requestId },
+          });
+        } else {
+          // Create user
+          logger.info(`[${requestId}] Creating user for tenant`, { tenantId: tenant.tenantId });
+
+          // Find existing Admin role (global role with tenantId: '-1')
+          let adminRole = await Role.findOne({ name: 'Admin', tenantId: '-1' });
+          
+          if (!adminRole) {
+            // If no global admin role exists, create one
+            adminRole = await Role.create({
+              roleId: nanoid(12),
+              name: 'Admin',
+              tenantId: '-1',
+              description: 'Full control of entire system',
+            });
+            logger.info(`[${requestId}] Admin role created`, { roleId: adminRole.roleId });
+          } else {
+            logger.info(`[${requestId}] Using existing Admin role`, { roleId: adminRole.roleId });
+          }
+
+          // Create user
+          const userNameParts = fullName.split(' ');
+          const userFirstName = userNameParts[0] || fullName;
+          const userLastName = userNameParts.slice(1).join(' ') || 'User';
+          
+          user = await User.create({
+            userId: nanoid(),
+            firstName: userFirstName,
+            lastName: userLastName,
+            email,
+            tenantId: tenant.tenantId,
+            roleId: adminRole.roleId,
+            isActive: true,
+            isActivated: true,
+          });
+
+          logger.info(`[${requestId}] User created via Google signup`, { userId: user.userId, tenantId: tenant.tenantId });
+
+          await logAudit({
+            action: auditEvents.USER_CREATED,
+            entityType: 'User',
+            entityId: user.userId,
+            userId: user.userId,
+            tenantId: tenant.tenantId,
+            metadata: { email, signupMethod: 'google', requestId },
+          });
+        }
+      } catch (err: any) {
+        // Handle duplicate key errors gracefully
+        if (err.message && err.message.includes('already exists')) {
+          logger.warn(`[${requestId}] Race condition detected, retrying lookup`, { email });
+          // Retry - look up the tenant and user that was just created by concurrent request
+          tenant = await Tenant.findOne({ tenantEmailAddress: email });
+          user = await User.findOne({ email });
+          
+          if (user && tenant) {
+            logger.info(`[${requestId}] Using existing tenant and user from concurrent request`, {
+              userId: user.userId,
+              tenantId: tenant.tenantId
+            });
+          } else {
+            throw new Error('Failed to create or retrieve account. Please try again.');
+          }
+        } else {
+          throw err;
+        }
       }
-
-      // Create user
-      const userNameParts = fullName.split(' ');
-      const userFirstName = userNameParts[0] || fullName;
-      const userLastName = userNameParts.slice(1).join(' ') || 'User';
-      
-      user = await User.create({
-        userId: nanoid(),
-        firstName: userFirstName,
-        lastName: userLastName,
-        email,
-        tenantId: tenant.tenantId,
-        roleId: adminRole.roleId,
-        isActive: true,
-        isActivated: true,
-      });
-
-      logger.info(`[${requestId}] User created via Google signup`, { userId: user.userId, tenantId: tenant.tenantId });
-
-      await logAudit({
-        action: auditEvents.USER_CREATED,
-        entityType: 'User',
-        entityId: user.userId,
-        userId: user.userId,
-        tenantId: tenant.tenantId,
-        metadata: { email, signupMethod: 'google', requestId },
-      });
     }
 
     // Get user role
