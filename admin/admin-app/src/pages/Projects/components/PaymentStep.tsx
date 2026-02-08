@@ -7,9 +7,10 @@ interface PaymentStepProps {
   formData: ProjectFormData;
   onChange: (field: string, value: any) => void;
   errors: Record<string, string>;
+  isEditing?: boolean;
 }
 
-export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, errors }) => {
+export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, errors, isEditing }) => {
   const handleReceivedAmountChange = (value: string) => {
     const receivedAmount = parseFloat(value) || 0;
     const totalBudget = parseFloat(formData.totalBudget?.toString() || '0') || 0;
@@ -47,6 +48,7 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, er
               placeholder="0"
               info="Amount received as advance payment"
               error={errors.receivedAmount}
+              disabled={isEditing}
             />
           </div>
 

@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
+import mongoose from 'mongoose';
 import Project from '../models/project';
 import ClientEvent from '../models/clientEvent';
 import ProjectFinance from '../models/projectFinance';
@@ -424,13 +425,20 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
     hasFinance: !!finance
   });
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     if (!projectData.projectName) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Project name missing`, { tenantId });
       return res.status(400).json({ message: 'Project name is required' });
     }
 
     if (!tenantId) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Tenant ID missing`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
@@ -438,6 +446,8 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
     // Fetch tenant to get company name
     const tenant = await Tenant.findOne({ tenantId });
     if (!tenant) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Tenant not found`, { tenantId });
       return res.status(404).json({ message: 'Tenant not found' });
     }
@@ -451,7 +461,7 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
     const s3ProjectFolderName = `${nanoid(10)}_${sanitizedProjectName}_${sanitizedTenantName}`;
     
     // Create project
-    const project = await Project.create({
+    const project = await Project.create([{
       projectId,
       tenantId,
       projectName: projectData.projectName,
@@ -470,7 +480,7 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       s3ProjectFolderName,
       displayPic: projectData.displayPic,
       coverPhoto: projectData.coverPhoto,
-    });
+    }], { session });
 
     // If project was created from a proposal, update the proposal status
     if (projectData.proposalId) {
@@ -480,7 +490,8 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
           { 
             status: 'project_created',
             updatedAt: new Date()
-          }
+          },
+          { session }
         );
         logger.info(`[${requestId}] Updated proposal status to project_created`, { tenantId, proposalId: projectData.proposalId });
       } catch (proposalError: any) {
@@ -534,7 +545,7 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
         // Generate S3 folder name from event description
         const s3EventFolderName = eventMaster?.eventDesc.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'event';
         
-        const clientEvent = await ClientEvent.create({
+        const clientEvent = await ClientEvent.create([{
           clientEventId,
           tenantId,
           projectId,
@@ -549,13 +560,13 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
           teamMembersAssigned: eventData.teamMembersAssigned || [],
           s3EventFolderName,
           createdBy: userId,
-        });
-        createdEvents.push(clientEvent);
+        }], { session });
+        createdEvents.push(clientEvent[0]);
 
         // If event was created with AWAITING_EDITING status and no editor, notify admins
-        if (statusId === awaitingEditingStatus?.statusId && !clientEvent.albumEditor) {
+        if (statusId === awaitingEditingStatus?.statusId && !clientEvent[0].albumEditor) {
           await NotificationUtils.notifyAssignEditorNeeded(
-            clientEvent,
+            clientEvent[0],
             projectData.projectName
           );
         }
@@ -566,17 +577,37 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
     let projectFinance = null;
     if (finance) {
       const financeId = `finance_${nanoid()}`;
-      projectFinance = await ProjectFinance.create({
+      
+      // Create initial transaction if advance is received
+      const transactions = [];
+      if (finance.receivedAmount && finance.receivedAmount > 0) {
+        transactions.push({
+          transactionId: `txn_${nanoid()}`,
+          datetime: finance.receivedDate ? new Date(finance.receivedDate) : new Date(),
+          amount: Number(finance.receivedAmount),
+          comment: 'Advance received',
+          nature: 'received' as 'received' | 'paid',
+          createdAt: new Date()
+        });
+      }
+      
+      projectFinance = await ProjectFinance.create([{
         financeId,
         tenantId,
         projectId,
-        totalBudget: finance.totalBudget,
-        receivedAmount: finance.receivedAmount,
-        receivedDate: finance.receivedDate,
-        nextDueDate: finance.nextDueDate,
+        totalBudget: finance.totalBudget ? Number(finance.totalBudget) : undefined,
+        receivedAmount: finance.receivedAmount ? Number(finance.receivedAmount) : undefined,
+        receivedDate: finance.receivedDate ? new Date(finance.receivedDate) : undefined,
+        nextDueDate: finance.nextDueDate ? new Date(finance.nextDueDate) : undefined,
+        transactions,
         createdBy: userId,
-      });
+      }], { session });
+      projectFinance = projectFinance[0];
     }
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     logger.info(`[${requestId}] Project with details created`, { 
       tenantId, 
@@ -605,17 +636,22 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
 
     return res.status(201).json({
       message: 'Project created successfully',
-      project,
+      project: project[0],
       events: createdEvents,
       finance: projectFinance,
     });
   } catch (err: any) {
+    await session.abortTransaction();
+    session.endSession();
+    
     logger.error(`[${requestId}] Error creating project with details`, { 
       tenantId,
       projectName: projectData?.projectName,
       error: err.message,
-      stack: err.stack 
+      stack: err.stack,
+      financeData: finance
     });
+    console.error(`[${requestId}] Full error:`, err);
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 };

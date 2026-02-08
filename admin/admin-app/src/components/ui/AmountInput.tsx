@@ -9,6 +9,7 @@ interface AmountInputProps {
   error?: string;
   required?: boolean;
   info?: string;
+  disabled?: boolean;
 }
 
 export const AmountInput: React.FC<AmountInputProps> = ({
@@ -19,6 +20,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
   error,
   required,
   info,
+  disabled,
 }) => {
   const [showInfo, setShowInfo] = useState(false);
   const infoRef = useRef<HTMLDivElement>(null);
@@ -109,6 +111,7 @@ export const AmountInput: React.FC<AmountInputProps> = ({
           value={formatIndianNumber(value)}
           onChange={handleChange}
           placeholder={placeholder}
+          disabled={disabled}
         />
       </div>
       
