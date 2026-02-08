@@ -219,11 +219,18 @@ export const Sidebar: React.FC = () => {
   };
 
   const isPathActive = (section: MenuSection): boolean => {
+    // Normalize paths by removing trailing slashes for comparison
+    const currentPath = location.pathname.replace(/\/$/, '') || '/';
+    
     if (section.path) {
-      return location.pathname === section.path;
+      const sectionPath = section.path.replace(/\/$/, '') || '/';
+      return currentPath === sectionPath;
     }
     if (section.items) {
-      return section.items.some(item => location.pathname === item.path);
+      return section.items.some(item => {
+        const itemPath = item.path.replace(/\/$/, '') || '/';
+        return currentPath === itemPath;
+      });
     }
     return false;
   };
