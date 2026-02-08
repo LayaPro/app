@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laya Pro — Photography Redefined</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #fafafa;
+      --bg-card: #ffffff;
+      --bg-elevated: #f4f4f5;
+      --border: rgba(0,0,0,0.06);
+      --text: #18181b;
+      --text-muted: #52525b;
+      --text-dim: #71717a;
+      --accent: #6366f1;
+      --accent-bright: #8b5cf6;
+      --glow: rgba(99,102,241,0.08);
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: rgba(99,102,241,0.2); color: #1e1b4b; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #f4f4f5; }
+    ::-webkit-scrollbar-thumb { background: #c7c7cc; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+
+    /* ═══════════════════════════════════════════
+       UTILITIES
+    ═══════════════════════════════════════════ */
+    .container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    .syne { font-family: 'DM Serif Display', Georgia, serif; }
+    .space { font-family: 'DM Sans', sans-serif; }
+
+    /* ═══════════════════════════════════════════
+       CURSOR GLOW
+    ═══════════════════════════════════════════ */
+    .cursor-glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(99,102,241,0.045) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+      transform: translate(-50%, -50%);
+      transition: opacity 0.3s;
+    }
+
+    /* ═══════════════════════════════════════════
+       ANIMATIONS
+    ═══════════════════════════════════════════ */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(80px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes slideLeft {
+      from { opacity: 0; transform: translateX(-100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes slideRight {
+      from { opacity: 0; transform: translateX(100px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes scaleUp {
+      from { opacity: 0; transform: scale(0.8); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-20px); }
+    }
+    @keyframes pulse-ring {
+      0% { transform: scale(0.8); opacity: 1; }
+      100% { transform: scale(2.5); opacity: 0; }
+    }
+    @keyframes gradient-shift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    @keyframes border-dance {
+      0%, 100% { border-image-source: linear-gradient(0deg, var(--accent), var(--accent-bright)); }
+      25% { border-image-source: linear-gradient(90deg, var(--accent), var(--accent-bright)); }
+      50% { border-image-source: linear-gradient(180deg, var(--accent), var(--accent-bright)); }
+      75% { border-image-source: linear-gradient(270deg, var(--accent), var(--accent-bright)); }
+    }
+    @keyframes text-reveal {
+      from { clip-path: inset(0 100% 0 0); }
+      to { clip-path: inset(0 0 0 0); }
+    }
+    @keyframes counter {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .anim { opacity: 0; }
+    .anim.in-view { animation-fill-mode: both; }
+    .anim.fade-up.in-view { animation: fadeUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .anim.fade-in.in-view { animation: fadeIn 1.4s ease forwards; }
+    .anim.slide-l.in-view { animation: slideLeft 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .anim.slide-r.in-view { animation: slideRight 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .anim.scale-up.in-view { animation: scaleUp 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    .d1 { animation-delay: 0.1s !important; }
+    .d2 { animation-delay: 0.2s !important; }
+    .d3 { animation-delay: 0.35s !important; }
+    .d4 { animation-delay: 0.5s !important; }
+    .d5 { animation-delay: 0.65s !important; }
+    .d6 { animation-delay: 0.8s !important; }
+    .d7 { animation-delay: 0.95s !important; }
+
+    /* ═══════════════════════════════════════════
+       MESH GRADIENT BACKGROUNDS
+    ═══════════════════════════════════════════ */
+    .mesh-bg {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .mesh-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.4;
+    }
+
+    /* ═══════════════════════════════════════════
+       NAVBAR
+    ═══════════════════════════════════════════ */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 1000;
+      padding: 20px 0;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .nav.scrolled {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-weight: 400;
+      font-size: 26px;
+      color: var(--text);
+    }
+    .nav-logo-mark {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .nav-logo:hover .nav-logo-mark { transform: rotate(10deg) scale(1.1); }
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    .nav-links a:hover { color: var(--text); background: rgba(0,0,0,0.04); }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright)) !important;
+      color: #fff !important;
+      font-weight: 600 !important;
+      padding: 10px 24px !important;
+      border-radius: 10px !important;
+      box-shadow: 0 2px 12px rgba(99,102,241,0.2);
+      transition: all 0.3s !important;
+    }
+    .nav-cta:hover { box-shadow: 0 4px 20px rgba(99,102,241,0.3); transform: translateY(-1px); }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+    }
+
+    /* ═══════════════════════════════════════════
+       HERO
+    ═══════════════════════════════════════════ */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      position: relative;
+      padding: 160px 24px 80px;
+      overflow: hidden;
+    }
+    .hero .mesh-bg .mesh-orb:nth-child(1) {
+      width: 600px; height: 600px;
+      background: rgba(99,102,241,0.08);
+      top: -10%; right: -10%;
+    }
+    .hero .mesh-bg .mesh-orb:nth-child(2) {
+      width: 500px; height: 500px;
+      background: rgba(168,85,247,0.06);
+      bottom: -15%; left: -10%;
+    }
+    .hero .mesh-bg .mesh-orb:nth-child(3) {
+      width: 300px; height: 300px;
+      background: rgba(59,130,246,0.05);
+      top: 40%; left: 50%;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 6px 6px 16px;
+      border-radius: 50px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,0.7);
+      backdrop-filter: blur(10px);
+      font-size: 14px;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .hero-badge-dot {
+      width: 8px; height: 8px;
+      background: #22c55e;
+      border-radius: 50%;
+      position: relative;
+    }
+    .hero-badge-dot::after {
+      content: '';
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      border: 2px solid rgba(34,197,94,0.3);
+      animation: pulse-ring 2s ease-out infinite;
+    }
+    .hero-badge-tag {
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      color: #fff;
+      padding: 4px 14px;
+      border-radius: 50px;
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .hero h1 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(48px, 8vw, 96px);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -1px;
+      margin-bottom: 32px;
+      max-width: 900px;
+    }
+    .hero h1 .gradient-word {
+      background: linear-gradient(135deg, #6366f1 0%, #7c3aed 40%, #a855f7 70%, #6366f1 100%);
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradient-shift 6s ease infinite;
+    }
+    .hero h1 .line { display: block; }
+
+    .hero-sub {
+      font-size: clamp(17px, 2vw, 20px);
+      color: var(--text-muted);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 48px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 60px;
+    }
+    .btn-glow {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 16px 32px;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .btn-glow.primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.25), inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+    .btn-glow.primary::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    .btn-glow.primary:hover { box-shadow: 0 8px 30px rgba(99,102,241,0.35); transform: translateY(-2px); }
+    .btn-glow.primary:hover::before { opacity: 1; }
+    .btn-glow.ghost {
+      background: var(--bg-card);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .btn-glow.ghost:hover { color: var(--text); border-color: rgba(0,0,0,0.12); background: var(--bg-elevated); }
+
+    /* Hero Mockup */
+    .hero-mockup {
+      position: relative;
+      max-width: 1000px;
+      width: 100%;
+      perspective: 2000px;
+    }
+    .hero-mockup::before {
+      content: '';
+      position: absolute;
+      bottom: -60px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 200px;
+      background: radial-gradient(ellipse, rgba(99,102,241,0.08) 0%, transparent 70%);
+      filter: blur(40px);
+    }
+    .mockup-frame {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transform: rotateX(8deg);
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.12), 0 0 40px rgba(99,102,241,0.04);
+    }
+    .mockup-frame:hover { transform: rotateX(2deg); }
+    .mockup-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-elevated);
+    }
+    .mockup-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .mockup-dot.r { background: #ff5f57; }
+    .mockup-dot.y { background: #ffbd2e; }
+    .mockup-dot.g { background: #28ca42; }
+    .mockup-bar-url {
+      flex: 1;
+      text-align: center;
+      color: var(--text-dim);
+      font-size: 13px;
+      font-family: 'DM Sans', monospace;
+      background: rgba(0,0,0,0.03);
+      padding: 6px 16px;
+      border-radius: 8px;
+      margin-left: 20px;
+    }
+    .mockup-frame img {
+      width: 100%;
+      display: block;
+      height: 500px;
+      object-fit: cover;
+    }
+
+    /* ═══════════════════════════════════════════
+       MARQUEE
+    ═══════════════════════════════════════════ */
+    .marquee-section {
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+    }
+    .marquee-track {
+      display: flex;
+      animation: marquee 30s linear infinite;
+      width: max-content;
+    }
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    .marquee-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 40px;
+      white-space: nowrap;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--text-dim);
+    }
+    .marquee-item .dot {
+      width: 6px; height: 6px;
+      background: var(--accent);
+      border-radius: 50%;
+    }
+
+    /* ═══════════════════════════════════════════
+       SECTION HEADERS
+    ═══════════════════════════════════════════ */
+    .section { padding: 140px 0; position: relative; }
+    .section-label {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(36px, 5vw, 60px);
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .section-sub {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 500px;
+      line-height: 1.7;
+    }
+
+    /* ═══════════════════════════════════════════
+       FEATURES — BENTO GRID
+    ═══════════════════════════════════════════ */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: minmax(260px, auto);
+      gap: 16px;
+      margin-top: 60px;
+    }
+    .bento-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgba(99,102,241,0.04) 0%, transparent 60%);
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
+    .bento-card:hover::before { opacity: 1; }
+    .bento-card:hover {
+      border-color: rgba(99,102,241,0.15);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08), 0 0 20px rgba(99,102,241,0.04);
+    }
+    .bento-card.span-2 { grid-column: span 2; }
+    .bento-card.span-row { grid-row: span 2; }
+
+    .bento-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .bento-icon::after {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      opacity: 0.1;
+    }
+    .bento-icon svg { position: relative; z-index: 1; }
+    .bento-card h3 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 400;
+      margin-bottom: 10px;
+      position: relative;
+    }
+    .bento-card p {
+      font-size: 15px;
+      color: var(--text-muted);
+      line-height: 1.7;
+      position: relative;
+    }
+    .bento-visual {
+      position: absolute;
+      top: 0; right: 0;
+      width: 50%;
+      height: 100%;
+      opacity: 0.06;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .bento-visual svg { width: 200px; height: 200px; }
+
+    /* ═══════════════════════════════════════════
+       SHOWCASE — BIG FEATURE ROWS
+    ═══════════════════════════════════════════ */
+    .showcase { padding: 40px 0; }
+    .showcase-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+      padding: 100px 0;
+    }
+    .showcase-row:nth-child(even) .showcase-text { order: 2; }
+    .showcase-row:nth-child(even) .showcase-visual { order: 1; }
+
+    .showcase-text .tag {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .showcase-text h3 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 40px;
+      font-weight: 400;
+      letter-spacing: -0.3px;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .showcase-text p {
+      font-size: 17px;
+      color: var(--text-muted);
+      line-height: 1.8;
+      margin-bottom: 32px;
+    }
+    .showcase-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .showcase-features li {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 15px;
+      color: var(--text-muted);
+    }
+    .showcase-features li .check {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      background: rgba(99,102,241,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .showcase-features li .check svg { color: var(--accent); }
+
+    .showcase-visual {
+      perspective: 1800px;
+    }
+    .showcase-screen {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 30px 60px -15px rgba(0,0,0,0.1);
+    }
+    .showcase-row:nth-child(odd) .showcase-screen { transform: rotateY(12deg); }
+    .showcase-row:nth-child(even) .showcase-screen { transform: rotateY(-12deg); }
+    .showcase-row:nth-child(odd) .showcase-screen:hover { transform: rotateY(6deg) scale(1.02); }
+    .showcase-row:nth-child(even) .showcase-screen:hover { transform: rotateY(-6deg) scale(1.02); }
+    .showcase-screen .s-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .showcase-screen .s-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .showcase-screen img { width: 100%; display: block; height: 320px; object-fit: cover; }
+
+    /* ═══════════════════════════════════════════
+       STEPS
+    ═══════════════════════════════════════════ */
+    .steps-section {
+      padding: 140px 0;
+      position: relative;
+    }
+    .steps-section .mesh-orb:nth-child(1) {
+      width: 400px; height: 400px;
+      background: rgba(99,102,241,0.04);
+      top: 20%; left: -10%;
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      margin-top: 60px;
+      position: relative;
+    }
+    .steps-grid::before {
+      content: '';
+      position: absolute;
+      top: 60px;
+      left: 12.5%;
+      right: 12.5%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--accent), var(--accent-bright), transparent);
+      opacity: 0.2;
+    }
+    .step-card {
+      text-align: center;
+      padding: 40px 24px;
+      border-radius: 20px;
+      transition: all 0.4s;
+      position: relative;
+    }
+    .step-card:hover { background: rgba(99,102,241,0.03); }
+    .step-num {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-weight: 400;
+      font-size: 20px;
+      color: var(--accent);
+      transition: all 0.4s;
+      position: relative;
+      z-index: 2;
+    }
+    .step-card:hover .step-num {
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 4px 20px rgba(99,102,241,0.25);
+    }
+    .step-card h3 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 18px;
+      font-weight: 400;
+      margin-bottom: 10px;
+    }
+    .step-card p {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    /* ═══════════════════════════════════════════
+       PRICING
+    ═══════════════════════════════════════════ */
+    .pricing-section { padding: 140px 0; }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 60px;
+      max-width: 1100px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .price-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 40px 32px;
+      transition: all 0.5s;
+      position: relative;
+    }
+    .price-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
+    }
+    .price-card.featured {
+      background: linear-gradient(180deg, rgba(99,102,241,0.04) 0%, var(--bg-card) 100%);
+      border-color: rgba(99,102,241,0.2);
+      box-shadow: 0 4px 30px rgba(99,102,241,0.08);
+    }
+    .price-card.featured:hover { box-shadow: 0 8px 40px rgba(99,102,241,0.12), 0 20px 40px -10px rgba(0,0,0,0.06); }
+    .price-popular {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      color: #fff;
+      padding: 5px 20px;
+      border-radius: 50px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .price-card h3 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .price-card .price-desc { color: var(--text-dim); font-size: 14px; margin-bottom: 24px; }
+    .price-amount {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 56px;
+      font-weight: 400;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .price-amount span { font-size: 16px; font-weight: 500; color: var(--text-dim); }
+    .price-card .btn-price {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 14px;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 15px;
+      text-decoration: none;
+      margin: 24px 0;
+      transition: all 0.3s;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-price-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      color: #fff;
+      box-shadow: 0 3px 14px rgba(99,102,241,0.2);
+    }
+    .btn-price-primary:hover { box-shadow: 0 6px 24px rgba(99,102,241,0.3); }
+    .btn-price-ghost {
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-price-ghost:hover { background: #e4e4e7; border-color: rgba(0,0,0,0.1); }
+    .price-features { list-style: none; }
+    .price-features li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 14px;
+      color: var(--text-muted);
+    }
+    .price-features li svg { color: var(--accent); flex-shrink: 0; }
+
+    /* ═══════════════════════════════════════════
+       TESTIMONIALS
+    ═══════════════════════════════════════════ */
+    .testimonials-section { padding: 140px 0; }
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin-top: 60px;
+    }
+    .test-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px;
+      transition: all 0.4s;
+    }
+    .test-card:hover {
+      border-color: rgba(99,102,241,0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 16px 40px -10px rgba(0,0,0,0.08);
+    }
+    .test-stars { display: flex; gap: 3px; margin-bottom: 16px; color: #f59e0b; }
+    .test-text { font-size: 15px; color: var(--text-muted); line-height: 1.8; margin-bottom: 24px; }
+    .test-author { display: flex; align-items: center; gap: 12px; }
+    .test-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .test-info h4 { font-size: 14px; font-weight: 600; }
+    .test-info p { font-size: 12px; color: var(--text-dim); }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-top: 60px;
+    }
+    .stat-card {
+      text-align: center;
+      padding: 40px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      transition: all 0.4s;
+    }
+    .stat-card:hover { border-color: rgba(99,102,241,0.15); box-shadow: 0 8px 24px rgba(0,0,0,0.05); }
+    .stat-val {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: 48px;
+      font-weight: 400;
+      background: linear-gradient(135deg, var(--accent), var(--accent-bright));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .stat-label { color: var(--text-dim); font-size: 14px; margin-top: 8px; }
+
+    /* ═══════════════════════════════════════════
+       CTA
+    ═══════════════════════════════════════════ */
+    .cta-section {
+      padding: 140px 0;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(99,102,241,0.04) 0%, transparent 60%);
+      border-radius: 50%;
+    }
+    .cta-box {
+      position: relative;
+      z-index: 2;
+      background: linear-gradient(180deg, rgba(99,102,241,0.04), rgba(139,92,246,0.02));
+      border: 1px solid rgba(99,102,241,0.1);
+      border-radius: 32px;
+      padding: 80px 60px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .cta-box h2 {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      line-height: 1.1;
+      margin-bottom: 20px;
+    }
+    .cta-box p {
+      font-size: 18px;
+      color: var(--text-muted);
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .cta-trust {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      margin-top: 32px;
+      flex-wrap: wrap;
+    }
+    .cta-trust span {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .cta-trust svg { color: var(--accent); }
+
+    /* ═══════════════════════════════════════════
+       FOOTER
+    ═══════════════════════════════════════════ */
+    .footer {
+      padding: 80px 0 40px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+    .footer-brand p { color: var(--text-dim); font-size: 14px; line-height: 1.8; margin-top: 16px; max-width: 300px; }
+    .footer h4 {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+    }
+    .footer ul { list-style: none; }
+    .footer ul li { margin-bottom: 12px; }
+    .footer ul a { color: var(--text-dim); text-decoration: none; font-size: 14px; transition: color 0.3s; }
+    .footer ul a:hover { color: var(--text); }
+    .footer-bottom {
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+
+    /* ═══════════════════════════════════════════
+       RESPONSIVE
+    ═══════════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .bento-grid { grid-template-columns: 1fr 1fr; }
+      .bento-card.span-2 { grid-column: span 1; }
+      .showcase-row { grid-template-columns: 1fr; gap: 40px; }
+      .showcase-row:nth-child(even) .showcase-text { order: 1; }
+      .showcase-row:nth-child(even) .showcase-visual { order: 2; }
+      .showcase-row:nth-child(odd) .showcase-screen,
+      .showcase-row:nth-child(even) .showcase-screen { transform: none; }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); }
+      .steps-grid::before { display: none; }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
+      .test-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 768px) {
+      .bento-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .stats-row { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; }
+      .footer-bottom { flex-direction: column; gap: 12px; }
+      .cta-box { padding: 48px 24px; }
+      .hero h1 { letter-spacing: -1px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor-glow" id="cursorGlow"></div>
+
+<!-- ═══════ NAV ═══════ -->
+<nav class="nav" id="nav">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-mark">
+          <svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        Laya Pro
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it Works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#testimonials">Reviews</a>
+        <a href="#cta" class="nav-cta">Start Free →</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero">
+  <div class="mesh-bg">
+    <div class="mesh-orb"></div>
+    <div class="mesh-orb"></div>
+    <div class="mesh-orb"></div>
+  </div>
+
+  <div class="hero-badge anim fade-up">
+    <div class="hero-badge-dot"></div>
+    Now available worldwide
+    <span class="hero-badge-tag">New</span>
+  </div>
+
+  <h1 class="anim fade-up d1">
+    <span class="line">Your Photography</span>
+    <span class="line"><span class="gradient-word">Business, Perfected</span></span>
+  </h1>
+
+  <p class="hero-sub anim fade-up d2">
+    From booking to delivery. One platform to manage events, galleries, clients and finances. Built for photographers who mean business.
+  </p>
+
+  <div class="hero-ctas anim fade-up d3">
+    <a href="#cta" class="btn-glow primary">
+      Start Free Trial
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+    </a>
+    <a href="#features" class="btn-glow ghost">See Features</a>
+  </div>
+
+</section>
+
+<!-- ═══════ MARQUEE ═══════ -->
+<section class="marquee-section">
+  <div class="marquee-track">
+    <div class="marquee-item"><span class="dot"></span>Event Management</div>
+    <div class="marquee-item"><span class="dot"></span>Client Portal</div>
+    <div class="marquee-item"><span class="dot"></span>Gallery Delivery</div>
+    <div class="marquee-item"><span class="dot"></span>Proposals & Quotes</div>
+    <div class="marquee-item"><span class="dot"></span>Cloud Storage</div>
+    <div class="marquee-item"><span class="dot"></span>Analytics</div>
+    <div class="marquee-item"><span class="dot"></span>Team Collaboration</div>
+    <div class="marquee-item"><span class="dot"></span>Approval Workflow</div>
+    <div class="marquee-item"><span class="dot"></span>Event Management</div>
+    <div class="marquee-item"><span class="dot"></span>Client Portal</div>
+    <div class="marquee-item"><span class="dot"></span>Gallery Delivery</div>
+    <div class="marquee-item"><span class="dot"></span>Proposals & Quotes</div>
+    <div class="marquee-item"><span class="dot"></span>Cloud Storage</div>
+    <div class="marquee-item"><span class="dot"></span>Analytics</div>
+    <div class="marquee-item"><span class="dot"></span>Team Collaboration</div>
+    <div class="marquee-item"><span class="dot"></span>Approval Workflow</div>
+  </div>
+</section>
+
+<!-- ═══════ FEATURES BENTO ═══════ -->
+<section class="section" id="features">
+  <div class="container">
+    <div class="section-label anim fade-up">Features</div>
+    <div class="section-title anim fade-up d1">Built for photographers<br>who <span class="gradient-word">mean business</span></div>
+    <p class="section-sub anim fade-up d2">Every tool you need to run your studio — from first contact to final delivery.</p>
+
+    <div class="bento-grid">
+      <div class="bento-card span-2 anim fade-up d1">
+        <div class="bento-icon"><svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <h3>Smart Event Management</h3>
+        <p>Schedule shoots, track milestones, and never miss a deadline. Automated reminders keep you on top of every event.</p>
+      </div>
+      <div class="bento-card anim fade-up d2">
+        <div class="bento-icon"><svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+        <h3>Client Portal</h3>
+        <p>Beautiful branded spaces for clients to view galleries, approve photos, and track progress in real-time.</p>
+      </div>
+      <div class="bento-card anim fade-up d3">
+        <div class="bento-icon"><svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
+        <h3>Proposals & Quotes</h3>
+        <p>Create stunning proposals in minutes. Professional templates and instant approvals.</p>
+      </div>
+      <div class="bento-card span-2 anim fade-up d4">
+        <div class="bento-icon"><svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
+        <h3>Gallery Management</h3>
+        <p>Upload, organize, and share high-resolution photos effortlessly. Beautiful galleries that wow your clients every time they visit.</p>
+      </div>
+      <div class="bento-card anim fade-up d5">
+        <div class="bento-icon"><svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+        <h3>Notifications</h3>
+        <p>Instant updates on client actions, payments, and milestones.</p>
+      </div>
+      <div class="bento-card anim fade-up d6">
+        <div class="bento-icon"><svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+        <h3>Analytics</h3>
+        <p>Track revenue, monitor progress, and gain insights to grow.</p>
+      </div>
+      <div class="bento-card anim fade-up d7">
+        <div class="bento-icon"><svg width="24" height="24" fill="none" stroke="var(--accent)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <h3>Enterprise Security</h3>
+        <p>Bank-level encryption, automatic backups, and role-based access.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ SHOWCASE ═══════ -->
+<section class="showcase" id="showcase">
+  <div class="container">
+    <div class="showcase-row">
+      <div class="showcase-text anim slide-l">
+        <div class="tag">Client Experience</div>
+        <h3>Galleries that make<br>clients say <span class="gradient-word">wow</span></h3>
+        <p>Share stunning, password-protected galleries. Clients can favorite, download, and comment — all from a beautiful branded portal.</p>
+        <ul class="showcase-features">
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Password-protected sharing</li>
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Client favorites & selections</li>
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Custom branding & domains</li>
+        </ul>
+      </div>
+      <div class="showcase-visual anim slide-r">
+        <div class="showcase-screen">
+          <div class="s-bar"><div class="s-dot" style="background:#ff5f57"></div><div class="s-dot" style="background:#ffbd2e"></div><div class="s-dot" style="background:#28ca42"></div></div>
+          <img src="https://images.unsplash.com/photo-1547394765-185e1e68f34e?w=800&auto=format&fit=crop" alt="Gallery">
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row">
+      <div class="showcase-text anim slide-r">
+        <div class="tag">Business Growth</div>
+        <h3>Proposals that <span class="gradient-word">close deals</span> faster</h3>
+        <p>Create professional quotations with beautiful templates. E-signatures, instant approvals, and payment tracking built right in.</p>
+        <ul class="showcase-features">
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Professional templates</li>
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>E-signatures & approvals</li>
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Payment tracking</li>
+        </ul>
+      </div>
+      <div class="showcase-visual anim slide-l">
+        <div class="showcase-screen">
+          <div class="s-bar"><div class="s-dot" style="background:#ff5f57"></div><div class="s-dot" style="background:#ffbd2e"></div><div class="s-dot" style="background:#28ca42"></div></div>
+          <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop" alt="Proposals">
+        </div>
+      </div>
+    </div>
+
+    <div class="showcase-row">
+      <div class="showcase-text anim slide-l">
+        <div class="tag">Data Insights</div>
+        <h3>Analytics to <span class="gradient-word">scale your</span> studio</h3>
+        <p>Track revenue, monitor project profitability, and understand client behavior. Make data-driven decisions to grow your business.</p>
+        <ul class="showcase-features">
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Revenue tracking dashboard</li>
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Project profitability reports</li>
+          <li><span class="check"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>Client engagement metrics</li>
+        </ul>
+      </div>
+      <div class="showcase-visual anim slide-r">
+        <div class="showcase-screen">
+          <div class="s-bar"><div class="s-dot" style="background:#ff5f57"></div><div class="s-dot" style="background:#ffbd2e"></div><div class="s-dot" style="background:#28ca42"></div></div>
+          <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop" alt="Analytics">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ STEPS ═══════ -->
+<section class="steps-section" id="how-it-works">
+  <div class="mesh-bg"><div class="mesh-orb"></div></div>
+  <div class="container" style="position:relative;z-index:2">
+    <div style="text-align:center">
+      <div class="section-label anim fade-up">How It Works</div>
+      <div class="section-title anim fade-up d1" style="margin-left:auto;margin-right:auto">Get started in <span class="gradient-word">4 steps</span></div>
+      <p class="section-sub anim fade-up d2" style="margin-left:auto;margin-right:auto">No complex training. Our platform guides you from setup to delivery.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card anim fade-up d1">
+        <div class="step-num">01</div>
+        <h3>Sign Up</h3>
+        <p>Create your account in seconds. Free for 14 days, no credit card needed.</p>
+      </div>
+      <div class="step-card anim fade-up d2">
+        <div class="step-num">02</div>
+        <h3>Create Events</h3>
+        <p>Add shoots and projects. Set dates, assign team members, configure workflows.</p>
+      </div>
+      <div class="step-card anim fade-up d3">
+        <div class="step-num">03</div>
+        <h3>Upload Photos</h3>
+        <p>Drag-and-drop uploads. AI tagging and smart albums organize everything.</p>
+      </div>
+      <div class="step-card anim fade-up d4">
+        <div class="step-num">04</div>
+        <h3>Deliver & Grow</h3>
+        <p>Share galleries, get approvals, collect payments, and watch your business grow.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ PRICING ═══════ -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div style="text-align:center">
+      <div class="section-label anim fade-up">Pricing</div>
+      <div class="section-title anim fade-up d1">Simple, transparent<br><span class="gradient-word">pricing</span></div>
+      <p class="section-sub anim fade-up d2" style="margin-left:auto;margin-right:auto">14-day free trial. No credit card required. Cancel anytime.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <div class="price-card anim fade-up d1">
+        <h3>Starter</h3>
+        <p class="price-desc">For solo photographers</p>
+        <div class="price-amount">$29<span>/mo</span></div>
+        <a href="#cta" class="btn-price btn-price-ghost">Start Free Trial</a>
+        <ul class="price-features">
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>5 events/month</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>10GB storage</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Client portal</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Basic galleries</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Email support</li>
+        </ul>
+      </div>
+
+      <div class="price-card featured anim fade-up d2">
+        <div class="price-popular">Most Popular</div>
+        <h3>Professional</h3>
+        <p class="price-desc">For growing studios</p>
+        <div class="price-amount">$79<span>/mo</span></div>
+        <a href="#cta" class="btn-price btn-price-primary">Start Free Trial</a>
+        <ul class="price-features">
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited events</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>100GB storage</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Advanced portal</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Proposals & quotes</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Custom branding</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Analytics dashboard</li>
+        </ul>
+      </div>
+
+      <div class="price-card anim fade-up d3">
+        <h3>Enterprise</h3>
+        <p class="price-desc">For studios & agencies</p>
+        <div class="price-amount">$199<span>/mo</span></div>
+        <a href="#cta" class="btn-price btn-price-ghost">Start Free Trial</a>
+        <ul class="price-features">
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited everything</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>500GB storage</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>White-label</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Dedicated manager</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>API access</li>
+          <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>SLA guarantee</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ TESTIMONIALS ═══════ -->
+<section class="testimonials-section" id="testimonials">
+  <div class="container">
+    <div style="text-align:center">
+      <div class="section-label anim fade-up">Testimonials</div>
+      <div class="section-title anim fade-up d1">Loved by <span class="gradient-word">photographers</span></div>
+      <p class="section-sub anim fade-up d2" style="margin-left:auto;margin-right:auto">Real stories from real studios around the world.</p>
+    </div>
+
+    <div class="test-grid">
+      <div class="test-card anim fade-up d1">
+        <div class="test-stars"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <p class="test-text">"Laya Pro completely transformed how I run my wedding photography business. The client portal is a game-changer — my clients love it."</p>
+        <div class="test-author"><div class="test-avatar">SJ</div><div class="test-info"><h4>Sarah Johnson</h4><p>Wedding Photographer</p></div></div>
+      </div>
+      <div class="test-card anim fade-up d2">
+        <div class="test-stars"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <p class="test-text">"Managing multiple photographers was a nightmare before. Now everything is organized, automated, and professional. We closed 3 more bookings in month one."</p>
+        <div class="test-author"><div class="test-avatar">MC</div><div class="test-info"><h4>Michael Chen</h4><p>Studio Owner</p></div></div>
+      </div>
+      <div class="test-card anim fade-up d3">
+        <div class="test-stars"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>
+        <p class="test-text">"I was skeptical about switching platforms, but Laya Pro made it so easy. My clients constantly compliment the beautiful galleries. It's like having a full-time assistant!"</p>
+        <div class="test-author"><div class="test-avatar">ER</div><div class="test-info"><h4>Emily Rodriguez</h4><p>Portrait Photographer</p></div></div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card anim fade-up d1">
+        <div class="stat-val">500+</div>
+        <div class="stat-label">Active Studios</div>
+      </div>
+      <div class="stat-card anim fade-up d2">
+        <div class="stat-val">98%</div>
+        <div class="stat-label">Satisfaction</div>
+      </div>
+      <div class="stat-card anim fade-up d3">
+        <div class="stat-val">4.9</div>
+        <div class="stat-label">Average Rating</div>
+      </div>
+      <div class="stat-card anim fade-up d4">
+        <div class="stat-val">10M+</div>
+        <div class="stat-label">Photos Delivered</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CTA ═══════ -->
+<section class="cta-section" id="cta">
+  <div class="container">
+    <div class="cta-box anim scale-up">
+      <h2>Ready to <span class="gradient-word">transform</span> your business?</h2>
+      <p>Join hundreds of photographers saving time, delighting clients, and growing with Laya Pro.</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap">
+        <a href="#" class="btn-glow primary">
+          Start Free Trial
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="#pricing" class="btn-glow ghost">View Pricing</a>
+      </div>
+      <div class="cta-trust">
+        <span><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>14-day free trial</span>
+        <span><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>No credit card</span>
+        <span><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Cancel anytime</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo" style="margin-bottom:0"><div class="nav-logo-mark"><svg width="20" height="20" fill="none" stroke="#fff" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg></div>Laya Pro</a>
+        <p>The complete photography business platform. Manage everything in one beautiful app.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul><li><a href="#features">Features</a></li><li><a href="#pricing">Pricing</a></li><li><a href="#">Integrations</a></li><li><a href="#">Changelog</a></li></ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul><li><a href="#">About</a></li><li><a href="#">Blog</a></li><li><a href="#">Careers</a></li><li><a href="#">Contact</a></li></ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul><li><a href="#">Privacy</a></li><li><a href="#">Terms</a></li><li><a href="#">Cookies</a></li><li><a href="#">GDPR</a></li></ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Laya Pro. All rights reserved.</span>
+      <div style="display:flex;gap:20px">
+        <a href="#" style="color:var(--text-dim);text-decoration:none">Twitter</a>
+        <a href="#" style="color:var(--text-dim);text-decoration:none">LinkedIn</a>
+        <a href="#" style="color:var(--text-dim);text-decoration:none">Instagram</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ═══════ Cursor Glow ═══════
+  const glow = document.getElementById('cursorGlow');
+  document.addEventListener('mousemove', (e) => {
+    glow.style.left = e.clientX + 'px';
+    glow.style.top = e.clientY + 'px';
+  });
+
+  // ═══════ Bento card glow follow ═══════
+  document.querySelectorAll('.bento-card').forEach(card => {
+    card.addEventListener('mousemove', (e) => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--gx', x + '%');
+      card.style.setProperty('--gy', y + '%');
+    });
+  });
+
+  // ═══════ Navbar scroll ═══════
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 50);
+  });
+
+  // ═══════ Scroll Reveal ═══════
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in-view');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '50px' });
+
+  document.querySelectorAll('.anim').forEach(el => observer.observe(el));
+
+  // ═══════ Smooth scroll ═══════
+  document.querySelectorAll('a[href^="#"]').forEach(a => {
+    a.addEventListener('click', e => {
+      e.preventDefault();
+      const t = document.querySelector(a.getAttribute('href'));
+      if (t) t.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+
+</body>
+</html>

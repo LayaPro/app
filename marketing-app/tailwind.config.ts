@@ -8,6 +8,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        heading: ['var(--font-dm-serif)', 'Georgia', 'serif'],
+        body: ['var(--font-dm-sans)', '-apple-system', 'sans-serif'],
+      },
       colors: {
         primary: {
           50: '#fdf4ff',

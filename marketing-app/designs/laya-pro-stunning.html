@@ -1,0 +1,1385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laya Pro — The Complete Photography Business Platform</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --violet: #8b5cf6;
+      --purple: #a78bfa;
+      --dark: #0f0f1a;
+      --gray-900: #111827;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-400: #9ca3af;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50: #f9fafb;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900);
+      line-height: 1.6;
+      overflow-x: hidden;
+      background: #fff;
+    }
+
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
+
+    /* ───── UTILITY ───── */
+    .container { max-width: 1280px; margin: 0 auto; padding: 0 24px; }
+    .container-sm { max-width: 900px; margin: 0 auto; padding: 0 24px; }
+    .container-lg { max-width: 1440px; margin: 0 auto; padding: 0 24px; }
+    .flex { display: flex; }
+    .items-center { align-items: center; }
+    .justify-between { justify-content: space-between; }
+    .justify-center { justify-content: center; }
+    .gap-4 { gap: 16px; }
+    .gap-6 { gap: 24px; }
+    .gap-8 { gap: 32px; }
+    .text-center { text-align: center; }
+    .relative { position: relative; }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 17px;
+      border-radius: 50px;
+      padding: 16px 36px;
+      text-decoration: none;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      border: none;
+      cursor: pointer;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--violet) 100%);
+      color: #fff;
+      box-shadow: 0 8px 30px rgba(99, 102, 241, 0.4);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 40px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-outline {
+      background: rgba(255,255,255,0.1);
+      backdrop-filter: blur(10px);
+      color: #fff;
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,0.6); transform: translateY(-2px); }
+
+    .btn-white {
+      background: #fff;
+      color: var(--gray-900);
+      border: 1px solid var(--gray-200);
+    }
+    .btn-white:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 20px;
+      border-radius: 50px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* ───── SCROLL ANIMATIONS ───── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(60px);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .reveal-left {
+      opacity: 0;
+      transform: translateX(-80px);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-left.active {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .reveal-right {
+      opacity: 0;
+      transform: translateX(80px);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-right.active {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .reveal-scale {
+      opacity: 0;
+      transform: scale(0.85);
+      transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal-scale.active {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .delay-1 { transition-delay: 0.1s; }
+    .delay-2 { transition-delay: 0.2s; }
+    .delay-3 { transition-delay: 0.3s; }
+    .delay-4 { transition-delay: 0.4s; }
+    .delay-5 { transition-delay: 0.5s; }
+    .delay-6 { transition-delay: 0.6s; }
+
+    /* ───── NAVBAR ───── */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 0;
+      transition: all 0.4s ease;
+    }
+    .navbar.scrolled {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(20px) saturate(180%);
+      box-shadow: 0 1px 20px rgba(0,0,0,0.06);
+      padding: 8px 0;
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      font-size: 26px;
+      font-weight: 800;
+    }
+    .nav-logo-icon {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--primary), var(--violet));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: transform 0.3s;
+    }
+    .nav-logo:hover .nav-logo-icon { transform: scale(1.1) rotate(5deg); }
+    .nav-links { display: flex; align-items: center; gap: 36px; }
+    .nav-links a {
+      text-decoration: none;
+      color: var(--gray-700);
+      font-weight: 500;
+      font-size: 15px;
+      transition: color 0.3s;
+      position: relative;
+    }
+    .nav-links a::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--violet));
+      transition: width 0.3s;
+      border-radius: 2px;
+    }
+    .nav-links a:hover { color: var(--primary); }
+    .nav-links a:hover::after { width: 100%; }
+    .nav-cta {
+      background: linear-gradient(135deg, var(--primary), var(--violet));
+      color: #fff !important;
+      padding: 10px 24px;
+      border-radius: 50px;
+      font-weight: 600 !important;
+      font-size: 15px;
+      box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+      transition: all 0.3s !important;
+    }
+    .nav-cta::after { display: none !important; }
+    .nav-cta:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(99,102,241,0.4); }
+
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 8px;
+    }
+
+    /* ───── HERO ───── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(160deg, #f8f7ff 0%, #f0eeff 30%, #ede9fe 60%, #e8e3fd 100%);
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -30%;
+      right: -20%;
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(99,102,241,0.12) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: float 12s ease-in-out infinite;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30%;
+      left: -15%;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(139,92,246,0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: float 14s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-40px) scale(1.05); }
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      padding: 140px 0 100px;
+    }
+    .hero-badge {
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(10px);
+      color: var(--gray-700);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      margin-bottom: 40px;
+    }
+    .hero-badge svg { color: var(--primary); }
+    .hero h1 {
+      font-size: clamp(44px, 6vw, 80px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 28px;
+      color: var(--dark);
+    }
+    .hero h1 .serif {
+      font-style: italic;
+      font-weight: 700;
+    }
+    .hero p.subtitle {
+      font-size: clamp(18px, 2vw, 22px);
+      color: var(--gray-600);
+      max-width: 650px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .hero-ctas {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .hero-visual {
+      position: relative;
+      z-index: 2;
+      margin-top: 80px;
+      perspective: 2000px;
+    }
+    .hero-screenshot {
+      transform: rotateY(18deg);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 60px 120px -30px rgba(99,102,241,0.25), 0 0 0 1px rgba(0,0,0,0.05);
+      transition: transform 0.6s ease;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .hero-screenshot:hover {
+      transform: rotateY(14deg) scale(1.01);
+    }
+    .hero-screenshot .mac-bar {
+      background: linear-gradient(to bottom, #f5f5f5, #e8e8e8);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    .mac-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .mac-red { background: linear-gradient(135deg, #ff5f57, #ff4136); }
+    .mac-yellow { background: linear-gradient(135deg, #ffbd2e, #feb600); }
+    .mac-green { background: linear-gradient(135deg, #28ca42, #1fb331); }
+    .hero-screenshot img { width: 100%; display: block; }
+
+    /* ───── LOGOS ───── */
+    .logos-section {
+      padding: 80px 0;
+      background: #fff;
+      border-bottom: 1px solid var(--gray-100);
+    }
+    .logos-section p {
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--gray-400);
+      font-weight: 600;
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .logos-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 60px;
+      flex-wrap: wrap;
+      opacity: 0.4;
+    }
+    .logos-row span {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--gray-600);
+      letter-spacing: 1px;
+    }
+
+    /* ───── FEATURES ───── */
+    .features-section {
+      padding: 120px 0;
+    }
+    .section-header {
+      text-align: center;
+      margin-bottom: 80px;
+    }
+    .section-badge {
+      background: rgba(99,102,241,0.08);
+      color: var(--primary);
+    }
+    .section-header h2 {
+      font-size: clamp(36px, 4.5vw, 56px);
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -1.5px;
+      margin-top: 20px;
+      margin-bottom: 20px;
+    }
+    .section-header p {
+      font-size: 20px;
+      color: var(--gray-600);
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .feature-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      padding: 60px 0;
+    }
+    .feature-row:nth-child(even) .feature-text { order: 2; }
+    .feature-row:nth-child(even) .feature-visual { order: 1; }
+
+    .feature-text h3 {
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .feature-text p {
+      font-size: 18px;
+      color: var(--gray-600);
+      line-height: 1.8;
+      max-width: 480px;
+    }
+    .feature-number {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .feature-number::before {
+      content: '';
+      width: 30px;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--violet));
+      border-radius: 2px;
+    }
+
+    .feature-visual {
+      perspective: 1800px;
+    }
+    .feature-screenshot {
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+      transition: transform 0.6s ease;
+    }
+    .feature-row:nth-child(odd) .feature-screenshot { transform: rotateY(12deg); }
+    .feature-row:nth-child(even) .feature-screenshot { transform: rotateY(-12deg); }
+    .feature-row:nth-child(odd) .feature-screenshot:hover { transform: rotateY(8deg) scale(1.01); }
+    .feature-row:nth-child(even) .feature-screenshot:hover { transform: rotateY(-8deg) scale(1.01); }
+
+    .feature-screenshot .screen-bar {
+      background: linear-gradient(to bottom, #f5f5f5, #ebebeb);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    .screen-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .feature-screenshot img {
+      width: 100%;
+      display: block;
+      height: 300px;
+      object-fit: cover;
+    }
+
+    /* Alternating background tint */
+    .feature-row:nth-child(even) {
+      background: linear-gradient(135deg, rgba(99,102,241,0.02) 0%, rgba(139,92,246,0.03) 100%);
+      margin: 0 -100vw;
+      padding: 80px 100vw;
+    }
+
+    /* ───── HOW IT WORKS ───── */
+    .how-section {
+      padding: 120px 0;
+      background: linear-gradient(180deg, var(--gray-50) 0%, #fff 100%);
+    }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 32px;
+      margin-top: 20px;
+    }
+    .step-card {
+      position: relative;
+      background: #fff;
+      padding: 40px 28px;
+      border-radius: 20px;
+      border: 1px solid var(--gray-200);
+      transition: all 0.4s ease;
+    }
+    .step-card:hover {
+      transform: translateY(-8px);
+      box-shadow: 0 20px 60px -15px rgba(99,102,241,0.15);
+      border-color: rgba(99,102,241,0.2);
+    }
+    .step-number {
+      position: absolute;
+      top: -20px;
+      left: 28px;
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--primary), var(--violet));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 8px 20px rgba(99,102,241,0.3);
+    }
+    .step-card h3 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 20px 0 12px;
+    }
+    .step-card p {
+      font-size: 15px;
+      color: var(--gray-600);
+      line-height: 1.7;
+    }
+    .step-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ───── PRICING ───── */
+    .pricing-section {
+      padding: 120px 0;
+      background: #fff;
+    }
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      max-width: 1100px;
+      margin: 0 auto;
+      align-items: start;
+    }
+    .pricing-card {
+      background: #fff;
+      border-radius: 24px;
+      padding: 40px 32px;
+      border: 1px solid var(--gray-200);
+      transition: all 0.4s ease;
+      position: relative;
+    }
+    .pricing-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 50px -10px rgba(0,0,0,0.08);
+    }
+    .pricing-card.popular {
+      border: 2px solid var(--primary);
+      transform: scale(1.06);
+      box-shadow: 0 30px 60px -10px rgba(99,102,241,0.2);
+    }
+    .pricing-card.popular:hover {
+      transform: scale(1.06) translateY(-4px);
+    }
+    .popular-tag {
+      position: absolute;
+      top: -14px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, var(--primary), var(--violet));
+      color: #fff;
+      padding: 6px 24px;
+      border-radius: 50px;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .pricing-card h3 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .pricing-card .desc {
+      color: var(--gray-600);
+      font-size: 15px;
+      margin-bottom: 24px;
+    }
+    .price {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .price span { font-size: 18px; font-weight: 500; color: var(--gray-600); }
+    .pricing-card .btn-pricing {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 14px;
+      border-radius: 14px;
+      font-weight: 600;
+      font-size: 16px;
+      text-decoration: none;
+      margin: 24px 0;
+      transition: all 0.3s;
+    }
+    .btn-pricing-primary {
+      background: linear-gradient(135deg, var(--primary), var(--violet));
+      color: #fff;
+      box-shadow: 0 6px 20px rgba(99,102,241,0.3);
+    }
+    .btn-pricing-primary:hover { box-shadow: 0 8px 30px rgba(99,102,241,0.4); transform: translateY(-1px); }
+    .btn-pricing-secondary {
+      background: var(--gray-100);
+      color: var(--gray-900);
+    }
+    .btn-pricing-secondary:hover { background: var(--gray-200); }
+    .pricing-features { list-style: none; }
+    .pricing-features li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 0;
+      font-size: 15px;
+      color: var(--gray-600);
+    }
+    .pricing-features li svg { color: #22c55e; flex-shrink: 0; margin-top: 2px; }
+
+    /* ───── TESTIMONIALS ───── */
+    .testimonials-section {
+      padding: 120px 0;
+      background: linear-gradient(180deg, #fff 0%, var(--gray-50) 100%);
+    }
+    .testimonials-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+    .testimonial-card {
+      background: #fff;
+      border-radius: 20px;
+      padding: 32px;
+      border: 1px solid var(--gray-200);
+      transition: all 0.4s ease;
+      position: relative;
+    }
+    .testimonial-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 50px -10px rgba(0,0,0,0.06);
+    }
+    .testimonial-stars { display: flex; gap: 4px; margin-bottom: 16px; }
+    .testimonial-stars svg { color: #f59e0b; }
+    .testimonial-card .quote { color: var(--gray-600); font-size: 15px; line-height: 1.8; margin-bottom: 24px; }
+    .testimonial-author { display: flex; align-items: center; gap: 12px; }
+    .testimonial-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--violet));
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .testimonial-author h4 { font-size: 15px; font-weight: 600; }
+    .testimonial-author p { font-size: 13px; color: var(--gray-400); }
+
+    .stats-bar {
+      margin-top: 80px;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--violet) 100%);
+      border-radius: 24px;
+      padding: 60px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      text-align: center;
+      color: #fff;
+    }
+    .stats-bar .stat-value { font-size: 48px; font-weight: 800; line-height: 1; }
+    .stats-bar .stat-label { font-size: 15px; opacity: 0.8; margin-top: 8px; }
+
+    /* ───── CTA ───── */
+    .cta-section {
+      padding: 120px 0;
+      background: linear-gradient(160deg, #1e1b4b 0%, #312e81 30%, #4c1d95 60%, #5b21b6 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .cta-section::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 20%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(139,92,246,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: float 10s ease-in-out infinite;
+    }
+    .cta-section::after {
+      content: '';
+      position: absolute;
+      bottom: -50%;
+      right: 20%;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+      border-radius: 50%;
+      animation: float 12s ease-in-out infinite reverse;
+    }
+    .cta-content {
+      position: relative;
+      z-index: 2;
+      text-align: center;
+      color: #fff;
+    }
+    .cta-content h2 {
+      font-size: clamp(36px, 5vw, 64px);
+      font-weight: 800;
+      line-height: 1.1;
+      letter-spacing: -1.5px;
+      margin-bottom: 24px;
+    }
+    .cta-content p {
+      font-size: 20px;
+      opacity: 0.85;
+      max-width: 600px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    .cta-buttons { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; }
+    .cta-trust { display: flex; align-items: center; justify-content: center; gap: 28px; margin-top: 40px; flex-wrap: wrap; }
+    .cta-trust span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      color: rgba(255,255,255,0.8);
+    }
+    .cta-trust svg { color: rgba(255,255,255,0.7); }
+
+    /* ───── FOOTER ───── */
+    .footer {
+      padding: 80px 0 40px;
+      background: var(--dark);
+      color: rgba(255,255,255,0.6);
+    }
+    .footer-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 60px;
+      margin-bottom: 60px;
+    }
+    .footer-brand p { font-size: 15px; line-height: 1.8; margin-top: 16px; max-width: 320px; }
+    .footer h4 {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    .footer ul { list-style: none; }
+    .footer ul li { margin-bottom: 12px; }
+    .footer ul a {
+      color: rgba(255,255,255,0.5);
+      text-decoration: none;
+      font-size: 15px;
+      transition: color 0.3s;
+    }
+    .footer ul a:hover { color: #fff; }
+    .footer-bottom {
+      border-top: 1px solid rgba(255,255,255,0.08);
+      padding-top: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    .footer-bottom a { color: rgba(255,255,255,0.5); text-decoration: none; margin-left: 24px; }
+    .footer-bottom a:hover { color: #fff; }
+
+    /* ───── RESPONSIVE ───── */
+    @media (max-width: 1024px) {
+      .feature-row { grid-template-columns: 1fr; gap: 40px; }
+      .feature-row:nth-child(even) .feature-text { order: 1; }
+      .feature-row:nth-child(even) .feature-visual { order: 2; }
+      .feature-row:nth-child(odd) .feature-screenshot,
+      .feature-row:nth-child(even) .feature-screenshot { transform: none; }
+      .feature-row:nth-child(even) { margin: 0; padding: 40px 24px; }
+      .steps-grid { grid-template-columns: repeat(2, 1fr); }
+      .pricing-grid { grid-template-columns: 1fr; max-width: 440px; }
+      .pricing-card.popular { transform: none; }
+      .pricing-card.popular:hover { transform: translateY(-4px); }
+      .testimonials-grid { grid-template-columns: 1fr; }
+      .stats-bar { grid-template-columns: 1fr; padding: 40px; }
+      .footer-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .mobile-menu-btn { display: block; }
+      .hero h1 { letter-spacing: -1px; }
+      .hero-visual { margin-top: 40px; }
+      .hero-screenshot { transform: none !important; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .footer-grid { grid-template-columns: 1fr; gap: 40px; }
+      .footer-bottom { flex-direction: column; gap: 12px; text-align: center; }
+    }
+
+    /* ───── GRAIN TEXTURE ───── */
+    .grain {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    }
+
+    /* ───── CUSTOM SCROLLBAR ───── */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--gray-100); }
+    ::-webkit-scrollbar-thumb { background: var(--gray-400); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--gray-600); }
+  </style>
+</head>
+<body>
+
+<div class="grain"></div>
+
+<!-- ═══════ NAVBAR ═══════ -->
+<nav class="navbar" id="navbar">
+  <div class="container">
+    <div class="nav-inner">
+      <a href="#" class="nav-logo">
+        <div class="nav-logo-icon">
+          <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <span class="gradient-text">Laya Pro</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it Works</a>
+        <a href="#pricing">Pricing</a>
+        <a href="#testimonials">Testimonials</a>
+        <a href="#signup" class="nav-cta">Get Started</a>
+      </div>
+      <button class="mobile-menu-btn" onclick="document.querySelector('.nav-links').classList.toggle('show-mobile')">
+        <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══════ HERO ═══════ -->
+<section class="hero" id="hero">
+  <div class="container">
+    <div class="hero-content">
+      <div class="badge hero-badge reveal">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l1.91 5.91H20l-4.96 3.6L16.95 18.41 12 14.81l-4.95 3.6 1.91-5.9L4 9.91h6.09z"/></svg>
+        The Complete Photography Business Solution
+      </div>
+      <h1 class="reveal delay-1">
+        Manage Your Photography<br>
+        <span class="serif gradient-text">Business with Ease</span>
+      </h1>
+      <p class="subtitle reveal delay-2">
+        From booking to delivery, streamline your entire workflow. Focus on capturing moments while we handle the rest.
+      </p>
+      <div class="hero-ctas reveal delay-3">
+        <a href="#signup" class="btn btn-primary">
+          Start Free Trial
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="#features" class="btn btn-white">See How It Works</a>
+      </div>
+    </div>
+
+    <div class="hero-visual reveal-scale delay-4">
+      <div class="hero-screenshot">
+        <div class="mac-bar">
+          <div class="mac-dot mac-red"></div>
+          <div class="mac-dot mac-yellow"></div>
+          <div class="mac-dot mac-green"></div>
+        </div>
+        <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=1200&auto=format&fit=crop" alt="Dashboard Preview">
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ TRUSTED BY ═══════ -->
+<section class="logos-section">
+  <div class="container">
+    <p class="reveal">Trusted by photographers worldwide</p>
+    <div class="logos-row reveal delay-2">
+      <span>CANON</span>
+      <span>NIKON</span>
+      <span>SONY</span>
+      <span>FUJIFILM</span>
+      <span>LEICA</span>
+      <span>HASSELBLAD</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FEATURES ═══════ -->
+<section class="features-section" id="features">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge section-badge reveal">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l1.91 5.91H20l-4.96 3.6L16.95 18.41 12 14.81l-4.95 3.6 1.91-5.9L4 9.91h6.09z"/></svg>
+        Features
+      </div>
+      <h2 class="reveal delay-1">Everything You Need to<br><span class="gradient-text">Run Your Studio</span></h2>
+      <p class="reveal delay-2">A complete suite of tools designed specifically for professional photographers.</p>
+    </div>
+  </div>
+
+  <div class="container-lg">
+    <!-- Feature 1 -->
+    <div class="feature-row">
+      <div class="feature-text reveal-left">
+        <div class="feature-number">Feature 01</div>
+        <h3>Smart Event Management</h3>
+        <p>Schedule shoots, track milestones, and never miss a deadline. Automated reminders keep you on top of every event in your calendar.</p>
+      </div>
+      <div class="feature-visual reveal-right">
+        <div class="feature-screenshot">
+          <div class="screen-bar"><div class="screen-dot mac-red"></div><div class="screen-dot mac-yellow"></div><div class="screen-dot mac-green"></div></div>
+          <img src="https://images.unsplash.com/photo-1506784983877-45594efa4cbe?w=800&auto=format&fit=crop" alt="Event Management">
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 2 -->
+    <div class="feature-row">
+      <div class="feature-text reveal-right">
+        <div class="feature-number">Feature 02</div>
+        <h3>Client Portal</h3>
+        <p>Give clients a beautiful branded space to view galleries, approve photos, and track their project progress in real-time. Seamless communication.</p>
+      </div>
+      <div class="feature-visual reveal-left">
+        <div class="feature-screenshot">
+          <div class="screen-bar"><div class="screen-dot mac-red"></div><div class="screen-dot mac-yellow"></div><div class="screen-dot mac-green"></div></div>
+          <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&auto=format&fit=crop" alt="Client Portal">
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 3 -->
+    <div class="feature-row">
+      <div class="feature-text reveal-left">
+        <div class="feature-number">Feature 03</div>
+        <h3>Quotations & Proposals</h3>
+        <p>Create stunning proposals in minutes. Professional templates, e-signatures, and instant approvals to close deals faster than ever.</p>
+      </div>
+      <div class="feature-visual reveal-right">
+        <div class="feature-screenshot">
+          <div class="screen-bar"><div class="screen-dot mac-red"></div><div class="screen-dot mac-yellow"></div><div class="screen-dot mac-green"></div></div>
+          <img src="https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?w=800&auto=format&fit=crop" alt="Quotations">
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 4 -->
+    <div class="feature-row">
+      <div class="feature-text reveal-right">
+        <div class="feature-number">Feature 04</div>
+        <h3>Gallery Management</h3>
+        <p>Upload, organize, and share high-resolution photos effortlessly. Beautiful galleries that wow your clients every single time.</p>
+      </div>
+      <div class="feature-visual reveal-left">
+        <div class="feature-screenshot">
+          <div class="screen-bar"><div class="screen-dot mac-red"></div><div class="screen-dot mac-yellow"></div><div class="screen-dot mac-green"></div></div>
+          <img src="https://images.unsplash.com/photo-1547394765-185e1e68f34e?w=800&auto=format&fit=crop" alt="Gallery">
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 5 -->
+    <div class="feature-row">
+      <div class="feature-text reveal-left">
+        <div class="feature-number">Feature 05</div>
+        <h3>Business Analytics</h3>
+        <p>Track revenue, monitor project progress, and gain insights to grow your photography business with data-driven decisions and real-time dashboards.</p>
+      </div>
+      <div class="feature-visual reveal-right">
+        <div class="feature-screenshot">
+          <div class="screen-bar"><div class="screen-dot mac-red"></div><div class="screen-dot mac-yellow"></div><div class="screen-dot mac-green"></div></div>
+          <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&auto=format&fit=crop" alt="Analytics">
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature 6 -->
+    <div class="feature-row">
+      <div class="feature-text reveal-right">
+        <div class="feature-number">Feature 06</div>
+        <h3>Secure Cloud Storage</h3>
+        <p>Unlimited storage with enterprise-grade security. Your photos are safe, backed up, and accessible anywhere, anytime, from any device.</p>
+      </div>
+      <div class="feature-visual reveal-left">
+        <div class="feature-screenshot">
+          <div class="screen-bar"><div class="screen-dot mac-red"></div><div class="screen-dot mac-yellow"></div><div class="screen-dot mac-green"></div></div>
+          <img src="https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=800&auto=format&fit=crop" alt="Cloud Storage">
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ HOW IT WORKS ═══════ -->
+<section class="how-section" id="how-it-works">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge section-badge reveal">How It Works</div>
+      <h2 class="reveal delay-1">Get Started in<br><span class="gradient-text">4 Simple Steps</span></h2>
+      <p class="reveal delay-2">From setup to delivery, our intuitive platform guides you every step of the way.</p>
+    </div>
+
+    <div class="steps-grid">
+      <div class="step-card reveal delay-1">
+        <div class="step-number">01</div>
+        <div class="step-icon" style="background: linear-gradient(135deg, rgba(99,102,241,0.1), rgba(139,92,246,0.1));">
+          <svg width="28" height="28" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        </div>
+        <h3>Sign Up & Setup</h3>
+        <p>Create your account in seconds. No credit card required. Set up your studio profile and branding in minutes.</p>
+      </div>
+
+      <div class="step-card reveal delay-2">
+        <div class="step-number">02</div>
+        <div class="step-icon" style="background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(6,182,212,0.1));">
+          <svg width="28" height="28" fill="none" stroke="#3b82f6" stroke-width="2" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <h3>Create Events</h3>
+        <p>Add your shoots, weddings, or projects. Set dates, assign team members, and configure workflows.</p>
+      </div>
+
+      <div class="step-card reveal delay-3">
+        <div class="step-number">03</div>
+        <div class="step-icon" style="background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(5,150,105,0.1));">
+          <svg width="28" height="28" fill="none" stroke="#10b981" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        </div>
+        <h3>Upload & Organize</h3>
+        <p>Upload photos directly or from your camera. AI-powered tagging and smart albums make organization effortless.</p>
+      </div>
+
+      <div class="step-card reveal delay-4">
+        <div class="step-number">04</div>
+        <div class="step-icon" style="background: linear-gradient(135deg, rgba(249,115,22,0.1), rgba(239,68,68,0.1));">
+          <svg width="28" height="28" fill="none" stroke="#f97316" stroke-width="2" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <h3>Share & Deliver</h3>
+        <p>Send beautiful galleries to clients. Track views, collect selections, and deliver final products seamlessly.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ PRICING ═══════ -->
+<section class="pricing-section" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge section-badge reveal">Pricing</div>
+      <h2 class="reveal delay-1">Choose Your<br><span class="gradient-text">Perfect Plan</span></h2>
+      <p class="reveal delay-2">Start with a 14-day free trial. No credit card required. Cancel anytime.</p>
+    </div>
+
+    <div class="pricing-grid">
+      <!-- Starter -->
+      <div class="pricing-card reveal delay-1">
+        <h3>Starter</h3>
+        <p class="desc">Perfect for solo photographers just starting out</p>
+        <div class="price">$29<span>/month</span></div>
+        <a href="#signup" class="btn-pricing btn-pricing-secondary">Start Free Trial</a>
+        <ul class="pricing-features">
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Up to 5 events per month</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>10GB storage</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Client portal access</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Basic gallery features</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Email support</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Mobile app access</li>
+        </ul>
+      </div>
+
+      <!-- Professional -->
+      <div class="pricing-card popular reveal delay-2">
+        <div class="popular-tag">Most Popular</div>
+        <h3>Professional</h3>
+        <p class="desc">For growing studios with multiple projects</p>
+        <div class="price">$79<span>/month</span></div>
+        <a href="#signup" class="btn-pricing btn-pricing-primary">Start Free Trial</a>
+        <ul class="pricing-features">
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited events</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>100GB storage</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Advanced client portal</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Quotation & proposals</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Priority support</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Team collaboration (up to 5)</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Custom branding</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Analytics dashboard</li>
+        </ul>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="pricing-card reveal delay-3">
+        <h3>Enterprise</h3>
+        <p class="desc">For established studios and agencies</p>
+        <div class="price">$199<span>/month</span></div>
+        <a href="#signup" class="btn-pricing btn-pricing-secondary">Start Free Trial</a>
+        <ul class="pricing-features">
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited everything</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>500GB storage</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>White-label solution</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Advanced workflows</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Dedicated account manager</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Unlimited team members</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>API access</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Custom integrations</li>
+          <li><svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>SLA guarantee</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ TESTIMONIALS ═══════ -->
+<section class="testimonials-section" id="testimonials">
+  <div class="container">
+    <div class="section-header">
+      <div class="badge section-badge reveal">Testimonials</div>
+      <h2 class="reveal delay-1">Loved by Photographers<br><span class="gradient-text">Worldwide</span></h2>
+      <p class="reveal delay-2">Don't just take our word for it. Here's what professional photographers say.</p>
+    </div>
+
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal delay-1">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <p class="quote">"Laya Pro completely transformed how I run my wedding photography business. The client portal is a game-changer — my clients love being able to view and select their favorites instantly."</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">SJ</div>
+          <div><h4>Sarah Johnson</h4><p>Wedding Photographer • Sarah J Photography</p></div>
+        </div>
+      </div>
+
+      <div class="testimonial-card reveal delay-2">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <p class="quote">"Managing multiple photographers and dozens of events was a nightmare before Laya Pro. Now everything is organized, automated, and professional. We closed 3 more bookings in the first month!"</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">MC</div>
+          <div><h4>Michael Chen</h4><p>Studio Owner • Chen Studios</p></div>
+        </div>
+      </div>
+
+      <div class="testimonial-card reveal delay-3">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <p class="quote">"I was skeptical about switching platforms, but Laya Pro made it so easy. The customer support is amazing, and my clients constantly compliment the beautiful galleries. Like having a full-time assistant!"</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">ER</div>
+          <div><h4>Emily Rodriguez</h4><p>Portrait Photographer • ER Portraits</p></div>
+        </div>
+      </div>
+
+      <div class="testimonial-card reveal delay-4">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <p class="quote">"The automation features are incredible. From booking to delivery, everything flows smoothly. I can focus on shooting while Laya Pro handles the business side. Client satisfaction has never been higher!"</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">DK</div>
+          <div><h4>David Kim</h4><p>Event Photographer • DK Events</p></div>
+        </div>
+      </div>
+
+      <div class="testimonial-card reveal delay-5">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <p class="quote">"As someone who shoots for both corporate clients and individuals, I needed flexibility. Laya Pro delivers perfectly. The custom branding and white-label options make me look incredibly professional."</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">LM</div>
+          <div><h4>Lisa Martinez</h4><p>Commercial Photographer • Martinez Media</p></div>
+        </div>
+      </div>
+
+      <div class="testimonial-card reveal delay-6">
+        <div class="testimonial-stars">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </div>
+        <p class="quote">"We've tried 5 different platforms over the years. Laya Pro is by far the best. The team collaboration features are excellent, and the analytics help us make better business decisions. Highly recommend!"</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar">JW</div>
+          <div><h4>James Wilson</h4><p>Photography Studio • Wilson & Co.</p></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="stats-bar reveal">
+      <div>
+        <div class="stat-value">98%</div>
+        <div class="stat-label">Customer Satisfaction</div>
+      </div>
+      <div>
+        <div class="stat-value">4.9/5</div>
+        <div class="stat-label">Average Rating</div>
+      </div>
+      <div>
+        <div class="stat-value">500+</div>
+        <div class="stat-label">Active Studios</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ CTA ═══════ -->
+<section class="cta-section" id="signup">
+  <div class="container">
+    <div class="cta-content">
+      <div class="badge reveal" style="background: rgba(255,255,255,0.15); color: #fff;">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 3l1.91 5.91H20l-4.96 3.6L16.95 18.41 12 14.81l-4.95 3.6 1.91-5.9L4 9.91h6.09z"/></svg>
+        14-Day Free Trial • No Credit Card Required
+      </div>
+      <h2 class="reveal delay-1">Ready to Transform Your<br>Photography Business?</h2>
+      <p class="reveal delay-2">Join hundreds of professional photographers who are saving time, delighting clients, and growing their business with Laya Pro.</p>
+      <div class="cta-buttons reveal delay-3">
+        <a href="#" class="btn" style="background:#fff; color: var(--primary); font-weight: 700; box-shadow: 0 8px 30px rgba(0,0,0,0.2);">
+          Start Your Free Trial
+          <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </a>
+        <a href="#pricing" class="btn btn-outline">View Pricing</a>
+      </div>
+      <div class="cta-trust reveal delay-4">
+        <span>
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          14-day free trial
+        </span>
+        <span>
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          No credit card required
+        </span>
+        <span>
+          <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+          Cancel anytime
+        </span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════ FOOTER ═══════ -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <a href="#" class="nav-logo" style="margin-bottom: 0;">
+          <div class="nav-logo-icon">
+            <svg width="22" height="22" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+          <span style="color: #fff; -webkit-text-fill-color: #fff;">Laya Pro</span>
+        </a>
+        <p>The complete photography business platform. Manage events, galleries, clients, and finances — all in one beautiful app.</p>
+      </div>
+      <div>
+        <h4>Product</h4>
+        <ul>
+          <li><a href="#features">Features</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+          <li><a href="#">Integrations</a></li>
+          <li><a href="#">Changelog</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <ul>
+          <li><a href="#">About</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+          <li><a href="#">Contact</a></li>
+        </ul>
+      </div>
+      <div>
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Terms of Service</a></li>
+          <li><a href="#">Cookie Policy</a></li>
+          <li><a href="#">GDPR</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 Laya Pro. All rights reserved.</span>
+      <div>
+        <a href="#">Twitter</a>
+        <a href="#">LinkedIn</a>
+        <a href="#">Instagram</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // ───── Navbar scroll effect ─────
+  window.addEventListener('scroll', () => {
+    const navbar = document.getElementById('navbar');
+    if (window.scrollY > 40) {
+      navbar.classList.add('scrolled');
+    } else {
+      navbar.classList.remove('scrolled');
+    }
+  });
+
+  // ───── Scroll Reveal Animations ─────
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('active');
+      }
+    });
+  }, {
+    threshold: 0.1,
+    rootMargin: '50px'
+  });
+
+  document.querySelectorAll('.reveal, .reveal-left, .reveal-right, .reveal-scale').forEach(el => {
+    revealObserver.observe(el);
+  });
+
+  // ───── Smooth scroll for anchor links ─────
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

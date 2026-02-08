@@ -1,115 +1,63 @@
 "use client";
 
-import { ArrowRight, Sparkles } from "lucide-react";
-import { useEffect, useRef } from "react";
+import Link from "next/link";
+import { useAuthModal } from "./AuthModal";
+
+const CheckSvg = () => (
+  <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
 
 export function CTA() {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add("animated");
-          }
-        });
-      },
-      { threshold: 0.1 }
-    );
-
-    if (ref.current) {
-      observer.observe(ref.current);
-    }
-
-    return () => {
-      if (ref.current) {
-        observer.unobserve(ref.current);
-      }
-    };
-  }, []);
+  const { openAuthModal } = useAuthModal();
 
   return (
-    <section id="signup" className="py-20 md:py-32 bg-gradient-to-br from-indigo-600 via-violet-600 to-purple-600 relative overflow-hidden animated-gradient">
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl float-animation" />
-        <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/10 rounded-full blur-animation" style={{ animationDelay: '1s' }} />
-      </div>
+    <section className="py-[140px] text-center relative overflow-hidden" id="cta">
+      {/* Background glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(99,102,241,0.04)_0%,transparent_60%)] rounded-full" />
 
-      {/* Content */}
-      <div ref={ref} className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="animate-on-scroll space-y-8">
-          {/* Badge */}
-          <div className="inline-flex items-center space-x-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full scale-in delay-200">
-            <Sparkles className="w-4 h-4 text-white" />
-            <span className="text-sm font-semibold text-white">
-              14-Day Free Trial • No Credit Card Required
-            </span>
-          </div>
-
-          {/* Headline */}
-          <h2 className="text-4xl md:text-6xl font-bold text-white leading-tight">
-            Ready to Transform Your
-            <br />
-            Photography Business?
+      <div className="max-w-[1200px] mx-auto px-6">
+        <div className="anim scale-up relative z-[2] bg-gradient-to-b from-[rgba(99,102,241,0.04)] to-[rgba(139,92,246,0.02)] border border-[rgba(99,102,241,0.1)] rounded-[32px] py-20 px-[60px] max-w-[900px] mx-auto">
+          <h2 className="font-heading text-[clamp(36px,5vw,56px)] font-normal tracking-[-0.5px] leading-[1.1] mb-5">
+            Ready to <span className="gradient-word">transform</span> your business?
           </h2>
-
-          {/* Description */}
-          <p className="text-xl md:text-2xl text-white/90 max-w-3xl mx-auto leading-relaxed">
-            Join hundreds of professional photographers who are saving time,
-            delighting clients, and growing their business with Laya Pro.
+          <p className="text-lg text-[var(--text-muted)] max-w-[500px] mx-auto mb-10 leading-[1.7]">
+            Join hundreds of photographers saving time, delighting clients, and growing with Laya Pro.
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-            <a
-              href="/signup"
-              className="group inline-flex items-center space-x-2 bg-white text-indigo-600 px-8 py-4 rounded-full text-lg font-semibold shadow-2xl hover:shadow-3xl hover-scale transition-all"
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <button
+              onClick={openAuthModal}
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-[14px] text-base font-semibold bg-gradient-to-br from-[var(--accent)] to-[var(--accent-bright)] text-white shadow-[0_4px_20px_rgba(99,102,241,0.25),inset_0_1px_0_rgba(255,255,255,0.15)] hover:shadow-[0_8px_30px_rgba(99,102,241,0.35)] hover:-translate-y-0.5 transition-all duration-400 cursor-pointer"
             >
-              <span>Start Your Free Trial</span>
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <a
+              Start Free Trial
+              <svg width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+              </svg>
+            </button>
+            <Link
               href="#pricing"
-              className="inline-flex items-center space-x-2 bg-indigo-900/30 backdrop-blur-sm text-white px-8 py-4 rounded-full text-lg font-semibold border-2 border-white/30 hover:border-white/50 hover-scale transition-all"
+              className="inline-flex items-center gap-2.5 px-8 py-4 rounded-[14px] text-base font-semibold no-underline bg-[var(--bg-card)] text-[var(--text-muted)] border border-[var(--border)] shadow-[0_1px_3px_rgba(0,0,0,0.04)] hover:text-[var(--text)] hover:border-black/[0.12] hover:bg-[var(--bg-elevated)] transition-all duration-300"
             >
-              <span>View Pricing</span>
-            </a>
+              View Pricing
+            </Link>
           </div>
 
-          {/* Trust Features */}
-          <div className="pt-8 flex flex-wrap items-center justify-center gap-6 text-white/90 text-sm fade-in delay-400">
-            <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>14-day free trial</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>No credit card required</span>
-            </div>
-            <div className="flex items-center space-x-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <span>Cancel anytime</span>
-            </div>
+          <div className="flex items-center justify-center gap-8 mt-8 flex-wrap">
+            <span className="flex items-center gap-1.5 text-[13px] text-[var(--text-dim)]">
+              <span className="text-[var(--accent)]"><CheckSvg /></span>
+              14-day free trial
+            </span>
+            <span className="flex items-center gap-1.5 text-[13px] text-[var(--text-dim)]">
+              <span className="text-[var(--accent)]"><CheckSvg /></span>
+              No credit card
+            </span>
+            <span className="flex items-center gap-1.5 text-[13px] text-[var(--text-dim)]">
+              <span className="text-[var(--accent)]"><CheckSvg /></span>
+              Cancel anytime
+            </span>
           </div>
         </div>
       </div>

@@ -1,134 +1,65 @@
 "use client";
 
-import { UserPlus, Camera, Share2, CheckCircle } from "lucide-react";
-import { useEffect, useRef } from "react";
-
 const steps = [
   {
-    icon: UserPlus,
-    number: "01",
-    title: "Sign Up & Setup",
-    description:
-      "Create your account in seconds. No credit card required. Set up your studio profile and branding in minutes.",
-    color: "from-purple-500 to-pink-500",
+    num: "01",
+    title: "Sign Up",
+    description: "Create your account in seconds. Free for 14 days, no credit card needed.",
   },
   {
-    icon: Camera,
-    number: "02",
+    num: "02",
     title: "Create Events",
-    description:
-      "Add your shoots, weddings, or projects. Set dates, assign team members, and configure workflows.",
-    color: "from-blue-500 to-cyan-500",
+    description: "Add shoots and projects. Set dates, assign team members, configure workflows.",
   },
   {
-    icon: Share2,
-    number: "03",
-    title: "Upload & Organize",
-    description:
-      "Upload photos directly or from your camera. AI-powered tagging and smart albums make organization effortless.",
-    color: "from-green-500 to-emerald-500",
+    num: "03",
+    title: "Upload Photos",
+    description: "Drag-and-drop uploads. AI tagging and smart albums organize everything.",
   },
   {
-    icon: CheckCircle,
-    number: "04",
-    title: "Share & Deliver",
-    description:
-      "Send beautiful galleries to clients. Track views, collect selections, and deliver final products seamlessly.",
-    color: "from-orange-500 to-red-500",
+    num: "04",
+    title: "Deliver & Grow",
+    description: "Share galleries, get approvals, collect payments, and watch your business grow.",
   },
 ];
 
-function StepCard({ step, index }: { step: (typeof steps)[0]; index: number }) {
+export function HowItWorks() {
   return (
-    <div className={`relative animate-on-scroll delay-${(index + 3) * 100}`}>
-      <div className="bg-white p-8 rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 border border-gray-100 hover-lift">
-        {/* Number Badge */}
-        <div className="absolute -top-6 -left-6 w-16 h-16 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full flex items-center justify-center text-white text-2xl font-bold shadow-lg">
-          {step.number}
-        </div>
-
-        {/* Icon */}
-        <div
-          className={`w-16 h-16 rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center mb-6 ml-12 hover-rotate`}
-        >
-          <step.icon className="w-8 h-8 text-white" />
-        </div>
-
-        {/* Content */}
-        <h3 className="text-2xl font-bold text-gray-900 mb-4">{step.title}</h3>
-        <p className="text-gray-600 leading-relaxed">{step.description}</p>
+    <section className="py-[140px] relative" id="how-it-works">
+      {/* Mesh bg */}
+      <div className="absolute inset-0 overflow-hidden z-0">
+        <div className="absolute rounded-full blur-[120px] opacity-40 w-[400px] h-[400px] bg-[rgba(99,102,241,0.04)] top-[20%] -left-[10%]" />
       </div>
 
-      {/* Connecting Line (except for last item) */}
-      {index < steps.length - 1 && (
-        <div className="hidden lg:block absolute top-1/2 -right-8 w-16 h-1 bg-gradient-to-r from-purple-300 to-pink-300" />
-      )}
-    </div>
-  );
-}
-
-export function HowItWorks() {
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('animated');
-          }
-        });
-      },
-      {
-        threshold: 0.1,
-        rootMargin: '50px'
-      }
-    );
-
-    const items = document.querySelectorAll('#how-it-works .scale-in, #how-it-works .animate-on-scroll, #how-it-works .fade-in');
-    items.forEach((item) => observer.observe(item));
-
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <section
-      id="how-it-works"
-      className="py-20 md:py-32 bg-gradient-to-b from-indigo-50/30 to-white"
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center mb-20">
-          <span className="inline-block px-4 py-2 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold mb-4 scale-in">
+      <div className="max-w-[1200px] mx-auto px-6 relative z-[2]">
+        <div className="text-center">
+          <div className="text-[13px] font-semibold uppercase tracking-[4px] text-[var(--accent)] mb-5 anim fade-up">
             How It Works
-          </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 animate-on-scroll delay-100">
-            Get Started in
-            <br />
-            <span className="gradient-text">4 Simple Steps</span>
-          </h2>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto animate-on-scroll delay-200">
-            From setup to delivery, our intuitive platform guides you every step
-            of the way. No complex training required.
+          </div>
+          <div className="font-heading text-[clamp(36px,5vw,60px)] font-normal tracking-[-0.5px] leading-[1.1] mb-5 mx-auto anim fade-up d1">
+            Get started in <span className="gradient-word">4 steps</span>
+          </div>
+          <p className="text-lg text-[var(--text-muted)] max-w-[500px] leading-[1.7] mx-auto anim fade-up d2">
+            No complex training. Our platform guides you from setup to delivery.
           </p>
         </div>
 
-        {/* Steps Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-12 lg:gap-8 relative">
-          {steps.map((step, index) => (
-            <StepCard key={index} step={step} index={index} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mt-[60px] relative">
+          {/* Connecting line */}
+          <div className="hidden lg:block absolute top-[60px] left-[12.5%] right-[12.5%] h-px bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-20" />
+
+          {steps.map((step, i) => (
+            <div
+              key={i}
+              className={`text-center p-10 px-6 rounded-[20px] transition-all duration-400 relative group hover:bg-[rgba(99,102,241,0.03)] anim fade-up d${i + 1}`}
+            >
+              <div className="w-14 h-14 rounded-full bg-[var(--bg-elevated)] border border-[var(--border)] flex items-center justify-center mx-auto mb-6 font-heading font-normal text-xl text-[var(--accent)] transition-all duration-400 relative z-[2] group-hover:bg-gradient-to-br group-hover:from-[var(--accent)] group-hover:to-[var(--accent-bright)] group-hover:text-white group-hover:border-transparent group-hover:shadow-[0_4px_20px_rgba(99,102,241,0.25)]">
+                {step.num}
+              </div>
+              <h3 className="font-heading text-lg font-normal mb-2.5">{step.title}</h3>
+              <p className="text-sm text-[var(--text-dim)] leading-[1.7]">{step.description}</p>
+            </div>
           ))}
-        </div>
-
-        {/* Bottom CTA */}
-        <div className="text-center mt-20">
-          <p className="text-gray-600 mb-6 text-lg fade-in delay-700">
-            Ready to streamline your photography workflow?
-          </p>
-          <a
-            href="/signup"
-            className="inline-flex items-center space-x-2 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-xl hover:shadow-2xl hover-scale transition-all scale-in delay-800"
-          >
-            <span>Start Your Free Trial</span>
-          </a>
         </div>
       </div>
     </section>
