@@ -52,8 +52,28 @@ import http from 'http';
 const app = express();
 app.use(express.json({ limit: '10gb' }));
 app.use(express.urlencoded({ limit: '10gb', extended: true }));
+
+// Whitelisted origins
+const allowedOrigins = [
+  'http://localhost:5173', // Customer app
+  'http://localhost:5174', // Admin app
+  'http://localhost:3002', // Marketing app
+  process.env.CUSTOMER_APP_URL,
+  process.env.ADMIN_APP_URL,
+  process.env.MARKETING_APP_URL
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: true, // Allow all origins in development
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Proposal-Pin', 'X-Portal-Pin']

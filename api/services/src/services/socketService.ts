@@ -15,9 +15,19 @@ interface AuthenticatedSocket extends Socket {
 let io: Server | null = null;
 
 export const initializeSocketIO = (httpServer: HTTPServer) => {
+  // Whitelisted origins for WebSocket connections
+  const allowedOrigins = [
+    'http://localhost:5173', // Customer app
+    'http://localhost:5174', // Admin app
+    'http://localhost:3002', // Marketing app
+    process.env.CUSTOMER_APP_URL,
+    process.env.ADMIN_APP_URL,
+    process.env.MARKETING_APP_URL
+  ].filter((origin): origin is string => Boolean(origin));
+
   io = new Server(httpServer, {
     cors: {
-      origin: process.env.CLIENT_URL || 'http://localhost:5173',
+      origin: allowedOrigins,
       credentials: true
     },
     pingTimeout: 60000,
