@@ -39,7 +39,7 @@ export const Payment = () => {
             </div>
 
             <div className="payment-timeline">
-                {paymentSchedule.map((item, index) => (
+                {paymentSchedule.map((item: any, index: number) => (
                     <div key={index} className="payment-item reveal">
                         <div className="payment-content">
                             {item.percent && <div className="payment-percent">{item.percent}</div>}
