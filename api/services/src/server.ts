@@ -55,22 +55,25 @@ app.use(express.urlencoded({ limit: '10gb', extended: true }));
 
 // Whitelisted origins
 const allowedOrigins = [
-  'http://localhost:5173', // Customer app
-  'http://localhost:5174', // Admin app
-  'http://localhost:3002', // Marketing app
-  process.env.CUSTOMER_APP_URL,
-  process.env.ADMIN_APP_URL,
-  process.env.MARKETING_APP_URL
+  'http://localhost:5173', // Customer app (dev)
+  'http://localhost:5174', // Admin app (dev)
+  'http://localhost:3002', // Marketing app (dev)
+  process.env.FRONTEND_URL, // Legacy env variable
+  process.env.CUSTOMER_APP_URL, // Production customer app
+  process.env.ADMIN_APP_URL, // Production admin app
+  process.env.MARKETING_APP_URL // Production marketing app
 ].filter(Boolean); // Remove undefined values
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, Postman, etc.)
+    // Allow requests with no origin (mobile apps, Postman, curl, server-to-server)
     if (!origin) return callback(null, true);
     
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
+      console.error(`CORS blocked origin: ${origin}`);
+      console.log('Allowed origins:', allowedOrigins);
       callback(new Error(`Origin ${origin} not allowed by CORS`));
     }
   },

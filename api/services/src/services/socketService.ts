@@ -17,12 +17,13 @@ let io: Server | null = null;
 export const initializeSocketIO = (httpServer: HTTPServer) => {
   // Whitelisted origins for WebSocket connections
   const allowedOrigins = [
-    'http://localhost:5173', // Customer app
-    'http://localhost:5174', // Admin app
-    'http://localhost:3002', // Marketing app
-    process.env.CUSTOMER_APP_URL,
-    process.env.ADMIN_APP_URL,
-    process.env.MARKETING_APP_URL
+    'http://localhost:5173', // Customer app (dev)
+    'http://localhost:5174', // Admin app (dev)
+    'http://localhost:3002', // Marketing app (dev)
+    process.env.FRONTEND_URL, // Legacy env variable
+    process.env.CUSTOMER_APP_URL, // Production customer app
+    process.env.ADMIN_APP_URL, // Production admin app
+    process.env.MARKETING_APP_URL // Production marketing app
   ].filter((origin): origin is string => Boolean(origin));
 
   io = new Server(httpServer, {
