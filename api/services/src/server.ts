@@ -39,6 +39,7 @@ import organizationController from './controllers/organizationController';
 import * as proposalController from './controllers/proposalController';
 import * as superAdminController from './controllers/superAdminController';
 import * as storageController from './controllers/storageController';
+import * as storageBreakdownController from './controllers/storageBreakdownController';
 import { NotificationController } from './controllers/notificationController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
@@ -252,6 +253,7 @@ app.get('/dashboard/event-status-counts', authenticate, dashboardController.getE
 
 // ---------- Storage & Subscription routes ----------
 app.get('/storage/stats/:tenantId', authenticate, storageController.getStorageStats);
+app.get('/storage/breakdown/:tenantId', authenticate, storageBreakdownController.getStorageBreakdown);
 app.post('/storage/refresh/:tenantId', authenticate, requireAdmin, storageController.refreshStorageUsage);
 app.post('/storage/check-upload', authenticate, storageController.checkUploadCapacity);
 app.get('/storage/plans', authenticate, storageController.getSubscriptionPlans);

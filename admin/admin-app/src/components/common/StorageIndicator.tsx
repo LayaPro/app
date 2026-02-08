@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../hooks/useAuth.js';
 import { storageApi } from '../../services/api.js';
+import { useAppDispatch } from '../../store/index.js';
+import { toggleStorageBreakdownModal } from '../../store/slices/uiSlice.js';
 import styles from './StorageIndicator.module.css';
 
 interface StorageStats {
@@ -15,6 +17,7 @@ interface StorageStats {
 
 export const StorageIndicator: React.FC = () => {
   const { user } = useAuth();
+  const dispatch = useAppDispatch();
   const [storage, setStorage] = useState<StorageStats>({
     storageUsedGB: 0,
     storageLimitGB: 0,
@@ -74,7 +77,7 @@ export const StorageIndicator: React.FC = () => {
   };
 
   return (
-    <div className={styles.storageIndicator}>
+    <div className={styles.storageIndicator} onClick={() => dispatch(toggleStorageBreakdownModal())}>
       {storage.planName && (
         <div className={styles.planBadgeContainer}>
           <span className={styles.planBadge}>{storage.planName}</span>

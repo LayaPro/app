@@ -1,5 +1,5 @@
 import React from 'react';
-import { useAppDispatch } from '../../store/index.js';
+import { useAppDispatch, useAppSelector } from '../../store/index.js';
 import { toggleNotificationPanel, toggleProfilePanel, toggleMobileMenu } from '../../store/slices/uiSlice.js';
 import { useTheme } from '../../hooks/useTheme.js';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -11,14 +11,22 @@ export const Header: React.FC = () => {
   const dispatch = useAppDispatch();
   const { toggle: toggleTheme, isDark } = useTheme();
   const { user } = useAuth();
+  const profilePanelOpen = useAppSelector((state) => state.ui.profilePanelOpen);
 
   // Use dummy data if no user is logged in
   const displayName = user ? `${user.firstName} ${user.lastName}` : 'John Doe';
   const displayRole = user?.roleName || 'Administrator';
   const displayInitials = user ? `${user.firstName?.[0]}${user.lastName?.[0]}` : 'JD';
 
+  const handleHeaderClick = (e: React.MouseEvent) => {
+    // Close profile panel if clicking anywhere on header except profile section
+    if (profilePanelOpen && !(e.target as HTMLElement).closest(`.${styles.profileSection}`)) {
+      dispatch(toggleProfilePanel());
+    }
+  };
+
   return (
-    <header className={styles.header}>
+    <header className={styles.header} onClick={handleHeaderClick}>
       <div className={styles.container}>
         {/* Hamburger Menu (Mobile Only) */}
         <button onClick={() => dispatch(toggleMobileMenu())} className={styles.hamburger}>

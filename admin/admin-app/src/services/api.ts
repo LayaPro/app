@@ -1093,6 +1093,16 @@ export const storageApi = {
     return handleResponse(response);
   },
 
+  getBreakdown: async (tenantId: string) => {
+    const response = await fetch(`${API_BASE_URL}/storage/breakdown/${tenantId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
   refresh: async (tenantId: string) => {
     const response = await fetch(`${API_BASE_URL}/storage/refresh/${tenantId}`, {
       method: 'POST',

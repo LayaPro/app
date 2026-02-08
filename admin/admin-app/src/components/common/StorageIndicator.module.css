@@ -7,6 +7,12 @@
   border-radius: 8px;
   min-width: 240px;
   max-width: 280px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.storageIndicator:hover {
+  background: var(--bg-secondary);
 }
 
 .planBadgeContainer {

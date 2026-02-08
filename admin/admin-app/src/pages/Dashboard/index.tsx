@@ -56,9 +56,10 @@ const Dashboard = () => {
 
   const fetchUpcomingEvents = async () => {
     try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/dashboard/upcoming-events`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -79,9 +80,10 @@ const Dashboard = () => {
 
   const fetchTeamAssignments = async () => {
     try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/dashboard/team-assignments`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });
@@ -100,9 +102,10 @@ const Dashboard = () => {
 
   const fetchMonthlySales = async () => {
     try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
       const response = await fetch(`${API_BASE_URL}/dashboard/monthly-sales?year=${selectedYear}`, {
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
         }
       });

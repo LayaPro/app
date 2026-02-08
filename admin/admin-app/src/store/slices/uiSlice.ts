@@ -7,6 +7,7 @@ const initialState: UIState = {
   notificationPanelOpen: false,
   profilePanelOpen: false,
   mobileMenuOpen: false,
+  storageBreakdownModalOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -42,6 +43,9 @@ const uiSlice = createSlice({
         state.profilePanelOpen = false;
       }
     },
+    toggleStorageBreakdownModal: (state) => {
+      state.storageBreakdownModalOpen = !state.storageBreakdownModalOpen;
+    },
     closeAllPanels: (state) => {
       state.notificationPanelOpen = false;
       state.profilePanelOpen = false;
@@ -56,6 +60,7 @@ export const {
   toggleNotificationPanel,
   toggleProfilePanel,
   toggleMobileMenu,
+  toggleStorageBreakdownModal,
   closeAllPanels,
 } = uiSlice.actions;
 export default uiSlice.reducer;

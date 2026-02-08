@@ -44,6 +44,7 @@ export interface UIState {
   notificationPanelOpen: boolean;
   profilePanelOpen: boolean;
   mobileMenuOpen: boolean;
+  storageBreakdownModalOpen: boolean;
 }
 
 // API Response Types
