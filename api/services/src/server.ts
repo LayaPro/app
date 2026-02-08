@@ -20,7 +20,6 @@ import profileController from './controllers/profileController';
 import teamController from './controllers/teamController';
 import eventController from './controllers/eventController';
 import eventDeliveryStatusController from './controllers/eventDeliveryStatusController';
-import projectDeliveryStatusController from './controllers/projectDeliveryStatusController';
 import imageStatusController from './controllers/imageStatusController';
 import equipmentController from './controllers/equipmentController';
 import projectController from './controllers/projectController';
