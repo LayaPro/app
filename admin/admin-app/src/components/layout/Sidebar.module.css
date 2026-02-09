@@ -4,9 +4,11 @@
   top: 0;
   bottom: 0;
   width: 256px;
-  background-color: var(--bg-primary);
-  border-right: 1px solid var(--border-color);
-  border-top: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.5);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transition: width 0.3s ease;
   overflow-y: auto;
   overflow-x: visible;
