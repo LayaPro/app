@@ -670,16 +670,23 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
     hasFinance: !!finance
   });
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     // Find existing project
-    const existingProject = await Project.findOne({ projectId });
+    const existingProject = await Project.findOne({ projectId }).session(session);
     if (!existingProject) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Project not found`, { tenantId, projectId });
       return res.status(404).json({ message: 'Project not found' });
     }
 
     // Check authorization
     if (existingProject.tenantId !== tenantId) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Access denied`, { tenantId, projectId });
       return res.status(403).json({ message: 'Access denied' });
     }
@@ -688,18 +695,18 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
     const updatedProject = await Project.findOneAndUpdate(
       { projectId },
       { $set: projectData },
-      { new: true, runValidators: true }
+      { new: true, runValidators: true, session }
     );
 
     // Get event delivery statuses
     const scheduledStatus = await EventDeliveryStatus.findOne({
       tenantId: { $in: [tenantId, -1] },
       statusCode: 'SCHEDULED'
-    });
+    }).session(session);
 
     // Update/Create/Delete events intelligently
     if (events) {
-      const existingEvents = await ClientEvent.find({ projectId }).lean();
+      const existingEvents = await ClientEvent.find({ projectId }).session(session).lean();
       const processedEventIds = new Set();
       
       for (const eventData of events) {
@@ -721,7 +728,8 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
                 teamMembersAssigned: eventData.teamMembersAssigned || [],
                 updatedBy: userId,
               }
-            }
+            },
+            { session }
           );
         } else {
           // Create new event with SCHEDULED status
@@ -732,12 +740,12 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
           const eventMaster = await Event.findOne({ 
             eventId: eventData.eventId,
             tenantId: { $in: [tenantId, -1] }
-          });
+          }).session(session);
           
           // Generate S3 folder name from event description
           const s3EventFolderName = eventMaster?.eventDesc.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() || 'event';
           
-          await ClientEvent.create({
+          await ClientEvent.create([{
             clientEventId,
             tenantId,
             projectId,
@@ -752,7 +760,7 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
             teamMembersAssigned: eventData.teamMembersAssigned || [],
             s3EventFolderName,
             createdBy: userId,
-          });
+          }], { session });
         }
       }
       
@@ -764,31 +772,36 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
       if (eventIdsToDelete.length > 0) {
         await ClientEvent.deleteMany({ 
           clientEventId: { $in: eventIdsToDelete }
-        });
+        }).session(session);
       }
     }
 
     // Update or create finance
     let projectFinance = null;
     if (finance) {
-      projectFinance = await ProjectFinance.findOne({ projectId });
+      projectFinance = await ProjectFinance.findOne({ projectId }).session(session);
       if (projectFinance) {
         projectFinance = await ProjectFinance.findOneAndUpdate(
           { projectId },
           { $set: finance },
-          { new: true, runValidators: true }
+          { new: true, runValidators: true, session }
         );
       } else {
         const financeId = `finance_${nanoid()}`;
-        projectFinance = await ProjectFinance.create({
+        const [createdFinance] = await ProjectFinance.create([{
           financeId,
           tenantId,
           projectId,
           ...finance,
           createdBy: userId,
-        });
+        }], { session });
+        projectFinance = createdFinance;
       }
     }
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     logger.info(`[${requestId}] Project with details updated`, { 
       tenantId, 
@@ -817,12 +830,16 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
       finance: projectFinance,
     });
   } catch (err: any) {
+    await session.abortTransaction();
+    session.endSession();
+    
     logger.error(`[${requestId}] Error updating project with details`, { 
       tenantId,
       projectId,
       error: err.message,
       stack: err.stack 
     });
+    console.error(`[${requestId}] Full error:`, err);
     return res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 };

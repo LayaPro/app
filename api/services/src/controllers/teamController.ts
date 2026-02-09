@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import { nanoid } from 'nanoid';
+import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import Team from '../models/team';
@@ -25,6 +26,9 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
     isFreelancer: req.body.isFreelancer
   });
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
       firstName,
@@ -41,6 +45,8 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
     } = req.body;
 
     if (!firstName || !lastName || !email) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Missing required fields`, {
         tenantId,
         hasFirstName: !!firstName,
@@ -51,13 +57,17 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
     }
 
     if (!tenantId) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Tenant ID missing in request`);
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     // Check if team member with same email exists for this tenant
-    const existingTeamMember = await Team.findOne({ email: email.toLowerCase(), tenantId });
+    const existingTeamMember = await Team.findOne({ email: email.toLowerCase(), tenantId }).session(session);
     if (existingTeamMember) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Team member with email already exists`, {
         email: email.toLowerCase(),
         tenantId,
@@ -68,8 +78,10 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
 
     // Check if user with same email exists (only if not a freelancer)
     if (!isFreelancer) {
-      const existingUser = await User.findOne({ email: email.toLowerCase() });
+      const existingUser = await User.findOne({ email: email.toLowerCase() }).session(session);
       if (existingUser) {
+        await session.abortTransaction();
+        session.endSession();
         logger.warn(`[${requestId}] User with email already exists`, {
           email: email.toLowerCase(),
           tenantId,
@@ -82,6 +94,8 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
     // Validate roleId (only required for non-freelancers who need login access)
     if (!isFreelancer) {
       if (!roleId) {
+        await session.abortTransaction();
+        session.endSession();
         logger.warn(`[${requestId}] Role ID missing for non-freelancer`, {
           email: email.toLowerCase(),
           tenantId
@@ -96,9 +110,11 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
           { tenantId: '-1' }, // Global roles
           { tenantId } // Tenant-specific roles
         ]
-      });
+      }).session(session);
       
       if (!role) {
+        await session.abortTransaction();
+        session.endSession();
         logger.warn(`[${requestId}] Invalid role ID provided`, {
           roleId,
           tenantId
@@ -128,7 +144,7 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       const activationToken = crypto.randomBytes(32).toString('hex');
       const activationTokenHash = crypto.createHash('sha256').update(activationToken).digest('hex');
       
-      const user = await User.create({
+      const [user] = await User.create([{
         userId: newUserId,
         tenantId,
         email: email.toLowerCase(),
@@ -140,7 +156,7 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
         isActivated: false,
         activationToken: activationTokenHash,
         activationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
-      });
+      }], { session });
       userId = user.userId;
 
       logger.info(`[${requestId}] User account created`, {
@@ -172,7 +188,7 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
 
     // Create team member with linked userId (null for freelancers)
     const memberId = `member_${nanoid()}`;
-    const teamMember = await Team.create({
+    const [teamMember] = await Team.create([{
       memberId,
       tenantId,
       firstName,
@@ -187,7 +203,11 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       isFreelancer: isFreelancer || false,
       paymentType,
       salary
-    });
+    }], { session });
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     logger.info(`[${requestId}] Team member created successfully`, {
       memberId,
@@ -236,6 +256,9 @@ export const createTeamMember = async (req: AuthRequest, res: Response) => {
       })
     });
   } catch (err: any) {
+    await session.abortTransaction();
+    session.endSession();
+    
     logger.error(`[${requestId}] Team member creation failed`, {
       email: req.body.email,
       tenantId,
@@ -489,16 +512,23 @@ export const deleteTeamMember = async (req: AuthRequest, res: Response) => {
     requestedBy: deletedBy
   });
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    const teamMember = await Team.findOne({ memberId });
+    const teamMember = await Team.findOne({ memberId }).session(session);
 
     if (!teamMember) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Team member not found for deletion`, { memberId, tenantId });
       return res.status(404).json({ message: 'Team member not found' });
     }
 
     // Check authorization: all users can only delete their own tenant's members
     if (teamMember.tenantId !== tenantId) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Access denied: Tenant mismatch on delete`, {
         memberId,
         memberTenantId: teamMember.tenantId,
@@ -513,11 +543,15 @@ export const deleteTeamMember = async (req: AuthRequest, res: Response) => {
         userId: teamMember.userId,
         tenantId
       });
-      await User.deleteOne({ userId: teamMember.userId });
+      await User.deleteOne({ userId: teamMember.userId }).session(session);
     }
 
     // Delete team member
-    await Team.deleteOne({ memberId });
+    await Team.deleteOne({ memberId }).session(session);
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     logger.info(`[${requestId}] Team member deleted successfully`, {
       memberId,
@@ -553,6 +587,9 @@ export const deleteTeamMember = async (req: AuthRequest, res: Response) => {
       memberId
     });
   } catch (err: any) {
+    await session.abortTransaction();
+    session.endSession();
+    
     logger.error(`[${requestId}] Team member deletion failed`, {
       memberId,
       tenantId,

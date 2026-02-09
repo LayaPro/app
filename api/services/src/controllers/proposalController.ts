@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { nanoid } from 'nanoid';
+import mongoose from 'mongoose';
 import Proposal from '../models/proposal';
 import Organization from '../models/organization';
 import Project from '../models/project';
@@ -25,6 +26,9 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
 
   logger.info(`[${requestId}] Creating proposal`, { tenantId, userId });
 
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
       clientName,
@@ -44,21 +48,29 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
 
     // Validation
     if (!clientName || !clientEmail || !projectName) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Missing required fields`, { tenantId });
       return res.status(400).json({ message: 'Client name, email, and project name are required' });
     }
 
     if (!tenantId) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Tenant ID missing`, { tenantId });
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
     if (!totalAmount || totalAmount <= 0) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] Invalid total amount`, { tenantId, totalAmount });
       return res.status(400).json({ message: 'Total amount must be greater than 0' });
     }
 
     if (!events || events.length === 0) {
+      await session.abortTransaction();
+      session.endSession();
       logger.warn(`[${requestId}] No events provided`, { tenantId });
       return res.status(400).json({ message: 'At least one event is required' });
     }
@@ -74,13 +86,13 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
     };
 
     let accessCode = generateAccessCode(projectName);
-    let codeExists = await Proposal.findOne({ accessCode });
+    let codeExists = await Proposal.findOne({ accessCode }).session(session);
     let suffix = 1;
 
     // Ensure uniqueness by adding suffix if needed
     while (codeExists) {
       accessCode = `${generateAccessCode(projectName)}-${suffix}`;
-      codeExists = await Proposal.findOne({ accessCode });
+      codeExists = await Proposal.findOne({ accessCode }).session(session);
       suffix++;
     }
 
@@ -97,7 +109,7 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
       projectName 
     });
     
-    const proposal = await Proposal.create({
+    const proposal = await Proposal.create([{
       proposalId,
       tenantId,
       clientName,
@@ -116,7 +128,7 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
       validUntil: validUntil ? new Date(validUntil) : undefined,
       status: 'draft',
       createdBy: userId
-    });
+    }], { session });
 
     logger.info(`[${requestId}] Proposal created successfully`, { 
       tenantId, 
@@ -125,6 +137,10 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
       projectName,
       totalAmount 
     });
+
+    // Commit transaction
+    await session.commitTransaction();
+    session.endSession();
 
     // Audit log
     logAudit({
@@ -150,14 +166,18 @@ export const createProposal = async (req: AuthRequest, res: Response) => {
 
     return res.status(201).json({
       message: 'Proposal created successfully',
-      proposal
+      proposal: proposal[0]
     });
   } catch (err: any) {
+    await session.abortTransaction();
+    session.endSession();
+    
     logger.error(`[${requestId}] Error creating proposal`, { 
       tenantId, 
       error: err.message,
       stack: err.stack 
     });
+    console.error(`[${requestId}] Full error:`, err);
     return res.status(500).json({ 
       message: 'Internal server error',
       error: err.message 

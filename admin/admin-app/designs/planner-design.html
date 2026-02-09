@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modern Planner Design</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      background: 
+        radial-gradient(circle at 20% 25%, rgba(226, 232, 240, 0.5) 0%, transparent 50%),
+        radial-gradient(circle at 80% 75%, rgba(203, 213, 225, 0.4) 0%, transparent 50%),
+        linear-gradient(135deg, #f8fafb 0%, #e8eef3 20%, #d8e1e8 40%, #c8d4dd 60%, #b8c7d2 80%, #a8bac7 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* Sidebar Styles */
+    .sidebar {
+      width: 260px;
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      padding: 20px 16px;
+      position: relative;
+      z-index: 100;
+    }
+
+    .sidebar-icon {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .sidebar-icon:hover {
+      transform: translateX(4px);
+      background: rgba(30, 64, 175, 0.1);
+    }
+
+    .sidebar-icon.active {
+      background: rgba(30, 64, 175, 0.15);
+      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
+    }
+
+    .sidebar-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #64748b;
+      flex-shrink: 0;
+    }
+
+    .sidebar-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    .sidebar-icon.active .sidebar-text {
+      color: #1e40af;
+      font-weight: 600;
+    }
+
+    .sidebar-icon.active svg {
+      color: #1e40af;
+    }
+
+    .sidebar-spacer {
+      flex: 1;
+    }
+
+    /* Main Content */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Topbar */
+    .topbar {
+      display: flex;
+      align-items: center;
+      padding: 16px 32px;
+      background: transparent;
+      gap: 24px;
+    }
+
+    .search-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .search-box {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(100, 116, 139, 0.15);
+      border-radius: 12px;
+      padding: 10px 16px;
+      gap: 12px;
+      transition: all 0.2s ease;
+    }
+
+    .search-box:focus-within {
+      border-color: #1e40af;
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+
+    .search-box svg {
+      width: 20px;
+      height: 20px;
+      color: #64748b;
+      flex-shrink: 0;
+    }
+
+    .search-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      color: #1e293b;
+      outline: none;
+    }
+
+    .search-input::placeholder {
+      color: #94a3b8;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .topbar-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .topbar-icon:hover {
+      background: rgba(30, 64, 175, 0.1);
+      transform: translateY(-2px);
+    }
+
+    .topbar-icon svg {
+      width: 20px;
+      height: 20px;
+      color: #64748b;
+    }
+
+    .topbar-icon.notification-icon::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      background: #ef4444;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.9);
+    }
+
+    .profile-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
+    }
+
+    .profile-icon:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
+    }
+
+    /* Content Area */
+    .content-area {
+      flex: 1;
+      display: flex;
+      padding: 32px;
+      gap: 24px;
+      overflow: auto;
+    }
+
+    /* Left Panel */
+    .left-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      max-width: 480px;
+    }
+
+    /* Header */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 8px;
+      margin-bottom: 8px;
+    }
+
+    .panel-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #334155;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-title svg {
+      width: 20px;
+      height: 20px;
+      color: #64748b;
+    }
+
+    /* Card Styles */
+    .card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(20px);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: all 0.3s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 16px;
+    }
+
+    /* Planner Items */
+    .planner-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .planner-item:hover {
+      background: rgba(255, 255, 255, 0.85);
+      transform: translateX(4px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .planner-item-content {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .planner-item-icon {
+      width: 20px;
+      height: 20px;
+      color: #64748b;
+    }
+
+    .planner-item-text {
+      font-size: 14px;
+      font-weight: 500;
+      color: #475569;
+    }
+
+    .planner-item-badge {
+      background: #3b82f6;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    .planner-item-arrow {
+      width: 18px;
+      height: 18px;
+      color: #94a3b8;
+    }
+
+    /* Clock Widget */
+    .clock-widget {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 24px;
+    }
+
+    .clock-face {
+      width: 160px;
+      height: 160px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      border: 3px solid rgba(226, 232, 240, 0.8);
+      position: relative;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+    }
+
+    .clock-center {
+      width: 12px;
+      height: 12px;
+      background: #334155;
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 10;
+    }
+
+    .clock-hand {
+      position: absolute;
+      background: #334155;
+      transform-origin: bottom center;
+      border-radius: 4px;
+    }
+
+    .hour-hand {
+      width: 4px;
+      height: 50px;
+      bottom: 50%;
+      left: 50%;
+      margin-left: -2px;
+      transform: rotate(120deg);
+    }
+
+    .minute-hand {
+      width: 3px;
+      height: 65px;
+      bottom: 50%;
+      left: 50%;
+      margin-left: -1.5px;
+      transform: rotate(0deg);
+    }
+
+    .clock-markers {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      top: 0;
+      left: 0;
+    }
+
+    .clock-marker {
+      position: absolute;
+      width: 2px;
+      height: 8px;
+      background: #cbd5e1;
+      left: 50%;
+      transform-origin: center 80px;
+    }
+
+    .clock-time {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-top: 8px;
+    }
+
+    .clock-date {
+      font-size: 14px;
+      color: #64748b;
+      font-weight: 500;
+    }
+
+    /* Calendar */
+    .calendar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .calendar-month {
+      font-size: 15px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .calendar-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .calendar-nav-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255, 255, 255, 0.6);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .calendar-nav-btn:hover {
+      background: rgba(255, 255, 255, 0.9);
+      transform: scale(1.05);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 8px;
+    }
+
+    .calendar-day-label {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      padding: 8px 0;
+      text-transform: uppercase;
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 500;
+      color: #475569;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .calendar-day:hover {
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .calendar-day.today {
+      background: #1e293b;
+      color: white;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(30, 41, 59, 0.3);
+    }
+
+    .calendar-day.other-month {
+      color: #cbd5e1;
+    }
+
+    /* Right Panel - Todos */
+    .right-panel {
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .todos-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding: 0 8px;
+    }
+
+    .todos-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #334155;
+    }
+
+    .todo-section {
+      margin-bottom: 16px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .section-header svg {
+      width: 18px;
+      height: 18px;
+      color: #64748b;
+      transition: transform 0.2s ease;
+    }
+
+    .section-header.collapsed svg {
+      transform: rotate(-90deg);
+    }
+
+    .section-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #475569;
+    }
+
+    .section-count {
+      font-size: 13px;
+      font-weight: 600;
+      color: #94a3b8;
+    }
+
+    /* Todo Input */
+    .todo-input-container {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 18px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .todo-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      color: #334155;
+      outline: none;
+    }
+
+    .todo-input::placeholder {
+      color: #94a3b8;
+    }
+
+    /* Todo Item */
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 12px;
+      margin-bottom: 8px;
+      cursor: grab;
+      transition: all 0.2s ease;
+      border: 1px solid rgba(226, 232, 240, 0.6);
+    }
+
+    .todo-item:hover {
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    .todo-drag-handle {
+      width: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .todo-drag-handle span {
+      width: 3px;
+      height: 3px;
+      background: #cbd5e1;
+      border-radius: 50%;
+    }
+
+    .todo-checkbox {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .todo-checkbox:hover {
+      border-color: #3b82f6;
+    }
+
+    .todo-text {
+      flex: 1;
+      font-size: 14px;
+      color: #475569;
+      font-weight: 500;
+    }
+
+    .todo-label {
+      font-size: 11px;
+      padding: 4px 8px;
+      background: rgba(148, 163, 184, 0.15);
+      color: #64748b;
+      border-radius: 6px;
+      font-weight: 500;
+    }
+
+    .section-content {
+      padding: 0 8px;
+    }
+
+    /* Animations */
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card {
+      animation: fadeIn 0.4s ease;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.3);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(148, 163, 184, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div style="height: 80px; display: flex; align-items: flex-start; justify-content: flex-start; padding-left: 16px; padding-top: 5px; font-size: 30px; font-weight: 600; color: #1e40af;">Workspace</div>
+      <div class="sidebar-icon active">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        </svg>
+        <span class="sidebar-text">Planner</span>
+      </div>
+      <div class="sidebar-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <span class="sidebar-text">Projects</span>
+      </div>
+      <div class="sidebar-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <span class="sidebar-text">Team</span>
+      </div>
+      <div class="sidebar-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+        </svg>
+        <span class="sidebar-text">Messages</span>
+      </div>
+      <div class="sidebar-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <span class="sidebar-text">Reports</span>
+      </div>
+      <div class="sidebar-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+        </svg>
+        <span class="sidebar-text">Documents</span>
+      </div>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="sidebar-text">Settings</span>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Topbar -->
+      <div class="topbar">
+        <div class="search-container">
+          <div class="search-box">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+            <input type="text" class="search-input" placeholder="Search projects, tasks, or team members...">
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div class="topbar-icon notification-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </div>
+          <div class="profile-icon">KM</div>
+        </div>
+      </div>
+
+      <!-- Content Area -->
+      <div class="content-area">
+      <!-- Left Panel -->
+      <div class="left-panel">
+        <div class="panel-header">
+          <div class="panel-title">
+            Floor Main
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5"/>
+            </svg>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Planner Card -->
+        <div class="card">
+          <div class="card-title">Planner</div>
+          <div class="planner-item">
+            <div class="planner-item-content">
+              <svg class="planner-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+              </svg>
+              <span class="planner-item-text">Unplanned</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span class="planner-item-badge">2</span>
+              <svg class="planner-item-arrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+              </svg>
+            </div>
+          </div>
+          <div class="planner-item">
+            <div class="planner-item-content">
+              <svg class="planner-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span class="planner-item-text">Planned</span>
+            </div>
+          </div>
+          <div class="planner-item">
+            <div class="planner-item-content">
+              <svg class="planner-item-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7h16M4 12h16M4 17h16"/>
+              </svg>
+              <span class="planner-item-text">All</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clock Widget -->
+        <div class="card clock-widget">
+          <div class="clock-face">
+            <div class="clock-markers">
+              <div class="clock-marker" style="transform: rotate(0deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(30deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(60deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(90deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(120deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(150deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(180deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(210deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(240deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(270deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(300deg) translateY(-70px);"></div>
+              <div class="clock-marker" style="transform: rotate(330deg) translateY(-70px);"></div>
+            </div>
+            <div class="clock-hand hour-hand"></div>
+            <div class="clock-hand minute-hand"></div>
+            <div class="clock-center"></div>
+          </div>
+          <div class="clock-time">4pm</div>
+          <div class="clock-date">Wed, 17th July</div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="card">
+          <div class="calendar-header">
+            <div class="calendar-month">July 2024</div>
+            <div class="calendar-nav">
+              <button class="calendar-nav-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <button class="calendar-nav-btn">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="calendar-grid">
+            <div class="calendar-day-label">Mon</div>
+            <div class="calendar-day-label">Tue</div>
+            <div class="calendar-day-label">Wed</div>
+            <div class="calendar-day-label">Thu</div>
+            <div class="calendar-day-label">Fri</div>
+            <div class="calendar-day-label">Sat</div>
+            <div class="calendar-day-label">Sun</div>
+            
+            <div class="calendar-day">1</div>
+            <div class="calendar-day">2</div>
+            <div class="calendar-day">3</div>
+            <div class="calendar-day">4</div>
+            <div class="calendar-day">5</div>
+            <div class="calendar-day">6</div>
+            <div class="calendar-day">7</div>
+            <div class="calendar-day">8</div>
+            <div class="calendar-day">9</div>
+            <div class="calendar-day">10</div>
+            <div class="calendar-day">11</div>
+            <div class="calendar-day">12</div>
+            <div class="calendar-day">13</div>
+            <div class="calendar-day">14</div>
+            <div class="calendar-day">15</div>
+            <div class="calendar-day">16</div>
+            <div class="calendar-day today">17</div>
+            <div class="calendar-day">18</div>
+            <div class="calendar-day">19</div>
+            <div class="calendar-day">20</div>
+            <div class="calendar-day">21</div>
+            <div class="calendar-day">22</div>
+            <div class="calendar-day">23</div>
+            <div class="calendar-day">24</div>
+            <div class="calendar-day">24</div>
+            <div class="calendar-day">26</div>
+            <div class="calendar-day">27</div>
+            <div class="calendar-day">28</div>
+            <div class="calendar-day">29</div>
+            <div class="calendar-day">30</div>
+            <div class="calendar-day">31</div>
+            <div class="calendar-day other-month">1</div>
+            <div class="calendar-day other-month">2</div>
+            <div class="calendar-day other-month">3</div>
+            <div class="calendar-day other-month">4</div>
+            <div class="calendar-day other-month">5</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Panel - Todos -->
+      <div class="right-panel">
+        <div class="todos-header">
+          <div class="todos-title">Todo's</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+            ToDo Unplanned
+          </div>
+
+          <div class="todo-input-container">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+            </svg>
+            <input type="text" class="todo-input" placeholder="Add todo, press ⌘ ENTER to save">
+          </div>
+
+          <!-- Unplanned Section -->
+          <div class="todo-section">
+            <div class="section-header">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+              <span class="section-title">Unplanned</span>
+              <span class="section-count">2</span>
+            </div>
+            <div class="section-content">
+              <div class="todo-item">
+                <div class="todo-drag-handle">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="todo-checkbox"></div>
+                <span class="todo-text">HI-1</span>
+                <span class="todo-text">HI-1</span>
+              </div>
+              <div style="padding-left: 44px; margin-bottom: 12px;">
+                <div class="todo-label">Without Project</div>
+              </div>
+              <div class="todo-item">
+                <div class="todo-drag-handle">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </div>
+                <div class="todo-checkbox"></div>
+                <span class="todo-text">HI-1</span>
+                <span class="todo-text">HI-1</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Todo's Section -->
+          <div class="todo-section">
+            <div class="section-header">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+              <span class="section-title">Todo's</span>
+              <span class="section-count">0</span>
+            </div>
+          </div>
+
+          <!-- Scheduled Section -->
+          <div class="todo-section">
+            <div class="section-header">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+              <span class="section-title">Scheduled</span>
+              <span class="section-count">0</span>
+            </div>
+          </div>
+
+          <!-- Done Section -->
+          <div class="todo-section">
+            <div class="section-header">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+              </svg>
+              <span class="section-title">Done</span>
+              <span class="section-count">0</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Update clock
+    function updateClock() {
+      const now = new Date();
+      const hours = now.getHours() % 12;
+      const minutes = now.getMinutes();
+      
+      const hourHand = document.querySelector('.hour-hand');
+      const minuteHand = document.querySelector('.minute-hand');
+      
+      const hourDegrees = (hours * 30) + (minutes * 0.5); // 30 degrees per hour + 0.5 per minute
+      const minuteDegrees = minutes * 6; // 6 degrees per minute
+      
+      hourHand.style.transform = `rotate(${hourDegrees}deg)`;
+      minuteHand.style.transform = `rotate(${minuteDegrees}deg)`;
+    }
+
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Section toggle
+    document.querySelectorAll('.section-header').forEach(header => {
+      header.addEventListener('click', () => {
+        header.classList.toggle('collapsed');
+        const content = header.nextElementSibling;
+        if (content && content.classList.contains('section-content')) {
+          content.style.display = content.style.display === 'none' ? 'block' : 'none';
+        }
+      });
+    });
+
+    // Add interactivity
+    document.querySelectorAll('.planner-item').forEach(item => {
+      item.addEventListener('click', () => {
+        console.log('Planner item clicked');
+      });
+    });
+
+    document.querySelectorAll('.calendar-day:not(.other-month)').forEach(day => {
+      day.addEventListener('click', () => {
+        document.querySelectorAll('.calendar-day').forEach(d => d.classList.remove('today'));
+        day.classList.add('today');
+      });
+    });
+
+    // Dropdown functionality
+    document.querySelectorAll('.dropdown-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = trigger.nextElementSibling;
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      });
+    });
+
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.style.display = 'none';
+      });
+    });
+
+    // Searchable dropdown
+    document.querySelectorAll('.search-dropdown-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const items = e.target.closest('.search-dropdown').querySelectorAll('.dropdown-item');
+        items.forEach(item => {
+          const text = item.textContent.toLowerCase();
+          item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+        });
+      });
+    });
+
+    // Toggle switch
+    document.querySelectorAll('.toggle-switch input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        console.log('Toggle:', e.target.checked);
+      });
+    });
+  </script>
+</body>
+</html>

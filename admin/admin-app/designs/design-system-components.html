@@ -1,0 +1,1197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Design System Components</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+      background: 
+        radial-gradient(circle at 15% 20%, rgba(226, 232, 240, 0.4) 0%, transparent 40%),
+        radial-gradient(circle at 85% 80%, rgba(203, 213, 225, 0.3) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(241, 245, 249, 0.2) 0%, transparent 60%),
+        linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 30%, #b8c4d0 60%, #a8b5c3 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 12px;
+    }
+
+    .subtitle {
+      font-size: 16px;
+      color: #64748b;
+      margin-bottom: 40px;
+    }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(20px);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      margin-bottom: 24px;
+    }
+
+    h3 {
+      font-size: 18px;
+      font-weight: 600;
+      color: #334155;
+      margin-bottom: 16px;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(30, 64, 175, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(100, 116, 139, 0.1);
+      color: #475569;
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(100, 116, 139, 0.15);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: #1e40af;
+      border: 2px solid #1e40af;
+      padding: 9px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-outline:hover {
+      background: rgba(30, 64, 175, 0.1);
+      transform: translateY(-1px);
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
+    }
+
+    .btn-icon {
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-icon:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-icon-small {
+      background: rgba(100, 116, 139, 0.1);
+      color: #475569;
+      border: none;
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-icon-small:hover {
+      background: rgba(100, 116, 139, 0.2);
+      transform: translateY(-1px);
+    }
+
+    /* Input Fields */
+    .input-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      color: #475569;
+      margin-bottom: 8px;
+    }
+
+    .input-field {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      color: #1e293b;
+    }
+
+    .input-field:focus {
+      outline: none;
+      border-color: #1e40af;
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+
+    .input-field:disabled {
+      background: rgba(148, 163, 184, 0.1);
+      color: #94a3b8;
+      cursor: not-allowed;
+    }
+
+    .input-field::placeholder {
+      color: #94a3b8;
+    }
+
+    .input-error {
+      border-color: #ef4444;
+    }
+
+    .input-error:focus {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+    }
+
+    .error-message {
+      display: block;
+      margin-top: 6px;
+      font-size: 12px;
+      color: #ef4444;
+    }
+
+    textarea.input-field {
+      resize: vertical;
+      font-family: inherit;
+    }
+
+    /* Checkboxes */
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      gap: 10px;
+    }
+
+    .checkbox-input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .checkbox-custom {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(100, 116, 139, 0.3);
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .checkbox-input:checked + .checkbox-custom {
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+      border-color: #1e40af;
+    }
+
+    .checkbox-input:checked + .checkbox-custom::after {
+      content: '';
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }
+
+    .checkbox-input:disabled + .checkbox-custom {
+      background: rgba(148, 163, 184, 0.1);
+      cursor: not-allowed;
+    }
+
+    .checkbox-label span:last-child {
+      font-size: 14px;
+      color: #475569;
+    }
+
+    /* Radio Buttons */
+    .radio-label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+      user-select: none;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .radio-input {
+      position: absolute;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .radio-custom {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(100, 116, 139, 0.3);
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(10px);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .radio-input:checked + .radio-custom {
+      border-color: #1e40af;
+    }
+
+    .radio-input:checked + .radio-custom::after {
+      content: '';
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    }
+
+    .radio-input:disabled + .radio-custom {
+      background: rgba(148, 163, 184, 0.1);
+      cursor: not-allowed;
+    }
+
+    .radio-label span:last-child {
+      font-size: 14px;
+      color: #475569;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(100, 116, 139, 0.2);
+      transition: 0.3s;
+      border-radius: 24px;
+    }
+
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+    }
+
+    .toggle-switch input:checked + .toggle-slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Dropdown */
+    .dropdown-trigger {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .dropdown-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      margin-top: 8px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      min-width: 200px;
+      z-index: 1000;
+      overflow: hidden;
+    }
+
+    .dropdown-item {
+      padding: 10px 16px;
+      font-size: 14px;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .dropdown-item:hover {
+      background: rgba(30, 64, 175, 0.1);
+      color: #1e40af;
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: rgba(100, 116, 139, 0.1);
+      margin: 4px 0;
+    }
+
+    /* Searchable Dropdown */
+    .search-dropdown {
+      position: relative;
+    }
+
+    .search-dropdown-input {
+      padding-right: 32px;
+    }
+
+    /* Table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    .data-table thead {
+      background: rgba(100, 116, 139, 0.05);
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 12px 16px;
+      font-weight: 600;
+      color: #475569;
+      border-bottom: 2px solid rgba(100, 116, 139, 0.1);
+    }
+
+    .data-table td {
+      padding: 12px 16px;
+      color: #64748b;
+      border-bottom: 1px solid rgba(100, 116, 139, 0.08);
+    }
+
+    .data-table tbody tr {
+      transition: all 0.2s ease;
+    }
+
+    .data-table tbody tr:hover {
+      background: rgba(30, 64, 175, 0.05);
+    }
+
+    /* Badges */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-primary {
+      background: rgba(30, 64, 175, 0.1);
+      color: #1e40af;
+    }
+
+    .badge-success {
+      background: rgba(16, 185, 129, 0.1);
+      color: #10b981;
+    }
+
+    .badge-warning {
+      background: rgba(245, 158, 11, 0.1);
+      color: #f59e0b;
+    }
+
+    .badge-danger {
+      background: rgba(239, 68, 68, 0.1);
+      color: #ef4444;
+    }
+
+    .badge-info {
+      background: rgba(6, 182, 212, 0.1);
+      color: #06b6d4;
+    }
+
+    .badge-neutral {
+      background: rgba(100, 116, 139, 0.1);
+      color: #64748b;
+    }
+
+    /* Alerts */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 14px;
+      backdrop-filter: blur(10px);
+    }
+
+    .alert svg {
+      flex-shrink: 0;
+    }
+
+    .alert-success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #059669;
+    }
+
+    .alert-warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      color: #d97706;
+    }
+
+    .alert-danger {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.2);
+      color: #dc2626;
+    }
+
+    .alert-info {
+      background: rgba(6, 182, 212, 0.1);
+      border: 1px solid rgba(6, 182, 212, 0.2);
+      color: #0891b2;
+    }
+
+    /* Progress Bar */
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(100, 116, 139, 0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #1e40af 0%, #1e3a8a 100%);
+      border-radius: 8px;
+      transition: width 0.3s ease;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid rgba(30, 64, 175, 0.2);
+      border-top-color: #1e40af;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Select */
+    .select-field {
+      width: 100%;
+      padding: 10px 36px 10px 14px;
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.5);
+      backdrop-filter: blur(10px);
+      color: #1e293b;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%2364748b' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+    }
+
+    .select-field:focus {
+      outline: none;
+      border-color: #1e40af;
+      box-shadow: 0 0 0 3px rgba(30, 64, 175, 0.1);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 2px solid rgba(100, 116, 139, 0.1);
+      margin-bottom: 20px;
+    }
+
+    .tab {
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 500;
+      color: #64748b;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+    }
+
+    .tab:hover {
+      color: #1e40af;
+    }
+
+    .tab.active {
+      color: #1e40af;
+      border-bottom-color: #1e40af;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .page-btn {
+      padding: 8px 12px;
+      border: 1px solid rgba(100, 116, 139, 0.2);
+      background: rgba(255, 255, 255, 0.5);
+      border-radius: 6px;
+      font-size: 14px;
+      color: #475569;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .page-btn:hover {
+      background: rgba(100, 116, 139, 0.1);
+    }
+
+    .page-btn.active {
+      background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+      color: white;
+      border-color: #1e40af;
+    }
+
+    /* Card with hover effect */
+    .hover-card {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(20px);
+      border-radius: 12px;
+      padding: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .hover-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    }
+
+    /* Tooltip */
+    .tooltip-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .tooltip-text {
+      visibility: hidden;
+      background: rgba(30, 41, 59, 0.95);
+      color: white;
+      text-align: center;
+      border-radius: 6px;
+      padding: 6px 12px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 12px;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .tooltip-text::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: rgba(30, 41, 59, 0.95) transparent transparent transparent;
+    }
+
+    .tooltip-container:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+    }
+
+    /* Grid */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Design System Components</h1>
+    <p class="subtitle">Complete UI component library with glassmorphic design</p>
+
+    <!-- Buttons -->
+    <div class="glass-card">
+      <h3>Buttons</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <button class="btn-primary">Primary Button</button>
+        <button class="btn-secondary">Secondary Button</button>
+        <button class="btn-outline">Outline Button</button>
+        <button class="btn-danger">Danger Button</button>
+        <button class="btn-primary" disabled>Disabled</button>
+        <button class="btn-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14"/>
+          </svg>
+          With Icon
+        </button>
+      </div>
+    </div>
+
+    <!-- Input Fields -->
+    <div class="glass-card">
+      <h3>Input Fields & Textarea</h3>
+      <div style="display: grid; gap: 16px; max-width: 600px;">
+        <div>
+          <label class="input-label">Text Input</label>
+          <input type="text" class="input-field" placeholder="Enter text here...">
+        </div>
+        <div>
+          <label class="input-label">Email Input</label>
+          <input type="email" class="input-field" placeholder="your@email.com">
+        </div>
+        <div>
+          <label class="input-label">Disabled Input</label>
+          <input type="text" class="input-field" placeholder="Disabled" disabled value="Can't edit this">
+        </div>
+        <div>
+          <label class="input-label">Input with Error</label>
+          <input type="text" class="input-field input-error" placeholder="Enter valid email">
+          <span class="error-message">Please enter a valid email address</span>
+        </div>
+        <div>
+          <label class="input-label">Textarea</label>
+          <textarea class="input-field" placeholder="Enter description..." rows="3"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Select Dropdown -->
+    <div class="glass-card">
+      <h3>Select Dropdown</h3>
+      <div style="max-width: 300px;">
+        <label class="input-label">Choose an option</label>
+        <select class="select-field">
+          <option>Select an option...</option>
+          <option>Option 1</option>
+          <option>Option 2</option>
+          <option>Option 3</option>
+          <option>Option 4</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Checkboxes & Radio -->
+    <div class="glass-card">
+      <h3>Checkboxes & Radio Buttons</h3>
+      <div style="display: grid; gap: 12px;">
+        <div>
+          <label class="checkbox-label">
+            <input type="checkbox" class="checkbox-input" checked>
+            <span class="checkbox-custom"></span>
+            <span>Checkbox checked</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="checkbox-input">
+            <span class="checkbox-custom"></span>
+            <span>Checkbox unchecked</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" class="checkbox-input" disabled>
+            <span class="checkbox-custom"></span>
+            <span>Checkbox disabled</span>
+          </label>
+        </div>
+        <div style="margin-top: 16px;">
+          <label class="radio-label">
+            <input type="radio" name="radio-group" class="radio-input" checked>
+            <span class="radio-custom"></span>
+            <span>Radio option 1</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="radio-group" class="radio-input">
+            <span class="radio-custom"></span>
+            <span>Radio option 2</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="radio-group" class="radio-input" disabled>
+            <span class="radio-custom"></span>
+            <span>Radio disabled</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toggle Switch -->
+    <div class="glass-card">
+      <h3>Toggle Switch</h3>
+      <div style="display: flex; gap: 16px; align-items: center;">
+        <label class="toggle-switch">
+          <input type="checkbox" checked>
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="color: #64748b; font-size: 14px;">Enabled</span>
+        <label class="toggle-switch">
+          <input type="checkbox">
+          <span class="toggle-slider"></span>
+        </label>
+        <span style="color: #64748b; font-size: 14px;">Disabled</span>
+      </div>
+    </div>
+
+    <!-- Custom Dropdown -->
+    <div class="glass-card">
+      <h3>Custom Dropdown</h3>
+      <div style="position: relative; display: inline-block;">
+        <button class="dropdown-trigger btn-secondary">
+          Select Option
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-left: 8px;">
+            <path d="M6 9l6 6 6-6"/>
+          </svg>
+        </button>
+        <div class="dropdown-menu">
+          <div class="dropdown-item">Option 1</div>
+          <div class="dropdown-item">Option 2</div>
+          <div class="dropdown-item">Option 3</div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item">Another Option</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Searchable Dropdown -->
+    <div class="glass-card">
+      <h3>Searchable Dropdown</h3>
+      <div class="search-dropdown" style="max-width: 300px;">
+        <label class="input-label">Search items</label>
+        <input type="text" class="search-dropdown-input input-field" placeholder="Type to search...">
+        <div class="dropdown-menu" style="display: block; position: relative; margin-top: 8px;">
+          <div class="dropdown-item">Apple</div>
+          <div class="dropdown-item">Banana</div>
+          <div class="dropdown-item">Cherry</div>
+          <div class="dropdown-item">Date</div>
+          <div class="dropdown-item">Elderberry</div>
+          <div class="dropdown-item">Fig</div>
+          <div class="dropdown-item">Grape</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="glass-card">
+      <h3>Tabs</h3>
+      <div class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Details</div>
+        <div class="tab">Settings</div>
+        <div class="tab">History</div>
+      </div>
+      <p style="color: #64748b; font-size: 14px;">Tab content goes here...</p>
+    </div>
+
+    <!-- Table -->
+    <div class="glass-card">
+      <h3>Data Table</h3>
+      <div style="overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>John Doe</td>
+              <td>john@example.com</td>
+              <td>Admin</td>
+              <td><span class="badge badge-success">Active</span></td>
+              <td>
+                <button class="btn-icon-small">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Jane Smith</td>
+              <td>jane@example.com</td>
+              <td>User</td>
+              <td><span class="badge badge-warning">Pending</span></td>
+              <td>
+                <button class="btn-icon-small">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+            <tr>
+              <td>Bob Johnson</td>
+              <td>bob@example.com</td>
+              <td>User</td>
+              <td><span class="badge badge-danger">Inactive</span></td>
+              <td>
+                <button class="btn-icon-small">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Badges -->
+    <div class="glass-card">
+      <h3>Badges & Status Indicators</h3>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <span class="badge badge-primary">Primary</span>
+        <span class="badge badge-success">Success</span>
+        <span class="badge badge-warning">Warning</span>
+        <span class="badge badge-danger">Danger</span>
+        <span class="badge badge-info">Info</span>
+        <span class="badge badge-neutral">Neutral</span>
+      </div>
+    </div>
+
+    <!-- Alerts -->
+    <div class="glass-card">
+      <h3>Alerts & Notifications</h3>
+      <div style="display: grid; gap: 12px;">
+        <div class="alert alert-success">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span>Success! Your changes have been saved.</span>
+        </div>
+        <div class="alert alert-warning">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+            <line x1="12" y1="9" x2="12" y2="13"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Warning: Please review your input before proceeding.</span>
+        </div>
+        <div class="alert alert-danger">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="15" y1="9" x2="9" y2="15"/>
+            <line x1="9" y1="9" x2="15" y2="15"/>
+          </svg>
+          <span>Error: Failed to process your request.</span>
+        </div>
+        <div class="alert alert-info">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="16" x2="12" y2="12"/>
+            <line x1="12" y1="8" x2="12.01" y2="8"/>
+          </svg>
+          <span>Info: New features are now available in your dashboard.</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Progress Bars -->
+    <div class="glass-card">
+      <h3>Progress Bars</h3>
+      <div style="display: grid; gap: 16px; max-width: 500px;">
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 14px; color: #64748b;">Overall Progress</span>
+            <span style="font-size: 14px; color: #1e40af; font-weight: 600;">75%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 75%;"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 14px; color: #64748b;">Upload Status</span>
+            <span style="font-size: 14px; color: #10b981; font-weight: 600;">45%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 45%; background: linear-gradient(90deg, #10b981 0%, #059669 100%);"></div>
+          </div>
+        </div>
+        <div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+            <span style="font-size: 14px; color: #64748b;">Tasks Completed</span>
+            <span style="font-size: 14px; color: #f59e0b; font-weight: 600;">90%</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 90%; background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading Spinners -->
+    <div class="glass-card">
+      <h3>Loading Spinners</h3>
+      <div style="display: flex; gap: 24px; align-items: center;">
+        <div class="spinner"></div>
+        <div class="spinner" style="border-color: #10b981 rgba(16, 185, 129, 0.2) rgba(16, 185, 129, 0.2) rgba(16, 185, 129, 0.2); border-top-color: #10b981;"></div>
+        <div class="spinner" style="border-color: #f59e0b rgba(245, 158, 11, 0.2) rgba(245, 158, 11, 0.2) rgba(245, 158, 11, 0.2); border-top-color: #f59e0b;"></div>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="glass-card">
+      <h3>Pagination</h3>
+      <div class="pagination">
+        <button class="page-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+        </button>
+        <button class="page-btn">1</button>
+        <button class="page-btn active">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">4</button>
+        <button class="page-btn">5</button>
+        <button class="page-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Cards with Hover -->
+    <div class="glass-card">
+      <h3>Interactive Cards</h3>
+      <div class="grid-3">
+        <div class="hover-card">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2" style="margin-bottom: 12px;">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+          <h4 style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Fast Performance</h4>
+          <p style="font-size: 14px; color: #64748b;">Lightning-fast load times and smooth interactions.</p>
+        </div>
+        <div class="hover-card">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" style="margin-bottom: 12px;">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          <h4 style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Secure</h4>
+          <p style="font-size: 14px; color: #64748b;">Industry-leading security measures to protect your data.</p>
+        </div>
+        <div class="hover-card">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" style="margin-bottom: 12px;">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+          <h4 style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">Affordable</h4>
+          <p style="font-size: 14px; color: #64748b;">Competitive pricing with no hidden fees.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tooltips -->
+    <div class="glass-card">
+      <h3>Tooltips</h3>
+      <div style="display: flex; gap: 16px; align-items: center;">
+        <div class="tooltip-container">
+          <button class="btn-secondary">Hover me</button>
+          <span class="tooltip-text">This is a tooltip!</span>
+        </div>
+        <div class="tooltip-container">
+          <button class="btn-icon-small">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="16" x2="12" y2="12"/>
+              <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+          </button>
+          <span class="tooltip-text">Information tooltip</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Dropdown functionality
+    document.querySelectorAll('.dropdown-trigger').forEach(trigger => {
+      trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = trigger.nextElementSibling;
+        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+      });
+    });
+
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        if (!menu.closest('.search-dropdown')) {
+          menu.style.display = 'none';
+        }
+      });
+    });
+
+    // Searchable dropdown
+    document.querySelectorAll('.search-dropdown-input').forEach(input => {
+      input.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase();
+        const items = e.target.closest('.search-dropdown').querySelectorAll('.dropdown-item');
+        items.forEach(item => {
+          const text = item.textContent.toLowerCase();
+          item.style.display = text.includes(searchTerm) ? 'block' : 'none';
+        });
+      });
+    });
+
+    // Toggle switch
+    document.querySelectorAll('.toggle-switch input').forEach(input => {
+      input.addEventListener('change', (e) => {
+        console.log('Toggle:', e.target.checked);
+      });
+    });
+
+    // Tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      });
+    });
+
+    // Pagination
+    document.querySelectorAll('.page-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (!btn.innerHTML.includes('svg')) {
+          document.querySelectorAll('.page-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>
