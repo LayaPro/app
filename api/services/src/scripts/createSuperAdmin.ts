@@ -8,6 +8,7 @@ import { nanoid } from 'nanoid';
 import User from '../models/user';
 import Role from '../models/role';
 import Tenant from '../models/tenant';
+import { ensureMainBucketExists } from '../utils/s3Bucket';
 
 const MONGO_URI = process.env.MONGO_URI || '';
 
@@ -52,6 +53,18 @@ async function createSuperAdmin() {
     let tenant = await Tenant.findOne({ isInternal: true });
     if (!tenant) {
       console.log('Creating internal tenant for super admin...');
+      
+      // Ensure S3 bucket exists before creating tenant
+      console.log('Ensuring S3 bucket exists...');
+      try {
+        await ensureMainBucketExists();
+        console.log('✅ S3 bucket verified');
+      } catch (s3Error: any) {
+        console.error('❌ Failed to initialize S3 bucket:', s3Error.message);
+        console.error('Please check your AWS credentials in .env file');
+        process.exit(1);
+      }
+      
       tenant = new Tenant({
         tenantId: nanoid(12),
         tenantFirstName: 'Super',

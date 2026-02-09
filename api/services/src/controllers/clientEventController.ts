@@ -37,7 +37,7 @@ const sanitizePdfName = (fileName: string) => {
 
 /**
  * Check if all events in a project are in DELIVERY status
- * If yes, update project status to COMPLETED
+ * If yes, update project status to Completed
  */
 const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) => {
   try {
@@ -73,28 +73,20 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
     logger.info('All events delivery check result', { projectId, tenantId, allEventsDelivered });
 
     if (allEventsDelivered) {
-      logger.info('All events delivered, updating project to Delivered', { projectId, tenantId });
+      logger.info('All events delivered, updating project status to Completed', { projectId, tenantId });
       
-      // Get Delivered project status
-      const completedStatus = await ProjectDeliveryStatus.findOne({
+      // Update project status to Completed (hardcoded status)
+      const result = await Project.findOneAndUpdate(
+        { projectId, tenantId },
+        { $set: { status: 'Completed' } },
+        { new: true }
+      );
+      
+      logger.info('Project status updated to Completed', { 
+        projectId, 
         tenantId,
-        statusCode: 'Delivered'
+        newStatus: result?.status
       });
-
-      if (completedStatus) {
-        const result = await Project.findOneAndUpdate(
-          { projectId, tenantId },
-          { $set: { projectDeliveryStatusId: completedStatus.statusId } },
-          { new: true }
-        );
-        logger.info('Project status updated to Delivered', { 
-          projectId, 
-          tenantId,
-          newStatus: result?.projectDeliveryStatusId 
-        });
-      } else {
-        logger.warn('Delivered project status not found in database', { tenantId });
-      }
     } else {
       logger.info('Not all events are delivered yet', { projectId, tenantId });
     }

@@ -67,6 +67,7 @@ export interface IProposal extends Document {
   sentAt?: Date;
   acceptedAt?: Date;
   rejectedAt?: Date;
+  firstViewedAt?: Date;
   
   createdAt: Date;
   updatedAt: Date;
@@ -143,6 +144,7 @@ const ProposalSchema = new Schema<IProposal>(
     sentAt: { type: Date },
     acceptedAt: { type: Date },
     rejectedAt: { type: Date },
+    firstViewedAt: { type: Date },
     
     createdBy: { type: String, required: true },
     updatedBy: { type: String }

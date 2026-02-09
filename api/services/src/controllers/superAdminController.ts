@@ -10,7 +10,6 @@ import { TenantSubscription } from '../models/tenantSubscription';
 import { createTenantWithSubscription } from '../services/tenantService';
 import { nanoid } from 'nanoid';
 import bcrypt from 'bcrypt';
-import { ensureMainBucketExists } from '../utils/s3Bucket';
 import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
 
@@ -150,21 +149,6 @@ export const createTenant = async (req: Request, res: Response) => {
         hasEmail: !!email
       });
       return res.status(400).json({ message: 'Tenant name and email are required' });
-    }
-
-    // Ensure main S3 bucket exists (creates if first tenant)
-    logger.debug(`[${requestId}] Ensuring S3 bucket exists`);
-    try {
-      await ensureMainBucketExists();
-      logger.debug(`[${requestId}] S3 bucket verified`);
-    } catch (s3Error: any) {
-      logger.error(`[${requestId}] S3 bucket initialization failed`, {
-        error: s3Error.message,
-        stack: s3Error.stack
-      });
-      return res.status(500).json({ 
-        message: 'Failed to initialize storage bucket. Please check AWS configuration.' 
-      });
     }
 
     // Check if tenant with same email exists

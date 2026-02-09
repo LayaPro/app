@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import { SubscriptionPlan } from '../models/subscriptionPlan';
 import { TenantSubscription } from '../models/tenantSubscription';
 import { createModuleLogger } from '../utils/logger';
+import { ensureMainBucketExists } from '../utils/s3Bucket';
 
 const logger = createModuleLogger('TenantService');
 
@@ -39,6 +40,22 @@ export const createTenantWithSubscription = async (params: CreateTenantWithSubsc
   } = params;
 
   const Tenant = require('../models/tenant').default;
+  
+  // Ensure main S3 bucket exists BEFORE starting transaction
+  // This is done outside transaction because S3 operations cannot be rolled back
+  logger.debug('Ensuring S3 bucket exists before tenant creation', { tenantId });
+  try {
+    await ensureMainBucketExists();
+    logger.debug('S3 bucket verified', { tenantId });
+  } catch (s3Error: any) {
+    logger.error('S3 bucket initialization failed', {
+      tenantId,
+      error: s3Error.message,
+      stack: s3Error.stack
+    });
+    throw new Error('Failed to initialize storage bucket. Please check AWS configuration.');
+  }
+  
   const session = await mongoose.startSession();
 
   try {

@@ -28,6 +28,8 @@ export const NOTIFICATION_TYPES = {
   ALBUM_PDF_UPLOADED: 'ALBUM_PDF_UPLOADED',
   CUSTOMER_ALBUM_REVIEW_STARTED: 'CUSTOMER_ALBUM_REVIEW_STARTED',
   ALBUM_APPROVED_BY_CUSTOMER: 'ALBUM_APPROVED_BY_CUSTOMER',
+  PROPOSAL_VIEWED: 'PROPOSAL_VIEWED',
+  PROPOSAL_ACCEPTED: 'PROPOSAL_ACCEPTED',
 } as const;
 
 export class NotificationUtils {
@@ -920,6 +922,102 @@ export class NotificationUtils {
     } catch (error: any) {
       logger.error('Error sending album approval notification', {
         tenantId,
+        error: error.message
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Notify admin when customer views proposal for the first time
+   */
+  static async notifyProposalViewed(
+    tenantId: string,
+    proposalId: string,
+    projectName: string,
+    clientName: string
+  ): Promise<void> {
+    try {
+      const admins = await this.getAdminUsers(tenantId);
+
+      if (admins.length === 0) {
+        logger.warn('No admin users found for proposal viewed notification', { tenantId });
+        return;
+      }
+
+      const userIds = admins.map(admin => admin.userId);
+
+      await NotificationService.create({
+        userId: userIds,
+        tenantId,
+        type: NOTIFICATION_TYPES.PROPOSAL_VIEWED,
+        title: 'Customer Viewed Proposal',
+        message: `${clientName} has viewed the proposal for ${projectName}`,
+        data: {
+          proposalId,
+          projectName,
+          clientName,
+        },
+        actionUrl: `/proposals`,
+      });
+
+      logger.info('Sent proposal viewed notification to admins', {
+        tenantId,
+        proposalId,
+        adminCount: admins.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending proposal viewed notification', {
+        tenantId,
+        proposalId,
+        error: error.message
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Notify admin when customer accepts proposal
+   */
+  static async notifyProposalAccepted(
+    tenantId: string,
+    proposalId: string,
+    projectName: string,
+    clientName: string
+  ): Promise<void> {
+    try {
+      const admins = await this.getAdminUsers(tenantId);
+
+      if (admins.length === 0) {
+        logger.warn('No admin users found for proposal accepted notification', { tenantId });
+        return;
+      }
+
+      const userIds = admins.map(admin => admin.userId);
+
+      await NotificationService.create({
+        userId: userIds,
+        tenantId,
+        type: NOTIFICATION_TYPES.PROPOSAL_ACCEPTED,
+        title: 'Proposal Accepted! 🎉',
+        message: `${clientName} has accepted the proposal for ${projectName}`,
+        data: {
+          proposalId,
+          projectName,
+          clientName,
+        },
+        actionUrl: `/proposals`,
+      });
+
+      logger.info('Sent proposal accepted notification to admins', {
+        tenantId,
+        proposalId,
+        adminCount: admins.length
+      });
+    } catch (error: any) {
+      logger.error('Error sending proposal accepted notification', {
+        tenantId,
+        proposalId,
         error: error.message
       });
       throw error;

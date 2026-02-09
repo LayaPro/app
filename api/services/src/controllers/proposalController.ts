@@ -340,6 +340,7 @@ export const updateProposal = async (req: AuthRequest, res: Response) => {
     if (validUntil) proposal.validUntil = new Date(validUntil);
     if (status) {
       changes.status = { before: proposal.status, after: status };
+      const oldStatus = proposal.status;
       proposal.status = status;
       
       // Update status timestamps
@@ -347,6 +348,25 @@ export const updateProposal = async (req: AuthRequest, res: Response) => {
         proposal.sentAt = new Date();
       } else if (status === 'accepted' && !proposal.acceptedAt) {
         proposal.acceptedAt = new Date();
+        
+        // Send notification to admins when proposal is accepted
+        try {
+          await NotificationUtils.notifyProposalAccepted(
+            tenantId!,
+            id,
+            proposal.projectName,
+            proposal.clientName
+          );
+          logger.info(`[${requestId}] Sent proposal accepted notification`, { 
+            tenantId,
+            proposalId: id
+          });
+        } catch (notifError: any) {
+          logger.error(`[${requestId}] Failed to send proposal accepted notification`, {
+            error: notifError.message
+          });
+          // Don't fail the request if notification fails
+        }
       } else if (status === 'rejected' && !proposal.rejectedAt) {
         proposal.rejectedAt = new Date();
       }
@@ -484,6 +504,32 @@ export const verifyProposalPin = async (req: AuthRequest, res: Response) => {
         accessCode 
       });
       return res.status(401).json({ message: 'Invalid PIN' });
+    }
+
+    // Track first view and send notification to admin
+    const isFirstView = !proposal.firstViewedAt;
+    if (isFirstView) {
+      proposal.firstViewedAt = new Date();
+      await proposal.save();
+      
+      // Send notification to admins
+      try {
+        await NotificationUtils.notifyProposalViewed(
+          proposal.tenantId,
+          proposal.proposalId,
+          proposal.projectName,
+          proposal.clientName
+        );
+        logger.info(`[${requestId}] Sent proposal viewed notification`, { 
+          tenantId: proposal.tenantId,
+          proposalId: proposal.proposalId
+        });
+      } catch (notifError: any) {
+        logger.error(`[${requestId}] Failed to send proposal viewed notification`, {
+          error: notifError.message
+        });
+        // Don't fail the request if notification fails
+      }
     }
 
     // Fetch organization data
