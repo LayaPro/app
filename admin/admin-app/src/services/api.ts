@@ -178,6 +178,28 @@ export const userApi = {
     });
     return handleResponse(response);
   },
+
+  updatePassword: async (data: { currentPassword: string; newPassword: string }) => {
+    const response = await fetch(`${API_BASE_URL}/update-password`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  getCurrentUser: async () => {
+    const response = await fetch(`${API_BASE_URL}/me`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
 };
 
 // Role API
@@ -1158,6 +1180,23 @@ export const searchApi = {
     if (options?.type && options.type !== 'all') params.append('type', options.type);
     
     const response = await fetch(`${API_BASE_URL}/search?${params.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
+
+// Audit Trail API
+export const auditApi = {
+  getAll: async (options?: { page?: number; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.page) params.append('page', options.page.toString());
+    if (options?.limit) params.append('limit', options.limit.toString());
+    
+    const response = await fetch(`${API_BASE_URL}/audit-logs?${params.toString()}`, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json',

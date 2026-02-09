@@ -41,6 +41,7 @@ import * as superAdminController from './controllers/superAdminController';
 import * as storageController from './controllers/storageController';
 import * as storageBreakdownController from './controllers/storageBreakdownController';
 import { NotificationController } from './controllers/notificationController';
+import auditLogController from './controllers/auditLogController';
 import { authenticate } from './middleware/auth';
 import requireAdmin from './middleware/requireAdmin';
 import { requireSuperAdmin } from './middleware/requireSuperAdmin';
@@ -303,6 +304,9 @@ app.post('/notifications/:id/read', authenticate, NotificationController.markAsR
 app.post('/notifications/read-all', authenticate, NotificationController.markAllAsRead);
 app.delete('/notifications/:id', authenticate, NotificationController.deleteNotification);
 app.post('/notifications/test', authenticate, NotificationController.createTestNotification);
+
+// ---------- Audit Log routes ----------
+app.get('/audit-logs', authenticate, auditLogController.getAll);
 
 // ---------- Super Admin routes ----------
 app.get('/super-admin/tenants', authenticate, requireSuperAdmin, superAdminController.getAllTenants);

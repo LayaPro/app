@@ -22,6 +22,7 @@ import Finances from './pages/Finances/index.js';
 import Calendar from './pages/Calendar/index.js';
 import Statistics from './pages/Statistics/index.js';
 import Settings from './pages/Settings/index.js';
+import AuditTrail from './pages/AuditTrail/index.js';
 import SetupPassword from './pages/SetupPassword/SetupPassword.js';
 
 // Access Control pages
@@ -197,6 +198,7 @@ function App() {
           <Route path="/search" element={<SearchResults />} />
           
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
+          <Route path={ROUTES.AUDIT_TRAIL} element={<AuditTrail />} />
           
           {/* Catch-all: redirect to dashboard */}
           <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />

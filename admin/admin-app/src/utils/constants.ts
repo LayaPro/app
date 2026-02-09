@@ -31,6 +31,7 @@ export const ROUTES = {
   ORGANIZATION: '/organization',
   
   SETTINGS: '/settings',
+  AUDIT_TRAIL: '/audit-trail',
 } as const;
 
 export const ROLES = {
