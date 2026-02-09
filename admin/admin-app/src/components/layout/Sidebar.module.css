@@ -80,14 +80,15 @@
 }
 
 .navLink:hover {
-  background-color: var(--bg-secondary);
+  background-color: rgba(226, 232, 240, 0.3);
   transform: translateX(4px);
 }
 
 .navLink.active {
-  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+  background: rgba(30, 64, 175, 0.15);
+  color: #1e40af;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.15);
+  font-weight: 600;
 }
 
 .collapsed .navLink {

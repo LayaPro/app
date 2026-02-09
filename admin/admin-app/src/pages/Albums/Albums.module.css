@@ -255,11 +255,13 @@
 
 /* Card Styles */
 .card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 1rem;
   overflow: visible;
   position: relative;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   animation: cardAppear 0.25s ease-out backwards;
 }
 
@@ -317,8 +319,8 @@
 
 .menuButton {
   padding: 0.5rem;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -328,8 +330,8 @@
 }
 
 .menuButton:hover {
-  background: var(--bg-secondary);
-  box-shadow: 0 2px 8px var(--shadow-primary, rgba(0, 0, 0, 0.1));
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .menuButton svg {
@@ -342,10 +344,11 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   right: 0;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-primary);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 0.75rem;
-  box-shadow: 0 4px 12px var(--shadow-primary, rgba(0, 0, 0, 0.1));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   min-width: 14rem;
   z-index: 100;
   overflow: hidden;
@@ -485,10 +488,12 @@
 /* Collapsible Upload Section */
 .uploadContainer {
   margin-bottom: 1.5rem;
-  background: var(--bg-primary);
-  border: 2px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 2px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transition: all 0.5s ease;
 }
 
@@ -1159,10 +1164,11 @@
   position: absolute;
   top: calc(100% + 0.5rem);
   right: 0;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 0.5rem;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   z-index: var(--z-dropdown);
   min-width: 200px;
   overflow: hidden;
@@ -1231,11 +1237,13 @@
 
 /* Gallery Card */
 .galleryCard {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 1rem;
   padding: 1.5rem;
   margin-bottom: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
 }
 
 /* Divider */

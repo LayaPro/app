@@ -90,16 +90,18 @@
 .videoCard {
   display: flex;
   flex-direction: column;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transition: all 0.2s ease;
 }
 
 .videoCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
   border-color: rgba(99, 102, 241, 0.3);
 }
 
@@ -178,8 +180,8 @@
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 4px;
   color: #6b7280;
   text-decoration: none;
@@ -194,7 +196,7 @@
 }
 
 .videoLink:hover {
-  background: #f9fafb;
+  background: rgba(255, 255, 255, 0.8);
   border-color: rgba(99, 102, 241, 0.3);
   color: #6366f1;
 }
@@ -206,8 +208,8 @@
 
 .removeButton {
   padding: 8px;
-  background: white;
-  border: 1px solid #e5e7eb;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 4px;
   color: #ef4444;
   cursor: pointer;

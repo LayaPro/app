@@ -13,30 +13,32 @@
   padding: 1rem;
   border-radius: 0.5rem;
   border-left: 4px solid;
-  background: white;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.5);
 }
 
 .eventCard:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 .eventCard.green {
   border-left-color: #10b981;
-  background: #f0fdf4;
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .eventCard.blue {
   border-left-color: #3b82f6;
-  background: #eff6ff;
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .eventCard.purple {
   border-left-color: #8b5cf6;
-  background: #f5f3ff;
+  background: rgba(255, 255, 255, 0.75);
 }
 
 .eventTime {

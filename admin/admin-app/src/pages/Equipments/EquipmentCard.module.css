@@ -27,15 +27,17 @@
 
 /* Card Styles */
 .card {
-  background-color: var(--bg-primary);
-  border: 1px solid var(--border-color);
+  background-color: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
   overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
 }
 
 .card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 .cardHeader {
@@ -44,14 +46,14 @@
   align-items: center;
   justify-content: space-between;
   padding: 20px 24px;
-  background-color: var(--bg-primary-neutral);
+  background-color: rgba(255, 255, 255, 0.5);
   border: none;
   cursor: pointer;
   transition: background-color 0.2s ease;
 }
 
 .cardHeader:hover {
-  background-color: var(--bg-hover);
+  background-color: rgba(255, 255, 255, 0.6);
 }
 
 .cardHeaderContent {

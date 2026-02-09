@@ -303,28 +303,26 @@
 
 .eventCard {
   padding: 0.75rem;
-  background: linear-gradient(to bottom right, 
-    color-mix(in srgb, var(--event-color, var(--color-primary)) 10%, var(--bg-primary) 90%),
-    color-mix(in srgb, var(--event-color, var(--color-primary)) 20%, var(--bg-primary) 80%)
-  );
-  border-radius: 0 0.75rem 0.75rem 0;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-left: 3px solid;
+  border-radius: 0 0.75rem 0.75rem 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transition: box-shadow 0.2s ease;
 }
 
 .eventCard:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 [data-theme="dark"] .eventCard {
-  background: linear-gradient(to bottom right,
-    color-mix(in srgb, var(--event-color, var(--color-primary)) 20%, transparent),
-    color-mix(in srgb, var(--event-color, var(--color-primary)) 10%, transparent)
-  );
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 [data-theme="dark"] .eventCard:hover {
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
 }
 
 .eventCardHeader {
@@ -510,14 +508,17 @@
   align-items: center;
   justify-content: space-between;
   padding: 1rem;
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
   transition: all 0.2s;
 }
 
 .teamMemberRow:hover {
-  background: var(--bg-primary);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
 }
 
 .teamMemberLeft {
