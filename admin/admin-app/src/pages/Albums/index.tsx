@@ -3209,6 +3209,24 @@ const Albums = () => {
                         alt={eventTypes.get(eventItem.eventId)?.eventDesc || 'Event'}
                         onLoad={(e) => e.currentTarget.classList.add('loaded')}
                       />
+                      {/* Status badge overlay on image */}
+                      {eventItem.eventDeliveryStatusId && (() => {
+                        const status = eventDeliveryStatuses.get(eventItem.eventDeliveryStatusId);
+                        if (!status) return null;
+                        return (
+                          <div style={{ 
+                            position: 'absolute', 
+                            top: '12px', 
+                            right: '12px',
+                            zIndex: 1
+                          }}>
+                            <StatusBadge
+                              label={status.statusDescription}
+                              aria-label={`Status: ${status.statusDescription}`}
+                            />
+                          </div>
+                        );
+                      })()}
                     </div>
 
                     <div className={styles.cardContent}>
@@ -3242,18 +3260,6 @@ const Albums = () => {
 
                     <div className={styles.cardTitle}>
                       {eventTypes.get(eventItem.eventId)?.eventDesc || 'Untitled Event'}
-                      {/* Status badge - Show event delivery status */}
-                      {eventItem.eventDeliveryStatusId && (() => {
-                        const status = eventDeliveryStatuses.get(eventItem.eventDeliveryStatusId);
-                        if (!status) return null;
-                        return (
-                          <StatusBadge
-                            label={status.statusDescription}
-                            className={styles.badgeInlineCardTitle}
-                            aria-label={`Status: ${status.statusDescription}`}
-                          />
-                        );
-                      })()}
                     </div>
 
                     <EventDateTime fromDatetime={eventItem.fromDatetime} toDatetime={eventItem.toDatetime} />
