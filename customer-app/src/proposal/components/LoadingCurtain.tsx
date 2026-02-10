@@ -14,7 +14,7 @@ export const LoadingCurtain = () => {
                 
                 <h2 className="loading-title">
                     <span className="loading-text-1">Crafting Your Experience</span>
-                    <span className="loading-text-2">Creating Your Proposal</span>
+                    <span className="loading-text-2">Preparing Something Special</span>
                 </h2>
                 
                 {/* <div className="loading-dots">

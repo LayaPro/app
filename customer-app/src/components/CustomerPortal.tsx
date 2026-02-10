@@ -43,6 +43,7 @@ export const CustomerPortal = () => {
   const [error, setError] = useState('');
   const [notFound, setNotFound] = useState(false);
   const [portalData, setPortalData] = useState<PortalData | null>(null);
+  const [loadingStartTime, setLoadingStartTime] = useState<number>(Date.now());
 
   // Get access code from URL path - anything after the domain
   const getAccessCodeFromUrl = () => {
@@ -64,9 +65,15 @@ export const CustomerPortal = () => {
   // Check for existing auth cookie on mount
   useEffect(() => {
     const checkAuth = async () => {
+      const startTime = Date.now();
+      setLoadingStartTime(startTime);
+
       if (!accessCode) {
         setError('Invalid portal link');
-        setIsLoading(false);
+        // Ensure minimum loading time
+        const elapsed = Date.now() - startTime;
+        const remaining = Math.max(0, 1500 - elapsed);
+        setTimeout(() => setIsLoading(false), remaining);
         return;
       }
 
@@ -95,7 +102,11 @@ export const CustomerPortal = () => {
           }
         }
       }
-      setIsLoading(false);
+      
+      // Ensure minimum loading time
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1500 - elapsed);
+      setTimeout(() => setIsLoading(false), remaining);
     };
 
     checkAuth();
@@ -107,6 +118,7 @@ export const CustomerPortal = () => {
       return;
     }
 
+    const startTime = Date.now();
     setIsLoading(true);
     setError('');
 
@@ -122,7 +134,11 @@ export const CustomerPortal = () => {
       setCookie(cookieName, pin, 7);
       
       setIsAuthenticated(true);
-      setIsLoading(false);
+      
+      // Ensure minimum loading time
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1500 - elapsed);
+      setTimeout(() => setIsLoading(false), remaining);
     } catch (err: any) {
       // Check if it's a 404 (portal not found)
       const status = err.response?.status;
@@ -134,7 +150,11 @@ export const CustomerPortal = () => {
         setError(message || 'Invalid PIN. Please try again.');
       }
       customerPortalApi.clearPin();
-      setIsLoading(false);
+      
+      // Ensure minimum loading time even on error
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 1500 - elapsed);
+      setTimeout(() => setIsLoading(false), remaining);
     }
   };
 

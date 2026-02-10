@@ -43,12 +43,24 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
   const [showEventMenu, setShowEventMenu] = useState(false);
   const [showOptionsMenu, setShowOptionsMenu] = useState(false);
   const [coverLoaded, setCoverLoaded] = useState(false);
-  const [columnCount, setColumnCount] = useState(5); // Dynamic column count
-  const [columns, setColumns] = useState<AlbumImage[][]>(() => Array(5).fill(null).map(() => []));
+  const [columnCount, setColumnCount] = useState(() => {
+    if (typeof window === 'undefined') return 5;
+    const width = window.innerWidth;
+    if (width <= 640) return 2;
+    if (width <= 1024) return 3;
+    return 5;
+  });
+  const [columns, setColumns] = useState<AlbumImage[][]>(() => {
+    const initialCount = typeof window === 'undefined' ? 5 : 
+      window.innerWidth <= 640 ? 2 :
+      window.innerWidth <= 1024 ? 3 : 5;
+    return Array(initialCount).fill(null).map(() => []);
+  });
   const [loadedCount, setLoadedCount] = useState(30);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true); // Track initial page load
   const [hasScrolled, setHasScrolled] = useState(false); // Track if user has scrolled
+  const [isLoadingMore, setIsLoadingMore] = useState(false); // Track if Load More was clicked
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [showSwipeHint, setShowSwipeHint] = useState(false);
@@ -91,6 +103,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
   const optionsMenuRef = useRef<HTMLDivElement>(null);
   const eventHeadingRef = useRef<HTMLDivElement>(null);
   const menuJustClosedRef = useRef(false);
+  const lastScrollYRef = useRef(0);
 
   // Scroll to event heading when event changes
   const scrollToEventHeading = () => {
@@ -189,6 +202,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
   // Reset loaded count and columns when event changes
   useEffect(() => {
     setLoadedCount(30);
+    setIsLoadingMore(false); // Reset loading state
     setColumns(Array(columnCount).fill(null).map(() => []));
     
     // Only scroll to event heading if this is not the initial load
@@ -255,11 +269,12 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
 
   // Load more images
   const loadMoreImages = () => {
+    setIsLoadingMore(true); // Hide button immediately
     const newCount = loadedCount + imagesPerLoad;
     setLoadedCount(newCount);
   };
 
-  const hasMore = loadedCount < currentEventImages.length;
+  const hasMore = loadedCount < currentEventImages.length && !isLoadingMore;
 
   // Toggle like (client selection)
   const toggleLike = async (imageId: string, e: React.MouseEvent) => {
@@ -317,6 +332,14 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
       if (scrollY > 0) {
         setHasScrolled(true);
       }
+      
+      // Close any open menus when user is actively scrolling
+      const scrollDiff = Math.abs(scrollY - lastScrollYRef.current);
+      if (scrollDiff > 5) {
+        setShowEventMenu(false);
+        setShowOptionsMenu(false);
+      }
+      lastScrollYRef.current = scrollY;
       
       // Show dock after scrolling just 100px for early and consistent appearance
       const scrolled = scrollY > 100;
@@ -482,16 +505,6 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
             )}
           </div>
 
-          {/* Selected Images Count */}
-          <div className="gallery-dock-item">
-            <button className="gallery-dock-button" data-tooltip={`${currentEventLikedCount} Selected`}>
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="#E74C3C" stroke="#E74C3C" strokeWidth="2">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-              </svg>
-              {currentEventLikedCount > 0 && <span className="gallery-dock-badge">{currentEventLikedCount}</span>}
-            </button>
-          </div>
-
           {/* Download All */}
           <div className="gallery-dock-item">
             <button className="gallery-dock-button" data-tooltip="Download Selected">
@@ -529,10 +542,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
             </button>
           </div>
 
-          {/* Divider */}
-          <div className="gallery-dock-divider"></div>
-
-          {/* Options Menu */}
+          {/* Options Menu - Moved here next to Album */}
           <div className="gallery-dock-item" ref={optionsMenuRef}>
             <button 
               className="gallery-dock-button" 
@@ -607,6 +617,19 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
                 </button>
               </div>
             )}
+          </div>
+
+          {/* Divider */}
+          <div className="gallery-dock-divider"></div>
+
+          {/* Selected Images Count - Moved to end */}
+          <div className="gallery-dock-item">
+            <button className="gallery-dock-button" data-tooltip={`${currentEventLikedCount} Selected`}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="#E74C3C" stroke="#E74C3C" strokeWidth="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+              {currentEventLikedCount > 0 && <span className="gallery-dock-badge">{currentEventLikedCount}</span>}
+            </button>
           </div>
         </div>
         </div>
@@ -773,13 +796,14 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
       )}
 
       {/* Load More Button */}
-      {currentEventImages.length > 0 && (
+      {currentEventImages.length > 0 && !isLoadingMore && (
         <div style={{
-          display: 'flex',
+          display: hasMore ? 'flex' : 'none',
           flexDirection: 'column',
           alignItems: 'center',
           padding: '60px 20px 80px',
-          gap: '20px'
+          gap: '20px',
+          background: 'transparent'
         }}>
           <button
             onClick={loadMoreImages}

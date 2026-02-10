@@ -347,7 +347,7 @@
 
 .gallery-event-option:hover {
   background: rgba(92, 76, 68, 0.9);
-  color: #FFFFFF;
+  color: #E6C589;
   transform: translateX(4px);
 }
 
@@ -359,7 +359,7 @@
 
 .gallery-event-option.active:hover {
   background: rgba(92, 76, 68, 0.9);
-  color: #FFFFFF;
+  color: #E6C589;
   transform: translateX(4px);
 }
 
@@ -828,8 +828,8 @@
 }
 
 .gallery-action-btn {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: none;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.95);
@@ -1316,7 +1316,7 @@
 /* Footer */
 .gallery-footer {
   text-align: center;
-  padding: 80px 20px 60px;
+  padding: 80px 20px 120px;
   max-width: 1200px;
   margin: 0 auto;
   background: transparent;
@@ -1357,7 +1357,7 @@
 
 @media (max-width: 768px) {
   .gallery-footer {
-    padding: 60px 20px 40px;
+    padding: 60px 20px 100px;
   }
   
   .gallery-footer-text {
