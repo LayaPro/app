@@ -247,18 +247,18 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
 
       const loadedImages = await Promise.all(loadPromises);
 
-      // Distribute to columns using shortest-column algorithm
+      // Distribute to columns balancing heights while maintaining row-wise order
       const newCols: AlbumImage[][] = Array(columnCount).fill(null).map(() => []);
-      const GAP_HEIGHT = 8;
       const columnHeights = Array(columnCount).fill(0);
 
       loadedImages.forEach(({ image, width, height, index }) => {
-        const shortestCol = columnHeights.indexOf(Math.min(...columnHeights));
         const aspectRatio = width > 0 ? height / width : 1;
         const imageWithAspect = { ...image, _aspectRatio: aspectRatio } as any;
         
-        newCols[shortestCol].push(imageWithAspect);
-        columnHeights[shortestCol] += aspectRatio + GAP_HEIGHT / 100;
+        // Find the shortest column to maintain balanced heights
+        const shortestColIndex = columnHeights.indexOf(Math.min(...columnHeights));
+        newCols[shortestColIndex].push(imageWithAspect);
+        columnHeights[shortestColIndex] += aspectRatio;
       });
 
       setColumns(newCols);
@@ -313,14 +313,140 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
   };
 
   // Download image
-  const downloadImage = (image: AlbumImage, e: React.MouseEvent) => {
+  const downloadImage = async (image: AlbumImage, e: React.MouseEvent) => {
     e.stopPropagation();
-    const link = document.createElement('a');
-    link.href = image.originalUrl || image.compressedUrl;
-    link.download = `photo-${image.imageId}.jpg`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    
+    try {
+      const imageUrl = image.originalUrl || image.compressedUrl;
+      
+      // Extract filename from URL
+      const urlParts = imageUrl.split('/');
+      const filenameWithParams = urlParts[urlParts.length - 1];
+      const filename = filenameWithParams.split('?')[0]; // Remove query parameters
+      const decodedFilename = decodeURIComponent(filename) || `photo-${image.imageId}.jpg`;
+      
+      // Fetch image as blob to handle CORS
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = decodedFilename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Clean up blob URL
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  };
+
+  // Download all liked images to a user-selected folder
+  const downloadSelectedImages = async () => {
+    const likedImagesArray = currentEventImages.filter(img => likedImages.has(img.imageId));
+    
+    if (likedImagesArray.length === 0) {
+      setToast({ message: 'Please select images by clicking the heart icon first', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+      return;
+    }
+
+    try {
+      // Try to use File System Access API (Chrome/Edge)
+      if (typeof (window as any).showDirectoryPicker === 'function') {
+        try {
+          const directoryHandle = await (window as any).showDirectoryPicker();
+          
+          setToast({ message: `Downloading ${likedImagesArray.length} images...`, type: 'success' });
+
+          // Download each image
+          let successCount = 0;
+          for (const image of likedImagesArray) {
+            try {
+              const imageUrl = image.originalUrl || image.compressedUrl;
+              
+              // Extract filename
+              const urlParts = imageUrl.split('/');
+              const filenameWithParams = urlParts[urlParts.length - 1];
+              const filename = filenameWithParams.split('?')[0];
+              const decodedFilename = decodeURIComponent(filename) || `photo-${image.imageId}.jpg`;
+              
+              // Fetch image
+              const response = await fetch(imageUrl);
+              const blob = await response.blob();
+              
+              // Create file in selected directory
+              const fileHandle = await directoryHandle.getFileHandle(decodedFilename, { create: true });
+              const writable = await fileHandle.createWritable();
+              await writable.write(blob);
+              await writable.close();
+              
+              successCount++;
+            } catch (error) {
+              console.error(`Failed to download ${image.imageId}:`, error);
+            }
+          }
+          
+          setToast({ message: `Successfully downloaded ${successCount} of ${likedImagesArray.length} images`, type: 'success' });
+          setTimeout(() => setToast(null), 4000);
+          return;
+        } catch (error: any) {
+          if (error.name === 'AbortError') {
+            // User cancelled the folder selection
+            return;
+          }
+          console.error('Folder picker failed, falling back to regular download:', error);
+          // Fall through to fallback
+        }
+      }
+      
+      // Fallback for Safari/Firefox or if folder picker failed - download files one by one
+      setToast({ message: `Downloading ${likedImagesArray.length} images...`, type: 'success' });
+      
+      for (let i = 0; i < likedImagesArray.length; i++) {
+        const image = likedImagesArray[i];
+        try {
+          const imageUrl = image.originalUrl || image.compressedUrl;
+          
+          // Extract filename
+          const urlParts = imageUrl.split('/');
+          const filenameWithParams = urlParts[urlParts.length - 1];
+          const filename = filenameWithParams.split('?')[0];
+          const decodedFilename = decodeURIComponent(filename) || `photo-${image.imageId}.jpg`;
+          
+          // Fetch image
+          const response = await fetch(imageUrl);
+          const blob = await response.blob();
+          const blobUrl = window.URL.createObjectURL(blob);
+          
+          // Download using link
+          const link = document.createElement('a');
+          link.href = blobUrl;
+          link.download = decodedFilename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          window.URL.revokeObjectURL(blobUrl);
+          
+          // Small delay to avoid browser blocking multiple downloads
+          if (i < likedImagesArray.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
+        } catch (error) {
+          console.error(`Failed to download ${image.imageId}:`, error);
+        }
+      }
+      
+      setToast({ message: `Download complete! Check your downloads folder.`, type: 'success' });
+      setTimeout(() => setToast(null), 4000);
+    } catch (error: any) {
+      console.error('Download failed:', error);
+      setToast({ message: 'Failed to download images', type: 'error' });
+      setTimeout(() => setToast(null), 3000);
+    }
   };
 
   // Show dock on scroll - appears when scrolled past threshold
@@ -507,7 +633,11 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
 
           {/* Download All */}
           <div className="gallery-dock-item">
-            <button className="gallery-dock-button" data-tooltip="Download Selected">
+            <button 
+              className="gallery-dock-button" 
+              data-tooltip="Download Selected"
+              onClick={downloadSelectedImages}
+            >
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="7 10 12 15 17 10"></polyline>
@@ -796,7 +926,7 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
       )}
 
       {/* Load More Button */}
-      {currentEventImages.length > 0 && !isLoadingMore && (
+      {currentEventImages.length > 0 && !isLoadingMore && columns.some(col => col.length > 0) && (
         <div style={{
           display: hasMore ? 'flex' : 'none',
           flexDirection: 'column',
@@ -962,6 +1092,12 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
         };
 
         const handleWheel = (e: React.WheelEvent) => {
+          // Only zoom if mouse is over the image element
+          const target = e.target as HTMLElement;
+          if (!target.classList.contains('gallery-lightbox-image')) {
+            return; // Don't zoom if scrolling outside the image
+          }
+          
           e.preventDefault();
           e.stopPropagation();
           
@@ -1101,6 +1237,10 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
               className="gallery-lightbox-close" 
               onClick={(e) => { e.stopPropagation(); handleClose(); }}
               aria-label="Close"
+              style={{
+                opacity: isClosing ? 0 : 1,
+                transition: 'all 0.3s ease'
+              }}
             >
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -1121,15 +1261,37 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
             )}
 
             {/* Download and Like buttons */}
-            <div className="gallery-lightbox-actions">
+            <div className="gallery-lightbox-actions" style={{
+              opacity: isClosing ? 0 : 1,
+              transition: 'opacity 0.3s ease'
+            }}>
               <button
                 className="gallery-lightbox-action-btn"
-                onClick={(e) => {
+                onClick={async (e) => {
                   e.stopPropagation();
-                  const link = document.createElement('a');
-                  link.href = selectedImage.originalUrl;
-                  link.download = `image-${selectedImage.imageId}.jpg`;
-                  link.click();
+                  
+                  try {
+                    // Extract filename from URL
+                    const urlParts = selectedImage.originalUrl.split('/');
+                    const filenameWithParams = urlParts[urlParts.length - 1];
+                    const filename = filenameWithParams.split('?')[0]; // Remove query parameters
+                    const decodedFilename = decodeURIComponent(filename) || `image-${selectedImage.imageId}.jpg`;
+                    
+                    // Fetch image as blob to handle CORS
+                    const response = await fetch(selectedImage.originalUrl);
+                    const blob = await response.blob();
+                    const blobUrl = window.URL.createObjectURL(blob);
+                    
+                    const link = document.createElement('a');
+                    link.href = blobUrl;
+                    link.download = decodedFilename;
+                    link.click();
+                    
+                    // Clean up blob URL
+                    window.URL.revokeObjectURL(blobUrl);
+                  } catch (error) {
+                    console.error('Download failed:', error);
+                  }
                 }}
                 aria-label="Download image"
               >
@@ -1155,6 +1317,10 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
                 className="gallery-lightbox-nav gallery-lightbox-prev"
                 onClick={handlePrev}
                 aria-label="Previous image"
+                style={{
+                  opacity: isClosing ? 0 : 1,
+                  transition: 'all 0.3s ease'
+                }}
               >
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="15 18 9 12 15 6"></polyline>
@@ -1167,6 +1333,10 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
                 className="gallery-lightbox-nav gallery-lightbox-next"
                 onClick={handleNext}
                 aria-label="Next image"
+                style={{
+                  opacity: isClosing ? 0 : 1,
+                  transition: 'all 0.3s ease'
+                }}
               >
                 <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
@@ -1201,14 +1371,28 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
                 style={{
                   transform: `scale(${zoomScale}) translate(${imagePosition.x}px, ${imagePosition.y}px)`,
                   transition: isInitialOpen || isClosing || slideDirection ? 'transform 0.3s ease' : 'none',
-                  pointerEvents: 'none'
+                  pointerEvents: 'auto'
                 }}
                 draggable={false}
               />
             </div>
 
-            <div className="gallery-lightbox-counter">
-              {currentIndex + 1} / {currentImages.length}
+            <div className="gallery-lightbox-counter" style={{
+              opacity: isClosing ? 0 : 1,
+              transition: 'opacity 0.3s ease'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <span>
+                  {(() => {
+                    const urlParts = selectedImage.originalUrl.split('/');
+                    const filenameWithParams = urlParts[urlParts.length - 1];
+                    const filename = filenameWithParams.split('?')[0];
+                    return decodeURIComponent(filename);
+                  })()}
+                </span>
+                <span style={{ opacity: 0.5 }}>•</span>
+                <span>{currentIndex + 1} / {currentImages.length}</span>
+              </div>
             </div>
           </div>
         );
