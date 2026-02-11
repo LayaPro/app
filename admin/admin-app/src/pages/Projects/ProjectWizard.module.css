@@ -817,6 +817,142 @@
   }
 }
 
+/* Event Card Mobile Styles */
+@media (max-width: 768px) {
+  .eventCard {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .eventHeader {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .eventHeader > div:first-child {
+    flex-wrap: wrap;
+    gap: 6px !important;
+  }
+
+  .eventHeader > div:last-child {
+    gap: 6px;
+  }
+
+  .eventName {
+    font-size: 15px;
+  }
+
+  .eventMeta {
+    gap: 6px;
+  }
+
+  .eventMetaItem {
+    gap: 8px;
+  }
+
+  .metaIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .metaText {
+    font-size: 13px;
+  }
+
+  .metaText strong {
+    font-size: 12px;
+  }
+
+  .eventTeamMembers {
+    margin-top: 12px;
+    padding-top: 12px;
+    gap: 6px;
+  }
+
+  .teamMembersLabel {
+    font-size: 12px;
+    width: 100%;
+    margin-bottom: 4px;
+  }
+
+  .teamMemberChip {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 16px;
+  }
+
+  .fromProposalBadge,
+  .incompleteWarning {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .editButton {
+    padding: 6px 12px;
+    font-size: 12px;
+    gap: 6px;
+  }
+
+  .editButton svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .removeButton {
+    padding: 6px;
+  }
+
+  .removeButton svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .mapLink {
+    font-size: 12px;
+    padding: 5px 10px;
+    gap: 5px;
+  }
+
+  .mapLink svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .eventCard {
+    padding: 12px;
+  }
+
+  .eventName {
+    font-size: 14px;
+  }
+
+  .metaText {
+    font-size: 12px;
+  }
+
+  .metaText strong {
+    font-size: 11px;
+  }
+
+  .teamMemberChip {
+    padding: 3px 7px;
+    font-size: 10px;
+  }
+
+  .editButton {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+
+  .fromProposalBadge,
+  .incompleteWarning {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+}
+
 .addEventButton {
   padding: 12px 24px;
   background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));

@@ -101,7 +101,7 @@ export const TermsCard: FC<TermsCardProps> = ({
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
               Terms of Service
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className={styles.formGrid} style={{ gap: '16px' }}>
               <Textarea
                 value={formData.termsOfService}
                 onChange={(e) => setFormData({ ...formData, termsOfService: e.target.value })}
@@ -141,7 +141,7 @@ export const TermsCard: FC<TermsCardProps> = ({
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
               Terms of Payment
             </label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+            <div className={styles.formGrid} style={{ gap: '16px' }}>
               <Textarea
                 value={formData.termsOfPayment}
                 onChange={(e) => setFormData({ ...formData, termsOfPayment: e.target.value })}
@@ -178,7 +178,7 @@ export const TermsCard: FC<TermsCardProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', marginTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+        <div className={styles.buttonGroup}>
           {organization && (
             <Button
               variant="secondary"

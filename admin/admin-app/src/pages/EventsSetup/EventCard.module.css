@@ -157,3 +157,267 @@
   color: #dc2626;
   transform: scale(1.05);
 }
+
+/* Form Grid Layout */
+.formGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.formColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.sectionDivider {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--border-color);
+}
+
+.sectionHeader {
+  margin-bottom: 24px;
+}
+
+.sectionTitle {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.sectionDescription {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.previewBox {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px 16px;
+  background-color: var(--background-secondary);
+  font-size: 14px;
+  line-height: 1.6;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.previewLabel {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: var(--text-secondary);
+}
+
+.buttonContainer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.modalButtonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .contentWrapper {
+    padding: 16px;
+  }
+
+  /* Make grid single column on mobile */
+  .formGrid {
+    grid-template-columns: 1fr !important;
+    gap: 16px !important;
+  }
+
+  .formColumn {
+    gap: 16px;
+  }
+
+  /* Stack buttons on mobile */
+  .buttonGroup {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .buttonGroup > button {
+    width: 100%;
+  }
+
+  .sectionDivider {
+    margin-top: 24px;
+    padding-top: 24px;
+  }
+
+  .sectionHeader {
+    margin-bottom: 16px;
+  }
+
+  .sectionTitle {
+    font-size: 16px;
+  }
+
+  .sectionDescription {
+    font-size: 13px;
+  }
+
+  .previewBox {
+    padding: 10px 12px;
+    font-size: 13px;
+    max-height: 200px;
+  }
+
+  .buttonContainer {
+    margin-top: 12px;
+  }
+
+  .buttonContainer > button {
+    width: 100%;
+  }
+
+  .modalButtonGroup {
+    flex-direction: column-reverse;
+    gap: 10px;
+  }
+
+  .modalButtonGroup > button {
+    width: 100%;
+  }
+
+  /* Reduce button sizes on mobile */
+  .contentWrapper button {
+    font-size: 14px !important;
+    padding: 10px 16px !important;
+  }
+
+  .infoText {
+    gap: 10px;
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+
+  .infoIcon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cardHeader {
+    padding: 16px;
+  }
+
+  .cardHeaderContent {
+    gap: 12px;
+  }
+
+  .cardIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .cardTitle {
+    font-size: 16px;
+  }
+
+  .cardSubtitle {
+    font-size: 13px;
+  }
+
+  .chevron {
+    width: 18px;
+    height: 18px;
+  }
+
+  .contentInner {
+    padding: 16px;
+  }
+
+  .editButton svg,
+  .deleteButton svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .contentWrapper {
+    padding: 12px;
+  }
+
+  /* Further reduce button sizes on small mobile */
+  .contentWrapper button {
+    font-size: 13px !important;
+    padding: 8px 14px !important;
+  }
+
+  .infoText {
+    gap: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+  }
+
+  .infoIcon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .cardHeader {
+    padding: 12px;
+  }
+
+  .cardHeaderContent {
+    gap: 10px;
+  }
+
+  .cardIcon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .cardTitle {
+    font-size: 15px;
+  }
+
+  .cardSubtitle {
+    font-size: 12px;
+  }
+
+  .chevron {
+    width: 16px;
+    height: 16px;
+  }
+
+  .contentInner {
+    padding: 12px;
+  }
+
+  .actions {
+    gap: 4px;
+  }
+
+  .editButton,
+  .deleteButton {
+    padding: 6px;
+  }
+
+  .editButton svg,
+  .deleteButton svg {
+    width: 16px;
+    height: 16px;
+  }
+}

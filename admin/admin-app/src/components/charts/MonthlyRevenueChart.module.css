@@ -195,19 +195,100 @@
 }
 
 @media (max-width: 768px) {
+  .chartContainer {
+    padding: 1rem;
+  }
+
   .chartHeader {
     flex-direction: column;
     align-items: flex-start;
+    margin-bottom: 1.5rem;
   }
 
-  .yearFilter {
+  .chartTitle {
+    font-size: 1.125rem;
+  }
+
+  .yearSelectWrapper {
     width: 100%;
-    justify-content: space-between;
+  }
+
+  .chartContent {
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
   }
 
   .chartArea {
-    gap: 0.25rem;
+    min-width: 600px;
+    gap: 0.375rem;
     padding: 0.75rem;
+  }
+
+  .chartLabels {
+    min-width: 600px;
+    gap: 0.375rem;
+    padding: 0.75rem 0.75rem 0 0.75rem;
+  }
+
+  .bar {
+    max-width: 40px;
+  }
+
+  .barLabel {
+    font-size: 0.6875rem;
+  }
+
+  .barTooltip {
+    font-size: 0.6875rem;
+    padding: 0.375rem 0.5rem;
+  }
+
+  .tooltipRevenue {
+    font-size: 0.8125rem;
+  }
+
+  .tooltipProjects {
+    font-size: 0.625rem;
+  }
+
+  .chartSummary {
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1rem;
+  }
+
+  .summaryDivider {
+    width: 100%;
+    height: 1px;
+  }
+
+  .summaryValue {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .chartContainer {
+    padding: 0.875rem;
+  }
+
+  .chartTitle {
+    font-size: 1rem;
+  }
+
+  .chartIcon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .chartArea {
+    min-width: 500px;
+  }
+
+  .chartLabels {
+    min-width: 500px;
   }
 
   .bar {
@@ -216,15 +297,5 @@
 
   .barLabel {
     font-size: 0.625rem;
-  }
-
-  .chartSummary {
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .summaryDivider {
-    width: 100%;
-    height: 1px;
   }
 }

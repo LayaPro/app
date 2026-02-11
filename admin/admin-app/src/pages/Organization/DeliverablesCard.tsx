@@ -237,17 +237,17 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
         />
 
         {/* Add-ons Section */}
-        <div style={{ marginTop: '40px', paddingTop: '32px', borderTop: '1px solid var(--border-color)' }}>
-          <div style={{ marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '8px' }}>
+        <div className={styles.sectionDivider}>
+          <div className={styles.sectionHeader}>
+            <h3 className={styles.sectionTitle}>
               Add-ons
             </h3>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', margin: 0 }}>
+            <p className={styles.sectionDescription}>
               Define additional services or items that can be offered as extras in your proposals.
             </p>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className={styles.formGrid} style={{ gap: '16px' }}>
             <Textarea
               value={addOns}
               onChange={(e) => setAddOns(e.target.value)}
@@ -257,17 +257,8 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
               showCharCount
               info="Each line will appear as a separate add-on item that can be included in proposals."
             />
-            <div style={{ 
-              border: '1px solid var(--border-color)', 
-              borderRadius: '8px', 
-              padding: '12px 16px',
-              backgroundColor: 'var(--background-secondary)',
-              fontSize: '14px',
-              lineHeight: '1.6',
-              maxHeight: '280px',
-              overflowY: 'auto'
-            }}>
-              <div style={{ fontWeight: '600', marginBottom: '8px', color: 'var(--text-secondary)' }}>Preview:</div>
+            <div className={styles.previewBox}>
+              <div className={styles.previewLabel}>Preview:</div>
               {addOns ? (
                 <ul style={{ margin: 0, paddingLeft: '20px', color: 'var(--text-primary)' }}>
                   {addOns.split('\n').filter(line => line.trim()).map((line, index) => (
@@ -282,7 +273,7 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
             </div>
           </div>
 
-          <div style={{ marginTop: '16px', display: 'flex', justifyContent: 'flex-end' }}>
+          <div className={styles.buttonContainer}>
             <Button 
               onClick={handleSaveAddOns} 
               variant="primary"
@@ -327,7 +318,7 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
             info="Additional details about this deliverable"
           />
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+          <div className={styles.modalButtonGroup}>
             <Button
               variant="secondary"
               onClick={() => {
@@ -379,7 +370,7 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
             info="Additional details about this deliverable"
           />
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', marginTop: '8px' }}>
+          <div className={styles.modalButtonGroup}>
             <Button
               variant="secondary"
               onClick={() => {

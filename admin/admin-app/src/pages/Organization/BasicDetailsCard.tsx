@@ -162,9 +162,9 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
           </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+        <div className={styles.formGrid}>
           {/* Left Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className={styles.formColumn}>
             <Input
               label="Company Name"
               value={formData.companyName}
@@ -235,7 +235,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
           </div>
 
           {/* Right Column */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div className={styles.formColumn}>
             <Textarea
               label="About Us"
               value={formData.aboutUs}
@@ -302,7 +302,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
           </div>
         </div>
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px', paddingTop: '16px', marginTop: '16px', borderTop: '1px solid var(--border-color)' }}>
+        <div className={styles.buttonGroup}>
           {organization && (
             <Button
               variant="secondary"

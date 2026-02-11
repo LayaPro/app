@@ -7,3 +7,23 @@
 .tableWrapper {
   padding: 24px;
 }
+
+@media (max-width: 768px) {
+  .cardsContainer {
+    gap: 16px;
+  }
+
+  .tableWrapper {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .cardsContainer {
+    gap: 12px;
+  }
+
+  .tableWrapper {
+    padding: 8px;
+  }
+}

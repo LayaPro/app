@@ -96,3 +96,28 @@
 .statusFilterSelect :global(.selectLabel) {
   display: none;
 }
+
+@media (max-width: 768px) {
+  .statusFilterSelect {
+    min-width: 150px;
+    flex: 1;
+  }
+
+  .statusFilterSelect :global(button) {
+    height: 36px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 480px) {
+  .statusFilterSelect {
+    min-width: 120px;
+  }
+
+  .statusFilterSelect :global(button) {
+    height: 34px;
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}
