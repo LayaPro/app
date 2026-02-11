@@ -8,9 +8,10 @@ interface PaymentStepProps {
   onChange: (field: string, value: any) => void;
   errors: Record<string, string>;
   isEditing?: boolean;
+  editingProject?: any;
 }
 
-export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, errors, isEditing }) => {
+export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, errors, isEditing, editingProject }) => {
   const handleReceivedAmountChange = (value: string) => {
     const receivedAmount = parseFloat(value) || 0;
     const totalBudget = parseFloat(formData.totalBudget?.toString() || '0') || 0;
@@ -23,6 +24,9 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, er
       onChange('receivedAmount', value);
     }
   };
+
+  // Only disable if editing an existing project (has projectId), not when creating from proposal
+  const isEditingExistingProject = isEditing && editingProject?.projectId;
 
   return (
     <div className={styles.form}>
@@ -43,12 +47,12 @@ export const PaymentStep: React.FC<PaymentStepProps> = ({ formData, onChange, er
           <div className={styles.formGroup}>
             <AmountInput
               label="Advance Received"
-              value={formData.receivedAmount?.toString() || ''}
+              value={formData.receivedAmount ? formData.receivedAmount.toString() : ''}
               onChange={handleReceivedAmountChange}
               placeholder="0"
               info="Amount received as advance payment"
               error={errors.receivedAmount}
-              disabled={isEditing}
+              disabled={isEditingExistingProject}
             />
           </div>
 

@@ -1,5 +1,6 @@
 import type { ProjectFormData } from '../ProjectWizard';
 import styles from '../ProjectWizard.module.css';
+import { formatIndianAmount } from '../../../utils/formatAmount';
 
 interface ReviewStepProps {
   formData: ProjectFormData;
@@ -198,11 +199,11 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit }) => {
         <div className={styles.reviewGrid}>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Total Budget</div>
-            <div className={styles.reviewValue}>₹{formData.totalBudget || '0'}</div>
+            <div className={styles.reviewValue}>₹{formatIndianAmount(parseFloat(formData.totalBudget) || 0)}</div>
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Advance Received</div>
-            <div className={styles.reviewValue}>₹{formData.receivedAmount || '0'}</div>
+            <div className={styles.reviewValue}>₹{formatIndianAmount(parseFloat(formData.receivedAmount) || 0)}</div>
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Advance Date</div>

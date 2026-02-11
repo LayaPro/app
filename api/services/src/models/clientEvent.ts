@@ -50,7 +50,7 @@ const ClientEventSchema = new Schema<IClientEvent>(
     albumDesigner: { type: String }, // Team member ID assigned as album designer
     editingDueDate: { type: Date }, // Due date for editing completion
     albumDesignDueDate: { type: Date }, // Due date for album design completion
-    s3EventFolderName: { type: String, unique: true, sparse: true }, // Unique folder identifier for S3
+    s3EventFolderName: { type: String }, // Folder identifier for S3 (unique per project via path structure)
     createdBy: { type: String },
     updatedBy: { type: String }
   },

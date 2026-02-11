@@ -164,3 +164,29 @@
   color: #dc2626;
   margin-top: -4px;
 }
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .input {
+    padding: 10px 14px 10px 36px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .currencySymbol {
+    font-size: 14px;
+    left: 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .input {
+    padding: 8px 12px 8px 32px;
+    font-size: 13px;
+  }
+
+  .currencySymbol {
+    font-size: 13px;
+    left: 10px;
+  }
+}

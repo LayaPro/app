@@ -86,15 +86,15 @@
 .dateButton {
   width: 100%;
   padding: 12px 16px;
-  background: var(--bg-primary-neutral);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 12px;
   cursor: pointer;
   transition: all var(--transition-base);
-  font-size: 14px;
+  font-size: 15px;
   text-align: left;
 }
 
@@ -135,7 +135,7 @@
   position: absolute;
   top: calc(100% + 4px);
   left: 0;
-  background: var(--bg-primary-neutral);
+  background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg);

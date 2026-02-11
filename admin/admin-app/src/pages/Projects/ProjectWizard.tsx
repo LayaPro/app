@@ -402,7 +402,7 @@ export const ProjectWizard: React.FC<ProjectWizardProps> = ({ onBack, onSubmit }
         case 2:
           return <EventsStep formData={formData} onChange={handleChange} errors={errors} events={events} teamMembers={teamMembers} />;
         case 3:
-          return <PaymentStep formData={formData} onChange={handleChange} errors={errors} isEditing={isEditing} />;
+          return <PaymentStep formData={formData} onChange={handleChange} errors={errors} isEditing={isEditing} editingProject={editingProject} />;
         case 4:
           return <ReviewStep formData={formData} onEdit={setCurrentStep} />;
         default:

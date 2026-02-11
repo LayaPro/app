@@ -187,33 +187,6 @@ const Projects = () => {
             </div>
           </div>
         </div>
-
-        <button
-          onClick={() => setShowWizard(true)}
-          style={{
-            padding: '10px 16px',
-            background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            fontSize: '14px',
-            fontWeight: '600',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            transition: 'all 0.2s ease',
-            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)',
-            whiteSpace: 'nowrap'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
-        >
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          <span style={{ display: 'inline-block' }}>New Project</span>
-        </button>
       </div>
 
       <ProjectsTable onStatsUpdate={setStats} />

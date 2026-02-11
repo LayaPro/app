@@ -310,12 +310,13 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
         </div>
 
         <div className={styles.modalActions}>
-          <Button onClick={handleCancel} variant="secondary">
+          <Button onClick={handleCancel} variant="secondary" size="md">
             Cancel
           </Button>
           <Button 
             onClick={handleAdd} 
             variant="primary"
+            size="md"
             disabled={!selectedEvent}
           >
             Add Event

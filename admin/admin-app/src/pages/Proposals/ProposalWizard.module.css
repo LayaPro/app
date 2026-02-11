@@ -221,17 +221,46 @@
 
 @media (max-width: 768px) {
   .wizardActions {
-    padding: 12px 16px;
-    gap: 8px;
+    padding: 10px 12px;
+    gap: 6px;
     position: sticky;
     bottom: 0;
     z-index: 10;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.08);
+    flex-wrap: nowrap;
   }
   
   .button {
+    font-size: 11px;
+    padding: 8px 10px;
+    white-space: nowrap;
+    min-width: auto;
+  }
+
+  .buttonGroup {
+    gap: 6px;
+    flex-shrink: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .wizardActions {
+    flex-direction: column-reverse;
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .button {
+    width: 100%;
+    justify-content: center;
     font-size: 13px;
     padding: 10px 16px;
+  }
+
+  .buttonGroup {
+    width: 100%;
+    flex-direction: column-reverse;
+    gap: 8px;
   }
 }
 
@@ -625,6 +654,7 @@
   flex-wrap: wrap;
   gap: 6px;
   align-items: center;
+  justify-content: flex-start;
 }
 
 .eventSummary {

@@ -46,12 +46,14 @@
 }
 
 .secondary {
-  background-color: var(--bg-tertiary);
+  background-color: var(--bg-secondary);
   color: var(--text-primary);
+  border: 1px solid var(--border-color) !important;
 }
 
 .secondary:hover:not(:disabled) {
-  background-color: var(--border-color);
+  background-color: var(--bg-tertiary);
+  border-color: var(--text-tertiary);
 }
 
 .outline {
