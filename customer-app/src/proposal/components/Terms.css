@@ -56,3 +56,69 @@
     hyphens: auto;
     max-width: 100%;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .terms {
+        padding: 80px 0;
+    }
+
+    .terms-content {
+        margin-top: 50px;
+        padding: 40px 30px;
+        border-radius: 20px;
+    }
+
+    .terms-list {
+        gap: 20px;
+    }
+
+    .term-item {
+        padding: 20px;
+        gap: 16px;
+    }
+
+    .term-number {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9375rem;
+    }
+
+    .term-text {
+        font-size: 0.9375rem;
+        line-height: 1.7;
+    }
+}
+
+@media (max-width: 480px) {
+    .terms {
+        padding: 60px 0;
+    }
+
+    .terms-content {
+        margin-top: 40px;
+        padding: 24px 20px;
+        border-radius: 16px;
+    }
+
+    .terms-list {
+        gap: 16px;
+    }
+
+    .term-item {
+        padding: 16px;
+        gap: 12px;
+        border-radius: 12px;
+    }
+
+    .term-number {
+        width: 32px;
+        height: 32px;
+        font-size: 0.875rem;
+    }
+
+    .term-text {
+        font-size: 0.875rem;
+        line-height: 1.6;
+    }
+}

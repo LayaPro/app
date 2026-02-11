@@ -95,3 +95,88 @@
     color: var(--text-secondary);
     margin-top: 0.5rem;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .payment {
+        padding: 80px 0;
+    }
+
+    .payment-timeline {
+        margin: 50px 20px 0;
+    }
+
+    .payment-timeline::before {
+        left: 30px;
+    }
+
+    .payment-item {
+        flex-direction: column !important;
+        align-items: flex-start;
+        margin-bottom: 30px;
+    }
+
+    .payment-content {
+        width: calc(100% - 60px);
+        margin-left: 60px !important;
+        margin-right: 0 !important;
+        text-align: left !important;
+        padding: 24px;
+    }
+
+    .payment-dot {
+        left: 30px;
+    }
+
+    .payment-percent {
+        font-size: 2rem;
+    }
+
+    .payment-label {
+        font-size: 1rem;
+    }
+
+    .payment-desc {
+        font-size: 0.8125rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .payment {
+        padding: 60px 0;
+    }
+
+    .payment-timeline {
+        margin: 40px 16px 0;
+    }
+
+    .payment-timeline::before {
+        left: 20px;
+    }
+
+    .payment-content {
+        width: calc(100% - 50px);
+        margin-left: 50px !important;
+        padding: 20px;
+        border-radius: 16px;
+    }
+
+    .payment-dot {
+        left: 20px;
+        width: 16px;
+        height: 16px;
+        border-width: 3px;
+    }
+
+    .payment-percent {
+        font-size: 1.75rem;
+    }
+
+    .payment-label {
+        font-size: 0.9375rem;
+    }
+
+    .payment-desc {
+        font-size: 0.75rem;
+    }
+}

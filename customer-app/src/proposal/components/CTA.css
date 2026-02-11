@@ -165,3 +165,57 @@
     color: var(--text-primary);
     transform: translateY(-5px);
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .cta-content {
+        padding: 60px 30px;
+    }
+
+    .cta h2 {
+        font-size: 2.5rem;
+        margin-bottom: 20px;
+    }
+
+    .cta p {
+        font-size: 1.125rem;
+        margin-bottom: 40px;
+    }
+
+    .cta-buttons {
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .btn {
+        width: 100%;
+        padding: 14px 32px;
+        font-size: 0.9375rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .cta-content {
+        padding: 40px 20px;
+    }
+
+    .cta h2 {
+        font-size: 2rem;
+        margin-bottom: 16px;
+    }
+
+    .cta p {
+        font-size: 1rem;
+        margin-bottom: 32px;
+    }
+
+    .btn {
+        padding: 12px 24px;
+        font-size: 0.875rem;
+    }
+
+    .btn[data-tooltip]::before {
+        font-size: 0.8125rem;
+        padding: 8px 12px;
+    }
+}

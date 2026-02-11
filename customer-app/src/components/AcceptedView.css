@@ -353,6 +353,10 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .accepted-container {
+    padding: 40px 16px;
+  }
+
   .accepted-content {
     padding: 60px 30px;
     margin: 20px;
@@ -367,13 +371,13 @@
   }
 
   .accepted-icon {
-    width: 90px;
-    height: 90px;
+    width: 72px;
+    height: 72px;
   }
 
   .accepted-icon svg {
-    width: 50px;
-    height: 50px;
+    width: 40px;
+    height: 40px;
   }
 
   .accepted-message-main {
@@ -383,9 +387,46 @@
   .accepted-message-sub {
     font-size: 0.95rem;
   }
+
+  .accepted-view-quotation-btn {
+    width: 100%;
+    padding: 14px 28px;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+    margin-top: 12px;
+  }
+
+  .accepted-corner {
+    width: 30px;
+    height: 30px;
+  }
+
+  .accepted-corner-tl {
+    top: 16px;
+    left: 16px;
+  }
+
+  .accepted-corner-tr {
+    top: 16px;
+    right: 16px;
+  }
+
+  .accepted-corner-bl {
+    bottom: 16px;
+    left: 16px;
+  }
+
+  .accepted-corner-br {
+    bottom: 16px;
+    right: 16px;
+  }
 }
 
 @media (max-width: 480px) {
+  .accepted-container {
+    padding: 32px 12px;
+  }
+
   .accepted-content {
     padding: 50px 24px;
   }
@@ -396,5 +437,19 @@
 
   .accepted-project-name {
     font-size: 1.5rem;
+  }
+
+  .accepted-message-main {
+    font-size: 0.95rem;
+  }
+
+  .accepted-message-sub {
+    font-size: 0.875rem;
+  }
+
+  .accepted-view-quotation-btn {
+    padding: 12px 24px;
+    font-size: 0.85rem;
+    margin-top: 10px;
   }
 }

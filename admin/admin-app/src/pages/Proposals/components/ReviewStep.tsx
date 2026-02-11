@@ -202,18 +202,12 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit, update
               info="Total amount to be quoted to the client"
             />
           </div>
-          <div style={{ 
-            marginTop: '16px', 
-            padding: '16px', 
-            backgroundColor: 'var(--background-secondary)', 
-            borderRadius: '8px',
-            border: '1px solid var(--border-color)'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text-secondary)' }}>
+          <div className={styles.quotationAmountBox}>
+            <div className={styles.quotationAmountRow}>
+              <span className={styles.quotationAmountLabel}>
                 Amount:
               </span>
-              <span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--color-primary)' }}>
+              <span className={styles.quotationAmountValue}>
                 {formData.totalAmount && formData.totalAmount > 0 ? `₹${formatIndianAmount(formData.totalAmount)}` : '—'}
               </span>
             </div>

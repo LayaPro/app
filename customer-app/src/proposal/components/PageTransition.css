@@ -67,3 +67,23 @@
         transform: translate(calc(var(--x) - 50vw), -100px) scale(1);
     }
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .transition-logo {
+        font-size: 2rem;
+        letter-spacing: 4px;
+        padding: 0 20px;
+        text-align: center;
+        word-wrap: break-word;
+        max-width: 90%;
+    }
+}
+
+@media (max-width: 480px) {
+    .transition-logo {
+        font-size: 1.5rem;
+        letter-spacing: 3px;
+        padding: 0 16px;
+    }
+}

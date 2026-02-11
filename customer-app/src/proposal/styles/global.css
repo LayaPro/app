@@ -263,3 +263,62 @@
         line-height: 1.4 !important;
     }
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .content-wrapper {
+        padding: 0 20px;
+    }
+
+    .section-label {
+        font-size: 0.75rem;
+        letter-spacing: 3px;
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .section-label::before,
+    .section-label::after {
+        flex: 0 0 30px;
+    }
+
+    .section-title {
+        font-size: 2rem;
+        margin-bottom: 20px;
+    }
+
+    .section-description {
+        font-size: 1rem;
+        margin-bottom: 40px;
+        padding: 0 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .content-wrapper {
+        padding: 0 16px;
+    }
+
+    .section-label {
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .section-label::before,
+    .section-label::after {
+        flex: 0 0 20px;
+    }
+
+    .section-title {
+        font-size: 1.75rem;
+        margin-bottom: 16px;
+    }
+
+    .section-description {
+        font-size: 0.9375rem;
+        margin-bottom: 32px;
+        padding: 0;
+    }
+}

@@ -83,3 +83,72 @@
     color: var(--text-tertiary);
     font-size: 1.2rem;
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+    .events {
+        padding: 80px 0;
+    }
+
+    .events-table-wrapper {
+        margin: 50px 20px 0;
+        overflow-x: auto;
+    }
+
+    .events-table th,
+    .events-table td {
+        padding: 14px 16px;
+        font-size: 0.9375rem;
+    }
+
+    .events-table th {
+        font-size: 1rem;
+    }
+
+    .event-name {
+        font-size: 1.125rem;
+    }
+
+    .crew-badge {
+        font-size: 0.8125rem;
+        padding: 5px 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .events {
+        padding: 60px 0;
+    }
+
+    .events-table-wrapper {
+        margin: 40px 16px 0;
+    }
+
+    .events-table {
+        font-size: 0.875rem;
+    }
+
+    .events-table th,
+    .events-table td {
+        padding: 12px;
+    }
+
+    .events-table th {
+        font-size: 0.9375rem;
+    }
+
+    .event-name {
+        font-size: 1rem;
+    }
+
+    .crew-badge {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+        gap: 6px;
+    }
+
+    .crew-badge svg {
+        width: 14px;
+        height: 14px;
+    }
+}

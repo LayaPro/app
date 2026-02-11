@@ -601,6 +601,19 @@
   .editButton {
     align-self: flex-start;
   }
+
+  .reviewLabel {
+    font-size: 11px;
+  }
+
+  .reviewValue {
+    font-size: 13px;
+    word-break: break-word;
+  }
+
+  .reviewItem {
+    gap: 4px;
+  }
 }
 
 /* Event List */
@@ -1130,5 +1143,47 @@
   .addButton {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Final Quotation Amount Display */
+.quotationAmountBox {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: var(--background-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.quotationAmountRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.quotationAmountLabel {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.quotationAmountValue {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+@media (max-width: 768px) {
+  .quotationAmountLabel {
+    font-size: 13px;
+  }
+
+  .quotationAmountValue {
+    font-size: 16px;
+  }
+
+  .quotationAmountRow {
+    gap: 12px;
   }
 }
