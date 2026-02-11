@@ -199,11 +199,11 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({ formData, onEdit }) => {
         <div className={styles.reviewGrid}>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Total Budget</div>
-            <div className={styles.reviewValue}>₹{formatIndianAmount(parseFloat(formData.totalBudget) || 0)}</div>
+            <div className={styles.reviewValue}>₹{formatIndianAmount(parseFloat(formData.totalBudget?.toString() || '0') || 0)}</div>
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Advance Received</div>
-            <div className={styles.reviewValue}>₹{formatIndianAmount(parseFloat(formData.receivedAmount) || 0)}</div>
+            <div className={styles.reviewValue}>₹{formatIndianAmount(parseFloat(formData.receivedAmount?.toString() || '0') || 0)}</div>
           </div>
           <div className={styles.reviewItem}>
             <div className={styles.reviewLabel}>Advance Date</div>
