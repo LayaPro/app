@@ -229,16 +229,90 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .container {
+    gap: 12px;
+  }
+
   .videosGrid {
     grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 4px;
+  }
+
+  .videoCard {
+    border-radius: 6px;
+  }
+
+  .videoThumbnail {
+    padding-top: 56.25%;
+  }
+
+  .playButton {
+    width: 44px;
+    height: 44px;
+  }
+
+  .playButton svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .videoActions {
+    padding: 8px;
+  }
+
+  .videoLink {
+    padding: 5px 10px;
+    font-size: 0.75rem;
+    gap: 4px;
+  }
+
+  .videoLink svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .removeButton {
+    padding: 6px;
+  }
+
+  .removeButton svg {
+    width: 16px;
+    height: 16px;
   }
   
   .addSection {
     flex-direction: column;
+    padding: 12px;
+    gap: 8px;
   }
   
   .addButton {
     width: 100%;
     justify-content: center;
+    padding: 0 16px;
+    font-size: 0.8125rem;
+  }
+
+  .addButton svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .emptyState {
+    padding: 40px 16px;
+  }
+
+  .emptyState svg {
+    width: 48px;
+    height: 48px;
+  }
+
+  .emptyState h3 {
+    font-size: 1rem;
+  }
+
+  .emptyState p {
+    font-size: 0.8125rem;
   }
 }

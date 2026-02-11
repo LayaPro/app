@@ -178,3 +178,70 @@
 .statusFilterSelect :global(.selectLabel) {
   display: none;
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .actionsDropdownButton {
+    padding: 4px;
+    border-radius: 4px;
+  }
+
+  .actionsDropdownButton svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .actionsDropdown {
+    min-width: 140px;
+    border-radius: 6px;
+  }
+
+  .actionsDropdownItem {
+    padding: 8px 12px;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .actionsDropdownItem svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .proposalNumber {
+    font-size: 14px;
+  }
+
+  .projectName {
+    font-size: 14px;
+  }
+
+  .clientName {
+    font-size: 14px;
+  }
+
+  .clientEmail {
+    font-size: 11px;
+  }
+
+  .phoneText {
+    font-size: 13px;
+  }
+
+  .amount {
+    font-size: 14px;
+  }
+
+  .pinText {
+    font-size: 14px;
+    letter-spacing: 1px;
+  }
+
+  .statusBadge {
+    padding: 3px 10px;
+    font-size: 11px;
+  }
+
+  .dateText {
+    font-size: 12px;
+  }
+}

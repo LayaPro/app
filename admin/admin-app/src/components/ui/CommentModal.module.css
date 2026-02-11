@@ -2,31 +2,6 @@
   padding: 1rem 0;
 }
 
-.textarea {
-  width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-family: inherit;
-  resize: vertical;
-  transition: border-color 0.2s;
-  background: white;
-  color: #1f2937;
-}
-
-.textarea:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.textarea:disabled {
-  background: #f3f4f6;
-  cursor: not-allowed;
-  opacity: 0.6;
-}
-
 .actions {
   display: flex;
   gap: 0.75rem;
@@ -35,73 +10,8 @@
   border-top: 1px solid #e5e7eb;
 }
 
-.cancelButton,
-.submitButton {
-  padding: 0.625rem 1.25rem;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-}
-
-.cancelButton {
-  background: white;
-  color: #6b7280;
-  border: 1px solid #d1d5db;
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: #f9fafb;
-}
-
-.cancelButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.submitButton {
-  background: #3b82f6;
-  color: white;
-}
-
-.submitButton:hover:not(:disabled) {
-  background: #2563eb;
-}
-
-.submitButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-  background: #93c5fd;
-}
-
 /* Dark mode */
-:global(.dark) .textarea {
-  background: #1f2937;
-  color: #f9fafb;
-  border-color: #374151;
-}
-
-:global(.dark) .textarea:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-}
-
-:global(.dark) .textarea:disabled {
-  background: #111827;
-}
-
 :global(.dark) .actions {
   border-top-color: #374151;
 }
 
-:global(.dark) .cancelButton {
-  background: #374151;
-  color: #e5e7eb;
-  border-color: #4b5563;
-}
-
-:global(.dark) .cancelButton:hover:not(:disabled) {
-  background: #4b5563;
-}

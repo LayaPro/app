@@ -8,3 +8,7 @@ export { EventDateTime } from './EventDateTime';
 export { VideosCard } from './VideosCard';
 export { VideosView } from './VideosView';
 export { VideoPlayerModal } from './VideoPlayerModal';
+export { VisitClientGalleryButton } from './VisitClientGalleryButton';
+export { CardPlaceholder } from './CardPlaceholder';
+export { RefreshButton } from './RefreshButton';
+

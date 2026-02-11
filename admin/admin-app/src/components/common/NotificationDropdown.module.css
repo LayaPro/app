@@ -338,7 +338,9 @@
 /* Mobile responsive */
 @media (max-width: 480px) {
   .dropdown {
+    position: fixed;
     width: calc(100vw - 2rem);
-    right: -1rem;
+    right: 1rem;
+    left: auto;
   }
 }

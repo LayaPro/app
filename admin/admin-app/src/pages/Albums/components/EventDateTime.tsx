@@ -20,6 +20,7 @@ export const EventDateTime: FC<EventDateTimeProps> = ({ fromDatetime, toDatetime
         display: 'flex',
         alignItems: 'flex-start',
         gap: '0.5rem',
+        marginTop: '0.5rem',
         marginBottom: '0.75rem',
         fontSize: '0.75rem',
         color: 'var(--text-secondary)',

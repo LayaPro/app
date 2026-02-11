@@ -471,4 +471,36 @@
     height: 32px;
     font-size: 12px;
   }
+
+  /* Action buttons/menus in table cells */
+  .td button[class*="action"],
+  .td button[class*="dropdown"] {
+    padding: 4px;
+    min-width: auto;
+  }
+
+  .td button[class*="action"] svg,
+  .td button[class*="dropdown"] svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* Dropdown menus */
+  .td div[class*="dropdown"][class*="menu"],
+  .td div[class*="actions"][class*="dropdown"] {
+    min-width: 140px;
+    border-radius: 6px;
+  }
+
+  .td div[class*="dropdown"] button,
+  .td div[class*="dropdown"] a {
+    padding: 8px 12px;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .td div[class*="dropdown"] svg {
+    width: 16px;
+    height: 16px;
+  }
 }

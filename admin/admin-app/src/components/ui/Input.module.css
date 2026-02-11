@@ -170,3 +170,45 @@
 .input:disabled::placeholder {
   color: var(--text-tertiary);
 }
+
+/* Mobile Responsive Styles */
+@media (max-width: 768px) {
+  .input {
+    padding: 10px 14px;
+    font-size: 14px;
+    border-radius: 6px;
+  }
+
+  .withIcon {
+    padding-left: 38px;
+  }
+
+  .icon {
+    left: 12px;
+  }
+
+  .icon svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .input {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+
+  .withIcon {
+    padding-left: 34px;
+  }
+
+  .icon {
+    left: 10px;
+  }
+
+  .icon svg {
+    width: 14px;
+    height: 14px;
+  }
+}

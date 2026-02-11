@@ -404,37 +404,107 @@
 
 /* Mobile responsive styles */
 @media (max-width: 768px) {
+  .dateButton {
+    padding: 8px 12px;
+    gap: 8px;
+    font-size: 13px;
+  }
+
+  .calendarIcon {
+    width: 16px;
+    height: 16px;
+  }
+
   .dropdown {
     left: 50%;
-    margin-left: -160px;
+    margin-left: -140px;
     min-width: auto;
-    width: calc(100vw - 32px);
-    max-width: 320px;
+    width: calc(100vw - 40px);
+    max-width: 280px;
+    padding: 8px;
+  }
+
+  .header {
+    margin-bottom: 8px;
+    padding: 0 2px;
+  }
+
+  .monthLabel {
+    font-size: 12px;
+  }
+
+  .navButton {
+    padding: 2px;
+  }
+
+  .navButton svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .weekday {
+    font-size: 10px;
+    padding: 4px 0;
+  }
+
+  .daysGrid {
+    gap: 1px;
+    max-height: 200px;
+  }
+
+  .day {
+    font-size: 11px;
+    min-height: 28px;
+    border-radius: 4px;
+  }
+
+  .timeSection {
+    margin-top: 8px;
+    padding-top: 8px;
+  }
+
+  .timeErrorMessage {
+    font-size: 11px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
+  }
+
+  .timeSeparator {
+    margin-bottom: 8px;
   }
 
   .timeInputWrapper {
     flex-wrap: nowrap;
-    padding: 10px 12px;
-    gap: 8px;
+    padding: 6px 8px;
+    gap: 6px;
+  }
+
+  .timeIcon svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .timeSelectors {
+    gap: 4px;
+  }
+
+  .timeSelect {
+    padding: 4px 6px;
+    font-size: 12px;
+  }
+
+  .timeSeparatorText {
+    font-size: 14px;
   }
 
   .timeInput {
-    font-size: 15px;
+    font-size: 13px;
     min-width: 0;
   }
 
   .setButton {
-    padding: 8px 14px;
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
-  .day {
+    padding: 5px 10px;
     font-size: 12px;
-    min-height: 36px;
-  }
-
-  .monthLabel {
-    font-size: 13px;
+    white-space: nowrap;
   }
 }

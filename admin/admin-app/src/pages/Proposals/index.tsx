@@ -90,13 +90,14 @@ const Proposals = () => {
         gap: '24px',
         marginBottom: '24px',
         flexWrap: 'wrap'
-      }}>
+      }} className="proposals-header">
         <ProposalStats refreshTrigger={refreshKey} />
         
         <Button
           variant="primary"
           onClick={handleCreateProposal}
           style={{ flexShrink: 0 }}
+          className="add-proposal-button"
         >
           <svg 
             width="20" 

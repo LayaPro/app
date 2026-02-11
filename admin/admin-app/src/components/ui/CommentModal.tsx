@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal.js';
+import { Button } from './Button.js';
+import { Textarea } from './Textarea.js';
 import styles from './CommentModal.module.css';
 
 interface CommentModalProps {
@@ -38,33 +40,36 @@ export const CommentModal: React.FC<CommentModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="medium">
       <div className={styles.content}>
-        <textarea
-          className={styles.textarea}
+        <Textarea
+          label="Comments"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
           placeholder={placeholder}
           rows={6}
-          autoFocus
+          maxLength={500}
+          showCharCount={true}
+          info="Describe the changes needed in detail"
           disabled={isLoading}
         />
       </div>
       <div className={styles.actions}>
-        <button
+        <Button
           type="button"
           onClick={onClose}
-          className={styles.cancelButton}
+          variant="outline"
           disabled={isLoading}
         >
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           type="button"
           onClick={handleSubmit}
-          className={styles.submitButton}
-          disabled={isLoading || !comment.trim()}
+          variant="primary"
+          isLoading={isLoading}
+          disabled={!comment.trim()}
         >
-          {isLoading ? 'Processing...' : submitText}
-        </button>
+          {submitText}
+        </Button>
       </div>
     </Modal>
   );

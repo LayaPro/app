@@ -103,11 +103,11 @@ export const AmountInput: React.FC<AmountInputProps> = ({
       )}
       
       <div className={styles.inputWrapper}>
-        <span className={styles.currencySymbol}>₹</span>
+        <span className={`${styles.currencySymbol} ${disabled ? styles.disabled : ''}`}>₹</span>
         <input
           type="text"
           inputMode="numeric"
-          className={`${styles.input} ${error ? styles.error : ''}`}
+          className={`${styles.input} ${error ? styles.error : ''} ${disabled ? styles.disabled : ''}`}
           value={formatIndianNumber(value)}
           onChange={handleChange}
           placeholder={placeholder}

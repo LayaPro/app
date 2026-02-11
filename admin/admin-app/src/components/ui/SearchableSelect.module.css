@@ -254,3 +254,58 @@
   color: #dc2626;
   font-weight: 500;
 }
+
+/* Mobile styles */
+@media (max-width: 768px) {
+  .label {
+    font-size: 13px;
+  }
+
+  .selectButton {
+    padding: 8px 12px;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  .chevron svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .searchContainer {
+    padding: 8px 10px;
+  }
+
+  .searchIcon {
+    width: 14px;
+    height: 14px;
+  }
+
+  .searchInput {
+    font-size: 12px;
+  }
+
+  .optionsList {
+    max-height: 200px;
+    padding: 4px;
+  }
+
+  .option {
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  .checkIcon svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .noResults {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .errorText {
+    font-size: 12px;
+  }
+}

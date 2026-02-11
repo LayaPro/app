@@ -103,3 +103,34 @@
     transform: rotate(360deg);
   }
 }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .sm {
+    padding: 6px 12px;
+    font-size: 13px;
+    gap: 6px;
+  }
+
+  .md {
+    padding: 8px 16px;
+    font-size: 14px;
+    gap: 6px;
+  }
+
+  .lg {
+    padding: 10px 20px;
+    font-size: 15px;
+    gap: 6px;
+  }
+
+  .button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .spinner {
+    width: 14px;
+    height: 14px;
+  }
+}

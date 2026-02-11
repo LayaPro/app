@@ -15,7 +15,8 @@ import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDe
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
-import { AlbumPdfInfo, EventMenuDropdown, EventDateTime, VideosCard, VideosView } from './components';
+import { AlbumPdfInfo, EventMenuDropdown, EventDateTime, VideosCard, VideosView, VisitClientGalleryButton, CardPlaceholder, RefreshButton } from './components';
+import { getStatusColor, getStatusBgColor } from '../../utils/statusColors';
 
 const Albums = () => {
   const [searchParams] = useSearchParams();
@@ -143,6 +144,7 @@ const Albums = () => {
   const statusDropdownRef = useRef<HTMLDivElement>(null);
   const statusLegendRef = useRef<HTMLDivElement>(null);
   const albumPdfUploadManagerRef = useRef<AlbumPdfUploadManagerHandle>(null);
+  const isClosingMenuRef = useRef<boolean>(false);
 
   useEffect(() => {
     const urlProjectId = searchParams.get('projectId');
@@ -202,7 +204,11 @@ const Albums = () => {
       
       // Close main menu dropdown
       if (menuRef.current && !menuRef.current.contains(target)) {
+        isClosingMenuRef.current = true;
         setOpenMenuId(null);
+        setTimeout(() => {
+          isClosingMenuRef.current = false;
+        }, 100);
       }
       
       // Close bulk actions dropdown
@@ -1675,11 +1681,15 @@ const Albums = () => {
       size: 'default' | 'compact' = 'default'
     ) => {
       if (!selectedEventStatus) return null;
+      const totalSteps = eventDeliveryStatuses.size;
+      const currentStep = selectedEventStatus.step || 1;
       return (
         <StatusBadge
           label={selectedEventStatus.statusDescription}
           className={className}
           size={size}
+          color={getStatusColor(currentStep, totalSteps)}
+          bgColor={getStatusBgColor(currentStep, totalSteps)}
           aria-label={`Status: ${selectedEventStatus.statusDescription}`}
         />
       );
@@ -1702,15 +1712,25 @@ const Albums = () => {
 
         {/* Gallery Actions Bar */}
         <div className={styles.galleryActionsBar}>
-          <button
-            className={styles.backButton}
-            onClick={handleCloseAlbum}
-          >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span>Back to Events</span>
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
+            <button
+              className={styles.backButton}
+              onClick={handleCloseAlbum}
+            >
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+              <span>Back to Events</span>
+            </button>
+            {selectedProject && (
+              <div style={{ marginLeft: 'auto' }}>
+                <VisitClientGalleryButton
+                  projectId={selectedProject.projectId}
+                  onError={(message) => showToast('error', message)}
+                />
+              </div>
+            )}
+          </div>
           <div className={styles.galleryActionsRight}>
             <AlbumPdfInfo
               albumPdfUrl={currentAlbumPdf?.albumPdfUrl}
@@ -2385,100 +2405,34 @@ const Albums = () => {
               {renderSelectedEventStatusBadge(styles.badgeAfterTitle)}
             </h2>
           </div>
-          
-          <div className={styles.imagesHeaderRight}>
-            {/* Status Legend Help Icon */}
-            <div className={styles.statusLegendContainer} ref={statusLegendRef}>
-              <button 
-                className={styles.statusLegendButton}
-                onClick={() => setShowStatusLegend(!showStatusLegend)}
-                title="View status icons legend"
-                tabIndex={-1}
-              >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span>Status Icons</span>
-              </button>
-              
-              {showStatusLegend && (
-              <div className={styles.statusLegendPopover}>
-                <div className={styles.legendPopoverHeader}>
-                  <span>Status Icons Legend</span>
-                </div>
-                <div className={styles.legendPopoverContent}>
-                  <div className={styles.legendItem}>
-                    <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                      </svg>
-                    </span>
-                    <span className={styles.legendLabel}>Review Pending</span>
-                  </div>
-                  <div className={styles.legendItem}>
-                    <span className={styles.legendIcon} style={{ background: 'rgba(251, 191, 36, 0.95)' }}>
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
-                    </span>
-                    <span className={styles.legendLabel}>Re-edit Requested</span>
-                  </div>
-                  <div className={styles.legendItem}>
-                    <span className={styles.legendIcon} style={{ background: 'rgba(147, 51, 234, 0.95)' }}>
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
-                      </svg>
-                    </span>
-                    <span className={styles.legendLabel}>Re-edit Done</span>
-                  </div>
-                  <div className={styles.legendItem}>
-                    <span className={styles.legendIcon} style={{ background: 'rgba(34, 197, 94, 0.95)' }}>
-                      <svg fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-                      </svg>
-                    </span>
-                    <span className={styles.legendLabel}>Approved</span>
-                  </div>
-                  <div className={styles.legendItem}>
-                    <span className={styles.legendIcon} style={{ background: 'rgba(59, 130, 246, 0.95)' }}>
-                      <svg fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M0.41,13.41L6,19L7.41,17.58L1.83,12M22.24,5.58L11.66,16.17L7.5,12L6.07,13.41L11.66,19L23.66,7M18,7L16.59,5.58L10.24,11.93L11.66,13.34L18,7Z" />
-                      </svg>
-                    </span>
-                    <span className={styles.legendLabel}>Client Selected</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            </div>
+        </div>
 
-            {/* Refresh Button */}
-            <button 
-              className={styles.refreshButton} 
-              onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
-              disabled={isLoadingGallery}
-              title="Refresh gallery"
-              aria-label="Refresh gallery"
-              tabIndex={-1}
-            >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
+        <div className={styles.imagesHeaderRight}>
+          {/* Refresh Button */}
+          <button 
+            className={styles.refreshButton} 
+            onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
+            disabled={isLoadingGallery}
+            title="Refresh gallery"
+            aria-label="Refresh gallery"
+            tabIndex={-1}
+          >
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
 
-            {/* Select All Button with Counter */}
-            <button className={styles.selectAllButton} onClick={selectAllImages} tabIndex={-1}>
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '1.125rem', height: '1.125rem', color: '#6366f1' }}>
-                {selectedImages.size === galleryImages.length ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                ) : (
-                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
-                )}
-              </svg>
-              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'} ({selectedImages.size}/{galleryImages.length})
-            </button>
-          </div>
+          {/* Select All Button with Counter */}
+          <button className={styles.selectAllButton} onClick={selectAllImages} tabIndex={-1}>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '1.125rem', height: '1.125rem', color: '#6366f1' }}>
+              {selectedImages.size === galleryImages.length ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              ) : (
+                <circle cx="12" cy="12" r="10" strokeWidth={2} />
+              )}
+            </svg>
+            {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'} ({selectedImages.size}/{galleryImages.length})
+          </button>
         </div>
 
         <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
@@ -2942,35 +2896,49 @@ const Albums = () => {
           <div className={styles.filtersLeft}>
             {/* Back button when viewing events */}
             {selectedProject && !selectedEvent && !showVideosView && (
-              <button
-                className={styles.backButton}
-                onClick={handleBackToProjects}
-              >
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>Back to Projects</span>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: '100%' }}>
+                <button
+                  className={styles.backButton}
+                  onClick={handleBackToProjects}
+                >
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  <span>Back to Projects</span>
+                </button>
+                <RefreshButton onRefresh={async () => {
+                  if (selectedProject) {
+                    await fetchProjectEvents(selectedProject.projectId);
+                  }
+                }} />
+                <div style={{ marginLeft: 'auto' }}>
+                  <VisitClientGalleryButton
+                    projectId={selectedProject.projectId}
+                    onError={(message) => showToast('error', message)}
+                  />
+                </div>
+              </div>
             )}
             {/* Search */}
             {!showVideosView && !selectedProject && (
-              <Input
-                type="text"
-                placeholder={'Search projects...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                icon={
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '18px', height: '18px' }}>
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
-                }
-                style={{ minWidth: '280px' }}
-              />
+              <div className={styles.searchInputWrapper}>
+                <Input
+                  type="text"
+                  placeholder={'Search projects...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  icon={
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '18px', height: '18px' }}>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                      />
+                    </svg>
+                  }
+                />
+              </div>
             )}
             {showVideosView && (
               <button
@@ -3040,11 +3008,15 @@ const Albums = () => {
                     style={{ '--card-index': index + 1 } as React.CSSProperties}
                   >
                     <div className={styles.cardImage} onClick={() => handleProjectClick(project)}>
-                      <img
-                        src={project.desktopCoverUrl || project.coverPhoto || 'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'}
-                        alt={project.projectName}
-                        onLoad={(e) => e.currentTarget.classList.add('loaded')}
-                      />
+                      {project.desktopCoverUrl || project.coverPhoto ? (
+                        <img
+                          src={project.desktopCoverUrl || project.coverPhoto}
+                          alt={project.projectName}
+                          onLoad={(e) => e.currentTarget.classList.add('loaded')}
+                        />
+                      ) : (
+                        <CardPlaceholder type="project" name={project.projectName} />
+                      )}
                     </div>
 
                     <div className={styles.cardContent}>
@@ -3195,38 +3167,29 @@ const Albums = () => {
                     key={eventItem.clientEventId} 
                     className={styles.card}
                     style={{ '--card-index': index + 1, cursor: 'pointer' } as React.CSSProperties}
-                    onClick={() => {
+                    onClick={(e) => {
+                      if (isClosingMenuRef.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                      }
                       console.log('Card clicked!', eventItem);
                       handleEventClick(eventItem);
                     }}
                   >
                     <div className={styles.cardImage}>
-                      <img
-                        src={
-                          getFirstEventImage(eventItem.clientEventId)?.compressedUrl || 
-                          'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=500&h=400&fit=crop'
-                        }
-                        alt={eventTypes.get(eventItem.eventId)?.eventDesc || 'Event'}
-                        onLoad={(e) => e.currentTarget.classList.add('loaded')}
-                      />
-                      {/* Status badge overlay on image */}
-                      {eventItem.eventDeliveryStatusId && (() => {
-                        const status = eventDeliveryStatuses.get(eventItem.eventDeliveryStatusId);
-                        if (!status) return null;
-                        return (
-                          <div style={{ 
-                            position: 'absolute', 
-                            top: '12px', 
-                            right: '12px',
-                            zIndex: 1
-                          }}>
-                            <StatusBadge
-                              label={status.statusDescription}
-                              aria-label={`Status: ${status.statusDescription}`}
-                            />
-                          </div>
-                        );
-                      })()}
+                      {getFirstEventImage(eventItem.clientEventId)?.compressedUrl ? (
+                        <img
+                          src={getFirstEventImage(eventItem.clientEventId)?.compressedUrl}
+                          alt={eventTypes.get(eventItem.eventId)?.eventDesc || 'Event'}
+                          onLoad={(e) => e.currentTarget.classList.add('loaded')}
+                        />
+                      ) : (
+                        <CardPlaceholder 
+                          type="event" 
+                          name={eventTypes.get(eventItem.eventId)?.eventDesc || 'Event'} 
+                        />
+                      )}
                     </div>
 
                     <div className={styles.cardContent}>
@@ -3293,6 +3256,23 @@ const Albums = () => {
                         <span>{getTimeAgo(eventItem.createdAt)}</span>
                       </div>
                     </div>
+                    
+                    {eventItem.eventDeliveryStatusId && (() => {
+                      const status = eventDeliveryStatuses.get(eventItem.eventDeliveryStatusId);
+                      if (!status) return null;
+                      const totalSteps = eventDeliveryStatuses.size;
+                      const currentStep = status.step || 1;
+                      return (
+                        <div style={{ marginTop: '0.75rem' }}>
+                          <StatusBadge
+                            label={status.statusDescription}
+                            color={getStatusColor(currentStep, totalSteps)}
+                            bgColor={getStatusBgColor(currentStep, totalSteps)}
+                            aria-label={`Status: ${status.statusDescription}`}
+                          />
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               ))}

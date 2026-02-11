@@ -68,7 +68,7 @@ export const TermsStep: React.FC<TermsStepProps> = ({
     <div className={styles.form}>
       <div className={styles.formSection}>
         <div className={styles.formGroup}>
-          <div style={{ display: 'grid', gridTemplateColumns: '50% 50%', gap: '16px' }}>
+          <div className={styles.termsContainer}>
             <div>
               <Textarea
                 label="Terms of Service"
@@ -120,8 +120,10 @@ export const TermsStep: React.FC<TermsStepProps> = ({
           </div>
         </div>
 
+        <div className={styles.termsDivider}></div>
+
         <div className={styles.formGroup}>
-          <div style={{ display: 'grid', gridTemplateColumns: '50% 50%', gap: '16px' }}>
+          <div className={styles.termsContainer}>
             <div>
               <Textarea
                 label="Terms of Payment"

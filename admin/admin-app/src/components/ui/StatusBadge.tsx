@@ -6,6 +6,8 @@ interface StatusBadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   icon?: React.ReactNode;
   size?: 'default' | 'compact';
   className?: string;
+  color?: string;
+  bgColor?: string;
 }
 
 const defaultIcon = (
@@ -24,14 +26,21 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({
   icon = defaultIcon,
   size = 'default',
   className = '',
+  color,
+  bgColor,
   ...rest
 }) => {
   const classes = [styles.badge, size === 'compact' ? styles.compact : '', className]
     .filter(Boolean)
     .join(' ');
 
+  const customStyles = color || bgColor ? {
+    ...(color && { color }),
+    ...(bgColor && { backgroundColor: bgColor }),
+  } : undefined;
+
   return (
-    <span className={classes} {...rest}>
+    <span className={classes} style={customStyles} {...rest}>
       <span className={styles.icon}>{icon}</span>
       <span className={styles.text}>{label}</span>
     </span>

@@ -39,9 +39,9 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
   const [photographyServices, setPhotographyServices] = useState<Service[]>([]);
   const [videographyServices, setVideographyServices] = useState<Service[]>([]);
   const [selectedPhotographyType, setSelectedPhotographyType] = useState('');
-  const [photographyCount, setPhotographyCount] = useState(1);
+  const [photographyCount, setPhotographyCount] = useState<number | ''>(1);
   const [selectedVideographyType, setSelectedVideographyType] = useState('');
-  const [videographyCount, setVideographyCount] = useState(1);
+  const [videographyCount, setVideographyCount] = useState<number | ''>(1);
 
   // Fetch events from API
   useEffect(() => {
@@ -91,26 +91,28 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
   };
 
   const addPhotographyService = () => {
-    if (!selectedPhotographyType || photographyCount < 1) return;
+    const count = typeof photographyCount === 'number' ? photographyCount : parseInt(String(photographyCount)) || 1;
+    if (!selectedPhotographyType || count < 1) return;
     
     const label = PHOTOGRAPHY_OPTIONS.find(o => o.value === selectedPhotographyType)?.label || '';
     setPhotographyServices([...photographyServices, {
       type: selectedPhotographyType,
       label,
-      count: photographyCount,
+      count,
     }]);
     setSelectedPhotographyType('');
     setPhotographyCount(1);
   };
 
   const addVideographyService = () => {
-    if (!selectedVideographyType || videographyCount < 1) return;
+    const count = typeof videographyCount === 'number' ? videographyCount : parseInt(String(videographyCount)) || 1;
+    if (!selectedVideographyType || count < 1) return;
     
     const label = VIDEOGRAPHY_OPTIONS.find(o => o.value === selectedVideographyType)?.label || '';
     setVideographyServices([...videographyServices, {
       type: selectedVideographyType,
       label,
-      count: videographyCount,
+      count,
     }]);
     setSelectedVideographyType('');
     setVideographyCount(1);
@@ -226,7 +228,14 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
                 label="Count"
                 type="number"
                 value={photographyCount}
-                onChange={(e) => setPhotographyCount(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPhotographyCount(val === '' ? '' : parseInt(val) || 1);
+                }}
+                onBlur={(e) => {
+                  const val = parseInt(e.target.value);
+                  setPhotographyCount(Math.max(1, val || 1));
+                }}
                 min={1}
               />
             </div>
@@ -278,7 +287,14 @@ export const AddEventModal: React.FC<AddEventModalProps> = ({
                 label="Count"
                 type="number"
                 value={videographyCount}
-                onChange={(e) => setVideographyCount(Math.max(1, parseInt(e.target.value) || 1))}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setVideographyCount(val === '' ? '' : parseInt(val) || 1);
+                }}
+                onBlur={(e) => {
+                  const val = parseInt(e.target.value);
+                  setVideographyCount(Math.max(1, val || 1));
+                }}
                 min={1}
               />
             </div>

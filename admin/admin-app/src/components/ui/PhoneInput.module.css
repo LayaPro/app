@@ -93,6 +93,12 @@
   align-items: stretch;
 }
 
+@media (max-width: 768px) {
+  .phoneInputWrapper {
+    gap: 6px;
+  }
+}
+
 .inputWrapper {
   flex: 1;
 }
@@ -117,6 +123,14 @@
   white-space: nowrap;
 }
 
+@media (max-width: 768px) {
+  .countryButton {
+    padding: 8px 6px;
+    gap: 4px;
+    font-size: 13px;
+  }
+}
+
 .countryButton:hover {
   border-color: var(--color-primary);
 }
@@ -132,9 +146,22 @@
   line-height: 1;
 }
 
+@media (max-width: 768px) {
+  .flag {
+    font-size: 16px;
+  }
+}
+
 .dialCode {
   font-weight: 500;
   min-width: 35px;
+}
+
+@media (max-width: 768px) {
+  .dialCode {
+    min-width: 28px;
+    font-size: 12px;
+  }
 }
 
 .chevron {
@@ -142,6 +169,13 @@
   height: 16px;
   opacity: 0.5;
   transition: transform 0.2s;
+}
+
+@media (max-width: 768px) {
+  .chevron {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 .countryButton:hover .chevron {

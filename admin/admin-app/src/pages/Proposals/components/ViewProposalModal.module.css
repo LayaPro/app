@@ -217,21 +217,95 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .header {
-    flex-direction: column;
+  .container {
     gap: 16px;
   }
 
+  .header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .projectName {
+    font-size: 1.25rem;
+  }
+
+  .amount {
+    font-size: 1.5rem;
+    align-self: flex-start;
+  }
+
+  .section {
+    gap: 12px;
+  }
+
+  .sectionTitle {
+    font-size: 0.95rem;
+    padding-bottom: 6px;
+  }
+
   .details {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  .field label {
+    font-size: 0.8125rem;
+  }
+
+  .value {
+    font-size: 0.875rem;
   }
 
   .eventsList {
     grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .eventCard {
+    padding: 12px;
+    gap: 5px;
+  }
+
+  .eventName {
+    font-size: 0.875rem;
+  }
+
+  .eventDate,
+  .eventVenue {
+    font-size: 0.8125rem;
+  }
+
+  .deliverablesList {
+    gap: 10px;
+  }
+
+  .deliverableItem {
+    padding: 12px;
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .deliverableName {
+    font-size: 0.875rem;
+  }
+
+  .deliverableDesc {
+    font-size: 0.8125rem;
+  }
+
+  .deliverablePrice {
+    font-size: 0.95rem;
+    grid-column: 1;
+    grid-row: auto;
+    align-self: start;
+    padding-top: 4px;
   }
 
   .footer {
     flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
   }
 
   .previewButton,
@@ -239,5 +313,7 @@
   .closeButton {
     width: 100%;
     justify-content: center;
+    padding: 10px 16px;
+    font-size: 0.875rem;
   }
 }
