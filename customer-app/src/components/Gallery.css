@@ -117,8 +117,20 @@
   text-transform: uppercase;
   letter-spacing: 2px;
   z-index: 3;
-  animation: scrollBounce 2s ease-in-out infinite;
   cursor: pointer;
+  opacity: 0;
+  animation: fadeInScrollArrow 1s ease-out 8s forwards, scrollBounce 2s ease-in-out 9s infinite;
+}
+
+@keyframes fadeInScrollArrow {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 @keyframes scrollBounce {

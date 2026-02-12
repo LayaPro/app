@@ -3,6 +3,7 @@ import { Input } from '../../../components/ui/Input';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { useToast } from '../../../context/ToastContext';
 import { VideoPlayerModal } from './VideoPlayerModal';
+import { projectApi } from '../../../services/api';
 import styles from './VideosView.module.css';
 
 interface VideosViewProps {
@@ -77,6 +78,9 @@ export const VideosView = ({ project, onUpdate }: VideosViewProps) => {
     try {
       const updatedUrls = [...videoUrls, newVideoUrl.trim()];
       
+      // Save to backend
+      await projectApi.update(project.projectId, { videoUrls: updatedUrls });
+      
       setVideoUrls(updatedUrls);
       setNewVideoUrl('');
       showToast('success', 'Video added successfully');
@@ -94,6 +98,9 @@ export const VideosView = ({ project, onUpdate }: VideosViewProps) => {
     setIsSaving(true);
     try {
       const updatedUrls = videoUrls.filter((_, i) => i !== index);
+      
+      // Save to backend
+      await projectApi.update(project.projectId, { videoUrls: updatedUrls });
       
       setVideoUrls(updatedUrls);
       showToast('success', 'Video removed successfully');

@@ -7,11 +7,33 @@
   padding: 0;
 }
 
+@media (max-width: 768px) {
+  .modalContent {
+    gap: 12px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+  }
+}
+
 .mainContent {
   display: flex;
   gap: 16px;
   min-height: 400px;
   padding: 0 24px;
+}
+
+@media (max-width: 768px) {
+  .mainContent {
+    padding: 0 16px;
+    min-height: auto;
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .mainContent {
+    padding: 0 12px;
+  }
 }
 
 .imageContainer {
@@ -22,6 +44,20 @@
   border-radius: 0;
   overflow: hidden;
   background: #000;
+}
+
+@media (max-width: 768px) {
+  .imageContainer {
+    min-height: 280px;
+    max-height: 350px;
+  }
+}
+
+@media (max-width: 480px) {
+  .imageContainer {
+    min-height: 220px;
+    max-height: 280px;
+  }
 }
 
 .imageLoader {
@@ -87,49 +123,60 @@
 
 .crosshairVertical,
 .crosshairHorizontal {
-  position: absolute;
-  background: rgba(102, 126, 234, 0.8);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.8);
+  display: none;
 }
 
 .crosshairVertical {
-  width: 2px;
-  height: 40px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  display: none;
 }
 
 .crosshairHorizontal {
-  width: 40px;
-  height: 2px;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  display: none;
 }
 
 .centerDot {
   position: absolute;
-  width: 12px;
-  height: 12px;
-  background: #667eea;
-  border: 2px solid white;
+  width: 16px;
+  height: 16px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.centerDot::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 2px solid #667eea;
   border-radius: 50%;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-  animation: pulse 2s ease-in-out infinite;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3), 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.centerDot::after {
+  content: '';
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(102, 126, 234, 0.6);
+  border-radius: 50%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4);
 }
 
 @keyframes pulse {
   0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
     opacity: 1;
   }
   50% {
-    transform: translate(-50%, -50%) scale(1.2);
-    opacity: 0.8;
+    opacity: 0.7;
   }
 }
 
@@ -216,68 +263,82 @@
     width: 100%;
     flex-direction: row;
     flex-wrap: wrap;
-  }
-
-  .previewCard {
-    flex: 1;
-    min-width: 200px;
-  }
-}
-
-@media (max-width: 768px) {
-  .modalContent {
-    gap: 16px;
-  }
-
-  .mainContent {
-    min-height: auto;
-  }
-
-  .imageContainer {
-    min-height: 300px;
-  }
-
-  .imageWrapper {
-    min-height: 300px;
-  }
-
-  .previewsContainer {
-    flex-direction: column;
-  }
-
-  .previewCard {
-    min-width: auto;
-  }
-
-  .coordinates {
-    gap: 24px;
-    padding: 12px;
-  }
-
-  .actions {
-    flex-direction: column-reverse;
-    gap: 8px;
-  }
-}
-
-@media (max-width: 480px) {
-  .imageContainer {
-    min-height: 250px;
-  }
-
-  .imageWrapper {
-    min-height: 250px;
-  }
-
-  .previewsContainer {
     gap: 12px;
   }
 
   .previewCard {
+    flex: 1;
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 768px) {
+  .imageWrapper {
+    min-height: 280px;
+    max-height: 350px;
+  }
+
+  .previewsContainer {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+
+  .previewCard {
+    min-width: auto;
+    flex: 0 0 calc(33.333% - 8px);
+  }
+
+  .coordinates {
     gap: 6px;
+    padding: 6px 10px;
+    font-size: 10px;
+    margin-top: 6px;
+  }
+
+  .actions {
+    flex-direction: row;
+    gap: 8px;
+    padding: 12px 16px;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    border-top: 1px solid #e9ecef;
+    margin: 0 -16px -12px;
+  }
+
+  .actions button {
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .imageWrapper {
+    min-height: 220px;
+    max-height: 280px;
+  }
+
+  .previewsContainer {
+    gap: 8px;
+  }
+
+  .previewCard {
+    flex: 0 0 calc(33.333% - 6px);
+    gap: 4px;
   }
 
   .previewLabel {
-    font-size: 12px;
+    font-size: 9px;
+    gap: 2px;
+  }
+
+  .previewLabel svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .actions {
+    padding: 10px 12px;
+    margin: 0 -12px -12px;
+    gap: 6px;
   }
 }

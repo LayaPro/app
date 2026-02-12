@@ -35,7 +35,7 @@ const Albums = () => {
   const currentAlbumPdf = albumPdfs.length > 0 ? albumPdfs[0] : null;
   
   const [isLoading, setIsLoading] = useState(true);
-  const [showContent, setShowContent] = useState(false);
+  const [showContent, setShowContent] = useState(true); // Start as true to avoid flicker on refresh
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState('default');
   const [currentPage, setCurrentPage] = useState(1);
@@ -145,17 +145,19 @@ const Albums = () => {
   const statusLegendRef = useRef<HTMLDivElement>(null);
   const albumPdfUploadManagerRef = useRef<AlbumPdfUploadManagerHandle>(null);
   const isClosingMenuRef = useRef<boolean>(false);
+  const isFetchingGalleryRef = useRef<boolean>(false);
 
   useEffect(() => {
     const urlProjectId = searchParams.get('projectId');
     const urlEventId = searchParams.get('eventId');
+    const urlView = searchParams.get('view');
     
     if (urlEventId) {
       // If URL has eventId, load project and select event directly
       fetchProjectsAndSelectEvent(urlEventId);
     } else if (urlProjectId) {
       // If URL has projectId, skip showing projects view and load project directly
-      fetchProjectsAndSelectOne(urlProjectId);
+      fetchProjectsAndSelectOne(urlProjectId, urlView === 'videos');
     } else {
       // Normal flow - show projects view
       fetchProjects();
@@ -275,7 +277,7 @@ const Albums = () => {
     }
   };
 
-  const fetchProjectsAndSelectOne = async (projectId: string) => {
+  const fetchProjectsAndSelectOne = async (projectId: string, showVideos = false) => {
     setIsLoading(true);
     try {
       const response = await projectApi.getAll();
@@ -286,7 +288,7 @@ const Albums = () => {
       if (project) {
         // Directly set selected project without transitions
         setSelectedProject(project);
-        setShowVideosView(false);
+        setShowVideosView(showVideos);
         setSearchTerm('');
         setCurrentPage(1);
         
@@ -341,7 +343,8 @@ const Albums = () => {
           setSelectedEvent(event);
           setIsUploadExpanded(false);
           setUploadedImages([]);
-          setGalleryImages([]);
+          // Don't clear gallery images on refresh to avoid flicker
+          // setGalleryImages([]);
           
           // Load images for the event
           await fetchGalleryImages(event.clientEventId);
@@ -435,9 +438,11 @@ const Albums = () => {
 
   const handleProjectClick = (project: Project) => {
     setIsTransitioning(true);
-    
+
     setTimeout(() => {
       setSelectedProject(project);
+      // Persist in URL only
+      window.history.replaceState(null, '', `?projectId=${project.projectId}`);
       setShowVideosView(false);
       setSearchTerm('');
       setCurrentPage(1);
@@ -453,6 +458,8 @@ const Albums = () => {
     
     setTimeout(() => {
       setSelectedProject(null);
+      // Clear URL
+      window.history.replaceState(null, '', window.location.pathname);
       setShowVideosView(false);
       setEvents([]);
       setSearchTerm('');
@@ -467,9 +474,11 @@ const Albums = () => {
     console.log('Event clicked:', event);
     console.log('Current selectedProject:', selectedProject);
     setSelectedEvent(event);
+    // Persist in URL only
+    window.history.replaceState(null, '', `?projectId=${selectedProject?.projectId || event.projectId}&eventId=${event.clientEventId}`);
     setIsUploadExpanded(false);
     setUploadedImages([]);
-    setGalleryImages([]);
+    // Let fetchGalleryImages handle clearing and loading - prevents flicker
     fetchGalleryImages(event.clientEventId);
     console.log('Selected event set to:', event);
   };
@@ -477,6 +486,10 @@ const Albums = () => {
   const handleCloseAlbum = () => {
     console.log('handleCloseAlbum called');
     setSelectedEvent(null);
+    // Update URL
+    if (selectedProject) {
+      window.history.replaceState(null, '', `?projectId=${selectedProject.projectId}`);
+    }
     setUploadedImages([]);
     setIsUploadExpanded(false);
   };
@@ -576,7 +589,15 @@ const Albums = () => {
   };
 
   const fetchGalleryImages = async (clientEventId: string) => {
+    // Prevent duplicate fetches using ref (more reliable than state)
+    if (isFetchingGalleryRef.current) {
+      console.log('Skipping duplicate fetch - already loading gallery images');
+      return;
+    }
+    
     try {
+      console.log('Fetching gallery images for event:', clientEventId);
+      isFetchingGalleryRef.current = true;
       setIsLoadingGallery(true);
       setLoadedGalleryImages(new Set());
       
@@ -590,6 +611,7 @@ const Albums = () => {
       setGalleryImages([]);
     } finally {
       setIsLoadingGallery(false);
+      isFetchingGalleryRef.current = false;
     }
   };
 
@@ -1550,6 +1572,11 @@ const Albums = () => {
     }
   }, [galleryImages, selectedImages.size]);
 
+  const sortedGalleryImages = useMemo(() => {
+    const filteredImages = galleryImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus);
+    return getSortedImages(filteredImages);
+  }, [galleryImages, selectedStatus, sortBy, hasUnsavedOrder]);
+
   const filteredItems = useMemo(() => {
     const items = selectedProject ? events : projects;
     let filtered = [...items];
@@ -1904,7 +1931,7 @@ const Albums = () => {
                         <span>Choose Files</span>
                       </button>
                       <p className={styles.uploadHint}>
-                        Supports: JPG, PNG, HEIC, RAW files
+                        Supports: JPG, PNG
                       </p>
                     </div>
                   )}
@@ -2117,21 +2144,21 @@ const Albums = () => {
                     </button>
                   )}
                   
-                  {/* Set Cover (single option) */}
-                  {selectedImages.size === 1 && (
-                    <button 
-                      className={styles.dropdownItem}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleSetCover();
-                      }}
-                    >
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span>Set Cover Photo</span>
-                    </button>
-                  )}
+                  {/* Set Cover */}
+                  <button 
+                    className={styles.dropdownItem}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleSetCover();
+                    }}
+                    disabled={selectedImages.size !== 1}
+                    title={selectedImages.size !== 1 ? 'Please select exactly one image to set as cover' : 'Set this image as cover photo'}
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span>Set Cover Photo</span>
+                  </button>
                   
                   <button 
                     className={styles.dropdownItem}
@@ -2371,38 +2398,24 @@ const Albums = () => {
               {renderSelectedEventStatusBadge(styles.badgeAfterTitle)}
             </h2>
           </div>
-        </div>
-
-        <div className={styles.imagesHeaderRight}>
-          {/* Refresh Button */}
-          <button 
-            className={styles.refreshButton} 
-            onClick={() => selectedEvent && fetchGalleryImages(selectedEvent.clientEventId)}
-            disabled={isLoadingGallery}
-            title="Refresh gallery"
-            aria-label="Refresh gallery"
-            tabIndex={-1}
-          >
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-
-          {/* Select All Button with Counter */}
-          <button className={styles.selectAllButton} onClick={selectAllImages} tabIndex={-1}>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '1.125rem', height: '1.125rem', color: '#6366f1' }}>
-              {selectedImages.size === galleryImages.length ? (
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-              ) : (
-                <circle cx="12" cy="12" r="10" strokeWidth={2} />
-              )}
-            </svg>
-            {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'} ({selectedImages.size}/{galleryImages.length})
-          </button>
+          
+          <div className={styles.imagesHeaderRight}>
+            {/* Select All Button with Counter */}
+            <button className={styles.selectAllButton} onClick={selectAllImages} tabIndex={-1}>
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ width: '1.125rem', height: '1.125rem', color: '#6366f1' }}>
+                {selectedImages.size === galleryImages.length ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                ) : (
+                  <circle cx="12" cy="12" r="10" strokeWidth={2} />
+                )}
+              </svg>
+              {selectedImages.size === galleryImages.length ? 'Deselect All' : 'Select All'} ({selectedImages.size}/{galleryImages.length})
+            </button>
+          </div>
         </div>
 
         <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
-          {isLoadingGallery ? (
+          {isLoadingGallery && galleryImages.length === 0 ? (
             <div style={{ gridColumn: '1 / -1', padding: '3rem', display: 'flex', justifyContent: 'center' }}>
               <DotLoader text="Loading gallery..." />
             </div>
@@ -2413,7 +2426,7 @@ const Albums = () => {
               </svg>
               <p>No images uploaded yet. Use the upload section above to add images.</p>
             </div>
-          ) : isLoadingGalleryPreviews ? (
+          ) : isLoadingGalleryPreviews && galleryImages.length === 0 ? (
             <>
               <div style={{ gridColumn: '1 / -1', padding: '3rem', display: 'flex', justifyContent: 'center' }}>
                 <DotLoader text="Loading gallery..." />
@@ -2431,7 +2444,7 @@ const Albums = () => {
               </div>
             </>
           ) : showContent && (
-            getSortedImages(eventImages.filter(img => selectedStatus === 'all' || img.imageStatusId === selectedStatus)).map((image, index) => (
+            sortedGalleryImages.map((image, index) => (
               <div 
                 key={image.imageId} 
                 className={`${styles.imageItem} ${selectedImages.has(image.imageId) ? styles.selectedImage : ''} ${dragOverIndex === index ? styles.dragOver : ''} ${draggedImageId === image.imageId ? styles.dragging : ''}`}
@@ -2817,11 +2830,6 @@ const Albums = () => {
                   </svg>
                   <span>Back to Projects</span>
                 </button>
-                <RefreshButton onRefresh={async () => {
-                  if (selectedProject) {
-                    await fetchProjectEvents(selectedProject.projectId);
-                  }
-                }} />
                 <div style={{ marginLeft: 'auto' }}>
                   <VisitClientGalleryButton
                     projectId={selectedProject.projectId}
@@ -2854,7 +2862,12 @@ const Albums = () => {
             {showVideosView && (
               <button
                 className={styles.backButton}
-                onClick={() => setShowVideosView(false)}
+                onClick={() => {
+                  setShowVideosView(false);
+                  if (selectedProject) {
+                    window.history.replaceState(null, '', `?projectId=${selectedProject.projectId}`);
+                  }
+                }}
               >
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="20" height="20">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -3195,7 +3208,10 @@ const Albums = () => {
               <VideosCard 
                 projectId={selectedProject.projectId}
                 videoCount={selectedProject.videoUrls?.length || 0}
-                onClick={() => setShowVideosView(true)}
+                onClick={() => {
+                  setShowVideosView(true);
+                  window.history.replaceState(null, '', `?projectId=${selectedProject.projectId}&view=videos`);
+                }}
               />
             </div>
           </div>
