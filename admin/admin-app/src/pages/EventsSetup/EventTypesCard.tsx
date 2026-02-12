@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { DataTable } from '../../components/ui/DataTable.js';
 import type { Column } from '../../components/ui/DataTable.js';
 import { Modal } from '../../components/ui/Modal.js';
+import { InfoBox } from '../../components/ui/InfoBox.js';
 import { ActionMenu } from '../../components/ui/ActionMenu.js';
 import type { MenuItem } from '../../components/ui/ActionMenu.js';
 import { EventForm } from '../../components/forms/EventForm.js';
@@ -126,12 +127,9 @@ export const EventTypesCard: React.FC<EventTypesCardProps> = ({
   return (
     <>
       <div className={styles.contentWrapper}>
-        <div className={styles.infoText}>
-          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Manage different types of events (Wedding, Birthday, Corporate, etc.) to organize your projects and workflows.</span>
-        </div>
+        <InfoBox>
+          Manage different types of events (Wedding, Birthday, Corporate, etc.) to organize your projects and workflows.
+        </InfoBox>
 
         <DataTable
           columns={eventTypesColumns}

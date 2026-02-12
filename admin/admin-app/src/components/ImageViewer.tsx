@@ -93,12 +93,13 @@ const ImageViewer: React.FC<ImageViewerProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     
-    // Prevent background scroll
+    // Prevent background scroll - store original value
+    const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = '';
+      document.body.style.overflow = originalOverflow || '';
     };
   }, [isOpen, onClose, handlePrevious, handleNext]);
 

@@ -15,7 +15,7 @@ import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDe
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
-import { AlbumPdfInfo, EventMenuDropdown, EventDateTime, VideosCard, VideosView, VisitClientGalleryButton, CardPlaceholder, RefreshButton } from './components';
+import { AlbumPdfInfo, EventMenuDropdown, EventDateTime, VideosCard, VideosView, VisitClientGalleryButton, CardPlaceholder, RefreshButton, FocalPointModal } from './components';
 import { getStatusColor, getStatusBgColor } from '../../utils/statusColors';
 
 const Albums = () => {
@@ -99,8 +99,8 @@ const Albums = () => {
   const [approvedPhotosCount, setApprovedPhotosCount] = useState(0);
   const [showStatusLegend, setShowStatusLegend] = useState(false);
   const [focusedImageIndex, setFocusedImageIndex] = useState<number>(-1);
-  const [showCoverPreviewModal, setShowCoverPreviewModal] = useState(false);
-  const [selectedCoverDevice, setSelectedCoverDevice] = useState<'mobile' | 'tablet' | 'desktop' | null>(null);
+  const [showFocalPointModal, setShowFocalPointModal] = useState(false);
+  const [selectedCoverImage, setSelectedCoverImage] = useState<{ imageId: string; url: string } | null>(null);
   const [isSettingCover, setIsSettingCover] = useState(false);
   const [isPreparingImages, setIsPreparingImages] = useState(false);
   const preparingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1012,54 +1012,69 @@ const Albums = () => {
     setShowBulkActions(false);
   };
 
-  const handleSetCover = (device: 'mobile' | 'tablet' | 'desktop') => {
+  const handleSetCover = () => {
     if (selectedImages.size !== 1) return;
-    setSelectedCoverDevice(device);
-    setShowCoverPreviewModal(true);
+    
+    const imageId = Array.from(selectedImages)[0];
+    const image = galleryImages.find(img => img.imageId === imageId);
+    if (!image) return;
+
+    setSelectedCoverImage({
+      imageId: image.imageId,
+      url: image.originalUrl
+    });
+    setShowFocalPointModal(true);
     setShowBulkActions(false);
   };
 
-  const confirmSetCover = async () => {
-    if (!selectedProject || !selectedCoverDevice || selectedImages.size !== 1) return;
+  const confirmSetCover = async (focalPoint: { x: number; y: number }) => {
+    if (!selectedProject || !selectedCoverImage) return;
     
     setIsSettingCover(true);
     try {
-      const imageId = Array.from(selectedImages)[0];
-      const image = galleryImages.find(img => img.imageId === imageId);
-      if (!image) throw new Error('Image not found');
-
-      const coverUrl = image.originalUrl;
-      const fieldMap = {
-        mobile: 'mobileCoverUrl',
-        tablet: 'tabletCoverUrl',
-        desktop: 'desktopCoverUrl'
-      };
-
       await projectApi.update(selectedProject.projectId, {
-        [fieldMap[selectedCoverDevice]]: coverUrl
+        coverImage: {
+          imageId: selectedCoverImage.imageId,
+          url: selectedCoverImage.url,
+          focalPoint
+        }
       });
 
-      // Update the local project state with the new cover URL
+      // Update the local project state with the new cover image
       setProjects(prevProjects => 
         prevProjects.map(p => 
           p.projectId === selectedProject.projectId
-            ? { ...p, [fieldMap[selectedCoverDevice]]: coverUrl }
+            ? { 
+                ...p, 
+                coverImage: {
+                  imageId: selectedCoverImage.imageId,
+                  url: selectedCoverImage.url,
+                  focalPoint
+                }
+              }
             : p
         )
       );
 
       // Update the selected project state as well
       setSelectedProject(prev => 
-        prev ? { ...prev, [fieldMap[selectedCoverDevice]]: coverUrl } : prev
+        prev ? { 
+          ...prev, 
+          coverImage: {
+            imageId: selectedCoverImage.imageId,
+            url: selectedCoverImage.url,
+            focalPoint
+          }
+        } : prev
       );
       
-      showToast('success', `${selectedCoverDevice.charAt(0).toUpperCase() + selectedCoverDevice.slice(1)} cover image set successfully`);
-      setShowCoverPreviewModal(false);
-      setSelectedCoverDevice(null);
+      showToast('success', 'Cover photo set successfully');
+      setShowFocalPointModal(false);
+      setSelectedCoverImage(null);
       setSelectedImages(new Set());
     } catch (error) {
       console.error('Error setting cover:', error);
-      showToast('error', 'Failed to set cover image');
+      showToast('error', 'Failed to set cover photo');
     } finally {
       setIsSettingCover(false);
     }
@@ -1161,11 +1176,6 @@ const Albums = () => {
       setSelectedImages(new Set());
       setShowApproveModal(false);
       setPublishAfterApprove(false);
-      
-      // Ensure body scroll is restored (fix for modal overflow issue)
-      setTimeout(() => {
-        document.body.style.overflow = 'unset';
-      }, 100);
       
       // Refresh gallery silently without showing loading states
       if (selectedEvent) {
@@ -2107,64 +2117,20 @@ const Albums = () => {
                     </button>
                   )}
                   
-                  {/* Set Cover with Submenu */}
+                  {/* Set Cover (single option) */}
                   {selectedImages.size === 1 && (
-                    <div className={styles.setCoverContainer}>
-                      <button 
-                        className={styles.dropdownItem}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                        }}
-                      >
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        <span>Set Cover</span>
-                        <svg style={{ marginLeft: 'auto' }} fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </button>
-
-                      {/* Submenu - shows on hover */}
-                      <div className={styles.submenu}>
-                        <button
-                          className={styles.submenuItem}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetCover('mobile');
-                          }}
-                        >
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          Mobile
-                        </button>
-                        <button
-                          className={styles.submenuItem}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetCover('tablet');
-                          }}
-                        >
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                          </svg>
-                          Tablet
-                        </button>
-                        <button
-                          className={styles.submenuItem}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSetCover('desktop');
-                          }}
-                        >
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                          </svg>
-                          Desktop
-                        </button>
-                      </div>
-                    </div>
+                    <button 
+                      className={styles.dropdownItem}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleSetCover();
+                      }}
+                    >
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                      <span>Set Cover Photo</span>
+                    </button>
                   )}
                   
                   <button 
@@ -2804,76 +2770,21 @@ const Albums = () => {
         )}
 
         {/* Cover Preview Modal */}
-        {showCoverPreviewModal && (() => {
-          const imageId = Array.from(selectedImages)[0];
-          const image = galleryImages.find(img => img.imageId === imageId);
-          const imageUrl = image?.originalUrl || '';
-          
-          return imageUrl ? (
-            <Modal
-              isOpen={showCoverPreviewModal}
-              onClose={() => {
-                setShowCoverPreviewModal(false);
-                setSelectedCoverDevice(null);
-              }}
-              title={`Set ${selectedCoverDevice?.charAt(0).toUpperCase()}${selectedCoverDevice?.slice(1)} Cover`}
-              size="large"
-            >
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', padding: '20px' }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'center', 
-                  alignItems: 'center',
-                  maxHeight: '70vh',
-                  overflow: 'hidden'
-                }}>
-                  <img 
-                    src={imageUrl} 
-                    alt="Cover preview" 
-                    style={{ 
-                      maxWidth: '100%', 
-                      maxHeight: '70vh', 
-                      objectFit: 'contain'
-                    }} 
-                  />
-                </div>
-                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                  <button
-                    onClick={() => {
-                      setShowCoverPreviewModal(false);
-                      setSelectedCoverDevice(null);
-                    }}
-                    style={{
-                      padding: '8px 16px',
-                      border: '1px solid var(--border-color)',
-                      borderRadius: '6px',
-                      background: 'var(--bg-secondary)',
-                      color: 'var(--text-primary)',
-                      cursor: 'pointer'
-                    }}
-                    disabled={isSettingCover}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={confirmSetCover}
-                    style={{
-                      padding: '8px 16px',
-                      border: 'none',
-                      borderRadius: '6px',
-                      background: 'var(--color-primary)',
-                      color: 'white',
-                      cursor: 'pointer'
-                    }}
-                    disabled={isSettingCover}
-                  >
-                    {isSettingCover ? 'Setting...' : 'Confirm'}
-                  </button>
-                </div>
-              </div>
-            </Modal>
-          ) : null;
-        })()}
+        {/* Focal Point Modal */}
+        {showFocalPointModal && selectedCoverImage && (
+          <FocalPointModal
+            isOpen={showFocalPointModal}
+            onClose={() => {
+              setShowFocalPointModal(false);
+              setSelectedCoverImage(null);
+            }}
+            imageUrl={selectedCoverImage.url}
+            imageName={galleryImages.find(img => img.imageId === selectedCoverImage.imageId)?.fileName}
+            initialFocalPoint={selectedProject?.coverImage?.imageId === selectedCoverImage.imageId ? selectedProject.coverImage.focalPoint : undefined}
+            onConfirm={confirmSetCover}
+            isLoading={isSettingCover}
+          />
+        )}
       </div>
     );
   }
@@ -3008,11 +2919,14 @@ const Albums = () => {
                     style={{ '--card-index': index + 1 } as React.CSSProperties}
                   >
                     <div className={styles.cardImage} onClick={() => handleProjectClick(project)}>
-                      {project.desktopCoverUrl || project.coverPhoto ? (
+                      {project.coverImage?.url || project.desktopCoverUrl || project.coverPhoto ? (
                         <img
-                          src={project.desktopCoverUrl || project.coverPhoto}
+                          src={project.coverImage?.url || project.desktopCoverUrl || project.coverPhoto}
                           alt={project.projectName}
                           onLoad={(e) => e.currentTarget.classList.add('loaded')}
+                          style={project.coverImage?.focalPoint ? {
+                            objectPosition: `${project.coverImage.focalPoint.x}% ${project.coverImage.focalPoint.y}%`
+                          } : undefined}
                         />
                       ) : (
                         <CardPlaceholder type="project" name={project.projectName} />

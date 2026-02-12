@@ -828,6 +828,7 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
             mobileCoverUrl: project.mobileCoverUrl,
             tabletCoverUrl: project.tabletCoverUrl,
             desktopCoverUrl: project.desktopCoverUrl,
+            coverImage: project.coverImage, // New focal point-based cover
             clientName: proposal.clientName,
             albumImages: imagesWithEventId
           };

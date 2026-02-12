@@ -80,6 +80,17 @@ export interface Project {
   s3BucketName?: string;
   displayPic?: string;
   coverPhoto?: string;
+  mobileCoverUrl?: string;
+  tabletCoverUrl?: string;
+  desktopCoverUrl?: string;
+  coverImage?: {
+    imageId: string;
+    url: string;
+    focalPoint: {
+      x: number;
+      y: number;
+    };
+  };
   createdAt?: Date;
   updatedAt?: Date;
 }

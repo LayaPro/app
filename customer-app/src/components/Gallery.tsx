@@ -27,12 +27,30 @@ interface GalleryProps {
   mobileCoverUrl?: string;
   tabletCoverUrl?: string;
   desktopCoverUrl?: string;
+  coverImage?: {
+    imageId: string;
+    url: string;
+    focalPoint: {
+      x: number;
+      y: number;
+    };
+  };
   clientName: string;
   albumImages: AlbumImage[];
   events?: EventInfo[];
 }
 
-const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverUrl, tabletCoverUrl, desktopCoverUrl, clientName, albumImages, events = [] }) => {
+const Gallery: React.FC<GalleryProps> = ({ 
+  projectName, 
+  coverPhoto, 
+  mobileCoverUrl, 
+  tabletCoverUrl, 
+  desktopCoverUrl, 
+  coverImage,
+  clientName, 
+  albumImages, 
+  events = [] 
+}) => {
   const [selectedImage, setSelectedImage] = useState<AlbumImage | null>(null);
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null);
   const [isInitialOpen, setIsInitialOpen] = useState(true);
@@ -125,6 +143,12 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
 
   // Get device-specific cover photo (memoized)
   const displayCover = useMemo(() => {
+    // Use new coverImage structure if available
+    if (coverImage?.url) {
+      return coverImage.url;
+    }
+    
+    // Fallback to old URL-based system
     const width = window.innerWidth;
     if (width <= 640 && mobileCoverUrl) {
       return mobileCoverUrl;
@@ -134,7 +158,15 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
       return desktopCoverUrl;
     }
     return coverPhoto || albumImages[0]?.compressedUrl || albumImages[0]?.originalUrl || 'https://images.unsplash.com/photo-1519741497674-611481863552?w=1920';
-  }, [mobileCoverUrl, tabletCoverUrl, desktopCoverUrl, coverPhoto, albumImages]);
+  }, [coverImage, mobileCoverUrl, tabletCoverUrl, desktopCoverUrl, coverPhoto, albumImages]);
+
+  // Get focal point for object-position
+  const coverFocalPoint = useMemo(() => {
+    if (coverImage?.focalPoint) {
+      return `${coverImage.focalPoint.x}% ${coverImage.focalPoint.y}%`;
+    }
+    return 'center center'; // Default
+  }, [coverImage]);
 
   // Preload cover image
   useEffect(() => {
@@ -575,7 +607,14 @@ const Gallery: React.FC<GalleryProps> = ({ projectName, coverPhoto, mobileCoverU
 
         {/* Full Screen Hero Cover */}
         <div className="gallery-hero">
-          <img src={displayCover} alt={projectName} className="gallery-hero-image" />
+          <img 
+            src={displayCover} 
+            alt={projectName} 
+            className="gallery-hero-image"
+            style={{
+              objectPosition: coverFocalPoint
+            }}
+          />
           <div className="gallery-hero-overlay"></div>
           
           {!hasScrolled && (

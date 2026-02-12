@@ -11,4 +11,5 @@ export { VideoPlayerModal } from './VideoPlayerModal';
 export { VisitClientGalleryButton } from './VisitClientGalleryButton';
 export { CardPlaceholder } from './CardPlaceholder';
 export { RefreshButton } from './RefreshButton';
+export { FocalPointModal } from './FocalPointModal';
 

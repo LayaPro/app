@@ -3,6 +3,17 @@ export interface ProjectSummary {
   projectName: string;
   coverPhoto?: string;
   displayPic?: string;
+  mobileCoverUrl?: string;
+  tabletCoverUrl?: string;
+  desktopCoverUrl?: string;
+  coverImage?: {
+    imageId: string;
+    url: string;
+    focalPoint: {
+      x: number;
+      y: number;
+    };
+  };
   startDate?: string;
   createdAt?: string;
   videoUrls?: string[];

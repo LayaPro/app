@@ -22,9 +22,17 @@ export interface IProject extends Document {
   s3ProjectFolderName?: string; // Unique folder identifier for S3 storage
   displayPic?: string;
   coverPhoto?: string;
-  mobileCoverUrl?: string; // Mobile cover image URL
-  tabletCoverUrl?: string; // Tablet cover image URL
-  desktopCoverUrl?: string; // Desktop cover image URL
+  mobileCoverUrl?: string; // Mobile cover image URL (deprecated - use coverImage)
+  tabletCoverUrl?: string; // Tablet cover image URL (deprecated - use coverImage)
+  desktopCoverUrl?: string; // Desktop cover image URL (deprecated - use coverImage)
+  coverImage?: {
+    imageId: string;
+    url: string;
+    focalPoint: {
+      x: number; // Percentage 0-100
+      y: number; // Percentage 0-100
+    };
+  };
   videoUrls?: string[]; // YouTube video URLs
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +64,14 @@ const ProjectSchema = new Schema<IProject>(
     mobileCoverUrl: { type: String },
     tabletCoverUrl: { type: String },
     desktopCoverUrl: { type: String },
+    coverImage: {
+      imageId: { type: String },
+      url: { type: String },
+      focalPoint: {
+        x: { type: Number, min: 0, max: 100 },
+        y: { type: Number, min: 0, max: 100 }
+      }
+    },
     videoUrls: { type: [String], default: [] } // YouTube video URLs
   },
   { timestamps: true }

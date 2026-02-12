@@ -6,6 +6,7 @@ import type { Column } from '../../components/ui/DataTable.js';
 import { Modal } from '../../components/ui/Modal.js';
 import { Textarea } from '../../components/ui/Textarea.js';
 import { Button } from '../../components/ui/Button.js';
+import { InfoBox } from '../../components/ui/InfoBox.js';
 import { eventDeliveryStatusApi } from '../../services/api.js';
 import { sanitizeTextInput } from '../../utils/sanitize.js';
 
@@ -205,12 +206,9 @@ export const EventWorkflowCard: FC<EventWorkflowCardProps> = ({
   return (
     <>
       <div className={styles.contentWrapper}>
-        <div className={styles.infoText}>
-          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>Event workflow steps are guided by the delivery journey and update automatically. Statuses reflect where the event sits in the delivery journey.</span>
-        </div>
+        <InfoBox>
+          Event workflow steps are guided by the delivery journey and update automatically. Statuses reflect where the event sits in the delivery journey.
+        </InfoBox>
 
         <DataTable
           columns={workflowColumns}

@@ -28,6 +28,8 @@ export const Modal: React.FC<ModalProps> = ({
   useEffect(() => {
     if (isOpen) {
       setShouldRender(true);
+      // Store original overflow value
+      const originalOverflow = document.body.style.overflow;
       document.body.style.overflow = 'hidden';
       // Small delay to allow initial render before animation
       requestAnimationFrame(() => {
@@ -50,9 +52,15 @@ export const Modal: React.FC<ModalProps> = ({
           }, 50);
         });
       });
+      
+      // Cleanup function to restore overflow
+      return () => {
+        document.body.style.overflow = originalOverflow || '';
+      };
     } else {
       setIsAnimating(false);
-      document.body.style.overflow = 'unset';
+      // Always restore overflow when closing
+      document.body.style.overflow = '';
       const timer = setTimeout(() => setShouldRender(false), 300);
       return () => clearTimeout(timer);
     }

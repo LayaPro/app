@@ -12,6 +12,7 @@ export { FormError } from './FormError.js';
 export { PhoneInput } from './PhoneInput.js';
 export { SearchableSelect } from './SearchableSelect.js';
 export { InfoCard } from './InfoCard.js';
+export { InfoBox } from './InfoBox.js';
 export { DatePicker } from './DatePicker.js';
 export { Toast } from './Toast.js';
 export { ToastContainer } from './ToastContainer.js';

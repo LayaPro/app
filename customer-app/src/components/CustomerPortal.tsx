@@ -208,6 +208,7 @@ export const CustomerPortal = () => {
           mobileCoverUrl={portalData.gallery?.mobileCoverUrl}
           tabletCoverUrl={portalData.gallery?.tabletCoverUrl}
           desktopCoverUrl={portalData.gallery?.desktopCoverUrl}
+          coverImage={portalData.gallery?.coverImage}
           clientName={portalData.gallery?.clientName}
           albumImages={portalData.gallery?.albumImages || []}
           events={portalData.events || []}
