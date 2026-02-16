@@ -873,7 +873,7 @@ export const sendProposal = async (req: AuthRequest, res: Response) => {
 
     // Construct proposal URL
     const customerAppUrl = process.env.CUSTOMER_APP_URL || 'http://localhost:5174';
-    const proposalUrl = `${customerAppUrl}/proposal/${proposal.accessCode}`;
+    const proposalUrl = `${customerAppUrl}/${proposal.accessCode}`;
 
     logger.debug(`[${requestId}] Sending proposal email`, { 
       tenantId,
