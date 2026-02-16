@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
-import { Button, Loading, Modal, Input, Textarea } from '../../components/ui/index.js';
+import { Button, Loading, Modal, Input, Textarea, InfoBox } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
 import { DataTable } from '../../components/ui/DataTable.js';
 import type { Column } from '../../components/ui/DataTable.js';
@@ -201,14 +201,9 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
     return (
       <div>
         <div className={styles.contentWrapper}>
-          <div className={styles.infoText}>
-            <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>
-              Please create basic organization details first before adding deliverables.
-            </span>
-          </div>
+          <InfoBox>
+            Please create basic organization details first before adding deliverables.
+          </InfoBox>
         </div>
       </div>
     );
@@ -217,14 +212,9 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
   return (
     <div>
       <div className={styles.contentWrapper}>
-        <div className={styles.infoText}>
-          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>
-            Define deliverables that will be included in your proposals. These items will be shown to clients in proposals.
-          </span>
-        </div>
+        <InfoBox>
+          Define deliverables that will be included in your proposals. These items will be shown to clients in proposals.
+        </InfoBox>
 
         <DataTable
           columns={columns}

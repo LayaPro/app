@@ -1,0 +1,27 @@
+.helpButton {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  color: var(--color-text-secondary);
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 400;
+  transition: color 0.2s ease;
+}
+
+.helpButton:hover {
+  color: var(--color-primary);
+}
+
+.helpButton svg {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .helpButton span {
+    display: none;
+  }
+}

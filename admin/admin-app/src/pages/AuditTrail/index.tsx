@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Breadcrumb, DataTable } from '../../components/ui';
+import { DataTable } from '../../components/ui';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import type { Column } from '../../components/ui/DataTable';
 import { auditApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
@@ -23,6 +25,8 @@ const AuditTrail = () => {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('audit-trail');
 
   useEffect(() => {
     fetchAuditLogs();
@@ -145,7 +149,7 @@ const AuditTrail = () => {
 
   return (
     <div className={pageStyles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
 
       <div className={styles.tableCard}>
         <DataTable
@@ -155,6 +159,9 @@ const AuditTrail = () => {
           emptyMessage="No activity logs found"
         />
       </div>
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

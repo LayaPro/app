@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import styles from './Organization.module.css';
 import { organizationApi } from '../../services/api.js';
-import { Breadcrumb, Tabs } from '../../components/ui/index.js';
+import { Tabs } from '../../components/ui/index.js';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import type { Tab } from '../../components/ui/Tabs.js';
 import { BasicDetailsCard } from './BasicDetailsCard';
 import { TermsCard } from './TermsCard';
@@ -13,6 +15,8 @@ const OrganizationPage = () => {
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('organization');
 
   useEffect(() => {
     fetchOrganization();
@@ -98,8 +102,11 @@ const OrganizationPage = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       <Tabs tabs={tabs} />
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

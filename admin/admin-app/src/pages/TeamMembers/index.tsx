@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import styles from './TeamMembers.module.css';
-import { Breadcrumb } from '../../components/ui/index.js';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import { Tabs } from '../../components/ui/Tabs';
 import { TeamMembersCard } from './TeamMembersCard';
 import { WorkProfilesCard } from './WorkProfilesCard';
@@ -12,6 +13,8 @@ const TeamMembers = () => {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('team');
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -95,8 +98,11 @@ const TeamMembers = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       <Tabs tabs={tabs} defaultActiveTab="members" />
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

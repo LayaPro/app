@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Breadcrumb } from '../../components/ui/index.js';
 import { ProjectWizard } from './ProjectWizard';
 import { ProjectsTable } from './components/ProjectsTable';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import { useAppSelector, useAppDispatch } from '../../store/index.js';
 import { clearEditingProject } from '../../store/slices/projectSlice.js';
 import { formatIndianAmount } from '../../utils/formatAmount';
@@ -10,6 +11,8 @@ import styles from '../Page.module.css';
 const Projects = () => {
   const [showWizard, setShowWizard] = useState(false);
   const [stats, setStats] = useState({ active: 0, completed: 0, revenue: 0, dueSoon: 0 });
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('projects');
   const dispatch = useAppDispatch();
   const { isEditing, editingProject } = useAppSelector((state) => state.project);
 
@@ -53,7 +56,7 @@ const Projects = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       
       <div style={{ 
         display: 'flex', 
@@ -190,6 +193,10 @@ const Projects = () => {
       </div>
 
       <ProjectsTable onStatsUpdate={setStats} />
+      
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

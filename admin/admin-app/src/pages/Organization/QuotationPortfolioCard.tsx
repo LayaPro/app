@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
-import { Button, Loading, ImageUpload } from '../../components/ui/index.js';
+import { Button, Loading, ImageUpload, InfoBox } from '../../components/ui/index.js';
 import styles from '../EventsSetup/EventCard.module.css';
 import { organizationApi } from '../../services/api.js';
 import type { Organization } from '../../types/index.js';
@@ -58,14 +58,9 @@ export const QuotationPortfolioCard: FC<QuotationPortfolioCardProps> = ({
     return (
       <div>
         <div className={styles.contentWrapper}>
-          <div className={styles.infoText}>
-            <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>
-              Please create basic organization details first before adding quotation portfolio images.
-            </span>
-          </div>
+          <InfoBox>
+            Please create basic organization details first before adding quotation portfolio images.
+          </InfoBox>
         </div>
       </div>
     );
@@ -74,14 +69,9 @@ export const QuotationPortfolioCard: FC<QuotationPortfolioCardProps> = ({
   return (
     <div>
       <div className={styles.contentWrapper}>
-        <div className={styles.infoText}>
-          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>
-            Upload up to 3 portfolio images to display in the "About Us" section of quotations. These showcase your best work to potential clients.
-          </span>
-        </div>
+        <InfoBox>
+          Upload up to 3 portfolio images to display in the "About Us" section of quotations. These showcase your best work to potential clients.
+        </InfoBox>
 
         <ImageUpload
           images={images}

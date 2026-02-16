@@ -2,8 +2,10 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 14px 18px;
+  margin-bottom: 24px;
+  padding: 16px 20px;
   background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.2);
   border-radius: 8px;
   color: var(--color-primary);
   font-size: 14px;

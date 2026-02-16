@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Breadcrumb, Button } from '../../components/ui/index.js';
+import { Button } from '../../components/ui/index.js';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import { ProposalsTable } from './components/ProposalsTable';
 import { ProposalWizard } from './ProposalWizard';
 import { ProposalStats } from './components/ProposalStats';
@@ -12,6 +14,8 @@ const Proposals = () => {
   const [editingProposal, setEditingProposal] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const { showToast } = useToast();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('proposals');
 
   const handleCreateProposal = () => {
     setEditingProposal(null);
@@ -81,7 +85,7 @@ const Proposals = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       
       <div style={{ 
         display: 'flex', 
@@ -114,6 +118,9 @@ const Proposals = () => {
       </div>
 
       <ProposalsTable onEdit={handleEditProposal} onDataChange={() => setRefreshKey(prev => prev + 1)} />
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

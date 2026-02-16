@@ -30,6 +30,7 @@ export const ROUTES = {
   // Organization
   ORGANIZATION: '/organization',
   
+  STORAGE: '/storage',
   SETTINGS: '/settings',
   AUDIT_TRAIL: '/audit-trail',
 } as const;

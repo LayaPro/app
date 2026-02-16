@@ -4,7 +4,6 @@ import { toggleNotificationPanel, toggleProfilePanel, toggleMobileMenu } from '.
 import { useTheme } from '../../hooks/useTheme.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { NotificationDropdown } from '../common/NotificationDropdown.js';
-import { StorageIndicator } from '../common/StorageIndicator.js';
 import { GlobalSearch } from '../common/GlobalSearch.js';
 import styles from './Header.module.css';
 
@@ -66,12 +65,6 @@ export const Header: React.FC = () => {
 
         {/* Right Side Controls */}
         <div className={styles.controls}>
-          {/* Storage Usage Indicator */}
-          <StorageIndicator />
-          
-          {/* Divider */}
-          <div className={styles.statDivider}></div>
-
           {/* Dark Mode Toggle */}
           <button onClick={toggleTheme} className={`${styles.iconButton} ${styles.themeToggle}`}>
             {isDark ? (

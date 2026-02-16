@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import styles from './EventsSetup.module.css';
 import { eventApi, eventDeliveryStatusApi } from '../../services/api.js';
-import { Breadcrumb, Tabs } from '../../components/ui/index.js';
+import { Tabs } from '../../components/ui/index.js';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import type { Tab } from '../../components/ui/Tabs.js';
 import { EventTypesCard } from './EventTypesCard.js';
 import { EventWorkflowCard } from './EventWorkflowCard.js';
@@ -12,6 +14,8 @@ const EventsSetup = () => {
   const [eventStatuses, setEventStatuses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('events-setup');
 
   useEffect(() => {
     fetchData();
@@ -121,8 +125,11 @@ const EventsSetup = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       <Tabs tabs={tabs} />
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

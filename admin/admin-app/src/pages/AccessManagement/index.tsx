@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import styles from './AccessManagement.module.css';
-import { Breadcrumb, Tabs, type Tab } from '../../components/ui/index.js';
+import { Tabs, type Tab } from '../../components/ui/index.js';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import { UsersCard } from './UsersCard.js';
 import { RolesCard } from './RolesCard.js';
 import { userApi, roleApi } from '../../services/api';
@@ -11,6 +13,8 @@ const AccessManagement = () => {
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('access-management');
 
   useEffect(() => {
     fetchData();
@@ -89,8 +93,11 @@ const AccessManagement = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       <Tabs tabs={tabs} />
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

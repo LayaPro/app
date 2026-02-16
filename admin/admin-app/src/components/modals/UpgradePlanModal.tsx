@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 
 interface Plan {
   _id: string;
+  planId: string;
   planCode: string;
   planName: string;
   storageLimit: number;
@@ -64,7 +65,7 @@ export const UpgradePlanModal: React.FC<UpgradePlanModalProps> = ({
 
     setUpgrading(plan._id);
     try {
-      await storageApi.updateSubscription(user.tenantId, plan._id);
+      await storageApi.updateSubscription(user.tenantId, plan.planId);
       showToast('success', `Successfully upgraded to ${plan.planName} plan!`);
       
       // Trigger storage update event

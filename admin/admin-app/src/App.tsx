@@ -5,7 +5,6 @@ import { Sidebar } from './components/layout/Sidebar.js';
 import { NotificationPanel } from './components/panels/NotificationPanel.js';
 import { ProfilePanel } from './components/panels/ProfilePanel.js';
 import { MobileMenuDrawer } from './components/panels/MobileMenuDrawer.js';
-import { StorageBreakdownModal } from './components/modals/StorageBreakdownModal/StorageBreakdownModal.js';
 import { Login } from './components/auth/Login.js';
 import { ROUTES } from './utils/constants.js';
 import { ToastProvider } from './context/ToastContext.js';
@@ -43,10 +42,12 @@ import ProjectsSetup from './pages/ProjectsSetup/index.js';
 import { useEffect, useState } from 'react';
 import { useAppDispatch } from './store/index.js';
 import { setCredentials } from './store/slices/authSlice.js';
-import { toggleStorageBreakdownModal } from './store/slices/uiSlice.js';
 
 // Organization page
 import Organization from './pages/Organization/index.js';
+
+// Storage page
+import Storage from './pages/Storage/index.js';
 
 // Search Results page
 import SearchResults from './pages/SearchResults/index.js';
@@ -55,7 +56,6 @@ function App() {
   const dispatch = useAppDispatch();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
   const sidebarCollapsed = useAppSelector((state) => state.ui.sidebarCollapsed);
-  const storageBreakdownModalOpen = useAppSelector((state) => state.ui.storageBreakdownModalOpen);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Check for auth data in URL parameters (from marketing site redirect)
@@ -146,10 +146,6 @@ function App() {
           <NotificationPanel />
           <ProfilePanel />
           <MobileMenuDrawer />
-          <StorageBreakdownModal
-            isOpen={storageBreakdownModalOpen}
-            onClose={() => dispatch(toggleStorageBreakdownModal())}
-          />
           <ToastContainer />
         
         {/* Main Content Area */}
@@ -197,6 +193,7 @@ function App() {
           {/* Search Results */}
           <Route path="/search" element={<SearchResults />} />
           
+          <Route path={ROUTES.STORAGE} element={<Storage />} />
           <Route path={ROUTES.SETTINGS} element={<Settings />} />
           <Route path={ROUTES.AUDIT_TRAIL} element={<AuditTrail />} />
           

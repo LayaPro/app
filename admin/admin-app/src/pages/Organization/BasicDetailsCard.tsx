@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { useState, useEffect } from 'react';
-import { Input, Textarea, Button, Loading, ImageUpload, PhoneInput } from '../../components/ui/index.ts';
+import { Input, Textarea, Button, Loading, ImageUpload, PhoneInput, InfoBox } from '../../components/ui/index.ts';
 import { countries } from '../../components/ui/PhoneInput';
 import styles from '../EventsSetup/EventCard.module.css';
 import { organizationApi } from '../../services/api.js';
@@ -153,14 +153,9 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
   return (
     <div>
       <div className={styles.contentWrapper}>
-        <div className={styles.infoText}>
-          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>
-            Configure your organization's basic information, branding, and contact details. This information will be used in proposals and customer-facing materials.
-          </span>
-        </div>
+        <InfoBox>
+          Configure your organization's basic information, branding, and contact details. This information will be used in proposals and customer-facing materials.
+        </InfoBox>
 
         <div className={styles.formGrid}>
           {/* Left Column */}

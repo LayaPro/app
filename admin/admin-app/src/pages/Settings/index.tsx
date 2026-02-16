@@ -3,7 +3,9 @@ import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { userApi } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
-import { Breadcrumb, Button, Input, Tabs } from '../../components/ui';
+import { Button, Input, Tabs } from '../../components/ui';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import type { Tab } from '../../components/ui/Tabs';
 import pageStyles from '../Page.module.css';
 import styles from './Settings.module.css';
@@ -15,6 +17,8 @@ const Settings = () => {
   const [loading, setLoading] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [activeTab, setActiveTab] = useState<string>('security');
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('settings');
 
   // Set active tab from navigation state
   useEffect(() => {
@@ -292,12 +296,15 @@ const Settings = () => {
 
   return (
     <div className={pageStyles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       <Tabs 
         tabs={tabs} 
         defaultActiveTab={activeTab}
         onTabChange={(tabId) => setActiveTab(tabId)}
       />
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

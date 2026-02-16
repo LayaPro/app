@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Breadcrumb, Modal, Button } from '../../components/ui/index.js';
+import { Modal, Button } from '../../components/ui/index.js';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import { CalendarHeader } from './components/CalendarHeader';
 import { MonthView } from './components/MonthView';
 import { MobileMonthView } from './components/MobileMonthView';
@@ -41,6 +43,8 @@ const Calendar = () => {
   const [statuses, setStatuses] = useState<Map<string, any>>(new Map());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<ClientEvent | null>(null);
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('calendar');
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedEventForView, setSelectedEventForView] = useState<ClientEvent | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -247,7 +251,7 @@ const Calendar = () => {
   if (isLoading) {
     return (
       <div className={styles.pageContainer}>
-        <Breadcrumb items={[{ label: 'Calendar' }]} />
+        <PageHeader onHelpClick={() => setShowHelp(true)} />
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
           <div style={{ textAlign: 'center', color: '#6b7280' }}>
             <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Loading calendar...</div>
@@ -259,7 +263,7 @@ const Calendar = () => {
 
   return (
     <div className={styles.pageContainer}>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
 
       <div className={calendarStyles.desktopOnly}>
         <CalendarHeader
@@ -624,6 +628,10 @@ const Calendar = () => {
           </div>
         )}
       </Modal>
+      
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

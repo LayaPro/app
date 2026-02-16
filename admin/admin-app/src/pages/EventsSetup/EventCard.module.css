@@ -213,29 +213,6 @@
   margin-top: 8px;
 }
 
-/* Info Text and Icon */
-.infoText {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 16px;
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #0c4a6e;
-  line-height: 1.5;
-  margin-bottom: 24px;
-}
-
-.infoIcon {
-  width: 20px;
-  height: 20px;
-  color: #0284c7;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
 /* Mobile Responsive Styles */
 @media (max-width: 768px) {
   .contentWrapper {
@@ -308,17 +285,6 @@
     padding: 10px 16px !important;
   }
 
-  .infoText {
-    gap: 10px;
-    padding: 12px 14px;
-    font-size: 13px;
-  }
-
-  .infoIcon {
-    width: 18px;
-    height: 18px;
-  }
-
   .cardHeader {
     padding: 16px;
   }
@@ -365,17 +331,6 @@
   .contentWrapper button {
     font-size: 13px !important;
     padding: 8px 14px !important;
-  }
-
-  .infoText {
-    gap: 8px;
-    padding: 10px 12px;
-    font-size: 12px;
-  }
-
-  .infoIcon {
-    width: 16px;
-    height: 16px;
   }
 
   .cardHeader {

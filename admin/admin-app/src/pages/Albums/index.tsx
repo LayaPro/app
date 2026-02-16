@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AlbumPdfUploadManager, Breadcrumb, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
+import { HelpButton, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import type { AlbumPdfUploadManagerHandle } from '../../components/ui/index.js';
 import { ConfirmationModal } from '../../components/ui/ConfirmationModal.js';
 import { DotLoader } from '../../components/ui/DotLoader.js';
@@ -22,6 +24,8 @@ const Albums = () => {
   const [searchParams] = useSearchParams();
   const { showToast } = useToast();
   const { isAdmin, user } = useAuth();
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('albums');
   const [projects, setProjects] = useState<Project[]>([]);
   const [events, setEvents] = useState<ClientEvent[]>([]);
   const [allEvents, setAllEvents] = useState<ClientEvent[]>([]);
@@ -1688,7 +1692,10 @@ const Albums = () => {
   if (isLoading) {
     return (
       <div className={styles.albumsContainer}>
-        <Breadcrumb />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Breadcrumb />
+          <HelpButton onClick={() => setShowHelp(true)} />
+        </div>
         <div className={styles.loading}>
           <div>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1734,18 +1741,21 @@ const Albums = () => {
 
     return (
       <div className={styles.albumsContainer}>
-        <Breadcrumb 
-          items={[
-            { label: 'Albums', onClick: () => { 
-              setSelectedEvent(null); 
-              setSelectedProject(null); 
-              setUploadedImages([]); 
-              setIsUploadExpanded(false);
-            } },
-            { label: selectedProject.projectName, onClick: handleCloseAlbum },
-            { label: eventName }
-          ]}
-        />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Breadcrumb 
+            items={[
+              { label: 'Albums', onClick: () => { 
+                setSelectedEvent(null); 
+                setSelectedProject(null); 
+                setUploadedImages([]); 
+                setIsUploadExpanded(false);
+              } },
+              { label: selectedProject.projectName, onClick: handleCloseAlbum },
+              { label: eventName }
+            ]}
+          />
+          <HelpButton onClick={() => setShowHelp(true)} />
+        </div>
 
         {/* Gallery Actions Bar */}
         <div className={styles.galleryActionsBar}>
@@ -2804,16 +2814,19 @@ const Albums = () => {
 
   return (
     <div className={styles.albumsContainer}>
-      {selectedProject ? (
-        <Breadcrumb 
-          items={[
-            { label: 'Albums', onClick: handleBackToProjects },
-            { label: selectedProject.projectName }
-          ]}
-        />
-      ) : (
-        <Breadcrumb />
-      )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        {selectedProject ? (
+          <Breadcrumb 
+            items={[
+              { label: 'Albums', onClick: handleBackToProjects },
+              { label: selectedProject.projectName }
+            ]}
+          />
+        ) : (
+          <Breadcrumb />
+        )}
+        <HelpButton onClick={() => setShowHelp(true)} />
+      </div>
 
       <div className={styles.header}>
         <div className={styles.filterSection}>
@@ -3609,6 +3622,9 @@ const Albums = () => {
         </Modal>
       )}
 
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </div>
   );
 };

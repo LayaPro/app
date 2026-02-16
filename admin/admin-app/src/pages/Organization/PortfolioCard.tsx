@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 import { useState } from 'react';
-import { Button, Loading, Input, Modal } from '../../components/ui/index.js';
+import { Button, Loading, Input, Modal, InfoBox } from '../../components/ui/index.js';
 import styles from '../EventsSetup/EventCard.module.css';
 import { organizationApi } from '../../services/api.js';
 import { sanitizeTextInput } from '../../utils/sanitize.js';
@@ -94,14 +94,9 @@ export const PortfolioCard: FC<PortfolioCardProps> = ({
     return (
       <div>
         <div className={styles.contentWrapper}>
-          <div className={styles.infoText}>
-            <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span>
-              Please create basic organization details first before adding portfolio images.
-            </span>
-          </div>
+          <InfoBox>
+            Please create basic organization details first before adding portfolio images.
+          </InfoBox>
         </div>
       </div>
     );
@@ -112,14 +107,9 @@ export const PortfolioCard: FC<PortfolioCardProps> = ({
   return (
     <div>
       <div className={styles.contentWrapper}>
-        <div className={styles.infoText}>
-          <svg className={styles.infoIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          <span>
-            Add portfolio images to showcase your work in proposals. Upload images to your storage and paste the URLs here.
-          </span>
-        </div>
+        <InfoBox>
+          Add portfolio images to showcase your work in proposals. Upload images to your storage and paste the URLs here.
+        </InfoBox>
 
         <div style={{ marginBottom: '24px' }}>
           <Button

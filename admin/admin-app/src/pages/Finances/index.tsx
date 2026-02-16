@@ -1,6 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Breadcrumb, Tabs } from '../../components/ui/index.js';
+import { Tabs } from '../../components/ui/index.js';
+import { PageHeader, HelpPanel } from '../../components/help/index.js';
+import { getHelpContent } from '../../data/helpContent.js';
 import type { Tab } from '../../components/ui/Tabs.js';
 import { CustomersFinanceTable } from './components/CustomersFinanceTable.js';
 import { TeamFinanceTable } from './components/TeamFinanceTable.js';
@@ -11,6 +13,8 @@ const Finances = () => {
   const [statsKey, setStatsKey] = useState(0);
   const [searchParams] = useSearchParams();
   const customerParam = searchParams.get('customer');
+  const [showHelp, setShowHelp] = useState(false);
+  const helpContent = getHelpContent('finances');
 
   const refreshStats = useCallback(() => {
     setStatsKey(prev => prev + 1);
@@ -59,9 +63,12 @@ const Finances = () => {
 
   return (
     <>
-      <Breadcrumb />
+      <PageHeader onHelpClick={() => setShowHelp(true)} />
       <FinanceStats key={statsKey} />
       <Tabs tabs={tabs} />
+      {showHelp && helpContent && (
+        <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
+      )}
     </>
   );
 };
