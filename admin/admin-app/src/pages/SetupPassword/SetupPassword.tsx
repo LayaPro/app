@@ -42,7 +42,8 @@ const SetupPassword = () => {
     setLoading(true);
 
     try {
-      await axios.post('http://localhost:4000/setup-password', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+      await axios.post(`${apiUrl}/setup-password`, {
         token,
         password
       });
