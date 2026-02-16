@@ -40,6 +40,7 @@ import * as proposalController from './controllers/proposalController';
 import * as superAdminController from './controllers/superAdminController';
 import * as storageController from './controllers/storageController';
 import * as storageBreakdownController from './controllers/storageBreakdownController';
+import * as todoController from './controllers/todoController';
 import { NotificationController } from './controllers/notificationController';
 import auditLogController from './controllers/auditLogController';
 import { authenticate } from './middleware/auth';
@@ -286,6 +287,12 @@ app.post('/customer-portal/notify-album-view', proposalController.notifyAlbumVie
 app.post('/customer-portal/:accessCode', proposalController.getCustomerPortalData);
 app.patch('/proposals/:id/status', proposalController.updateProposalStatus);
 app.post('/send-proposal/:id', authenticate, requireAdmin, proposalController.sendProposal);
+
+// ---------- Todo routes ----------
+app.get('/todos', authenticate, todoController.getTodos);
+app.post('/todos', authenticate, todoController.createTodo);
+app.patch('/todos/:id', authenticate, todoController.updateTodo);
+app.delete('/todos/:id', authenticate, todoController.deleteTodo);
 
 // ---------- Users routes ----------
 app.post('/create-user', authenticate, requireAdmin, userController.createUser);

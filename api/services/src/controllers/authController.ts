@@ -11,6 +11,7 @@ import { createTenantWithSubscription } from '../services/tenantService';
 import { nanoid } from 'nanoid';
 import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
+import { checkAndCreateOrganizationSetupTodo } from '../jobs/checkOrganizationSetup';
 
 const logger = createModuleLogger('AuthController');
 
@@ -159,6 +160,11 @@ export const login = async (req: Request, res: Response) => {
     });
 
     logger.info(`[${requestId}] Login successful`, { email, userId: user.userId, tenantId: user.tenantId });
+
+    // Check organization setup and create todo if needed (async, don't wait)
+    checkAndCreateOrganizationSetupTodo(user.tenantId).catch(err => {
+      logger.error(`[${requestId}] Error checking organization setup`, { error: err.message });
+    });
 
     // Return success response
     return res.status(200).json({
@@ -686,7 +692,7 @@ export const signup = async (req: Request, res: Response) => {
 
     // Create user
     const user = await User.create({
-      userId: nanoid(),
+      userId: `user_${nanoid()}`,
       firstName: userFirstName,
       lastName: userLastName,
       email: email.toLowerCase(),
@@ -912,7 +918,7 @@ export const googleCallback = async (req: Request, res: Response) => {
           const userLastName = userNameParts.slice(1).join(' ') || 'User';
           
           user = await User.create({
-            userId: nanoid(),
+            userId: `user_${nanoid()}`,
             firstName: userFirstName,
             lastName: userLastName,
             email,

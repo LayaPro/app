@@ -44,6 +44,7 @@ export const MonthlyRevenueChart: React.FC<MonthlyRevenueChartProps> = ({ data, 
             onChange={(value) => onYearChange(Number(value))}
             options={yearOptions}
             placeholder="Select Year"
+            className={styles.yearSelect}
           />
         </div>
       </div>

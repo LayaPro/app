@@ -205,7 +205,7 @@
   }
 }
 
-/* Content Grid for Events and Upcoming Events */
+/* Content Grid for Events, Team and Quick Links */
 .contentGrid {
   display: grid;
   grid-template-columns: 1fr;
@@ -216,12 +216,35 @@
 
 @media (min-width: 1024px) {
   .contentGrid {
+    grid-template-columns: 1.5fr 1fr 0.7fr;
+  }
+}
+
+.eventsRow {
+  margin-top: 2rem;
+  animation: fadeInUp 0.5s ease-out 0.15s both;
+}
+
+.teamQuickLinksRow {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+  animation: fadeInUp 0.5s ease-out 0.2s both;
+}
+
+@media (min-width: 1024px) {
+  .teamQuickLinksRow {
     grid-template-columns: 2fr 1fr;
   }
 }
 
-.eventsPlaceholder {
-  display: none;
+.tasksSection {
+  /* Tasks section next to revenue chart */
+}
+
+.quickLinksSection {
+  /* Quick links section after team */
 }
 
 /* Upcoming Events Section */
@@ -230,7 +253,7 @@
   border: 1px solid var(--border-color);
   border-radius: 1rem;
   padding: 1.5rem;
-  min-height: 500px;
+  min-height: 400px;
 }
 
 .sectionHeader {
@@ -588,11 +611,19 @@
   display: flex;
   gap: 1.5rem;
   margin-top: 2rem;
+  animation: fadeInUp 0.5s ease-out 0.1s both;
+}
+
+.tasksSection {
+  flex: 3;
+  min-width: 0;
+  animation: fadeInUp 0.5s ease-out 0.15s both;
 }
 
 .revenueSection {
-  flex: 1;
+  flex: 7;
   min-width: 0;
+  animation: fadeInUp 0.5s ease-out 0.2s both;
 }
 
 @media (max-width: 1023px) {

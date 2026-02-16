@@ -4,6 +4,7 @@ import { dashboardStatsApi } from '../../services/api';
 import { ROUTES, API_BASE_URL } from '../../utils/constants';
 import { MonthlyRevenueChart } from '../../components/charts/MonthlyRevenueChart';
 import { QuickLinks } from '../../components/dashboard/QuickLinks';
+import { TodoList } from '../../components/dashboard/TodoList';
 import styles from './Dashboard.module.css';
 import pageStyles from '../Page.module.css';
 
@@ -296,6 +297,11 @@ const Dashboard = () => {
 
       {/* Quick Links and Revenue Section */}
       <div className={styles.bottomSection}>
+        {/* My Tasks */}
+        <div className={styles.tasksSection}>
+          <TodoList />
+        </div>
+
         {/* Monthly Revenue Chart */}
         <div className={styles.revenueSection}>
           <MonthlyRevenueChart 
@@ -304,16 +310,10 @@ const Dashboard = () => {
             onYearChange={setSelectedYear}
           />
         </div>
-
-        <QuickLinks />
       </div>
 
-      {/* Events and Upcoming Events Grid */}
+      {/* Events, Team and Quick Links Grid */}
       <div className={styles.contentGrid}>
-        <div className={styles.eventsPlaceholder}>
-          {/* Placeholder for future Events section */}
-        </div>
-
         <div className={styles.upcomingEventsSection}>
           <div className={styles.sectionHeader}>
             <div className={styles.sectionTitleWrapper}>
@@ -539,6 +539,11 @@ const Dashboard = () => {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Quick Links */}
+        <div className={styles.quickLinksSection}>
+          <QuickLinks />
         </div>
       </div>
     </div>

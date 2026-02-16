@@ -1103,6 +1103,82 @@ export const proposalApi = {
   },
 };
 
+// Todo API
+export const todoApi = {
+  getAll: async (params?: { status?: string; limit?: number; skip?: number }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.status) queryParams.append('status', params.status);
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.skip) queryParams.append('skip', params.skip.toString());
+    
+    const url = `${API_BASE_URL}/todos${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: {
+    userId?: string;
+    description: string;
+    projectId?: string;
+    eventId?: string;
+    dueDate?: string;
+    redirectUrl?: string;
+    priority?: 'low' | 'medium' | 'high';
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/todos`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  update: async (id: string, data: Partial<{
+    description: string;
+    isDone: boolean;
+    priority: 'low' | 'medium' | 'high';
+    dueDate?: string;
+    redirectUrl?: string;
+  }>) => {
+    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (id: string) => {
+    const response = await fetch(`${API_BASE_URL}/todos/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  markDone: async (id: string) => {
+    return todoApi.update(id, { isDone: true });
+  },
+
+  markPending: async (id: string) => {
+    return todoApi.update(id, { isDone: false });
+  },
+};
+
 // Storage API
 export const storageApi = {
   getStats: async (tenantId: string) => {

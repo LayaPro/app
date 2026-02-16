@@ -23,6 +23,7 @@ import Statistics from './pages/Statistics/index.js';
 import Settings from './pages/Settings/index.js';
 import AuditTrail from './pages/AuditTrail/index.js';
 import SetupPassword from './pages/SetupPassword/SetupPassword.js';
+import Todos from './pages/Todos/index.js';
 
 // Access Control pages
 import AccessManagement from './pages/AccessManagement/index.js';
@@ -164,6 +165,7 @@ function App() {
           <Route path="/" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
           <Route path="/login" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
           <Route path={ROUTES.DASHBOARD} element={<Dashboard />} />
+          <Route path="/todos" element={<Todos />} />
           <Route path={ROUTES.ALBUMS} element={<Albums />} />
           <Route path={ROUTES.PROJECTS} element={<Projects />} />
           <Route path={ROUTES.PROPOSALS} element={<Proposals />} />

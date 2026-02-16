@@ -49,6 +49,16 @@
   min-width: 120px;
 }
 
+.yearSelect :global(button) {
+  height: 36px;
+  padding: 8px 12px;
+  font-size: 14px;
+}
+
+.yearSelect :global(.selectLabel) {
+  display: none;
+}
+
 
 .chartContent {
   margin-bottom: 2rem;

@@ -11,6 +11,9 @@ import Image from '../models/image';
 import ImageStatus from '../models/imageStatus';
 import AlbumPdf from '../models/albumPdf';
 import Team from '../models/team';
+import Todo from '../models/todo';
+import Role from '../models/role';
+import User from '../models/user';
 import { AuthRequest } from '../middleware/auth';
 import { sendProposalEmail } from '../services/emailService';
 import { NotificationUtils } from '../services/notificationUtils';
@@ -349,6 +352,19 @@ export const updateProposal = async (req: AuthRequest, res: Response) => {
       } else if (status === 'accepted' && !proposal.acceptedAt) {
         proposal.acceptedAt = new Date();
         
+        console.log('\n=== PROPOSAL ACCEPTED ===');
+        console.log('Tenant ID:', tenantId);
+        console.log('Proposal ID:', id);
+        console.log('Project Name:', proposal.projectName);
+        console.log('Client Name:', proposal.clientName);
+        
+        logger.info(`[${requestId}] Proposal status changed to accepted, starting notification and todo creation`, {
+          tenantId,
+          proposalId: id,
+          projectName: proposal.projectName,
+          clientName: proposal.clientName
+        });
+        
         // Send notification to admins when proposal is accepted
         try {
           await NotificationUtils.notifyProposalAccepted(
@@ -357,15 +373,114 @@ export const updateProposal = async (req: AuthRequest, res: Response) => {
             proposal.projectName,
             proposal.clientName
           );
+          console.log('✓ Notification sent');
           logger.info(`[${requestId}] Sent proposal accepted notification`, { 
             tenantId,
             proposalId: id
           });
         } catch (notifError: any) {
+          console.error('✗ Notification failed:', notifError.message);
           logger.error(`[${requestId}] Failed to send proposal accepted notification`, {
             error: notifError.message
           });
           // Don't fail the request if notification fails
+        }
+
+        // Create todo for admins to create project from accepted proposal
+        console.log('\n=== STARTING TODO CREATION ===');
+        try {
+          logger.info(`[${requestId}] Starting todo creation process`, { tenantId, proposalId: id });
+          
+          // Get the Admin role
+          console.log('Looking for Admin role...');
+          const adminRole = await Role.findOne({
+            $or: [
+              { tenantId: '-1', name: 'Admin' },
+              { tenantId, name: 'Admin' }
+            ]
+          }).select('roleId tenantId name').lean();
+
+          console.log('Admin role found:', adminRole);
+          logger.info(`[${requestId}] Admin role query result`, {
+            tenantId,
+            adminRole: adminRole ? { roleId: adminRole.roleId } : null
+          });
+
+          if (!adminRole) {
+            console.error('✗ No admin role found for tenant:', tenantId);
+            logger.warn(`[${requestId}] Admin role not found for tenant`, { tenantId });
+          } else {
+            // Get all active admin users in the tenant
+            console.log('Looking for admin users with roleId:', adminRole.roleId);
+            const adminUsers = await User.find({
+              tenantId,
+              roleId: adminRole.roleId,
+              isActive: true
+            }).select('userId').lean();
+
+            console.log('Admin users found:', adminUsers.length);
+            console.log('Admin user IDs:', adminUsers.map(u => u.userId));
+            
+            logger.info(`[${requestId}] Admin users query result`, {
+              tenantId,
+              adminRoleId: adminRole.roleId,
+              adminUsersCount: adminUsers.length,
+              adminUserIds: adminUsers.map(u => u.userId)
+            });
+
+            if (adminUsers && adminUsers.length > 0) {
+              // Create todo for each admin
+              console.log('Creating todos for', adminUsers.length, 'admin users...');
+              const todoPromises = adminUsers.map(admin => {
+                console.log('Creating todo for user:', admin.userId);
+                logger.info(`[${requestId}] Creating todo for admin user`, {
+                  userId: admin.userId,
+                  tenantId
+                });
+                return new Todo({
+                  todoId: nanoid(),
+                  tenantId,
+                  userId: admin.userId,
+                  description: `Create project from accepted proposal: ${proposal.projectName} (${proposal.clientName})`,
+                  projectId: undefined,
+                  eventId: undefined,
+                  dueDate: undefined,
+                  redirectUrl: `/proposals/${id}`,
+                  isDone: false,
+                  priority: 'high',
+                  addedBy: 'system',
+                }).save();
+              });
+
+              const savedTodos = await Promise.all(todoPromises);
+              console.log('✓ Successfully created', savedTodos.length, 'todos');
+              console.log('Todo IDs:', savedTodos.map(t => t.todoId));
+              logger.info(`[${requestId}] Created todos for admins on proposal acceptance`, {
+                tenantId,
+                proposalId: id,
+                adminCount: adminUsers.length,
+                todoIds: savedTodos.map(t => t.todoId)
+              });
+            } else {
+              console.error('✗ No admin users found');
+              logger.warn(`[${requestId}] No admin users found to assign todo`, {
+                tenantId,
+                proposalId: id,
+                adminRoleId: adminRole.roleId
+              });
+            }
+          }
+        } catch (todoError: any) {
+          console.error('\n✗ TODO CREATION ERROR:', todoError.message);
+          console.error('Stack:', todoError.stack);
+          console.log('=== END TODO CREATION ===\n');
+          logger.error(`[${requestId}] Failed to create todo for proposal acceptance`, {
+            error: todoError.message,
+            stack: todoError.stack,
+            tenantId,
+            proposalId: id
+          });
+          // Don't fail the request if todo creation fails
         }
       } else if (status === 'rejected' && !proposal.rejectedAt) {
         proposal.rejectedAt = new Date();
@@ -598,6 +713,103 @@ export const updateProposalStatus = async (req: AuthRequest, res: Response) => {
       proposalId: proposal.proposalId,
       newStatus: status 
     });
+
+    // If proposal was accepted, create todos for admins
+    if (status === 'accepted') {
+      console.log('\n=== PROPOSAL ACCEPTED (Customer Portal) ===');
+      console.log('Tenant ID:', proposal.tenantId);
+      console.log('Proposal ID:', proposal.proposalId);
+      console.log('Project Name:', proposal.projectName);
+      console.log('Client Name:', proposal.clientName);
+
+      try {
+        console.log('\n=== STARTING TODO CREATION ===');
+        
+        // Get the Admin role
+        console.log('Looking for Admin role...');
+        const adminRole = await Role.findOne({
+          $or: [
+            { tenantId: '-1', name: 'Admin' },
+            { tenantId: proposal.tenantId, name: 'Admin' }
+          ]
+        }).select('roleId tenantId name').lean();
+
+        console.log('Admin role found:', adminRole);
+
+        if (!adminRole) {
+          console.error('✗ No admin role found for tenant:', proposal.tenantId);
+        } else {
+          // Get all active admin users in the tenant
+          console.log('Looking for admin users with roleId:', adminRole.roleId);
+          const adminUsers = await User.find({
+            tenantId: proposal.tenantId,
+            roleId: adminRole.roleId,
+            isActive: true
+          }).select('userId').lean();
+
+          console.log('Admin users found:', adminUsers.length);
+          console.log('Admin user IDs:', adminUsers.map(u => u.userId));
+
+          if (adminUsers && adminUsers.length > 0) {
+            // Create todo for each admin
+            console.log('Creating todos for', adminUsers.length, 'admin users...');
+            const todoPromises = adminUsers.map(admin => {
+              console.log('Creating todo for user:', admin.userId);
+              return new Todo({
+                todoId: nanoid(),
+                tenantId: proposal.tenantId,
+                userId: admin.userId,
+                description: `Create project from accepted proposal: ${proposal.projectName} (${proposal.clientName})`,
+                projectId: undefined,
+                eventId: undefined,
+                dueDate: undefined,
+                redirectUrl: `/proposals/${proposal.proposalId}`,
+                isDone: false,
+                priority: 'high',
+                addedBy: 'system',
+              }).save();
+            });
+
+            const savedTodos = await Promise.all(todoPromises);
+            console.log('✓ Successfully created', savedTodos.length, 'todos');
+            console.log('Todo IDs:', savedTodos.map(t => t.todoId));
+            
+            logger.info(`[${requestId}] Created todos for admins on proposal acceptance`, {
+              tenantId: proposal.tenantId,
+              proposalId: proposal.proposalId,
+              adminCount: adminUsers.length,
+              todoIds: savedTodos.map(t => t.todoId)
+            });
+          } else {
+            console.error('✗ No admin users found');
+          }
+        }
+        console.log('=== END TODO CREATION ===\n');
+      } catch (todoError: any) {
+        console.error('\n✗ TODO CREATION ERROR:', todoError.message);
+        console.error('Stack:', todoError.stack);
+        logger.error(`[${requestId}] Failed to create todo for proposal acceptance`, {
+          error: todoError.message,
+          stack: todoError.stack,
+          tenantId: proposal.tenantId,
+          proposalId: proposal.proposalId
+        });
+        // Don't fail the request if todo creation fails
+      }
+
+      // Send notification to admins
+      try {
+        await NotificationUtils.notifyProposalAccepted(
+          proposal.tenantId,
+          proposal.proposalId,
+          proposal.projectName,
+          proposal.clientName
+        );
+        console.log('✓ Notification sent to admins');
+      } catch (notifError: any) {
+        console.error('✗ Notification failed:', notifError.message);
+      }
+    }
 
     // Audit log for status change
     logAudit({
