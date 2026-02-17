@@ -5,7 +5,15 @@
 }
 
 .tableWrapper {
-  padding: 24px;
+  padding: 0;
+}
+
+.tableWrapper :global([class*="tableContainer"]) {
+  border: none;
+  border-radius: 16px;
+  box-shadow: none;
+  background: var(--bg-primary);
+  overflow: hidden;
 }
 
 @media (max-width: 768px) {
@@ -14,7 +22,7 @@
   }
 
   .tableWrapper {
-    padding: 12px;
+    padding: 0;
   }
 }
 
@@ -24,6 +32,6 @@
   }
 
   .tableWrapper {
-    padding: 8px;
+    padding: 0;
   }
 }

@@ -41,6 +41,7 @@ import * as superAdminController from './controllers/superAdminController';
 import * as storageController from './controllers/storageController';
 import * as storageBreakdownController from './controllers/storageBreakdownController';
 import * as todoController from './controllers/todoController';
+import * as expenseController from './controllers/expenseController';
 import { NotificationController } from './controllers/notificationController';
 import auditLogController from './controllers/auditLogController';
 import { authenticate } from './middleware/auth';
@@ -210,6 +211,14 @@ app.get('/get-team-finance-by-member/:memberId', authenticate, teamFinanceContro
 app.put('/update-team-finance/:financeId', authenticate, requireAdmin, teamFinanceController.updateTeamFinance);
 app.delete('/delete-team-finance/:financeId', authenticate, requireAdmin, teamFinanceController.deleteTeamFinance);
 app.post('/add-team-salary-transaction/:memberId', authenticate, requireAdmin, teamFinanceController.addSalaryTransaction);
+
+// ---------- Expense routes ----------
+app.post('/expenses', authenticate, requireAdmin, expenseController.createExpense);
+app.get('/expenses', authenticate, expenseController.getAllExpenses);
+app.get('/expenses/:expenseId', authenticate, expenseController.getExpenseById);
+app.put('/expenses/:expenseId', authenticate, requireAdmin, expenseController.updateExpense);
+app.delete('/expenses/:expenseId', authenticate, requireAdmin, expenseController.deleteExpense);
+app.get('/expenses/stats', authenticate, expenseController.getExpenseStats);
 
 // ---------- Image routes ----------
 app.post('/create-image', authenticate, requireAdmin, imageController.createImage);

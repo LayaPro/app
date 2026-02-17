@@ -323,7 +323,12 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId;
   const roleName = req.user?.roleName;
 
-  logger.info(`[${requestId}] Fetching all projects`, { tenantId, userId, roleName });
+  // Get pagination params from query
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  logger.info(`[${requestId}] Fetching projects - page: ${page}, limit: ${limit}`, { tenantId, userId, roleName });
 
   try {
     if (!tenantId) {
@@ -342,8 +347,15 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       }
     }
 
-    // Get all projects for the tenant
-    const projects = await Project.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    // Get total count for pagination
+    const totalCount = await Project.countDocuments({ tenantId });
+
+    // Get paginated projects for the tenant
+    const projects = await Project.find({ tenantId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean();
 
     // Fetch related events and finance for each project
     const projectsWithDetails = await Promise.all(
@@ -412,12 +424,20 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       ? projectsWithDetails 
       : projectsWithDetails.filter(project => project.events.length > 0);
 
-    logger.info(`[${requestId}] Projects retrieved`, { tenantId, count: filteredProjects.length, isAdmin });
+    logger.info(`[${requestId}] Projects retrieved`, { tenantId, count: filteredProjects.length, page, totalCount, isAdmin });
 
     return res.status(200).json({
       message: 'Projects retrieved successfully',
       count: filteredProjects.length,
-      projects: filteredProjects
+      projects: filteredProjects,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNextPage: page < Math.ceil(totalCount / limit),
+        hasPrevPage: page > 1
+      }
     });
   } catch (err: any) {
     logger.error(`[${requestId}] Error fetching projects`, { 

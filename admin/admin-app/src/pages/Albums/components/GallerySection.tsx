@@ -1,12 +1,10 @@
-import { Loading } from '../../../components/ui';
+import { useState } from 'react';
 import type { ImageData } from '../types.ts';
 import styles from '../Albums.module.css';
 
 interface GallerySectionProps {
   images: ImageData[];
   isLoading: boolean;
-  isLoadingPreviews: boolean;
-  loadedGalleryImages: Set<string>;
   selectedImages: Set<string>;
   draggedIndex: number | null;
   dragOverIndex: number | null;
@@ -30,8 +28,6 @@ interface GallerySectionProps {
 export const GallerySection: React.FC<GallerySectionProps> = ({
   images,
   isLoading,
-  isLoadingPreviews,
-  loadedGalleryImages,
   selectedImages,
   draggedIndex,
   dragOverIndex,
@@ -51,6 +47,11 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
   isSavingOrder,
   eventName
 }) => {
+  const [loadedImages, setLoadedImages] = useState<Set<string>>(new Set());
+
+  const handleImageLoad = (imageId: string) => {
+    setLoadedImages(prev => new Set(prev).add(imageId));
+  };
   return (
     <>
       <div className={styles.actionsSection}>
@@ -118,12 +119,7 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
       </div>
 
       <div className={styles.imageGrid}>
-        {isLoading ? (
-          <div className={styles.galleryLoading}>
-            <Loading />
-            <p>Loading gallery...</p>
-          </div>
-        ) : images.length === 0 ? (
+        {images.length === 0 && !isLoading ? (
           <div className={styles.emptyState}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -135,32 +131,6 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
             </svg>
             <p>No images uploaded yet. Use the upload section above to add images.</p>
           </div>
-        ) : isLoadingPreviews ? (
-          <>
-            <div className={styles.galleryLoading}>
-              <Loading />
-              <div className={styles.loadingProgress}>
-                <div className={styles.uploadProgressBar}>
-                  <div
-                    className={styles.uploadProgressFill}
-                    style={{ width: `${(loadedGalleryImages.size / images.length) * 100}%` }}
-                  />
-                </div>
-                <p>Loading previews: {loadedGalleryImages.size} of {images.length} images</p>
-              </div>
-            </div>
-            <div style={{ display: 'none' }}>
-              {images.map((image) => (
-                <img
-                  key={image.imageId}
-                  src={image.compressedUrl || image.originalUrl}
-                  alt=""
-                  onLoad={() => onImageLoad(image.imageId)}
-                  onError={() => onImageLoad(image.imageId)}
-                />
-              ))}
-            </div>
-          </>
         ) : (
           images.map((image, index) => (
             <div
@@ -193,6 +163,15 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
               </button>
+              {!loadedImages.has(image.imageId) && (
+                <div className={styles.imageLoader}>
+                  <div className={styles.imageLoaderSpinner}>
+                    <svg className={styles.spinner} viewBox="0 0 50 50">
+                      <circle className={styles.spinnerCircle} cx="25" cy="25" r="20" fill="none" strokeWidth="4"></circle>
+                    </svg>
+                  </div>
+                </div>
+              )}
               <img
                 src={image.compressedUrl || image.originalUrl}
                 alt={image.fileName || 'Photo'}
@@ -200,6 +179,9 @@ export const GallerySection: React.FC<GallerySectionProps> = ({
                   e.stopPropagation();
                   onImageClick(index);
                 }}
+                onLoad={() => handleImageLoad(image.imageId)}
+                onError={() => handleImageLoad(image.imageId)}
+                className={loadedImages.has(image.imageId) ? styles.imageLoaded : styles.imageLoading}
                 style={{ cursor: 'pointer' }}
               />
             </div>

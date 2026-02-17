@@ -1,0 +1,352 @@
+import { Request, Response } from 'express';
+import { Expense } from '../models/expense';
+import Project from '../models/project';
+import Event from '../models/event';
+import { nanoid } from 'nanoid';
+import { createModuleLogger } from '../utils/logger';
+
+const logger = createModuleLogger('ExpenseController');
+
+interface AuthRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+    tenantId: string;
+    role: string;
+  };
+}
+
+// Create expense
+export const createExpense = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid();
+  
+  try {
+    const { projectId, eventId, amount, comment, date, category, receiptUrl } = req.body;
+    const tenantId = req.user?.tenantId;
+    const addedBy = req.user?.userId;
+
+    if (!tenantId || !addedBy) {
+      logger.error(`[${requestId}] Missing tenant or user info`);
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    if (!amount || amount <= 0) {
+      logger.error(`[${requestId}] Invalid amount`);
+      return res.status(400).json({ message: 'Amount must be greater than 0' });
+    }
+
+    if (!comment || !comment.trim()) {
+      logger.error(`[${requestId}] Missing comment`);
+      return res.status(400).json({ message: 'Comment is required' });
+    }
+
+    const expenseId = `exp_${nanoid()}`;
+
+    const expense = new Expense({
+      expenseId,
+      tenantId,
+      projectId: projectId || undefined,
+      eventId: eventId || undefined,
+      amount: parseFloat(amount),
+      comment: comment.trim(),
+      date: date ? new Date(date) : new Date(),
+      addedBy,
+      category: category || 'general',
+      receiptUrl: receiptUrl || undefined,
+    });
+
+    await expense.save();
+
+    logger.info(`[${requestId}] Expense created`, { expenseId, tenantId, amount });
+
+    return res.status(201).json({
+      message: 'Expense created successfully',
+      expense,
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error creating expense:`, error);
+    return res.status(500).json({ message: 'Failed to create expense', error: error.message });
+  }
+};
+
+// Get all expenses
+export const getAllExpenses = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid();
+  
+  try {
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      logger.error(`[${requestId}] Missing tenant info`);
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { projectId, startDate, endDate, page = '1', limit = '50' } = req.query;
+
+    const query: any = { tenantId };
+
+    if (projectId) {
+      query.projectId = projectId;
+    }
+
+    if (startDate || endDate) {
+      query.date = {};
+      if (startDate) {
+        query.date.$gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        query.date.$lte = new Date(endDate as string);
+      }
+    }
+
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 50;
+    const skip = (pageNum - 1) * limitNum;
+
+    const totalCount = await Expense.countDocuments(query);
+    const expenses = await Expense.find(query)
+      .sort({ date: -1, createdAt: -1 })
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    // Populate project and event names
+    const enrichedExpenses = await Promise.all(
+      expenses.map(async (expense) => {
+        let projectName = undefined;
+        let eventName = undefined;
+
+        if (expense.projectId) {
+          const project = await Project.findOne({ projectId: expense.projectId }).lean();
+          projectName = project?.projectName;
+        }
+
+        if (expense.eventId) {
+          const event = await Event.findOne({ eventId: expense.eventId }).lean();
+          eventName = event?.eventDesc || event?.eventCode;
+        }
+
+        return {
+          ...expense,
+          projectName,
+          eventName,
+        };
+      })
+    );
+
+    logger.info(`[${requestId}] Expenses retrieved`, { tenantId, count: enrichedExpenses.length });
+
+    return res.status(200).json({
+      expenses: enrichedExpenses,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(totalCount / limitNum),
+        totalItems: totalCount,
+        itemsPerPage: limitNum,
+        hasNextPage: pageNum < Math.ceil(totalCount / limitNum),
+        hasPrevPage: pageNum > 1,
+      },
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error fetching expenses:`, error);
+    return res.status(500).json({ message: 'Failed to fetch expenses', error: error.message });
+  }
+};
+
+// Get expense by ID
+export const getExpenseById = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid();
+  
+  try {
+    const { expenseId } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      logger.error(`[${requestId}] Missing tenant info`);
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const expense = await Expense.findOne({ expenseId, tenantId }).lean();
+
+    if (!expense) {
+      logger.warn(`[${requestId}] Expense not found`, { expenseId });
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    // Populate project and event names
+    let projectName = undefined;
+    let eventName = undefined;
+
+    if (expense.projectId) {
+      const project = await Project.findOne({ projectId: expense.projectId }).lean();
+      projectName = project?.projectName;
+    }
+
+    if (expense.eventId) {
+      const event = await Event.findOne({ eventId: expense.eventId }).lean();
+      eventName = event?.eventDesc || event?.eventCode;
+    }
+
+    const enrichedExpense = {
+      ...expense,
+      projectName,
+      eventName,
+    };
+
+    logger.info(`[${requestId}] Expense retrieved`, { expenseId });
+
+    return res.status(200).json({ expense: enrichedExpense });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error fetching expense:`, error);
+    return res.status(500).json({ message: 'Failed to fetch expense', error: error.message });
+  }
+};
+
+// Update expense
+export const updateExpense = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid();
+  
+  try {
+    const { expenseId } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      logger.error(`[${requestId}] Missing tenant info`);
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const expense = await Expense.findOne({ expenseId, tenantId });
+
+    if (!expense) {
+      logger.warn(`[${requestId}] Expense not found`, { expenseId });
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    const { projectId, eventId, amount, comment, date, category, receiptUrl } = req.body;
+
+    if (projectId !== undefined) expense.projectId = projectId || undefined;
+    if (eventId !== undefined) expense.eventId = eventId || undefined;
+    if (amount !== undefined) {
+      if (amount <= 0) {
+        return res.status(400).json({ message: 'Amount must be greater than 0' });
+      }
+      expense.amount = parseFloat(amount);
+    }
+    if (comment !== undefined) {
+      if (!comment.trim()) {
+        return res.status(400).json({ message: 'Comment cannot be empty' });
+      }
+      expense.comment = comment.trim();
+    }
+    if (date !== undefined) expense.date = new Date(date);
+    if (category !== undefined) expense.category = category;
+    if (receiptUrl !== undefined) expense.receiptUrl = receiptUrl || undefined;
+
+    await expense.save();
+
+    logger.info(`[${requestId}] Expense updated`, { expenseId, tenantId });
+
+    return res.status(200).json({
+      message: 'Expense updated successfully',
+      expense,
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error updating expense:`, error);
+    return res.status(500).json({ message: 'Failed to update expense', error: error.message });
+  }
+};
+
+// Delete expense
+export const deleteExpense = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid();
+  
+  try {
+    const { expenseId } = req.params;
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      logger.error(`[${requestId}] Missing tenant info`);
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const expense = await Expense.findOneAndDelete({ expenseId, tenantId });
+
+    if (!expense) {
+      logger.warn(`[${requestId}] Expense not found`, { expenseId });
+      return res.status(404).json({ message: 'Expense not found' });
+    }
+
+    logger.info(`[${requestId}] Expense deleted`, { expenseId, tenantId });
+
+    return res.status(200).json({ message: 'Expense deleted successfully' });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error deleting expense:`, error);
+    return res.status(500).json({ message: 'Failed to delete expense', error: error.message });
+  }
+};
+
+// Get expense statistics
+export const getExpenseStats = async (req: AuthRequest, res: Response) => {
+  const requestId = nanoid();
+  
+  try {
+    const tenantId = req.user?.tenantId;
+
+    if (!tenantId) {
+      logger.error(`[${requestId}] Missing tenant info`);
+      return res.status(401).json({ message: 'Unauthorized' });
+    }
+
+    const { startDate, endDate, projectId } = req.query;
+
+    const matchQuery: any = { tenantId };
+
+    if (projectId) {
+      matchQuery.projectId = projectId;
+    }
+
+    if (startDate || endDate) {
+      matchQuery.date = {};
+      if (startDate) {
+        matchQuery.date.$gte = new Date(startDate as string);
+      }
+      if (endDate) {
+        matchQuery.date.$lte = new Date(endDate as string);
+      }
+    }
+
+    const stats = await Expense.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: null,
+          totalExpenses: { $sum: '$amount' },
+          expenseCount: { $sum: 1 },
+          avgExpense: { $avg: '$amount' },
+        },
+      },
+    ]);
+
+    const categoryStats = await Expense.aggregate([
+      { $match: matchQuery },
+      {
+        $group: {
+          _id: '$category',
+          total: { $sum: '$amount' },
+          count: { $sum: 1 },
+        },
+      },
+      { $sort: { total: -1 } },
+    ]);
+
+    logger.info(`[${requestId}] Expense stats retrieved`, { tenantId });
+
+    return res.status(200).json({
+      stats: stats[0] || { totalExpenses: 0, expenseCount: 0, avgExpense: 0 },
+      categoryBreakdown: categoryStats,
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Error fetching expense stats:`, error);
+    return res.status(500).json({ message: 'Failed to fetch expense stats', error: error.message });
+  }
+};

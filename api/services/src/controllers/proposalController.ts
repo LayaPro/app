@@ -374,7 +374,12 @@ export const getAllProposals = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
   const tenantId = req.user?.tenantId;
 
-  logger.info(`[${requestId}] Fetching all proposals`, { tenantId });
+  // Get pagination params from query
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 10;
+  const skip = (page - 1) * limit;
+
+  logger.info(`[${requestId}] Fetching all proposals - page: ${page}, limit: ${limit}`, { tenantId });
 
   try {
     if (!tenantId) {
@@ -395,23 +400,37 @@ export const getAllProposals = async (req: AuthRequest, res: Response) => {
       query.clientEmail = clientEmail;
     }
 
-    let proposals;
-    
+    // Add search query if provided
     if (search && typeof search === 'string') {
-      // Text search on client name and project name
-      proposals = await Proposal.find({
-        ...query,
-        $text: { $search: search }
-      }).sort({ createdAt: -1 });
-    } else {
-      proposals = await Proposal.find(query).sort({ createdAt: -1 });
+      // Regex search on client name and project name (case-insensitive)
+      query.$or = [
+        { clientName: { $regex: search, $options: 'i' } },
+        { projectName: { $regex: search, $options: 'i' } }
+      ];
     }
 
-    logger.info(`[${requestId}] Proposals retrieved`, { tenantId, count: proposals.length });
+    // Get total count for pagination
+    const totalCount = await Proposal.countDocuments(query);
+
+    // Get proposals
+    const proposals = await Proposal.find(query)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    logger.info(`[${requestId}] Proposals retrieved`, { tenantId, count: proposals.length, page, totalCount });
 
     return res.status(200).json({
       proposals,
-      count: proposals.length
+      count: proposals.length,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalCount / limit),
+        totalItems: totalCount,
+        itemsPerPage: limit,
+        hasNextPage: page < Math.ceil(totalCount / limit),
+        hasPrevPage: page > 1
+      }
     });
   } catch (err: any) {
     logger.error(`[${requestId}] Error fetching proposals`, { 

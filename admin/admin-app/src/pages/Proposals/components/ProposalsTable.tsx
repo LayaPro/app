@@ -6,7 +6,6 @@ import type { Column } from '../../../components/ui/DataTable';
 import { Modal } from '../../../components/ui/Modal';
 import { Select } from '../../../components/ui/Select';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
-import { TableSkeleton } from '../../../components/ui/TableSkeleton';
 import { ViewProposalModal } from './ViewProposalModal';
 import { useToast } from '../../../context/ToastContext';
 import { proposalApi } from '../../../services/api';
@@ -39,13 +38,20 @@ interface ProposalsTableProps {
   onEdit: (proposal: Proposal) => void;
   onDataChange?: () => void;
   initialProposalFilter?: string | null;
+  onCreateProposal?: () => void;
 }
 
-export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataChange, initialProposalFilter }) => {
+export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataChange, initialProposalFilter, onCreateProposal }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 8;
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [proposalFilter, setProposalFilter] = useState<string>('');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -67,9 +73,29 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
     }
   }, [initialProposalFilter]);
 
+  // Debounce search term
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      // Reset to page 1 when search changes
+      if (currentPage !== 1) {
+        setCurrentPage(1);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     fetchProposals();
-  }, []);
+  }, [currentPage, debouncedSearch, statusFilter]);
+
+  // Reset to page 1 when status filter changes
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [statusFilter]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -106,8 +132,24 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
   const fetchProposals = async () => {
     try {
       setIsLoading(true);
-      const response = await proposalApi.getAll();
+      const params: any = { page: currentPage, limit: itemsPerPage };
+      
+      // Add filters to API call
+      if (statusFilter && statusFilter !== 'all') {
+        params.status = statusFilter;
+      }
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
+      }
+      
+      const response = await proposalApi.getAll(params);
       setProposals(response.proposals || []);
+      
+      // Set pagination metadata
+      if (response?.pagination) {
+        setTotalPages(response.pagination.totalPages);
+        setTotalItems(response.pagination.totalItems);
+      }
     } catch (error) {
       console.error('Error fetching proposals:', error);
       showToast('error', 'Failed to fetch proposals');
@@ -143,20 +185,12 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
   };
 
   const filteredProposals = useMemo(() => {
-    let filtered = proposals;
-    
-    // Filter by status
-    if (statusFilter !== 'all') {
-      filtered = filtered.filter(proposal => proposal.status === statusFilter);
-    }
-    
-    // Filter by specific proposal ID
+    // Only filter by specific proposal ID (local filter)
     if (proposalFilter) {
-      filtered = filtered.filter(proposal => proposal.proposalId === proposalFilter);
+      return proposals.filter(proposal => proposal.proposalId === proposalFilter);
     }
-    
-    return filtered;
-  }, [proposals, statusFilter, proposalFilter]);
+    return proposals;
+  }, [proposals, proposalFilter]);
 
   const handlePreview = (proposal: Proposal) => {
     const customerAppUrl = import.meta.env.VITE_CUSTOMER_APP_URL || 'http://localhost:5174';
@@ -545,17 +579,20 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
     },
   ];
 
-  if (isLoading) {
-    return <TableSkeleton rows={10} columns={7} showFilters={true} />;
-  }
-
   return (
     <>
       <DataTable
           data={filteredProposals}
           columns={columns}
           emptyMessage="No proposals yet"
-          itemsPerPage={10}
+          itemsPerPage={itemsPerPage}
+          serverSide={true}
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalItems}
+          onPageChange={(page) => setCurrentPage(page)}
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
           onRowClick={(proposal) => {
             setViewProposal(proposal);
             setIsViewModalOpen(true);
@@ -574,6 +611,46 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
               placeholder="Filter by status"
               className={styles.statusFilterSelect}
             />
+          }
+          customActions={
+            onCreateProposal && (
+              <button
+                onClick={onCreateProposal}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
+                  color: 'white',
+                  cursor: 'pointer',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <svg 
+                  width="20" 
+                  height="20" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add Proposal
+              </button>
+            )
           }
       />
 

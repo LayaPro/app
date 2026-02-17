@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { projectApi, eventDeliveryStatusApi, proposalApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
-import { DatePicker } from '../../../components/ui/DatePicker';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Modal } from '../../../components/ui/Modal';
 import { useAppDispatch } from '../../../store/index.js';
@@ -62,10 +61,11 @@ interface ProjectsTableProps {
 export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsTableProps = {}) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const itemsPerPage = 8; // Fixed at 8 items per page
   const [projectNameFilter, setProjectNameFilter] = useState<string>('');
-  const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -74,7 +74,6 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const exportRef = useRef<HTMLDivElement>(null);
-  const dateRangeRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const assignEditorModalRef = useRef<AssignEditorModalHandle>(null);
   const assignDesignerModalRef = useRef<AssignDesignerModalHandle>(null);
@@ -91,7 +90,14 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
   useEffect(() => {
     fetchProjects();
     fetchStatuses();
-  }, []);
+  }, [currentPage]); // Re-fetch when page changes
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [projectNameFilter]);
 
   const fetchStatuses = async () => {
     try {
@@ -128,9 +134,6 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
       if (exportRef.current && !exportRef.current.contains(event.target as Node)) {
         setIsExportOpen(false);
       }
-      if (dateRangeRef.current && !dateRangeRef.current.contains(event.target as Node)) {
-        setIsDateRangeOpen(false);
-      }
     };
 
     const handleScroll = () => {
@@ -139,7 +142,7 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
       }
     };
 
-    if (openActionDropdown || isExportOpen || isDateRangeOpen) {
+    if (openActionDropdown || isExportOpen) {
       // Use timeout to allow click events to fire first
       setTimeout(() => {
         document.addEventListener('click', handleClickOutside);
@@ -150,13 +153,13 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
         window.removeEventListener('scroll', handleScroll, true);
       };
     }
-  }, [openActionDropdown, isExportOpen, isDateRangeOpen]);
+  }, [openActionDropdown, isExportOpen]);
 
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      const response = await projectApi.getAll();
-      console.log('Fetched projects:', response?.projects?.length);
+      const response = await projectApi.getAll({ page: currentPage, limit: itemsPerPage });
+      console.log('Fetched projects:', response?.projects?.length, 'Page:', currentPage);
       // Log first project's events to verify duration field
       if (response?.projects?.[0]?.events?.[0]) {
         console.log('Sample event from first project:', {
@@ -167,6 +170,12 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
         });
       }
       setProjects(response?.projects || []);
+      
+      // Set pagination metadata
+      if (response?.pagination) {
+        setTotalPages(response.pagination.totalPages);
+        setTotalItems(response.pagination.totalItems);
+      }
     } catch (error) {
       console.error('Error fetching projects:', error);
     } finally {
@@ -382,7 +391,7 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
     },
     {
       key: 'tasks',
-      header: 'Overall Tasks',
+      header: 'Tasks',
       render: (project) => {
         const numEvents = project.events?.length || 0;
         const totalTasks = numEvents * totalStatuses; // Each event has totalStatuses tasks
@@ -767,28 +776,16 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
     );
   };
 
-  // Filter by date range and project - must be before early returns for hooks
+  // Filter by project name
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
       // Project filter
       if (projectNameFilter && project.projectId !== projectNameFilter) {
         return false;
       }
-      
-      // Date filter
-      if (!startDate && !endDate) return true;
-      if (!project.createdAt) return false;
-      
-      const projectDate = new Date(project.createdAt);
-      if (startDate && projectDate < new Date(startDate)) return false;
-      if (endDate) {
-        const endDateTime = new Date(endDate);
-        endDateTime.setHours(23, 59, 59, 999);
-        if (projectDate > endDateTime) return false;
-      }
       return true;
     });
-  }, [projects, startDate, endDate, projectNameFilter]);
+  }, [projects, projectNameFilter]);
 
   // Calculate and update stats whenever filteredProjects changes
   useEffect(() => {
@@ -817,12 +814,6 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
     );
   }
 
-  const handleClearFilters = () => {
-    setStartDate('');
-    setEndDate('');
-    setIsDateRangeOpen(false);
-  };
-
   const handleExportCSV = () => {
     const csvData = filteredProjects.map(project => ({
       Customer: getCustomerName(project),
@@ -838,8 +829,8 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
     const headers = Object.keys(csvData[0] || {});
     const csv = [
       headers.join(','),
-      ...csvData.map(row => headers.map(h => `\"${row[h as keyof typeof row]}\"`).join(','))
-    ].join('\\n');
+      ...csvData.map(row => headers.map(h => `"${row[h as keyof typeof row]}"`).join(','))
+    ].join('\n');
 
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = window.URL.createObjectURL(blob);
@@ -870,7 +861,12 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
         renderExpandedRow={renderExpandedRow}
         getRowKey={(project) => project.projectId}
         emptyMessage="No projects found"
-        itemsPerPage={8}
+        itemsPerPage={itemsPerPage}
+        serverSide={true}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        onPageChange={(page) => setCurrentPage(page)}
         onRowClick={(project) => {
           setSelectedProject(project);
           setViewModalOpen(true);
@@ -893,72 +889,6 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
             />
           </div>
           
-          {/* Date Range Filter */}
-          <div className={styles.dateRangeContainer} ref={dateRangeRef}>
-            <button
-              className={styles.dateRangeButton}
-              onClick={() => setIsDateRangeOpen(!isDateRangeOpen)}
-            >
-              <svg className={styles.dateIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <span>Date Range</span>
-              {(startDate || endDate) && <span className={styles.filterBadge}>•</span>}
-            </button>
-            
-            {/* Quick Clear Button */}
-            {(startDate || endDate) && (
-              <button
-                className={styles.quickClearButton}
-                onClick={handleClearFilters}
-                title="Clear date filters"
-              >
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
-            
-            {isDateRangeOpen && (
-              <div className={styles.dateRangeDropdown}>
-                <div className={styles.dateRangeContent}>
-                  <div className={styles.datePickerWrapper}>
-                    <label className={styles.dateLabel}>Start Date</label>
-                    <DatePicker
-                      value={startDate}
-                      onChange={setStartDate}
-                      placeholder="Select start date"
-                      includeTime={false}
-                    />
-                  </div>
-                  <div className={styles.datePickerWrapper}>
-                    <label className={styles.dateLabel}>End Date</label>
-                    <DatePicker
-                      value={endDate}
-                      onChange={setEndDate}
-                      placeholder="Select end date"
-                      minDate={startDate}
-                      includeTime={false}
-                    />
-                  </div>
-                </div>
-                <div className={styles.dateRangeActions}>
-                  <button 
-                    className={styles.dateRangeClear}
-                    onClick={handleClearFilters}
-                  >
-                    Clear
-                  </button>
-                  <button 
-                    className={styles.dateRangeApply}
-                    onClick={() => setIsDateRangeOpen(false)}
-                  >
-                    Apply
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
           <div className={styles.exportContainer} ref={exportRef}>
             <button 
               className={styles.exportButton}

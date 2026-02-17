@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import styles from './DataTable.module.css';
 
 export interface Column<T> {
@@ -20,7 +20,17 @@ interface DataTableProps<T> {
   renderExpandedRow?: (row: T) => React.ReactNode;
   getRowKey?: (row: T) => string;
   customFilters?: React.ReactNode;
+  customActions?: React.ReactNode;
   onRowClick?: (row: T) => void;
+  // Server-side pagination props
+  serverSide?: boolean;
+  currentPage?: number;
+  totalPages?: number;
+  totalItems?: number;
+  onPageChange?: (page: number) => void;
+  // Controlled search props
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -40,12 +50,30 @@ export function DataTable<T extends Record<string, any>>({
   renderExpandedRow,
   getRowKey,
   customFilters,
+  customActions,
   onRowClick,
+  serverSide = false,
+  currentPage: externalCurrentPage,
+  totalPages: externalTotalPages,
+  totalItems: externalTotalItems,
+  onPageChange: externalOnPageChange,
+  searchValue,
+  onSearchChange,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Use controlled search if provided, otherwise internal state
+  const activeSearchTerm = searchValue !== undefined ? searchValue : searchTerm;
+  const handleSearchChange = (value: string) => {
+    if (onSearchChange) {
+      onSearchChange(value);
+    } else {
+      setSearchTerm(value);
+    }
+  };
 
   const toggleRow = (key: string) => {
     setExpandedRows(prev => {
@@ -59,17 +87,18 @@ export function DataTable<T extends Record<string, any>>({
     });
   };
 
-  // Filter data - search across all columns
+  // Filter data - search across all columns (skip if server-side)
   const filteredData = useMemo(() => {
-    if (!searchTerm) return data;
+    if (serverSide) return data; // Server handles filtering
+    if (!activeSearchTerm) return data;
     
     return data.filter(row => {
       return Object.entries(row).some(([_, value]) => {
         if (value === null || value === undefined) return false;
-        return String(value).toLowerCase().includes(searchTerm.toLowerCase());
+        return String(value).toLowerCase().includes(activeSearchTerm.toLowerCase());
       });
     });
-  }, [data, searchTerm]);
+  }, [data, activeSearchTerm, serverSide]);
 
   // Sort data
   const sortedData = useMemo(() => {
@@ -108,13 +137,18 @@ export function DataTable<T extends Record<string, any>>({
   }, [filteredData, sortConfig, columns]);
 
   // Pagination
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
+  const activePage = serverSide ? (externalCurrentPage || 1) : currentPage;
+  const activeTotalPages = serverSide ? (externalTotalPages || 1) : Math.ceil(sortedData.length / itemsPerPage);
+  const activeTotalItems = serverSide ? (externalTotalItems || data.length) : sortedData.length;
+  
+  const startIndex = (activePage - 1) * itemsPerPage;
   const endIndex = startIndex + itemsPerPage;
-  const paginatedData = sortedData.slice(startIndex, endIndex);
+  const paginatedData = serverSide ? data : sortedData.slice(startIndex, endIndex);
 
   const handleSort = (key: string) => {
-    setCurrentPage(1);
+    if (!serverSide) {
+      setCurrentPage(1);
+    }
     setSortConfig(current => {
       if (!current || current.key !== key) {
         return { key, direction: 'asc' };
@@ -127,7 +161,11 @@ export function DataTable<T extends Record<string, any>>({
   };
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    if (serverSide && externalOnPageChange) {
+      externalOnPageChange(Math.max(1, Math.min(page, activeTotalPages)));
+    } else {
+      setCurrentPage(Math.max(1, Math.min(page, activeTotalPages)));
+    }
   };
 
   return (
@@ -142,16 +180,18 @@ export function DataTable<T extends Record<string, any>>({
             <input
               type="text"
               placeholder="Search..."
-              value={searchTerm}
+              value={activeSearchTerm}
               onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
+                handleSearchChange(e.target.value);
+                if (!serverSide) {
+                  setCurrentPage(1);
+                }
               }}
               className={styles.searchInput}
             />
-            {searchTerm && (
+            {activeSearchTerm && (
               <button
-                onClick={() => setSearchTerm('')}
+                onClick={() => handleSearchChange('')}
                 className={styles.clearButton}
               >
                 <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -162,6 +202,8 @@ export function DataTable<T extends Record<string, any>>({
           </div>
           {customFilters}
         </div>
+        
+        {customActions}
         
         {onCreateClick && (
           <button onClick={onCreateClick} className={styles.createButton}>
@@ -228,9 +270,8 @@ export function DataTable<T extends Record<string, any>>({
                 const rowKey = getRowKey ? getRowKey(row) : String(rowIndex);
                 const isExpanded = expandedRows.has(rowKey);
                 return (
-                  <>
+                  <React.Fragment key={rowKey}>
                     <tr 
-                      key={rowIndex} 
                       className={`${styles.tr} ${onRowClick ? styles.clickable : ''}`}
                       onClick={(e) => {
                         // Don't trigger row click if clicking on buttons or interactive elements
@@ -265,13 +306,13 @@ export function DataTable<T extends Record<string, any>>({
                       ))}
                     </tr>
                     {isExpanded && renderExpandedRow && (
-                      <tr key={`${rowIndex}-expanded`} className={styles.expandedRow}>
+                      <tr className={styles.expandedRow}>
                         <td colSpan={columns.length + 1} className={styles.expandedCell}>
                           {renderExpandedRow(row)}
                         </td>
                       </tr>
                     )}
-                  </>
+                  </React.Fragment>
                 );
               })
             )}
@@ -280,15 +321,15 @@ export function DataTable<T extends Record<string, any>>({
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
+      {activeTotalPages > 1 && (
         <div className={styles.pagination}>
           <div className={styles.paginationInfo}>
-            Showing {startIndex + 1} to {Math.min(endIndex, sortedData.length)} of {sortedData.length} entries
+            Showing {startIndex + 1} to {Math.min(endIndex, activeTotalItems)} of {activeTotalItems} entries
           </div>
           <div className={styles.paginationControls}>
             <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage === 1}
+              onClick={() => handlePageChange(activePage - 1)}
+              disabled={activePage === 1}
               className={styles.pageButton}
             >
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -296,34 +337,34 @@ export function DataTable<T extends Record<string, any>>({
               </svg>
             </button>
             
-            {[...Array(totalPages)].map((_, index) => {
+            {[...Array(activeTotalPages)].map((_, index) => {
               const page = index + 1;
               // Show first page, last page, current page, and pages around current
               if (
                 page === 1 ||
-                page === totalPages ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
+                page === activeTotalPages ||
+                (page >= activePage - 1 && page <= activePage + 1)
               ) {
                 return (
                   <button
                     key={page}
                     onClick={() => handlePageChange(page)}
                     className={`${styles.pageButton} ${
-                      currentPage === page ? styles.pageButtonActive : ''
+                      activePage === page ? styles.pageButtonActive : ''
                     }`}
                   >
                     {page}
                   </button>
                 );
-              } else if (page === currentPage - 2 || page === currentPage + 2) {
+              } else if (page === activePage - 2 || page === activePage + 2) {
                 return <span key={page} className={styles.ellipsis}>...</span>;
               }
               return null;
             })}
 
             <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage === totalPages}
+              onClick={() => handlePageChange(activePage + 1)}
+              disabled={activePage === activeTotalPages}
               className={styles.pageButton}
             >
               <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">

@@ -9,3 +9,64 @@ button:focus:not(:focus-visible),
 a:focus:not(:focus-visible) {
   outline: none;
 }
+
+/* Smooth page transitions */
+body {
+  overflow-x: hidden;
+}
+
+/* Optimize rendering performance */
+* {
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print Styles */
+@media print {
+  /* Hide header, sidebar, navigation */
+  header,
+  nav,
+  aside,
+  footer,
+  .print-hide,
+  .print-hide *,
+  div.print-hide,
+  div[class*="print-hide"] {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Remove sidebar margin and optimize page for printing */
+  main {
+    margin-left: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+  }
+
+  body {
+    margin: 0;
+    padding: 0;
+  }
+}

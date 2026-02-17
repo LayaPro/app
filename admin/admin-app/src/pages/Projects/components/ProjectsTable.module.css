@@ -144,6 +144,7 @@
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
+  white-space: nowrap;
 }
 
 .budgetText {
@@ -801,3 +802,90 @@
   background: var(--border-color);
   margin: 4px 0;
 }
+
+/* Print Styles */
+@media print {
+  /* Optimize page layout */
+  @page {
+    size: landscape;
+    margin: 0.5cm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Remove all spacing */
+  .projectsContainer {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Hide stats cards and other elements */
+  .statsGrid,
+  .statCard,
+  .actionsCell,
+  .exportContainer,
+  .filterSelectWrapper,
+  .dateRangeContainer {
+    display: none !important;
+  }
+
+  /* Ensure table fits on page */
+  .projectsContainer {
+    width: 100%;
+    overflow: visible !important;
+  }
+
+  /* Hide expanded rows in print */
+  .expandedContent {
+    display: none !important;
+  }
+
+  /* Adjust table layout */
+  table {
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  thead {
+    display: table-header-group;
+  }
+
+  /* Adjust font sizes for print */
+  .customerName {
+    font-size: 11px;
+  }
+
+  .customerSubtext {
+    font-size: 10px;
+  }
+
+  .badge,
+  .statusBadge,
+  .tasksText {
+    font-size: 10px;
+  }
+
+  .dateText,
+  .budgetText {
+    font-size: 11px;
+  }
+
+  /* Ensure colors are visible in print */
+  .badge,
+  .statusBadge {
+    border: 1px solid #6366f1;
+  }
+
+  .avatar {
+    border: 1px solid #e5e7eb;
+  }
+}
+

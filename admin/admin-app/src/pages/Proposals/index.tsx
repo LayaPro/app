@@ -117,31 +117,13 @@ const Proposals = () => {
         flexWrap: 'wrap'
       }} className="proposals-header">
         <ProposalStats refreshTrigger={refreshKey} />
-        
-        <Button
-          variant="primary"
-          onClick={handleCreateProposal}
-          style={{ flexShrink: 0 }}
-          className="add-proposal-button"
-        >
-          <svg 
-            width="20" 
-            height="20" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            style={{ marginRight: '8px' }}
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Add Proposal
-        </Button>
       </div>
 
       <ProposalsTable 
         onEdit={handleEditProposal} 
         onDataChange={() => setRefreshKey(prev => prev + 1)} 
         initialProposalFilter={proposalIdFilter}
+        onCreateProposal={handleCreateProposal}
       />
       {showHelp && helpContent && (
         <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />

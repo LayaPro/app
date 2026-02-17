@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { financeStatsApi } from '../../../services/api';
-import styles from './FinanceStats.module.css';
+import styles from '../../../components/common/Stats.module.css';
 
 interface FinanceStats {
   totalRevenue: number;
@@ -39,7 +39,7 @@ export const FinanceStats = () => {
     return (
       <div className={styles.statsContainer}>
         {[1, 2, 3, 4, 5].map((i) => (
-          <div key={i} className={styles.statCard} style={{ opacity: 0.5 }}>
+          <div key={i} className={styles.skeletonCard}>
             <div className={styles.skeleton} />
           </div>
         ))}

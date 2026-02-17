@@ -411,8 +411,13 @@ export const projectApi = {
     return handleResponse(response);
   },
 
-  getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/get-all-projects`, {
+  getAll: async (options?: { page?: number; limit?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.page) params.append('page', options.page.toString());
+    if (options?.limit) params.append('limit', options.limit.toString());
+    
+    const url = `${API_BASE_URL}/get-all-projects${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json',
@@ -1043,11 +1048,13 @@ export const proposalApi = {
     return handleResponse(response);
   },
 
-  getAll: async (params?: { status?: string; clientEmail?: string; search?: string }) => {
+  getAll: async (params?: { status?: string; clientEmail?: string; search?: string; page?: number; limit?: number }) => {
     const queryParams = new URLSearchParams();
     if (params?.status) queryParams.append('status', params.status);
     if (params?.clientEmail) queryParams.append('clientEmail', params.clientEmail);
     if (params?.search) queryParams.append('search', params.search);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
     
     const url = `${API_BASE_URL}/get-all-proposals${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
     const response = await fetch(url, {
@@ -1282,3 +1289,110 @@ export const auditApi = {
     return handleResponse(response);
   },
 };
+
+// Expense API
+export const expenseApi = {
+  create: async (data: {
+    projectId?: string;
+    eventId?: string;
+    amount: number;
+    comment: string;
+    date: string;
+    category?: string;
+    receiptUrl?: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/expenses`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  getAll: async (params?: {
+    projectId?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.projectId) queryParams.append('projectId', params.projectId);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+
+    const response = await fetch(`${API_BASE_URL}/expenses?${queryParams.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getById: async (expenseId: string) => {
+    const response = await fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  update: async (expenseId: string, data: {
+    projectId?: string;
+    eventId?: string;
+    amount?: number;
+    comment?: string;
+    date?: string;
+    category?: string;
+    receiptUrl?: string;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+
+  delete: async (expenseId: string) => {
+    const response = await fetch(`${API_BASE_URL}/expenses/${expenseId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  getStats: async (params?: {
+    projectId?: string;
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    const queryParams = new URLSearchParams();
+    if (params?.projectId) queryParams.append('projectId', params.projectId);
+    if (params?.startDate) queryParams.append('startDate', params.startDate);
+    if (params?.endDate) queryParams.append('endDate', params.endDate);
+
+    const response = await fetch(`${API_BASE_URL}/expenses/stats?${queryParams.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+};
+

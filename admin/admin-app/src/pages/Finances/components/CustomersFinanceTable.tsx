@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { projectApi } from '../../../services/api';
+import { projectApi, expenseApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { Modal } from '../../../components/ui/Modal';
@@ -46,6 +46,7 @@ interface ProjectWithFinance {
   phoneNumber?: string;
   displayPic?: string;
   finance?: ProjectFinance;
+  totalExpenses?: number;
 }
 
 interface CustomersFinanceTableProps {
@@ -183,9 +184,23 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
       setLoading(true);
       const response = await projectApi.getAll();
       const projectsData = response?.projects || [];
-      
+
+      const projectsWithExpenses = await Promise.all(
+        projectsData.map(async (project: ProjectWithFinance) => {
+          try {
+            const expensesResponse = await expenseApi.getAll({ projectId: project.projectId, limit: 1000 });
+            const expenses = expensesResponse?.expenses || [];
+            const totalExpenses = expenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
+            return { ...project, totalExpenses };
+          } catch (expenseError) {
+            console.error('Error fetching project expenses:', expenseError);
+            return { ...project, totalExpenses: 0 };
+          }
+        })
+      );
+
       // Projects already include finance data from backend
-      setProjects(projectsData);
+      setProjects(projectsWithExpenses);
     } catch (error) {
       console.error('Error fetching projects with finances:', error);
       showToast('error', 'Failed to load finance data');
@@ -391,6 +406,16 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
       render: (row) => (
         <span style={{ fontWeight: 600 }}>
           {formatAmount(row.finance?.totalBudget || 0)}
+        </span>
+      ),
+    },
+    {
+      key: 'totalExpenses',
+      header: 'Extra Expense',
+      sortable: true,
+      render: (row) => (
+        <span style={{ color: row.totalExpenses ? '#ef4444' : 'var(--text-secondary)', fontWeight: 600 }}>
+          {formatAmount(row.totalExpenses || 0)}
         </span>
       ),
     },

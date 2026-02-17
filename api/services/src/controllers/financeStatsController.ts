@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import ProjectFinance from '../models/projectFinance';
 import TeamFinance from '../models/teamFinance';
+import { Expense } from '../models/expense';
 import { nanoid } from 'nanoid';
 import { createModuleLogger } from '../utils/logger';
 
@@ -29,10 +30,20 @@ export const getFinanceStats = async (req: AuthRequest, res: Response) => {
 
     // Get all team finances
     const teamFinances = await TeamFinance.find({ tenantId }).lean();
-    
+
     // Calculate team salary expenses
-    const totalExpenses = teamFinances.reduce((sum, f) => sum + (f.totalPaid || 0), 0);
+    const salaryExpenses = teamFinances.reduce((sum, f) => sum + (f.totalPaid || 0), 0);
     const pendingPayable = teamFinances.reduce((sum, f) => sum + (f.pendingAmount || 0), 0);
+
+    // Calculate extra expenses from Expense model
+    const extraExpenseAgg = await Expense.aggregate([
+      { $match: { tenantId } },
+      { $group: { _id: null, total: { $sum: '$amount' } } }
+    ]);
+    const extraExpenses = extraExpenseAgg[0]?.total || 0;
+
+    // Total expenses = salaries + extra expenses
+    const totalExpenses = salaryExpenses + extraExpenses;
 
     // Calculate net profit
     const netProfit = totalRevenue - totalExpenses;
@@ -43,7 +54,8 @@ export const getFinanceStats = async (req: AuthRequest, res: Response) => {
       totalExpenses, 
       netProfit,
       projectCount: projectFinances.length,
-      teamFinanceCount: teamFinances.length
+      teamFinanceCount: teamFinances.length,
+      extraExpenses
     });
 
     return res.status(200).json({

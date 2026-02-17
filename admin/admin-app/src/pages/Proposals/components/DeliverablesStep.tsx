@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Button, Loading } from '../../../components/ui/index.js';
+import { Button } from '../../../components/ui/index.js';
 import { AddDeliverableModal } from './AddDeliverableModal.js';
 import { organizationApi } from '../../../services/api.js';
 import type { ProposalFormData } from '../ProposalWizard';
@@ -71,11 +71,7 @@ export const DeliverablesStep: React.FC<DeliverablesStepProps> = ({
   };
 
   if (isLoadingOrg) {
-    return (
-      <div className={styles.form}>
-        <Loading />
-      </div>
-    );
+    return null;
   }
 
   return (

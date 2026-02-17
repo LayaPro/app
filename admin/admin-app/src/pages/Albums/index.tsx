@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { AlbumPdfUploadManager, Breadcrumb, Input, Loading, Modal, SearchableSelect } from '../../components/ui/index.js';
+import { AlbumPdfUploadManager, Breadcrumb, Input, Modal, SearchableSelect } from '../../components/ui/index.js';
 import { HelpButton, HelpPanel } from '../../components/help/index.js';
 import { getHelpContent } from '../../data/helpContent.js';
 import type { AlbumPdfUploadManagerHandle } from '../../components/ui/index.js';
@@ -80,8 +80,6 @@ const Albums = () => {
   const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
   const [galleryImages, setGalleryImages] = useState<any[]>([]);
   const [isLoadingGallery, setIsLoadingGallery] = useState(false);
-  const [loadedGalleryImages, setLoadedGalleryImages] = useState<Set<string>>(new Set());
-  const [isLoadingGalleryPreviews, setIsLoadingGalleryPreviews] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [draggedImageId, setDraggedImageId] = useState<string | null>(null);
@@ -624,13 +622,9 @@ const Albums = () => {
       console.log('Fetching gallery images for event:', clientEventId);
       isFetchingGalleryRef.current = true;
       setIsLoadingGallery(true);
-      setLoadedGalleryImages(new Set());
       
       const data = await imageApi.getByClientEvent(clientEventId);
       setGalleryImages(data.images || []);
-      if (data.images && data.images.length > 0) {
-        setIsLoadingGalleryPreviews(true);
-      }
     } catch (error) {
       console.error('Error fetching gallery images:', error);
       setGalleryImages([]);
@@ -651,14 +645,7 @@ const Albums = () => {
   };
 
   const handleGalleryImageLoad = (imageId: string) => {
-    setLoadedGalleryImages((prev) => {
-      const newSet = new Set(prev).add(imageId);
-      // Check if all images are loaded
-      if (newSet.size === galleryImages.length) {
-        setIsLoadingGalleryPreviews(false);
-      }
-      return newSet;
-    });
+    // No longer needed - individual image loading handled in component
   };
 
   const handleOpenViewer = (index: number) => {
@@ -1736,27 +1723,7 @@ const Albums = () => {
   }, [selectedImages, galleryImages, imageStatuses]);
 
   if (isLoading) {
-    return (
-      <div className={styles.albumsContainer}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Breadcrumb />
-          <HelpButton onClick={() => setShowHelp(true)} />
-        </div>
-        <div className={styles.loading}>
-          <div>
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            <p style={{ marginTop: '1rem', fontSize: '0.875rem' }}>Loading...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   // Album Detail View
@@ -2470,35 +2437,14 @@ const Albums = () => {
           </div>
         </div>
 
-        <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && !isLoadingGalleryPreviews && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
-          {isLoadingGallery && galleryImages.length === 0 ? (
-            <div style={{ gridColumn: '1 / -1', padding: '3rem', display: 'flex', justifyContent: 'center' }}>
-              <DotLoader text="Loading gallery..." />
-            </div>
-          ) : eventImages.length === 0 ? (
+        <div className={`${styles.imageGrid} ${showContent && !isLoadingGallery && eventImages.length > 0 ? styles.animatedGrid : ''}`}>
+          {eventImages.length === 0 && !isLoadingGallery ? (
             <div className={styles.emptyGallery}>
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <p>No images uploaded yet. Use the upload section above to add images.</p>
             </div>
-          ) : isLoadingGalleryPreviews && galleryImages.length === 0 ? (
-            <>
-              <div style={{ gridColumn: '1 / -1', padding: '3rem', display: 'flex', justifyContent: 'center' }}>
-                <DotLoader text="Loading gallery..." />
-              </div>
-              <div style={{ display: 'none' }}>
-                {eventImages.map((image) => (
-                  <img 
-                    key={image.imageId}
-                    src={image.compressedUrl || image.originalUrl}
-                    alt=""
-                    onLoad={() => handleGalleryImageLoad(image.imageId)}
-                    onError={() => handleGalleryImageLoad(image.imageId)}
-                  />
-                ))}
-              </div>
-            </>
           ) : showContent && (
             sortedGalleryImages.map((image, index) => (
               <div 
@@ -2795,9 +2741,7 @@ const Albums = () => {
                 </button>
               </div>
               <div className={styles.propertiesContent}>
-                {loadingProperties ? (
-                  <Loading />
-                ) : propertiesData ? (
+                {propertiesData ? (
                   <div className={styles.propertiesGrid}>
                     <div className={styles.propertyRow}>
                       <span className={styles.propertyLabel}>Name:</span>
@@ -3373,9 +3317,7 @@ const Albums = () => {
               </button>
             </div>
             <div className={styles.propertiesContent}>
-              {loadingProperties ? (
-                <Loading />
-              ) : propertiesData ? (
+              {propertiesData ? (
                 <div className={styles.propertiesGrid}>
                   <div className={styles.propertyRow}>
                     <span className={styles.propertyLabel}>Name:</span>

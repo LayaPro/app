@@ -1,7 +1,7 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -10,7 +10,7 @@
 }
 
 .pageContainer {
-  animation: fadeIn 0.4s ease-out;
+  animation: fadeIn 0.2s ease-out;
 }
 
 .pageTitle {
@@ -50,5 +50,20 @@
   .pageContainer :global(.add-proposal-button) {
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* Print Styles */
+@media print {
+  /* Hide page header and stats */
+  .pageContainer > .print-hide,
+  .pageContainer > div:has(.print-hide) {
+    display: none !important;
+  }
+  
+  .pageContainer {
+    padding: 0 !important;
+    margin: 0 !important;
+    animation: none !important;
   }
 }

@@ -3,7 +3,7 @@
   background: var(--bg-primary);
   border-radius: 16px;
   border: 1px solid var(--border-color);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .tableWrapper {
@@ -205,7 +205,6 @@
 .tableWrapper {
   overflow-x: auto;
   overflow-y: visible;
-  border-radius: 16px 16px 0 0;
 }
 
 .table {
@@ -221,6 +220,7 @@
   border-bottom: 1px solid var(--border-color);
   position: relative;
   z-index: 1;
+  border-radius: 16px 16px 0 0;
 }
 
 .th {
@@ -232,6 +232,14 @@
   text-transform: uppercase;
   letter-spacing: 0.5px;
   border-bottom: 1px solid var(--border-color);
+}
+
+.thead .th:first-child {
+  border-top-left-radius: 16px;
+}
+
+.thead .th:last-child {
+  border-top-right-radius: 16px;
 }
 
 .thExpand {
@@ -305,6 +313,14 @@
 
 .tr:last-child {
   border-bottom: none;
+}
+
+.tr:last-child .td:first-child {
+  border-bottom-left-radius: 16px;
+}
+
+.tr:last-child .td:last-child {
+  border-bottom-right-radius: 16px;
 }
 
 .td {
@@ -504,3 +520,92 @@
     height: 16px;
   }
 }
+
+/* Print Styles */
+@media print {
+  /* Hide header, sidebar, and other page elements */
+  header,
+  nav,
+  aside,
+  footer,
+  [class*="Header"],
+  [class*="Sidebar"],
+  [class*="Navigation"],
+  [class*="pageHeader"] {
+    display: none !important;
+  }
+
+  /* Hide interactive elements */
+  .toolbar,
+  .pagination,
+  .searchContainer {
+    display: none !important;
+  }
+
+  /* Optimize page layout */
+  .tableContainer {
+    overflow: visible !important;
+    border: none !important;
+    box-shadow: none !important;
+    page-break-inside: auto;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .tableWrapper {
+    overflow: visible !important;
+  }
+
+  .table {
+    width: 100% !important;
+    page-break-inside: auto;
+  }
+
+  .thead {
+    display: table-header-group;
+    background: #f3f4f6 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .tbody {
+    display: table-row-group;
+  }
+
+  .tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+
+  /* Ensure borders are visible */
+  .th,
+  .td {
+    border: 1px solid #e5e7eb !important;
+    padding: 8px !important;
+  }
+
+  /* Hide expand buttons and actions */
+  .tdExpand,
+  .thExpand,
+  .expandButton,
+  button[class*="action"],
+  button[class*="dropdown"] {
+    display: none !important;
+  }
+
+  /* Adjust font sizes */
+  .th {
+    font-size: 10px !important;
+  }
+
+  .td {
+    font-size: 10px !important;
+  }
+
+  /* Ensure colors print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+

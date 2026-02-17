@@ -42,6 +42,8 @@ interface TeamMemberWithFinance {
   phoneNumber?: string;
   profileName?: string;
   isFreelancer: boolean;
+  paymentType?: string;
+  salary?: string | number;
   finance?: TeamFinance;
 }
 
@@ -262,6 +264,44 @@ export const TeamFinanceTable = () => {
                 )}
               </div>
             </div>
+          </div>
+        );
+      }
+    },
+    {
+      key: 'compensation',
+      header: 'Compensation',
+      sortable: true,
+      render: (row) => {
+        const paymentType = row.paymentType || 'Not set';
+        const displayType = paymentType === 'per-month' ? 'Per Month' : paymentType === 'per-event' ? 'Per Event' : 'Not set';
+        const bgColor = paymentType === 'per-month' ? '#eff6ff' : paymentType === 'per-event' ? '#fef3c7' : '#f3f4f6';
+        const textColor = paymentType === 'per-month' ? '#1e40af' : paymentType === 'per-event' ? '#92400e' : '#6b7280';
+        
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {row.salary ? (
+              <span style={{ fontWeight: '600', color: '#059669' }}>
+                {formatCurrency(parseFloat(String(row.salary)) || 0)}
+              </span>
+            ) : (
+              <span style={{ color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                -
+              </span>
+            )}
+            <span style={{
+              padding: '2px 8px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+              background: bgColor,
+              color: textColor,
+              display: 'inline-block',
+              width: 'fit-content'
+            }}>
+              {displayType}
+            </span>
           </div>
         );
       }

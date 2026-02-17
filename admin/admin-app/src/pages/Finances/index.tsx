@@ -6,6 +6,7 @@ import { getHelpContent } from '../../data/helpContent.js';
 import type { Tab } from '../../components/ui/Tabs.js';
 import { CustomersFinanceTable } from './components/CustomersFinanceTable.js';
 import { TeamFinanceTable } from './components/TeamFinanceTable.js';
+import { ExpensesTable } from './components/ExpensesTable.js';
 import { FinanceStats } from './components/FinanceStats.js';
 import styles from './Finances.module.css';
 
@@ -56,6 +57,25 @@ const Finances = () => {
       content: (
         <div className={styles.tableWrapper}>
           <TeamFinanceTable />
+        </div>
+      ),
+    },
+    {
+      id: 'expenses',
+      label: 'Expenses',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+          />
+        </svg>
+      ),
+      content: (
+        <div className={styles.tableWrapper}>
+          <ExpensesTable />
         </div>
       ),
     },

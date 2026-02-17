@@ -169,18 +169,9 @@ const Dashboard = () => {
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
-  if (loading || !stats) {
-    return (
-      <div className={pageStyles.pageContainer}>
-        <div className={styles.metricsGrid}>
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className={styles.metricCard} style={{ opacity: 0.5 }}>
-              <div className={styles.skeleton} />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+  // Remove skeleton loading - show stats immediately when available
+  if (!stats) {
+    return null;
   }
 
   const metricsCards = [

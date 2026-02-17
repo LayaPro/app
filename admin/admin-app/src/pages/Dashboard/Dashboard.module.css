@@ -1,7 +1,7 @@
 @keyframes fadeInUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -14,10 +14,18 @@
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1rem;
   margin-bottom: 2rem;
+  opacity: 0;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+  }
 }
 
 .metricCard {
-  animation: fadeInUp 0.5s ease-out both;
+  animation: fadeInUp 0.2s ease-out both;
   display: flex;
   align-items: center;
   gap: 1rem;
@@ -25,7 +33,7 @@
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease-out;
   text-decoration: none;
   color: var(--text-primary);
   cursor: pointer;
@@ -49,6 +57,17 @@
   border-color: var(--card-color);
   transform: translateY(-2px);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .metricCard {
+    animation: none;
+    opacity: 1;
+  }
+  .metricsGrid {
+    animation: none;
+    opacity: 1;
+  }
 }
 
 .metricCard:hover::before {
@@ -151,28 +170,7 @@
   white-space: nowrap;
 }
 
-.skeleton {
-  width: 100%;
-  height: 100px;
-  background: linear-gradient(
-    90deg,
-    var(--bg-secondary) 25%,
-    var(--bg-tertiary) 50%,
-    var(--bg-secondary) 75%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.5s infinite;
-  border-radius: 8px;
-}
 
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
-  }
-}
 
 @media (max-width: 768px) {
   .metricsGrid {
@@ -211,7 +209,7 @@
   grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-top: 2rem;
-  animation: fadeInUp 0.5s ease-out 0.15s both;
+  animation: fadeInUp 0.2s ease-out both;
 }
 
 @media (min-width: 1024px) {
@@ -222,7 +220,8 @@
 
 .eventsRow {
   margin-top: 2rem;
-  animation: fadeInUp 0.5s ease-out 0.15s both;
+  animation: fadeInUp 0.2s ease-out both;
+  will-change: transform, opacity;
 }
 
 .teamQuickLinksRow {
@@ -230,7 +229,7 @@
   grid-template-columns: 1fr;
   gap: 1.5rem;
   margin-top: 1.5rem;
-  animation: fadeInUp 0.5s ease-out 0.2s both;
+  animation: fadeInUp 0.2s ease-out both;
 }
 
 @media (min-width: 1024px) {
@@ -611,19 +610,19 @@
   display: flex;
   gap: 1.5rem;
   margin-top: 2rem;
-  animation: fadeInUp 0.5s ease-out 0.1s both;
+  animation: fadeInUp 0.2s ease-out both;
 }
 
 .tasksSection {
   flex: 3;
   min-width: 0;
-  animation: fadeInUp 0.5s ease-out 0.15s both;
+  animation: fadeInUp 0.2s ease-out both;
 }
 
 .revenueSection {
   flex: 7;
   min-width: 0;
-  animation: fadeInUp 0.5s ease-out 0.2s both;
+  animation: fadeInUp 0.2s ease-out both;
 }
 
 @media (max-width: 1023px) {

@@ -283,14 +283,30 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
             maximumFractionDigits: 0
           }).format(num);
         };
+        
+        const displayFrequency = row.paymentType === 'per-month' ? 'Per Month' : 
+                                  row.paymentType === 'per-event' ? 'Per Event' : 'Not set';
+        
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-            <span style={{ fontWeight: '500' }}>{formatIndianNumber(row.salary)}</span>
-            {row.paymentType && (
-              <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
-                {row.paymentType === 'per-month' ? 'per month' : 'per event'}
-              </span>
-            )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            <span style={{ fontWeight: '600' }}>
+              {formatIndianNumber(row.salary)}
+            </span>
+            <span style={{
+              padding: '2px 8px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: '600',
+              whiteSpace: 'nowrap',
+              backgroundColor: row.paymentType === 'per-month' ? '#eff6ff' :
+                               row.paymentType === 'per-event' ? '#fef3c7' : '#f3f4f6',
+              color: row.paymentType === 'per-month' ? '#1e40af' :
+                     row.paymentType === 'per-event' ? '#92400e' : '#6b7280',
+              display: 'inline-block',
+              width: 'fit-content'
+            }}>
+              {displayFrequency}
+            </span>
           </div>
         );
       },
@@ -301,13 +317,15 @@ export const TeamMembersCard: React.FC<TeamMembersCardProps> = ({
       sortable: true,
       render: (row) => (
         <span style={{ 
-          padding: '4px 12px', 
-          borderRadius: '12px', 
-          fontSize: '12px',
+          padding: '2px 8px', 
+          borderRadius: '6px', 
+          fontSize: '11px',
           fontWeight: '600',
           whiteSpace: 'nowrap',
-          backgroundColor: row.isFreelancer ? '#fef3c7' : '#dbeafe',
-          color: row.isFreelancer ? '#92400e' : '#1e40af',
+          backgroundColor: row.isFreelancer ? '#fef3c7' : '#d1fae5',
+          color: row.isFreelancer ? '#92400e' : '#065f46',
+          display: 'inline-block',
+          width: 'fit-content'
         }}>
           {row.isFreelancer ? 'Freelancer' : 'In-house'}
         </span>
