@@ -4,6 +4,8 @@ import './Timeline.css';
 interface Event {
   eventId: string;
   eventName: string;
+  fromDatetime?: string;
+  toDatetime?: string;
   fromDate?: string;
   toDate?: string;
   fromTime?: string;
@@ -25,20 +27,24 @@ interface TimelineProps {
 
 export const Timeline: React.FC<TimelineProps> = ({ events, projectName, acceptedAt, accessCode }) => {
   // Helper to format date
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return '';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+  const formatDate = (dateStr?: string, datetimeStr?: string) => {
+    const source = datetimeStr || dateStr;
+    if (!source) return '';
+    const date = new Date(source);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
-  // Helper to format time
-  const formatTime = (timeStr?: string) => {
-    if (!timeStr) return '';
-    return timeStr;
+  // Helper to format time in local timezone
+  const formatTime = (timeStr?: string, datetimeStr?: string) => {
+    if (datetimeStr) {
+      const date = new Date(datetimeStr);
+      return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    }
+    return timeStr || '';
   };
 
   return (
@@ -197,26 +203,26 @@ export const Timeline: React.FC<TimelineProps> = ({ events, projectName, accepte
                     <h3 className="timeline-event-name">{event.eventName}</h3>
                   </div>
                   
-                  {(event.fromDate || event.toDate) && (
+                  {(event.fromDate || event.toDate || event.fromDatetime || event.toDatetime) && (
                     <div className="timeline-date-range">
                       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
                       <span>
-                        {formatDate(event.fromDate)}
-                        {event.toDate && event.toDate !== event.fromDate && ` - ${formatDate(event.toDate)}`}
+                        {formatDate(event.fromDate, event.fromDatetime)}
+                        {event.toDate && event.toDate !== event.fromDate && ` - ${formatDate(event.toDate, event.toDatetime)}`}
                       </span>
                     </div>
                   )}
                   
-                  {(event.fromTime || event.toTime) && (
+                  {(event.fromTime || event.toTime || event.fromDatetime || event.toDatetime) && (
                     <div className="timeline-time-range">
                       <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span>
-                        {formatTime(event.fromTime)}
-                        {event.toTime && ` - ${formatTime(event.toTime)}`}
+                        {formatTime(event.fromTime, event.fromDatetime)}
+                        {(event.toTime || event.toDatetime) && ` - ${formatTime(event.toTime, event.toDatetime)}`}
                       </span>
                     </div>
                   )}

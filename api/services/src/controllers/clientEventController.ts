@@ -8,6 +8,8 @@ import User from '../models/user';
 import Project from '../models/project';
 import Event from '../models/event';
 import AlbumPdf from '../models/albumPdf';
+import Proposal from '../models/proposal';
+import Tenant from '../models/tenant';
 import Todo from '../models/todo';
 import Role from '../models/role';
 import ProjectFinance from '../models/projectFinance';
@@ -15,6 +17,7 @@ import { uploadToS3, deleteFromS3 } from '../utils/s3';
 import { getMainBucketName } from '../utils/s3Bucket';
 import { AuthRequest } from '../middleware/auth';
 import { NotificationUtils } from '../services/notificationUtils';
+import { sendAlbumApprovedEmail, sendAlbumPdfUploadedEmail, sendAlbumPublishedEmail, sendProjectCompletedEmail } from '../services/emailService';
 import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
 
@@ -287,6 +290,50 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
         tenantId,
         newStatus: result?.status
       });
+
+      try {
+        if (result?.proposalId) {
+          const [proposal, tenant] = await Promise.all([
+            Proposal.findOne({ proposalId: result.proposalId, tenantId }),
+            Tenant.findOne({ tenantId })
+          ]);
+
+          if (proposal?.clientEmail && tenant) {
+            await sendProjectCompletedEmail(
+              proposal.clientEmail,
+              proposal.clientName,
+              result.projectName || 'Your Project',
+              tenant.tenantCompanyName || `${tenant.tenantFirstName} ${tenant.tenantLastName}`
+            );
+
+            logger.info('Project completed email sent', {
+              tenantId,
+              projectId,
+              proposalId: proposal.proposalId,
+              clientEmail: proposal.clientEmail
+            });
+          } else {
+            logger.warn('Skipping project completed email (missing proposal/tenant)', {
+              tenantId,
+              projectId,
+              hasProposal: !!proposal,
+              hasTenant: !!tenant
+            });
+          }
+        } else {
+          logger.warn('Skipping project completed email (no proposalId on project)', {
+            tenantId,
+            projectId
+          });
+        }
+      } catch (emailError: any) {
+        logger.error('Failed to send project completed email', {
+          tenantId,
+          projectId,
+          error: emailError.message,
+          stack: emailError.stack
+        });
+      }
 
       // Check for pending payments and create todos if needed
       try {
@@ -803,6 +850,48 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
           );
         }
 
+        // If status is PUBLISHED, notify customer via email
+        if (newStatus?.statusCode === 'PUBLISHED') {
+          try {
+            const [proposal, tenant] = await Promise.all([
+              project?.proposalId ? Proposal.findOne({ proposalId: project.proposalId, tenantId }) : null,
+              tenantId ? Tenant.findOne({ tenantId }) : null
+            ]);
+
+            if (proposal?.clientEmail && tenant) {
+              await sendAlbumPublishedEmail(
+                proposal.clientEmail,
+                proposal.clientName,
+                eventName,
+                projectName,
+                tenant.tenantCompanyName || `${tenant.tenantFirstName} ${tenant.tenantLastName}`,
+                proposal.accessCode,
+                proposal.accessPin
+              );
+              logger.info('Customer album published email sent', {
+                tenantId,
+                clientEventId: updatedClientEvent.clientEventId,
+                proposalId: proposal.proposalId,
+                clientEmail: proposal.clientEmail
+              });
+            } else {
+              logger.warn('Skipping album published email (missing proposal or tenant)', {
+                tenantId,
+                clientEventId: updatedClientEvent.clientEventId,
+                hasProposal: !!proposal,
+                hasTenant: !!tenant
+              });
+            }
+          } catch (emailError: any) {
+            logger.error('Failed to send album published email', {
+              tenantId,
+              clientEventId: updatedClientEvent.clientEventId,
+              error: emailError.message,
+              stack: emailError.stack
+            });
+          }
+        }
+
         // Check if all events in the project are now in DELIVERY status
         if (newStatus?.statusCode === 'DELIVERY') {
           await checkAndUpdateProjectStatus(updatedClientEvent.projectId, tenantId!);
@@ -1108,6 +1197,20 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       );
     }
 
+    let eventNames = 'your event';
+    try {
+      const events = await Event.find({
+        eventId: { $in: clientEvents.map(ce => ce.eventId) }
+      });
+      eventNames = events.map(e => e.eventDesc).filter(Boolean).join(', ') || eventNames;
+    } catch (eventError: any) {
+      logger.warn(`[${requestId}] Failed to fetch event names for album PDF`, {
+        tenantId,
+        projectId,
+        error: eventError.message
+      });
+    }
+
     // Send notification to admins
     try {
       // Get designer name
@@ -1116,12 +1219,6 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
       const designerName = designerTeamMember 
         ? `${designerTeamMember.firstName} ${designerTeamMember.lastName}` 
         : designerUser?.email || 'Designer';
-
-      // Get event names
-      const events = await Event.find({ 
-        eventId: { $in: clientEvents.map(ce => ce.eventId) } 
-      });
-      const eventNames = events.map(e => e.eventDesc).join(', ');
 
       await NotificationUtils.notifyAlbumPdfUploaded(
         tenantId,
@@ -1138,6 +1235,46 @@ export const uploadAlbumPdf = async (req: AuthRequest, res: Response) => {
         error: notifError.message 
       });
       // Don't fail the request if notification fails
+    }
+
+    // Send customer email
+    try {
+      const [proposal, tenant] = await Promise.all([
+        project.proposalId ? Proposal.findOne({ proposalId: project.proposalId, tenantId }) : null,
+        tenantId ? Tenant.findOne({ tenantId }) : null
+      ]);
+
+      if (proposal?.clientEmail && tenant) {
+        await sendAlbumPdfUploadedEmail(
+          proposal.clientEmail,
+          proposal.clientName,
+          eventNames,
+          project.projectName,
+          tenant.tenantCompanyName || `${tenant.tenantFirstName} ${tenant.tenantLastName}`,
+          proposal.accessCode,
+          proposal.accessPin
+        );
+        logger.info(`[${requestId}] Customer album PDF email sent`, {
+          tenantId,
+          projectId,
+          proposalId: proposal.proposalId,
+          clientEmail: proposal.clientEmail
+        });
+      } else {
+        logger.warn(`[${requestId}] Skipping customer album PDF email`, {
+          tenantId,
+          projectId,
+          hasProposal: !!proposal,
+          hasTenant: !!tenant
+        });
+      }
+    } catch (emailError: any) {
+      logger.error(`[${requestId}] Failed to send customer album PDF email`, {
+        tenantId,
+        projectId,
+        error: emailError.message,
+        stack: emailError.stack
+      });
     }
 
     logger.info(`[${requestId}] Album PDF uploaded`, { 
@@ -1344,6 +1481,20 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
 
     // Send notification to admins
     if (createdPdfs.length > 0) {
+      let eventNames = 'your event';
+      try {
+        const events = await Event.find({
+          eventId: { $in: clientEvents.map(ce => ce.eventId) }
+        });
+        eventNames = events.map(e => e.eventDesc).filter(Boolean).join(', ') || eventNames;
+      } catch (eventError: any) {
+        logger.warn(`[${requestId}] Failed to fetch event names for batch album PDF`, {
+          tenantId,
+          projectId,
+          error: eventError.message
+        });
+      }
+
       try {
         // Get designer name
         const designerUser = await User.findOne({ userId, tenantId });
@@ -1351,12 +1502,6 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
         const designerName = designerTeamMember 
           ? `${designerTeamMember.firstName} ${designerTeamMember.lastName}` 
           : designerUser?.email || 'Designer';
-
-        // Get event names
-        const events = await Event.find({ 
-          eventId: { $in: clientEvents.map(ce => ce.eventId) } 
-        });
-        const eventNames = events.map(e => e.eventDesc).join(', ');
 
         await NotificationUtils.notifyAlbumPdfUploaded(
           tenantId,
@@ -1373,6 +1518,46 @@ export const uploadAlbumPdfBatch = async (req: AuthRequest, res: Response) => {
           error: notifError.message 
         });
         // Don't fail the request if notification fails
+      }
+
+      // Send customer email
+      try {
+        const [proposal, tenant] = await Promise.all([
+          project.proposalId ? Proposal.findOne({ proposalId: project.proposalId, tenantId }) : null,
+          tenantId ? Tenant.findOne({ tenantId }) : null
+        ]);
+
+        if (proposal?.clientEmail && tenant) {
+          await sendAlbumPdfUploadedEmail(
+            proposal.clientEmail,
+            proposal.clientName,
+            eventNames,
+            project.projectName,
+            tenant.tenantCompanyName || `${tenant.tenantFirstName} ${tenant.tenantLastName}`,
+            proposal.accessCode,
+            proposal.accessPin
+          );
+          logger.info(`[${requestId}] Customer album PDF email sent (batch)`, {
+            tenantId,
+            projectId,
+            proposalId: proposal.proposalId,
+            clientEmail: proposal.clientEmail
+          });
+        } else {
+          logger.warn(`[${requestId}] Skipping customer album PDF email (batch)`, {
+            tenantId,
+            projectId,
+            hasProposal: !!proposal,
+            hasTenant: !!tenant
+          });
+        }
+      } catch (emailError: any) {
+        logger.error(`[${requestId}] Failed to send customer album PDF email (batch)`, {
+          tenantId,
+          projectId,
+          error: emailError.message,
+          stack: emailError.stack
+        });
       }
     }
 
@@ -1453,6 +1638,46 @@ export const approveAlbumDesign = async (req: AuthRequest, res: Response) => {
     });
 
     logger.info(`[${requestId}] Album design approved`, { tenantId, clientEventId });
+
+    try {
+      const project = await Project.findOne({ projectId: updatedEvent.projectId, tenantId });
+      const event = await Event.findOne({ eventId: updatedEvent.eventId, tenantId: { $in: [tenantId, -1] } });
+      const [proposal, tenant] = await Promise.all([
+        project?.proposalId ? Proposal.findOne({ proposalId: project.proposalId, tenantId }) : null,
+        tenantId ? Tenant.findOne({ tenantId }) : null
+      ]);
+
+      if (proposal?.clientEmail && tenant && project) {
+        await sendAlbumApprovedEmail(
+          proposal.clientEmail,
+          proposal.clientName,
+          event?.eventDesc || 'your event',
+          project.projectName,
+          tenant.tenantCompanyName || `${tenant.tenantFirstName} ${tenant.tenantLastName}`
+        );
+        logger.info(`[${requestId}] Customer album approved email sent`, {
+          tenantId,
+          clientEventId,
+          proposalId: proposal.proposalId,
+          clientEmail: proposal.clientEmail
+        });
+      } else {
+        logger.warn(`[${requestId}] Skipping album approved email`, {
+          tenantId,
+          clientEventId,
+          hasProposal: !!proposal,
+          hasTenant: !!tenant,
+          hasProject: !!project
+        });
+      }
+    } catch (emailError: any) {
+      logger.error(`[${requestId}] Failed to send album approved email`, {
+        tenantId,
+        clientEventId,
+        error: emailError.message,
+        stack: emailError.stack
+      });
+    }
 
     res.status(200).json({ 
       message: 'Album design approved successfully, printing in progress',

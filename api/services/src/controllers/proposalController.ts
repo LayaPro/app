@@ -15,7 +15,7 @@ import Todo from '../models/todo';
 import Role from '../models/role';
 import User from '../models/user';
 import { AuthRequest } from '../middleware/auth';
-import { sendProposalEmail } from '../services/emailService';
+import { sendAlbumApprovedEmail, sendProposalEmail } from '../services/emailService';
 import { sendWhatsAppMessage } from '../services/whatsappService';
 import { NotificationUtils } from '../services/notificationUtils';
 import { createModuleLogger } from '../utils/logger';
@@ -1317,10 +1317,14 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
         });
 
         eventsData = events.map(event => {
-          const fromDate = event.fromDatetime ? new Date(event.fromDatetime).toISOString().split('T')[0] : undefined;
-          const toDate = event.toDatetime ? new Date(event.toDatetime).toISOString().split('T')[0] : undefined;
-          const fromTime = event.fromDatetime ? new Date(event.fromDatetime).toTimeString().slice(0, 5) : undefined;
-          const toTime = event.toDatetime ? new Date(event.toDatetime).toTimeString().slice(0, 5) : undefined;
+          const fromDatetime = event.fromDatetime ? new Date(event.fromDatetime).toISOString() : undefined;
+          const toDatetime = event.toDatetime ? new Date(event.toDatetime).toISOString() : undefined;
+          const fromDate = fromDatetime ? fromDatetime.split('T')[0] : undefined;
+          const toDate = toDatetime ? toDatetime.split('T')[0] : undefined;
+          
+          // Keep time strings for backward compatibility
+          const fromTime = fromDatetime ? fromDatetime.split('T')[1].slice(0, 5) : undefined;
+          const toTime = toDatetime ? toDatetime.split('T')[1].slice(0, 5) : undefined;
 
           const statusInfo = event.eventDeliveryStatusId ? statusMap.get(event.eventDeliveryStatusId) : null;
 
@@ -1328,6 +1332,8 @@ export const getCustomerPortalData = async (req: AuthRequest, res: Response) => 
             eventId: event.eventId,
             clientEventId: event.clientEventId,
             eventName: eventNameMap.get(event.eventId) || 'Event',
+            fromDatetime,
+            toDatetime,
             fromDate,
             toDate,
             fromTime,
@@ -1797,6 +1803,46 @@ export const approveAlbum = async (req: Request, res: Response) => {
       eventsUpdated: result.modifiedCount,
       totalEventsInAlbum: eventIdsToUpdate.length
     });
+
+    try {
+      const [organization, clientEvents] = await Promise.all([
+        Organization.findOne({ tenantId: project.tenantId }),
+        ClientEvent.find({ tenantId: project.tenantId, clientEventId: { $in: eventIdsToUpdate } })
+      ]);
+
+      const eventMasterIds = clientEvents.map(evt => evt.eventId);
+      const eventMasters = await Event.find({
+        eventId: { $in: eventMasterIds },
+        tenantId: { $in: [project.tenantId, -1] }
+      });
+      const eventNameMap = new Map(eventMasters.map(evt => [evt.eventId, evt.eventDesc || evt.eventCode]));
+      const eventNames = clientEvents
+        .map(evt => eventNameMap.get(evt.eventId))
+        .filter(Boolean)
+        .join(', ') || 'your event';
+
+      await sendAlbumApprovedEmail(
+        proposal.clientEmail,
+        proposal.clientName,
+        eventNames,
+        project.projectName,
+        organization?.companyName || 'Our Studio'
+      );
+
+      logger.info(`[${requestId}] Album approved email sent to customer`, {
+        tenantId: project.tenantId,
+        projectId: project.projectId,
+        proposalId: proposal.proposalId,
+        clientEmail: proposal.clientEmail
+      });
+    } catch (emailError: any) {
+      logger.error(`[${requestId}] Failed to send album approved email`, {
+        tenantId: project.tenantId,
+        projectId: project.projectId,
+        error: emailError.message,
+        stack: emailError.stack
+      });
+    }
 
     // Send notifications and create todos for all approved events
     if (result.modifiedCount > 0) {

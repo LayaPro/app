@@ -17,6 +17,7 @@ import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
 
 import { NotificationUtils } from '../services/notificationUtils';
+import { sendProjectWelcomeEmail } from '../services/emailService';
 
 const logger = createModuleLogger('ProjectController');
 
@@ -232,8 +233,9 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 
     // If project was created from a proposal, update the proposal status
     if (proposalId) {
+      console.log('🎉 Project created from proposal, sending welcome email...', { proposalId, tenantId });
       try {
-        await Proposal.findOneAndUpdate(
+        const proposal = await Proposal.findOneAndUpdate(
           { proposalId, tenantId },
           { 
             status: 'project_created',
@@ -241,6 +243,41 @@ export const createProject = async (req: AuthRequest, res: Response) => {
           }
         );
         logger.info(`[${requestId}] Updated proposal status to project_created`, { tenantId, proposalId });
+
+        console.log('📧 Proposal found for welcome email:', { 
+          proposalId, 
+          clientEmail: proposal?.clientEmail,
+          clientName: proposal?.clientName,
+          accessCode: proposal?.accessCode
+        });
+
+        // Send welcome email to the customer
+        if (proposal && proposal.clientEmail) {
+          try {
+            console.log('📤 Sending welcome email to:', proposal.clientEmail);
+            await sendProjectWelcomeEmail(
+              proposal.clientEmail,
+              proposal.clientName,
+              projectName,
+              tenant.tenantCompanyName || `${tenant.tenantFirstName} ${tenant.tenantLastName}`,
+              proposal.accessCode,
+              proposal.accessPin
+            );
+            console.log('✅ Welcome email sent successfully!');
+            logger.info(`[${requestId}] Welcome email sent to customer`, { tenantId, proposalId, clientEmail: proposal.clientEmail });
+          } catch (emailError: any) {
+            console.error('❌ Failed to send welcome email:', emailError);
+            logger.error(`[${requestId}] Failed to send welcome email`, { 
+              tenantId, 
+              proposalId, 
+              error: emailError.message,
+              stack: emailError.stack
+            });
+            // Don't fail the project creation if email fails
+          }
+        } else {
+          console.log('⚠️ No proposal or client email found, skipping welcome email');
+        }
       } catch (proposalError: any) {
         logger.error(`[${requestId}] Failed to update proposal status`, { tenantId, proposalId, error: proposalError.message });
         // Don't fail the project creation if proposal update fails
@@ -630,8 +667,9 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
 
     // If project was created from a proposal, update the proposal status
     if (projectData.proposalId) {
+      console.log('🎉 Project created from proposal, sending welcome email...', { proposalId: projectData.proposalId, tenantId });
       try {
-        await Proposal.findOneAndUpdate(
+        const proposal = await Proposal.findOneAndUpdate(
           { proposalId: projectData.proposalId, tenantId },
           { 
             status: 'project_created',
@@ -640,7 +678,43 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
           { session }
         );
         logger.info(`[${requestId}] Updated proposal status to project_created`, { tenantId, proposalId: projectData.proposalId });
+
+        console.log('📧 Proposal found for welcome email:', { 
+          proposalId: projectData.proposalId, 
+          clientEmail: proposal?.clientEmail,
+          clientName: proposal?.clientName,
+          accessCode: proposal?.accessCode
+        });
+
+        // Send welcome email to the customer
+        if (proposal && proposal.clientEmail) {
+          try {
+            console.log('📤 Sending welcome email to:', proposal.clientEmail);
+            await sendProjectWelcomeEmail(
+              proposal.clientEmail,
+              proposal.clientName,
+              projectData.projectName,
+              tenant.tenantCompanyName || `${tenant.tenantFirstName} ${tenant.tenantLastName}`,
+              proposal.accessCode,
+              proposal.accessPin
+            );
+            console.log('✅ Welcome email sent successfully!');
+            logger.info(`[${requestId}] Welcome email sent to customer`, { tenantId, proposalId: projectData.proposalId, clientEmail: proposal.clientEmail });
+          } catch (emailError: any) {
+            console.error('❌ Failed to send welcome email:', emailError);
+            logger.error(`[${requestId}] Failed to send welcome email`, { 
+              tenantId, 
+              proposalId: projectData.proposalId, 
+              error: emailError.message,
+              stack: emailError.stack
+            });
+            // Don't fail the project creation if email fails
+          }
+        } else {
+          console.log('⚠️ No proposal or client email found, skipping welcome email');
+        }
       } catch (proposalError: any) {
+        console.error('❌ Failed to update proposal or send email:', proposalError);
         logger.error(`[${requestId}] Failed to update proposal status`, { tenantId, proposalId: projectData.proposalId, error: proposalError.message });
         // Don't fail the project creation if proposal update fails
       }
