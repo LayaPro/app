@@ -23,6 +23,187 @@ import { logAudit, auditEvents } from '../utils/auditLogger';
 
 const logger = createModuleLogger('ProposalController');
 
+/**
+ * Create todos for admins when client sends photo selection
+ */
+async function createDesignerAssignmentTodos(
+  tenantId: string,
+  projectName: string,
+  eventName: string,
+  projectId: string,
+  clientEventId: string,
+  selectedCount: number,
+  requestId: string
+): Promise<void> {
+  try {
+    logger.info(`[${requestId}] Creating designer assignment todos`, { 
+      tenantId, 
+      projectName, 
+      eventName,
+      selectedCount 
+    });
+
+    // Find Admin role
+    const adminRole = await Role.findOne({
+      $or: [
+        { name: 'Admin', tenantId: '-1' },
+        { name: 'Admin', tenantId }
+      ]
+    });
+
+    if (!adminRole) {
+      logger.warn(`[${requestId}] Admin role not found`, { tenantId });
+      return;
+    }
+
+    // Get all active admin users
+    const adminUsers = await User.find({
+      tenantId,
+      roleId: adminRole.roleId,
+      isActive: true
+    });
+
+    if (!adminUsers || adminUsers.length === 0) {
+      logger.warn(`[${requestId}] No active admin users found`, { tenantId });
+      return;
+    }
+
+    const description = `Assign designer for ${eventName} in ${projectName} - Client selected ${selectedCount} photo${selectedCount !== 1 ? 's' : ''}`;
+
+    // Check for existing todos to prevent duplicates
+    const existingTodo = await Todo.findOne({
+      tenantId,
+      description: { $regex: new RegExp(`^Assign designer.*${eventName}.*${projectName}`, 'i') },
+      isDone: false
+    });
+
+    if (existingTodo) {
+      logger.info(`[${requestId}] Designer assignment todo already exists`, { tenantId, clientEventId });
+      return;
+    }
+
+    // Create todo for each admin
+    for (const admin of adminUsers) {
+      await Todo.create({
+        todoId: `todo_${nanoid()}`,
+        tenantId,
+        userId: admin.userId,
+        description,
+        projectId,
+        eventId: clientEventId,
+        priority: 'high',
+        redirectUrl: `/projects/${projectId}`,
+        addedBy: 'system',
+        isDone: false
+      });
+    }
+
+    logger.info(`[${requestId}] Created designer assignment todos`, {
+      tenantId,
+      clientEventId,
+      adminCount: adminUsers.length,
+      selectedCount
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to create designer assignment todos`, {
+      tenantId,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
+
+/**
+ * Create todos for admins when customer approves album
+ */
+async function createAlbumPrintingTodos(
+  tenantId: string,
+  projectName: string,
+  eventName: string,
+  projectId: string,
+  clientEventId: string,
+  clientName: string,
+  requestId: string
+): Promise<void> {
+  try {
+    console.log(`📘 [${requestId}] Creating album printing todos`, { 
+      tenantId, 
+      projectName, 
+      eventName,
+      clientName 
+    });
+
+    // Find Admin role
+    const adminRole = await Role.findOne({
+      $or: [
+        { name: 'Admin', tenantId: '-1' },
+        { name: 'Admin', tenantId }
+      ]
+    });
+
+    if (!adminRole) {
+      console.log(`⚠️ [${requestId}] Admin role not found`, { tenantId });
+      return;
+    }
+
+    // Get all active admin users
+    const adminUsers = await User.find({
+      tenantId,
+      roleId: adminRole.roleId,
+      isActive: true
+    });
+
+    if (!adminUsers || adminUsers.length === 0) {
+      console.log(`⚠️ [${requestId}] No active admin users found`, { tenantId });
+      return;
+    }
+
+    const description = `${clientName} approved album for ${eventName} - ${projectName}. Send for printing or take next steps`;
+
+    // Check for existing todos to prevent duplicates
+    const existingTodo = await Todo.findOne({
+      tenantId,
+      description: { $regex: new RegExp(`.*approved album for ${eventName}.*${projectName}`, 'i') },
+      isDone: false
+    });
+
+    if (existingTodo) {
+      console.log(`ℹ️ [${requestId}] Album printing todo already exists`, { tenantId, clientEventId });
+      return;
+    }
+
+    // Create todo for each admin
+    let createdCount = 0;
+    for (const admin of adminUsers) {
+      await Todo.create({
+        todoId: `todo_${nanoid()}`,
+        tenantId,
+        userId: admin.userId,
+        description,
+        projectId,
+        eventId: clientEventId,
+        priority: 'high',
+        redirectUrl: `/projects/${projectId}`,
+        addedBy: 'system',
+        isDone: false
+      });
+      createdCount++;
+    }
+
+    console.log(`✅ [${requestId}] Created album printing todos`, {
+      tenantId,
+      clientEventId,
+      adminCount: createdCount
+    });
+  } catch (error: any) {
+    console.error(`❌ [${requestId}] Failed to create album printing todos`, {
+      tenantId,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
+
 export const createProposal = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
   const tenantId = req.user?.tenantId;
@@ -1478,6 +1659,25 @@ export const markEventSelectionDone = async (req: Request, res: Response) => {
           eventName,
           selectedCount
         );
+
+        // Create todos for admins to assign designer
+        try {
+          await createDesignerAssignmentTodos(
+            project.tenantId,
+            project.projectName,
+            eventName,
+            project.projectId,
+            eventId,
+            selectedCount,
+            requestId
+          );
+        } catch (todoError: any) {
+          logger.error(`[${requestId}] Failed to create designer assignment todos`, {
+            tenantId: project.tenantId,
+            error: todoError.message
+          });
+          // Don't fail the request if todo creation fails
+        }
       } catch (notifError) {
         // Don't fail the request if notification fails
       }
@@ -1541,7 +1741,6 @@ export const approveAlbum = async (req: Request, res: Response) => {
       tenantId: { $in: [project.tenantId, -1] }
     });
 
-
     if (!albumPrintingStatus) {
       logger.warn(`[${requestId}] ALBUM_PRINTING status not found`, { 
         tenantId: project.tenantId 
@@ -1549,9 +1748,43 @@ export const approveAlbum = async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'ALBUM_PRINTING status not found' });
     }
 
-    // Update event status
-    const result = await ClientEvent.updateOne(
-      { clientEventId: eventId, tenantId: project.tenantId },
+    // Find the album PDF that includes this event
+    const albumPdf = await AlbumPdf.findOne({
+      tenantId: project.tenantId,
+      projectId: project.projectId,
+      eventIds: eventId
+    });
+
+    let eventIdsToUpdate: string[] = [eventId];
+    
+    if (albumPdf) {
+      // If album PDF found, update all events in that album
+      eventIdsToUpdate = albumPdf.eventIds;
+      logger.info(`[${requestId}] Found album PDF with multiple events`, {
+        tenantId: project.tenantId,
+        albumId: albumPdf.albumId,
+        eventCount: eventIdsToUpdate.length,
+        eventIds: eventIdsToUpdate
+      });
+
+      // Update album status to approved
+      await AlbumPdf.updateOne(
+        { albumId: albumPdf.albumId },
+        { $set: { albumStatus: 'approved' } }
+      );
+    } else {
+      logger.info(`[${requestId}] No album PDF found, updating single event`, {
+        tenantId: project.tenantId,
+        eventId
+      });
+    }
+
+    // Update status for all events in the album
+    const result = await ClientEvent.updateMany(
+      { 
+        clientEventId: { $in: eventIdsToUpdate }, 
+        tenantId: project.tenantId 
+      },
       { $set: { eventDeliveryStatusId: albumPrintingStatus.statusId } }
     );
 
@@ -1559,33 +1792,62 @@ export const approveAlbum = async (req: Request, res: Response) => {
       tenantId: project.tenantId,
       projectId: project.projectId,
       eventId,
-      modifiedCount: result.modifiedCount 
+      eventsUpdated: result.modifiedCount,
+      totalEventsInAlbum: eventIdsToUpdate.length
     });
 
-    // Send notification to admins and designer
+    // Send notifications and create todos for all approved events
     if (result.modifiedCount > 0) {
       try {
-        const clientEvent = await ClientEvent.findOne({ 
-          clientEventId: eventId, 
-          tenantId: project.tenantId 
+        // Get all events that were updated
+        const updatedEvents = await ClientEvent.find({
+          clientEventId: { $in: eventIdsToUpdate },
+          tenantId: project.tenantId
         });
-        const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
 
-        await NotificationUtils.notifyAlbumApprovedByCustomer(
-          project.tenantId,
-          proposal.clientName || 'Customer',
-          project.projectName,
-          event?.eventDesc || 'event',
-          clientEvent?.albumDesigner
-        );
+        // Send notifications and create todos for each event
+        for (const clientEvent of updatedEvents) {
+          const event = await Event.findOne({ eventId: clientEvent.eventId });
+          const eventName = event?.eventDesc || 'event';
+
+          // Send notification
+          await NotificationUtils.notifyAlbumApprovedByCustomer(
+            project.tenantId,
+            proposal.clientName || 'Customer',
+            project.projectName,
+            eventName,
+            clientEvent?.albumDesigner
+          );
+
+          // Create todos for admins
+          await createAlbumPrintingTodos(
+            project.tenantId,
+            project.projectName,
+            eventName,
+            project.projectId,
+            clientEvent.clientEventId,
+            proposal.clientName || 'Customer',
+            requestId
+          );
+        }
+
+        logger.info(`[${requestId}] Sent notifications and created todos for all events`, {
+          tenantId: project.tenantId,
+          eventCount: updatedEvents.length
+        });
       } catch (notifError) {
-        // Don't fail the request if notification fails
+        // Don't fail the request if notification/todo creation fails
+        logger.error(`[${requestId}] Error in post-approval actions`, { 
+          error: notifError instanceof Error ? notifError.message : 'Unknown error',
+          stack: notifError instanceof Error ? notifError.stack : undefined
+        });
       }
     }
 
     return res.status(200).json({
       message: 'Album approved and marked for printing',
-      modifiedCount: result.modifiedCount
+      eventsUpdated: result.modifiedCount,
+      totalEventsInAlbum: eventIdsToUpdate.length
     });
   } catch (err: any) {
     logger.error(`[${requestId}] Error approving album`, { 

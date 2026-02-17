@@ -21,6 +21,7 @@ export { Loading } from './Loading.js';
 export { ImageUpload } from './ImageUpload.js';
 export { AlbumPdfUploadManager } from './AlbumPdfUploadManager.js';
 export { Tabs } from './Tabs.js';
+export { Pagination } from './Pagination.js';
 export type { Column } from './DataTable.js';
 export type { BreadcrumbItem } from './Breadcrumb.js';
 export type { SelectOption } from './Select.js';

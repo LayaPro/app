@@ -28,7 +28,7 @@ export const getTodos = async (req: AuthRequest, res: Response) => {
     }
 
     const todos = await Todo.find(query)
-      .sort({ isDone: 1, dueDate: 1, priority: -1, createdAt: -1 })
+      .sort({ isDone: 1, createdAt: -1 })
       .limit(Number(limit))
       .skip(Number(skip))
       .lean();

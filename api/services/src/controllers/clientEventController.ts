@@ -9,6 +9,8 @@ import Project from '../models/project';
 import Event from '../models/event';
 import AlbumPdf from '../models/albumPdf';
 import Todo from '../models/todo';
+import Role from '../models/role';
+import ProjectFinance from '../models/projectFinance';
 import { uploadToS3, deleteFromS3 } from '../utils/s3';
 import { getMainBucketName } from '../utils/s3Bucket';
 import { AuthRequest } from '../middleware/auth';
@@ -145,6 +147,95 @@ const sanitizePdfName = (fileName: string) => {
 };
 
 /**
+ * Create todos for admins when project is completed but has pending payments
+ */
+async function createPendingPaymentTodos(
+  tenantId: string,
+  projectId: string,
+  projectName: string,
+  pendingAmount: number,
+  requestId: string
+): Promise<void> {
+  try {
+    console.log(`💰 [${requestId}] Creating pending payment todos`, { 
+      tenantId, 
+      projectName,
+      pendingAmount 
+    });
+
+    // Find Admin role
+    const adminRole = await Role.findOne({
+      $or: [
+        { name: 'Admin', tenantId: '-1' },
+        { name: 'Admin', tenantId }
+      ]
+    });
+
+    if (!adminRole) {
+      console.log(`⚠️ [${requestId}] Admin role not found`, { tenantId });
+      return;
+    }
+
+    // Get all active admin users
+    const adminUsers = await User.find({
+      tenantId,
+      roleId: adminRole.roleId,
+      isActive: true
+    });
+
+    if (!adminUsers || adminUsers.length === 0) {
+      console.log(`⚠️ [${requestId}] No active admin users found`, { tenantId });
+      return;
+    }
+
+    const description = `Collect pending payment of ₹${pendingAmount.toLocaleString()} for ${projectName} and update finances`;
+
+    // Check for existing todos to prevent duplicates
+    const existingTodo = await Todo.findOne({
+      tenantId,
+      description: { $regex: new RegExp(`Collect pending payment.*${projectName}`, 'i') },
+      isDone: false
+    });
+
+    if (existingTodo) {
+      console.log(`ℹ️ [${requestId}] Pending payment todo already exists`, { tenantId, projectId });
+      return;
+    }
+
+    // Create todo for each admin
+    let createdCount = 0;
+    for (const admin of adminUsers) {
+      await Todo.create({
+        todoId: `todo_${nanoid()}`,
+        tenantId,
+        userId: admin.userId,
+        description,
+        projectId,
+        priority: 'high',
+        redirectUrl: `/projects/${projectId}`,
+        addedBy: 'system',
+        isDone: false
+      });
+      createdCount++;
+    }
+
+    console.log(`✅ [${requestId}] Created pending payment todos`, {
+      tenantId,
+      projectId,
+      adminCount: createdCount,
+      pendingAmount
+    });
+  } catch (error: any) {
+    console.error(`❌ [${requestId}] Failed to create pending payment todos`, {
+      tenantId,
+      projectId,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
+
+/**
  * Check if all events in a project are in DELIVERY status
  * If yes, update project status to Completed
  */
@@ -196,6 +287,61 @@ const checkAndUpdateProjectStatus = async (projectId: string, tenantId: string) 
         tenantId,
         newStatus: result?.status
       });
+
+      // Check for pending payments and create todos if needed
+      try {
+        const projectFinance = await ProjectFinance.findOne({ projectId, tenantId });
+        
+        if (projectFinance && projectFinance.totalBudget) {
+          const totalReceived = projectFinance.receivedAmount || 0;
+          const pendingAmount = projectFinance.totalBudget - totalReceived;
+
+          console.log(`💰 Checking pending payments for project`, {
+            projectId,
+            tenantId,
+            totalBudget: projectFinance.totalBudget,
+            receivedAmount: totalReceived,
+            pendingAmount
+          });
+
+          // If there's any pending payment, create todos
+          if (pendingAmount > 0) {
+            console.log(`⚠️ Project completed with pending payment`, {
+              projectId,
+              tenantId,
+              pendingAmount
+            });
+
+            await createPendingPaymentTodos(
+              tenantId,
+              projectId,
+              result?.projectName || 'Project',
+              pendingAmount,
+              `project_complete_${projectId}`
+            );
+          } else {
+            console.log(`✅ No pending payments for completed project`, {
+              projectId,
+              tenantId
+            });
+          }
+        } else {
+          console.log(`ℹ️ No finance record or budget found for project`, {
+            projectId,
+            tenantId,
+            hasFinance: !!projectFinance,
+            hasBudget: projectFinance?.totalBudget
+          });
+        }
+      } catch (paymentError: any) {
+        logger.error('Error checking pending payments', {
+          projectId,
+          tenantId,
+          error: paymentError.message,
+          stack: paymentError.stack
+        });
+        // Don't fail the status update if todo creation fails
+      }
     } else {
       logger.info('Not all events are delivered yet', { projectId, tenantId });
     }
@@ -558,17 +704,26 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
           );
 
           // Create todo for the editor
-          await createEditorAssignmentTodo(
-            tenantId,
-            editorMember.userId,
-            eventName,
-            projectName,
-            updatedClientEvent.projectId,
-            updatedClientEvent.clientEventId,
-            updates.editingDueDate,
-            updatedClientEvent.toDatetime,
-            requestId
-          );
+          try {
+            await createEditorAssignmentTodo(
+              tenantId,
+              editorMember.userId,
+              eventName,
+              projectName,
+              updatedClientEvent.projectId,
+              updatedClientEvent.clientEventId,
+              updates.editingDueDate,
+              updatedClientEvent.toDatetime,
+              requestId
+            );
+          } catch (todoError: any) {
+            logger.error(`[${requestId}] Failed to create editor assignment todo`, {
+              tenantId,
+              userId: editorMember.userId,
+              error: todoError.message
+            });
+            // Don't fail the request if todo creation fails
+          }
         }
       }
 
@@ -586,17 +741,26 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
           );
 
           // Create todo for the designer
-          await createDesignerAssignmentTodo(
-            tenantId,
-            designerMember.userId,
-            eventName,
-            projectName,
-            updatedClientEvent.projectId,
-            updatedClientEvent.clientEventId,
-            updates.albumDesignDueDate,
-            updatedClientEvent.toDatetime,
-            requestId
-          );
+          try {
+            await createDesignerAssignmentTodo(
+              tenantId,
+              designerMember.userId,
+              eventName,
+              projectName,
+              updatedClientEvent.projectId,
+              updatedClientEvent.clientEventId,
+              updates.albumDesignDueDate,
+              updatedClientEvent.toDatetime,
+              requestId
+            );
+          } catch (todoError: any) {
+            logger.error(`[${requestId}] Failed to create designer assignment todo`, {
+              tenantId,
+              userId: designerMember.userId,
+              error: todoError.message
+            });
+            // Don't fail the request if todo creation fails
+          }
         }
       }
 

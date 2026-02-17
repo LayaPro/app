@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { todoApi, teamApi } from '../../services/api';
 import { Select } from '../../components/ui/Select';
-import { Modal, Button, Input, DatePicker } from '../../components/ui';
+import { Modal, Button, Input, DatePicker, Pagination } from '../../components/ui';
 import { PageHeader } from '../../components/help/index.js';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth';
@@ -27,6 +27,8 @@ const Todos = () => {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('pending');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(10);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [formData, setFormData] = useState({
@@ -163,6 +165,17 @@ const Todos = () => {
     return true;
   });
 
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredTodos.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentTodos = filteredTodos.slice(startIndex, endIndex);
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filter, priorityFilter, searchQuery]);
+
   const stats = {
     total: todos.length,
     pending: todos.filter(t => !t.isDone).length,
@@ -254,8 +267,9 @@ const Todos = () => {
               <p>Try adjusting your filters or create a new task</p>
             </div>
           ) : (
-            <div className={styles.todosList}>
-              {filteredTodos.map((todo) => (
+            <>
+              <div className={styles.todosList}>
+                {currentTodos.map((todo) => (
                 <div
                   key={todo.todoId}
                   className={`${styles.todoItem} ${todo.isDone ? styles.done : ''} ${styles[`priority-${todo.priority}`]}`}
@@ -325,7 +339,17 @@ const Todos = () => {
                   )}
                 </div>
               ))}
-            </div>
+              </div>
+
+              {/* Pagination Controls */}
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredTodos.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={setCurrentPage}
+              />
+            </>
           )}
         </div>
       </div>
