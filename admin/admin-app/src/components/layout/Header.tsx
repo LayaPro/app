@@ -5,6 +5,8 @@ import { useTheme } from '../../hooks/useTheme.js';
 import { useAuth } from '../../hooks/useAuth.js';
 import { NotificationDropdown } from '../common/NotificationDropdown.js';
 import { GlobalSearch } from '../common/GlobalSearch.js';
+import logoDark from '../../assets/logo-dark.png';
+import logoLight from '../../assets/logo-light.png';
 import styles from './Header.module.css';
 
 export const Header: React.FC = () => {
@@ -47,6 +49,8 @@ export const Header: React.FC = () => {
 
         {/* Logo (Hidden on Mobile) */}
         <div className={styles.logoSection}>
+          <img src={isDark ? logoLight : logoDark} alt="Laya Studio Logo" style={{ height: '35px', width: 'auto' }} />
+          {/* Old SVG Logo
           <div className={styles.logoIcon}>
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -56,6 +60,7 @@ export const Header: React.FC = () => {
             <span className={styles.brandTitle}>Laya Studio</span>
             <span className={styles.brandSubtitle}>Admin Portal</span>
           </div>
+          */}
         </div>
        
 
