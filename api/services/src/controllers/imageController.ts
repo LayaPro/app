@@ -191,7 +191,7 @@ async function createImageReviewTodo(
         projectId,
         eventId: clientEventId,
         priority: 'medium',
-        redirectUrl: `/projects/${projectId}`,
+        redirectUrl: `/albums?projectId=${projectId}&eventId=${clientEventId}`,
         addedBy: 'system',
         isDone: false
       });

@@ -12,6 +12,9 @@ interface Todo {
   dueDate?: string;
   redirectUrl?: string;
   createdAt: string;
+  projectId?: string;
+  proposalId?: string;
+  eventId?: string;
 }
 
 export const TodoList = () => {

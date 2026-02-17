@@ -156,7 +156,7 @@ function App() {
                    : window.innerWidth >= 769 ? (sidebarCollapsed ? '80px' : '200px') 
                    : '0',
           marginTop: '80px',
-          padding: window.innerWidth >= 640 ? '24px' : '16px',
+          padding: window.innerWidth >= 640 ? '4px 24px 24px' : '4px 16px 16px',
           transition: 'margin-left 0.3s ease',
           minHeight: 'calc(100vh - 80px)',
         }}
@@ -168,7 +168,9 @@ function App() {
           <Route path="/todos" element={<Todos />} />
           <Route path={ROUTES.ALBUMS} element={<Albums />} />
           <Route path={ROUTES.PROJECTS} element={<Projects />} />
+          <Route path="/projects/:id" element={<Projects />} />
           <Route path={ROUTES.PROPOSALS} element={<Proposals />} />
+          <Route path="/proposals/:id" element={<Proposals />} />
           <Route path={ROUTES.FINANCES} element={<Finances />} />
           <Route path={ROUTES.CALENDAR} element={<Calendar />} />
           <Route path={ROUTES.STATISTICS} element={<Statistics />} />

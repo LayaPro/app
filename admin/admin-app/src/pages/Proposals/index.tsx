@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '../../components/ui/index.js';
 import { PageHeader, HelpPanel } from '../../components/help/index.js';
 import { getHelpContent } from '../../data/helpContent.js';
@@ -10,12 +11,32 @@ import { useToast } from '../../context/ToastContext';
 import styles from '../Page.module.css';
 
 const Proposals = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showWizard, setShowWizard] = useState(false);
   const [editingProposal, setEditingProposal] = useState<any>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [proposalIdFilter, setProposalIdFilter] = useState<string | null>(null);
   const { showToast } = useToast();
   const [showHelp, setShowHelp] = useState(false);
   const helpContent = getHelpContent('proposals');
+
+  // Handle proposal filter from URL parameter
+  useEffect(() => {
+    const proposalId = searchParams.get('proposalId');
+    if (proposalId) {
+      setProposalIdFilter(proposalId);
+    }
+  }, [searchParams]);
+
+  // Handle direct proposal access via URL parameter
+  useEffect(() => {
+    if (id) {
+      // Navigate to proposals page
+      navigate('/proposals', { replace: true });
+    }
+  }, [id, navigate]);
 
   const handleCreateProposal = () => {
     setEditingProposal(null);
@@ -117,7 +138,11 @@ const Proposals = () => {
         </Button>
       </div>
 
-      <ProposalsTable onEdit={handleEditProposal} onDataChange={() => setRefreshKey(prev => prev + 1)} />
+      <ProposalsTable 
+        onEdit={handleEditProposal} 
+        onDataChange={() => setRefreshKey(prev => prev + 1)} 
+        initialProposalFilter={proposalIdFilter}
+      />
       {showHelp && helpContent && (
         <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
       )}

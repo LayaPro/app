@@ -4,6 +4,7 @@ import { projectApi, eventDeliveryStatusApi, proposalApi } from '../../../servic
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { DatePicker } from '../../../components/ui/DatePicker';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Modal } from '../../../components/ui/Modal';
 import { useAppDispatch } from '../../../store/index.js';
 import { setEditingProject } from '../../../store/slices/projectSlice.js';
@@ -55,13 +56,15 @@ interface ProjectsTableProps {
     revenue: number;
     dueSoon: number;
   }) => void;
+  initialProjectFilter?: string | null;
 }
 
-export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
+export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsTableProps = {}) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [projectNameFilter, setProjectNameFilter] = useState<string>('');
   const [isDateRangeOpen, setIsDateRangeOpen] = useState(false);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
@@ -77,6 +80,13 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
   const assignDesignerModalRef = useRef<AssignDesignerModalHandle>(null);
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
+
+  // Set initial project filter from prop
+  useEffect(() => {
+    if (initialProjectFilter) {
+      setProjectNameFilter(initialProjectFilter);
+    }
+  }, [initialProjectFilter]);
 
   useEffect(() => {
     fetchProjects();
@@ -757,9 +767,15 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
     );
   };
 
-  // Filter by date range - must be before early returns for hooks
+  // Filter by date range and project - must be before early returns for hooks
   const filteredProjects = useMemo(() => {
     return projects.filter(project => {
+      // Project filter
+      if (projectNameFilter && project.projectId !== projectNameFilter) {
+        return false;
+      }
+      
+      // Date filter
       if (!startDate && !endDate) return true;
       if (!project.createdAt) return false;
       
@@ -772,7 +788,7 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
       }
       return true;
     });
-  }, [projects, startDate, endDate]);
+  }, [projects, startDate, endDate, projectNameFilter]);
 
   // Calculate and update stats whenever filteredProjects changes
   useEffect(() => {
@@ -861,6 +877,22 @@ export const ProjectsTable = ({ onStatsUpdate }: ProjectsTableProps = {}) => {
         }}
         customFilters={
         <>
+          {/* Project Name Filter */}
+          <div className={styles.filterSelectWrapper}>
+            <SearchableSelect
+              value={projectNameFilter}
+              onChange={setProjectNameFilter}
+              options={[
+                { value: '', label: 'All Projects' },
+                ...projects.map(project => ({
+                  value: project.projectId,
+                  label: project.projectName
+                }))
+              ]}
+              placeholder="Select project..."
+            />
+          </div>
+          
           {/* Date Range Filter */}
           <div className={styles.dateRangeContainer} ref={dateRangeRef}>
             <button

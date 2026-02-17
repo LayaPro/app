@@ -48,6 +48,26 @@ const Albums = () => {
   const [isTransitioning, setIsTransitioning] = useState(false);
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; url: string; file?: File }>>([]);
   const [loadedUploadImages, setLoadedUploadImages] = useState<Set<string>>(new Set());
+
+  // Handle URL parameters for direct navigation from todos
+  useEffect(() => {
+    const projectId = searchParams.get('projectId');
+    const eventId = searchParams.get('eventId');
+    
+    if (projectId && eventId && projects.length > 0 && allEvents.length > 0) {
+      // Find and select the project
+      const project = projects.find(p => p.projectId === projectId);
+      if (project) {
+        setSelectedProject(project);
+        
+        // Find and select the event
+        const event = allEvents.find(e => e.clientEventId === eventId);
+        if (event) {
+          setSelectedEvent(event);
+        }
+      }
+    }
+  }, [searchParams, projects, allEvents]);
   const [isUploadExpanded, setIsUploadExpanded] = useState(false);
   const [selectedImages, setSelectedImages] = useState<Set<string>>(new Set());
   const [showBulkActions, setShowBulkActions] = useState(false);

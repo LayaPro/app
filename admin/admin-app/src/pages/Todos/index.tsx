@@ -18,6 +18,7 @@ interface Todo {
   redirectUrl?: string;
   createdAt: string;
   projectId?: string;
+  proposalId?: string;
   eventId?: string;
 }
 

@@ -55,7 +55,7 @@ async function createEditorAssignmentTodo(
       eventId: clientEventId,
       priority: 'high',
       dueDate: dueDate,
-      redirectUrl: `/projects/${projectId}`,
+      redirectUrl: `/projects?projectId=${projectId}`,
       addedBy: 'system',
       isDone: false
     });
@@ -109,7 +109,7 @@ async function createDesignerAssignmentTodo(
       eventId: clientEventId,
       priority: 'high',
       dueDate: dueDate,
-      redirectUrl: `/projects/${projectId}`,
+      redirectUrl: `/projects?projectId=${projectId}`,
       addedBy: 'system',
       isDone: false
     });

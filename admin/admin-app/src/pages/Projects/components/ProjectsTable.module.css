@@ -567,6 +567,15 @@
 }
 
 /* Date Range Filter Styles */
+.filterSelectWrapper {
+  min-width: 220px;
+}
+
+.filterSelectWrapper button {
+  height: 36px;
+  padding: 8px 16px;
+}
+
 .dateRangeContainer {
   position: relative;
   display: flex;

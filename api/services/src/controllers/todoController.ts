@@ -66,11 +66,19 @@ export const createTodo = async (req: AuthRequest, res: Response) => {
   const { userId, tenantId, roleName } = req.user!;
   const { userId: assignedUserId, description, projectId, eventId, dueDate, redirectUrl, priority } = req.body;
 
-  logger.info(`[${requestId}] Creating todo`, { userId, tenantId, assignedUserId });
+  logger.info(`[${requestId}] Creating todo`, { userId, tenantId, assignedUserId, roleName });
 
   try {
     // Admins can assign todos to anyone, others can only create for themselves
-    const targetUserId = roleName === 'admin' ? (assignedUserId || userId) : userId;
+    const targetUserId = roleName === 'Admin' ? (assignedUserId || userId) : userId;
+
+    logger.info(`[${requestId}] Todo target user determined`, { 
+      userId, 
+      assignedUserId, 
+      targetUserId, 
+      roleName,
+      isAdmin: roleName === 'Admin'
+    });
 
     if (!description) {
       return res.status(400).json({ error: 'Description is required' });

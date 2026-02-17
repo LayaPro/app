@@ -38,12 +38,14 @@ interface Proposal {
 interface ProposalsTableProps {
   onEdit: (proposal: Proposal) => void;
   onDataChange?: () => void;
+  initialProposalFilter?: string | null;
 }
 
-export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataChange }) => {
+export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataChange, initialProposalFilter }) => {
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [proposalFilter, setProposalFilter] = useState<string>('');
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -57,6 +59,13 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
   const { showToast } = useToast();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
+
+  // Set initial proposal filter from prop
+  useEffect(() => {
+    if (initialProposalFilter) {
+      setProposalFilter(initialProposalFilter);
+    }
+  }, [initialProposalFilter]);
 
   useEffect(() => {
     fetchProposals();
@@ -134,9 +143,20 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
   };
 
   const filteredProposals = useMemo(() => {
-    if (statusFilter === 'all') return proposals;
-    return proposals.filter(proposal => proposal.status === statusFilter);
-  }, [proposals, statusFilter]);
+    let filtered = proposals;
+    
+    // Filter by status
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(proposal => proposal.status === statusFilter);
+    }
+    
+    // Filter by specific proposal ID
+    if (proposalFilter) {
+      filtered = filtered.filter(proposal => proposal.proposalId === proposalFilter);
+    }
+    
+    return filtered;
+  }, [proposals, statusFilter, proposalFilter]);
 
   const handlePreview = (proposal: Proposal) => {
     const customerAppUrl = import.meta.env.VITE_CUSTOMER_APP_URL || 'http://localhost:5174';

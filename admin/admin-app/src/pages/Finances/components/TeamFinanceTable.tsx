@@ -187,48 +187,84 @@ export const TeamFinanceTable = () => {
     }
   };
 
+  const getAvatarColors = (name: string) => {
+    const colors = [
+      { bg: 'rgba(99, 102, 241, 0.1)', text: '#4f46e5', border: 'rgba(99, 102, 241, 0.2)' },    // indigo
+      { bg: 'rgba(59, 130, 246, 0.1)', text: '#2563eb', border: 'rgba(59, 130, 246, 0.2)' },    // blue
+      { bg: 'rgba(34, 197, 94, 0.1)', text: '#16a34a', border: 'rgba(34, 197, 94, 0.2)' },      // green
+      { bg: 'rgba(245, 158, 11, 0.1)', text: '#d97706', border: 'rgba(245, 158, 11, 0.2)' },    // amber
+      { bg: 'rgba(239, 68, 68, 0.1)', text: '#dc2626', border: 'rgba(239, 68, 68, 0.2)' },      // red
+      { bg: 'rgba(236, 72, 153, 0.1)', text: '#db2777', border: 'rgba(236, 72, 153, 0.2)' },    // pink
+      { bg: 'rgba(6, 182, 212, 0.1)', text: '#0891b2', border: 'rgba(6, 182, 212, 0.2)' },      // cyan
+      { bg: 'rgba(20, 184, 166, 0.1)', text: '#0d9488', border: 'rgba(20, 184, 166, 0.2)' },    // teal
+      { bg: 'rgba(249, 115, 22, 0.1)', text: '#ea580c', border: 'rgba(249, 115, 22, 0.2)' },    // orange
+      { bg: 'rgba(168, 85, 247, 0.1)', text: '#9333ea', border: 'rgba(168, 85, 247, 0.2)' },    // violet
+      { bg: 'rgba(234, 179, 8, 0.1)', text: '#ca8a04', border: 'rgba(234, 179, 8, 0.2)' },      // yellow
+      { bg: 'rgba(14, 165, 233, 0.1)', text: '#0284c7', border: 'rgba(14, 165, 233, 0.2)' },    // sky
+      { bg: 'rgba(16, 185, 129, 0.1)', text: '#059669', border: 'rgba(16, 185, 129, 0.2)' },    // emerald
+      { bg: 'rgba(244, 63, 94, 0.1)', text: '#e11d48', border: 'rgba(244, 63, 94, 0.2)' },      // rose
+    ];
+    
+    let hash = 0;
+    for (let i = 0; i < (name?.length || 0); i++) {
+      hash = ((hash << 5) - hash) + name.charCodeAt(i);
+      hash = hash & hash;
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   const columns: Column<TeamMemberWithFinance>[] = [
     {
       key: 'memberName',
       header: 'Name',
       sortable: true,
-      render: (row) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div style={{
-            width: '40px',
-            height: '40px',
-            borderRadius: '50%',
-            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 600,
-            fontSize: '0.875rem',
-          }}>
-            {row.firstName[0]}{row.lastName[0]}
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, color: '#1f2937' }}>{getMemberName(row)}</div>
-            <div style={{ fontSize: '0.8125rem', color: '#6b7280' }}>
-              {row.profileName || 'No Profile'}
-              {row.isFreelancer && (
-                <span style={{
-                  marginLeft: '0.5rem',
-                  fontSize: '0.75rem',
-                  padding: '0.125rem 0.375rem',
-                  background: '#fef3c7',
-                  color: '#92400e',
-                  borderRadius: '0.25rem',
-                  fontWeight: 500
-                }}>
-                  Freelancer
-                </span>
-              )}
+      render: (row) => {
+        const memberName = getMemberName(row);
+        const colors = getAvatarColors(memberName);
+        const initials = `${row.firstName[0]}${row.lastName[0]}`.toUpperCase();
+
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{
+              width: '40px',
+              height: '40px',
+              borderRadius: '50%',
+              backgroundColor: colors.bg,
+              border: `1.5px solid ${colors.border}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '14px',
+              fontWeight: '600',
+              color: colors.text,
+              flexShrink: 0,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px'
+            }}>
+              {initials}
+            </div>
+            <div>
+              <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{memberName}</div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>
+                {row.profileName || 'No Profile'}
+                {row.isFreelancer && (
+                  <span style={{
+                    marginLeft: '0.5rem',
+                    fontSize: '0.75rem',
+                    padding: '0.125rem 0.375rem',
+                    background: '#fef3c7',
+                    color: '#92400e',
+                    borderRadius: '0.25rem',
+                    fontWeight: 500
+                  }}>
+                    Freelancer
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )
+        );
+      }
     },
     {
       key: 'totalPaid',

@@ -1,20 +1,42 @@
 import { useState, useEffect } from 'react';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { ProjectWizard } from './ProjectWizard';
 import { ProjectsTable } from './components/ProjectsTable';
 import { PageHeader, HelpPanel } from '../../components/help/index.js';
 import { getHelpContent } from '../../data/helpContent.js';
 import { useAppSelector, useAppDispatch } from '../../store/index.js';
-import { clearEditingProject } from '../../store/slices/projectSlice.js';
+import { clearEditingProject, setEditingProject } from '../../store/slices/projectSlice.js';
 import { formatIndianAmount } from '../../utils/formatAmount';
+import { projectApi } from '../../services/api';
 import styles from '../Page.module.css';
 
 const Projects = () => {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [showWizard, setShowWizard] = useState(false);
   const [stats, setStats] = useState({ active: 0, completed: 0, revenue: 0, dueSoon: 0 });
   const [showHelp, setShowHelp] = useState(false);
+  const [projectIdFilter, setProjectIdFilter] = useState<string | null>(null);
   const helpContent = getHelpContent('projects');
   const dispatch = useAppDispatch();
   const { isEditing, editingProject } = useAppSelector((state) => state.project);
+
+  // Handle project filter from URL parameter
+  useEffect(() => {
+    const projectId = searchParams.get('projectId');
+    if (projectId) {
+      setProjectIdFilter(projectId);
+    }
+  }, [searchParams]);
+
+  // Handle direct project access via URL parameter
+  useEffect(() => {
+    if (id) {
+      // Just navigate to projects page
+      navigate('/projects', { replace: true });
+    }
+  }, [id, navigate]);
 
   // Open wizard when editing is triggered
   useEffect(() => {
@@ -192,7 +214,7 @@ const Projects = () => {
         </div>
       </div>
 
-      <ProjectsTable onStatsUpdate={setStats} />
+      <ProjectsTable onStatsUpdate={setStats} initialProjectFilter={projectIdFilter} />
       
       {showHelp && helpContent && (
         <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />

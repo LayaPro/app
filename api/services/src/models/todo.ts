@@ -6,6 +6,7 @@ export interface ITodo extends Document {
   userId: string; // User this todo is assigned to
   description: string;
   projectId?: string; // Optional: link to project
+  proposalId?: string; // Optional: link to proposal
   eventId?: string; // Optional: link to event
   dueDate?: Date;
   redirectUrl?: string; // Where to redirect when clicking the todo
@@ -40,6 +41,10 @@ const todoSchema = new Schema<ITodo>(
       trim: true,
     },
     projectId: {
+      type: String,
+      index: true,
+    },
+    proposalId: {
       type: String,
       index: true,
     },
