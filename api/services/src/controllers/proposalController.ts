@@ -16,6 +16,7 @@ import Role from '../models/role';
 import User from '../models/user';
 import { AuthRequest } from '../middleware/auth';
 import { sendProposalEmail } from '../services/emailService';
+import { sendWhatsAppMessage } from '../services/whatsappService';
 import { NotificationUtils } from '../services/notificationUtils';
 import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
@@ -891,6 +892,32 @@ export const sendProposal = async (req: AuthRequest, res: Response) => {
       proposal.accessPin,
       proposal.projectName
     );
+
+    // Send WhatsApp message (non-blocking)
+    if (proposal.clientPhone) {
+      console.log('[ProposalController] Attempting to send WhatsApp', { phone: proposal.clientPhone });
+      const to = proposal.clientPhone.startsWith('whatsapp:')
+        ? proposal.clientPhone
+        : `whatsapp:${proposal.clientPhone}`;
+
+      const messageBody = `Hi ${proposal.clientName}, your proposal for ${proposal.projectName} is ready. Open: ${proposalUrl} (PIN: ${proposal.accessPin})`;
+
+      console.log('[ProposalController] WhatsApp details', { to, messageBodyLength: messageBody.length });
+
+      sendWhatsAppMessage({ to, body: messageBody }).catch((whatsappError: any) => {
+        console.error('[ProposalController] Failed to send WhatsApp message', {
+          error: whatsappError.message,
+          stack: whatsappError.stack
+        });
+        logger.error(`[${requestId}] Failed to send WhatsApp message`, {
+          tenantId,
+          proposalId: id,
+          error: whatsappError.message
+        });
+      });
+    } else {
+      console.log('[ProposalController] No clientPhone provided for WhatsApp');
+    }
 
     // Update proposal status to 'sent'
     proposal.status = 'sent';

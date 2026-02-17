@@ -11,6 +11,7 @@ import ImageStatus from '../models/imageStatus';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Team from '../models/team';
 import Tenant from '../models/tenant';
+import Todo from '../models/todo';
 import { AuthRequest } from '../middleware/auth';
 import { compressImage } from '../utils/imageProcessor';
 import { uploadToS3, uploadBothVersions, bulkDeleteFromS3, getS3ObjectStreamFromUrl } from '../utils/s3';
@@ -32,6 +33,190 @@ import {
 } from '../utils/imageLogger';
 
 const logger = createModuleLogger('ImageController');
+
+/**
+ * Create todo for photographer/editor when re-edit is requested
+ */
+async function createReEditTodo(
+  tenantId: string,
+  userId: string,
+  eventName: string,
+  projectName: string,
+  projectId: string,
+  clientEventId: string,
+  imageCount: number,
+  comment: string,
+  dueDate: Date | undefined,
+  requestId: string
+): Promise<void> {
+  try {
+    const dueDateStr = dueDate ? new Date(dueDate).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }) : '';
+
+    let description = comment 
+      ? `Re-edit requested for ${imageCount} image${imageCount > 1 ? 's' : ''} in ${eventName} - ${projectName}: "${comment}"`
+      : `Re-edit requested for ${imageCount} image${imageCount > 1 ? 's' : ''} in ${eventName} - ${projectName}`;
+
+    if (dueDateStr) {
+      description += ` - Due ${dueDateStr}`;
+    }
+
+    await Todo.create({
+      todoId: `todo_${nanoid()}`,
+      tenantId,
+      userId,
+      description,
+      projectId,
+      eventId: clientEventId,
+      priority: 'high',
+      dueDate: dueDate,
+      redirectUrl: `/projects/${projectId}`,
+      addedBy: 'system',
+      isDone: false
+    });
+
+    logger.info(`[${requestId}] Created re-edit todo for uploader`, {
+      tenantId,
+      userId,
+      clientEventId,
+      imageCount,
+      dueDate
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to create re-edit todo`, {
+      tenantId,
+      userId,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Create todos for admins when images are uploaded for review
+ */
+async function createImageReviewTodo(
+  tenantId: string,
+  editorName: string,
+  eventName: string,
+  projectName: string,
+  projectId: string,
+  clientEventId: string,
+  imageCount: number,
+  requestId: string
+): Promise<void> {
+  try {
+    console.log('🚀 [createImageReviewTodo] Starting...', { tenantId, editorName, eventName, imageCount });
+    logger.info(`[${requestId}] Starting image review todo creation`, { 
+      tenantId, 
+      editorName, 
+      eventName, 
+      projectName,
+      imageCount 
+    });
+
+    // Find Admin role
+    const adminRole = await Role.findOne({
+      $or: [
+        { name: 'Admin', tenantId: '-1' },
+        { name: 'Admin', tenantId }
+      ]
+    });
+
+    if (!adminRole) {
+      console.log('❌ [TODO] Admin role NOT FOUND', { tenantId });
+      logger.warn(`[${requestId}] Admin role not found`, { tenantId });
+      return;
+    }
+
+    console.log('👑 [TODO] Admin role found:', { roleId: adminRole.roleId, roleName: adminRole.name });
+    logger.info(`[${requestId}] Admin role found`, { tenantId, roleId: adminRole.roleId });
+
+    // Get all active admin users
+    const adminUsers = await User.find({
+      tenantId,
+      roleId: adminRole.roleId,
+      isActive: true
+    });
+
+    if (!adminUsers || adminUsers.length === 0) {
+      console.log('❌ [TODO] No active admin users found', { tenantId, roleId: adminRole.roleId });
+      logger.warn(`[${requestId}] No active admin users found`, { tenantId, roleId: adminRole.roleId });
+      return;
+    }
+
+    console.log('👥 [TODO] Found admin users:', { count: adminUsers.length, userIds: adminUsers.map(u => u.userId) });
+    logger.info(`[${requestId}] Found active admin users`, { 
+      tenantId, 
+      adminCount: adminUsers.length,
+      adminUserIds: adminUsers.map(u => u.userId)
+    });
+
+    const description = `Review ${imageCount} image${imageCount > 1 ? 's' : ''} uploaded by ${editorName} for ${eventName} - ${projectName}`;
+
+    logger.info(`[${requestId}] Todo description created`, { tenantId, description });
+
+    // Check for existing todos to prevent duplicates
+    const existingTodo = await Todo.findOne({
+      tenantId,
+      description: { $regex: new RegExp(`^Review.*${eventName}.*${projectName}.*${editorName}`, 'i') },
+      isDone: false
+    });
+
+    if (existingTodo) {
+      logger.info(`[${requestId}] Image review todo already exists`, { tenantId, clientEventId, existingTodoId: existingTodo.todoId });
+      return;
+    }
+
+    console.log('➕ [TODO] No existing todo found, creating new todos for', adminUsers.length, 'admins');
+    logger.info(`[${requestId}] No existing todo found, creating new todos`, { tenantId });
+
+    // Create todo for each admin
+    for (const admin of adminUsers) {
+      const todoId = `todo_${nanoid()}`;
+      console.log('💾 [TODO] Creating todo for admin:', { userId: admin.userId, todoId });
+      logger.info(`[${requestId}] Creating todo for admin`, { 
+        tenantId, 
+        adminUserId: admin.userId,
+        todoId
+      });
+
+      await Todo.create({
+        todoId,
+        tenantId,
+        userId: admin.userId,
+        description,
+        projectId,
+        eventId: clientEventId,
+        priority: 'medium',
+        redirectUrl: `/projects/${projectId}`,
+        addedBy: 'system',
+        isDone: false
+      });
+
+      logger.info(`[${requestId}] Todo created successfully`, { 
+        tenantId, 
+        adminUserId: admin.userId,
+        todoId
+      });
+    }
+
+    logger.info(`[${requestId}] Created image review todos for admins`, {
+      tenantId,
+      clientEventId,
+      adminCount: adminUsers.length,
+      imageCount
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to create image review todos`, {
+      tenantId,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
 
 export const createImage = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
@@ -567,6 +752,9 @@ export const bulkUpdateImages = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Updates object is required' });
     }
 
+    // Check if this is a re-edit request (comment being added)
+    const isReEditRequest = updates.comment && typeof updates.comment === 'string' && updates.comment.trim() !== '';
+
     // Don't allow updating core fields
     delete updates.imageId;
     delete updates.tenantId;
@@ -585,6 +773,52 @@ export const bulkUpdateImages = async (req: AuthRequest, res: Response) => {
       matched: result.matchedCount, 
       modified: result.modifiedCount 
     });
+
+    // If re-edit request, create todo for the uploader
+    if (isReEditRequest && result.modifiedCount > 0) {
+      try {
+        // Get the first image to determine uploader and event details
+        const firstImage = await Image.findOne({ 
+          imageId: { $in: imageIds }, 
+          tenantId 
+        }).lean();
+
+        if (firstImage?.uploadedBy) {
+          // Get project and event details
+          const project = await Project.findOne({ projectId: firstImage.projectId });
+          const clientEvent = await ClientEvent.findOne({ clientEventId: firstImage.clientEventId });
+          const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
+
+          const projectName = project?.projectName || 'Unknown Project';
+          const eventName = event?.eventDesc || 'Unknown Event';
+
+          await createReEditTodo(
+            tenantId!,
+            firstImage.uploadedBy,
+            eventName,
+            projectName,
+            firstImage.projectId,
+            firstImage.clientEventId,
+            imageIds.length,
+            updates.comment,
+            updates.reEditDueDate,
+            requestId
+          );
+
+          logger.info(`[${requestId}] Re-edit todo created for uploader`, { 
+            tenantId,
+            uploaderId: firstImage.uploadedBy,
+            imageCount: imageIds.length
+          });
+        }
+      } catch (todoError: any) {
+        logger.error(`[${requestId}] Failed to create re-edit todo`, {
+          tenantId,
+          error: todoError.message
+        });
+        // Don't fail the request if todo creation fails
+      }
+    }
 
     return res.status(200).json({
       message: 'Images updated successfully',
@@ -1062,6 +1296,26 @@ export const uploadBatchImages = async (req: AuthRequest, res: Response) => {
           userId
         );
         logger.info(`[${requestId}] Notification sent`, { tenantId, editorName, imageCount: successful.length });
+
+        // Create todos for admins to review uploaded images
+        try {
+          await createImageReviewTodo(
+            tenantId,
+            editorName,
+            eventName,
+            projectName,
+            projectId,
+            clientEventId,
+            successful.length,
+            requestId
+          );
+        } catch (todoError: any) {
+          logger.error(`[${requestId}] Failed to create image review todos`, {
+            tenantId,
+            error: todoError.message
+          });
+          // Don't fail the request if todo creation fails
+        }
 
         // Create audit log only once when all images are uploaded (same condition as notification)
         logAudit({
@@ -1908,16 +2162,17 @@ export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
   const tenantId = req.user?.tenantId;
   const userId = req.user?.userId;
 
-  logger.info(`[${requestId}] Sending images uploaded notification`, { tenantId, projectId, clientEventId, imageCount });
+  console.log('🔔 [NOTIFY IMAGES UPLOADED] Starting...', { requestId, tenantId, projectId, clientEventId, imageCount, userId });
+  logger.info(`[${requestId}] Sending images uploaded notification`, { tenantId, projectId, clientEventId, imageCount, userId });
 
   try {
     if (!projectId || !clientEventId || !imageCount) {
-      logger.warn(`[${requestId}] Missing required fields`, { tenantId });
+      logger.warn(`[${requestId}] Missing required fields`, { tenantId, projectId, clientEventId, imageCount });
       return res.status(400).json({ message: 'Project ID, Client Event ID, and image count are required' });
     }
 
     if (!tenantId || !userId) {
-      logger.warn(`[${requestId}] Tenant ID or User ID missing`, { tenantId });
+      logger.warn(`[${requestId}] Tenant ID or User ID missing`, { tenantId, userId });
       return res.status(400).json({ message: 'Tenant ID and User ID are required' });
     }
 
@@ -1926,8 +2181,24 @@ export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
     const clientEvent = await ClientEvent.findOne({ clientEventId, tenantId });
     const event = clientEvent ? await Event.findOne({ eventId: clientEvent.eventId }) : null;
     
+    logger.info(`[${requestId}] Fetched project and event data`, { 
+      tenantId, 
+      projectFound: !!project,
+      clientEventFound: !!clientEvent,
+      eventFound: !!event
+    });
+
     const editorUser = await User.findOne({ userId, tenantId });
     const editorTeamMember = await Team.findOne({ userId, tenantId });
+    
+    console.log('👤 [NOTIFY] User data:', { editorUser: !!editorUser, editorTeamMember: !!editorTeamMember, userId });
+    logger.info(`[${requestId}] Fetched user data`, { 
+      tenantId, 
+      userId,
+      editorUserFound: !!editorUser,
+      editorTeamMemberFound: !!editorTeamMember
+    });
+
     const editorName = editorTeamMember 
       ? `${editorTeamMember.firstName} ${editorTeamMember.lastName}` 
       : editorUser?.email || 'Editor';
@@ -1935,6 +2206,15 @@ export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
     const projectName = project?.projectName || 'Unknown Project';
     const eventName = event?.eventDesc || 'Unknown Event';
 
+    logger.info(`[${requestId}] About to send notification`, { 
+      tenantId, 
+      editorName,
+      projectName,
+      eventName,
+      imageCount: parseInt(imageCount)
+    });
+
+    console.log('📢 [NOTIFY] Calling NotificationUtils.notifyImagesUploaded...', { editorName, imageCount });
     await NotificationUtils.notifyImagesUploaded(
       tenantId,
       editorName,
@@ -1943,8 +2223,36 @@ export const notifyImagesUploaded = async (req: AuthRequest, res: Response) => {
       parseInt(imageCount),
       userId
     );
+    console.log('✅ [NOTIFY] NotificationUtils.notifyImagesUploaded completed');
 
-    logger.info(`[${requestId}] Notification sent`, { tenantId, editorName, imageCount });
+    logger.info(`[${requestId}] Notification sent successfully`, { tenantId, editorName, imageCount });
+
+    // Create todos for admins to review uploaded images
+    try {
+      console.log('📝 [TODO] About to create image review todos...', { editorName, imageCount });
+      logger.info(`[${requestId}] About to create image review todos`, { tenantId });
+      
+      await createImageReviewTodo(
+        tenantId,
+        editorName,
+        eventName,
+        projectName,
+        projectId,
+        clientEventId,
+        parseInt(imageCount),
+        requestId
+      );
+      
+      console.log('✅ [TODO] Image review todos created successfully');
+      logger.info(`[${requestId}] Image review todos created successfully`, { tenantId });
+    } catch (todoError: any) {
+      logger.error(`[${requestId}] Failed to create image review todos`, {
+        tenantId,
+        error: todoError.message,
+        stack: todoError.stack
+      });
+      // Don't fail the request if todo creation fails
+    }
 
     res.status(200).json({ message: 'Notification sent successfully' });
   } catch (error) {

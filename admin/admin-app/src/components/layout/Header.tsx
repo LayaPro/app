@@ -57,6 +57,8 @@ export const Header: React.FC = () => {
             <span className={styles.brandSubtitle}>Admin Portal</span>
           </div>
         </div>
+       
+
 
         {/* Center: Search Bar */}
         <div className={styles.searchContainer}>

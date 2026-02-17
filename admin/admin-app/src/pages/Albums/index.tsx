@@ -13,7 +13,7 @@ import { StorageLimitModal } from '../../components/modals/StorageLimitModal';
 import { useToast } from '../../context/ToastContext';
 import { useAuth } from '../../hooks/useAuth.js';
 import { useAlbumPdfsByEvent } from '../../hooks/useAlbumPdfs';
-import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDeliveryStatusApi, storageApi } from '../../services/api';
+import { projectApi, clientEventApi, eventApi, imageApi, imageStatusApi, eventDeliveryStatusApi, storageApi, userApi } from '../../services/api';
 import type { ClientEventSummary as ClientEvent, ProjectSummary as Project } from '../../types/albums.js';
 import ImageViewer from '../../components/ImageViewer';
 import styles from './Albums.module.css';
@@ -78,6 +78,7 @@ const Albums = () => {
   const [showStatusDropdown, setShowStatusDropdown] = useState(false);
   const [showCommentModal, setShowCommentModal] = useState(false);
   const [isRequestingReEdit, setIsRequestingReEdit] = useState(false);
+  const [uploaderName, setUploaderName] = useState<string>('');
   const [showReuploadModal, setShowReuploadModal] = useState(false);
   const [isReuploadingImages, setIsReuploadingImages] = useState(false);
   const [reuploadErrors, setReuploadErrors] = useState<Array<{ fileName: string; message: string }>>([]);
@@ -969,13 +970,37 @@ const Albums = () => {
     albumPdfUploadManagerRef.current?.openBulk();
   };
 
-  const handleRequestReEdit = () => {
+  const handleRequestReEdit = async () => {
     if (selectedImages.size === 0) return;
+    
+    // Fetch uploader info from first selected image
+    try {
+      const imageIds = Array.from(selectedImages);
+      const firstImage = galleryImages.find(img => img.imageId === imageIds[0]);
+      
+      if (firstImage?.uploadedBy) {
+        // Fetch all users to find the uploader
+        const usersResponse = await userApi.getAll();
+        const uploader = usersResponse.users?.find((u: any) => u.userId === firstImage.uploadedBy);
+        
+        if (uploader) {
+          setUploaderName(`${uploader.firstName} ${uploader.lastName}`);
+        } else {
+          setUploaderName('Unknown User');
+        }
+      } else {
+        setUploaderName('Unknown User');
+      }
+    } catch (error) {
+      console.error('Error fetching uploader info:', error);
+      setUploaderName('Unknown User');
+    }
+    
     setShowCommentModal(true);
     setShowBulkActions(false);
   };
 
-  const confirmRequestReEdit = async (comment: string) => {
+  const confirmRequestReEdit = async (comment: string, dueDate?: Date) => {
     setIsRequestingReEdit(true);
     try {
       const imageIds = Array.from(selectedImages);
@@ -988,7 +1013,8 @@ const Albums = () => {
 
       await imageApi.bulkUpdate(imageIds, {
         imageStatusId: reEditStatus.statusId,
-        comment: comment
+        comment: comment,
+        reEditDueDate: dueDate
       });
       
       // Send notification to editor - get project/event from first image
@@ -1508,11 +1534,11 @@ const Albums = () => {
       // Send single notification after all chunks are uploaded
       if (successCount > 0 && !wasAborted) {
         try {
-          const formData = new FormData();
-          formData.append('projectId', selectedProject.projectId);
-          formData.append('clientEventId', selectedEvent.clientEventId);
-          formData.append('imageCount', successCount.toString());
-          await imageApi.notifyImagesUploaded(formData);
+          await imageApi.notifyImagesUploaded({
+            projectId: selectedProject.projectId,
+            clientEventId: selectedEvent.clientEventId,
+            imageCount: successCount
+          });
         } catch (notifError) {
           console.error('Failed to send upload notification:', notifError);
         }
@@ -2682,6 +2708,8 @@ const Albums = () => {
           placeholder="Describe what changes are needed..."
           submitText="Request Re-edit"
           isLoading={isRequestingReEdit}
+          uploaderName={uploaderName}
+          showDueDate={true}
         />
 
         {/* Reupload Edited Images Modal */}

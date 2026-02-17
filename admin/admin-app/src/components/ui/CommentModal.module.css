@@ -2,6 +2,19 @@
   padding: 1rem 0;
 }
 
+.uploaderInfo {
+  padding: 0.75rem 1rem;
+  background-color: #f3f4f6;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+
+.uploaderInfo strong {
+  color: #1f2937;
+  margin-right: 0.5rem;
+}
+
 .actions {
   display: flex;
   gap: 0.75rem;
@@ -11,6 +24,14 @@
 }
 
 /* Dark mode */
+:global(.dark) .uploaderInfo {
+  background-color: #374151;
+}
+
+:global(.dark) .uploaderInfo strong {
+  color: #f9fafb;
+}
+
 :global(.dark) .actions {
   border-top-color: #374151;
 }

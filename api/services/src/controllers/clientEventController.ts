@@ -8,6 +8,7 @@ import User from '../models/user';
 import Project from '../models/project';
 import Event from '../models/event';
 import AlbumPdf from '../models/albumPdf';
+import Todo from '../models/todo';
 import { uploadToS3, deleteFromS3 } from '../utils/s3';
 import { getMainBucketName } from '../utils/s3Bucket';
 import { AuthRequest } from '../middleware/auth';
@@ -16,6 +17,114 @@ import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
 
 const logger = createModuleLogger('ClientEventController');
+
+/**
+ * Create todo for editor when assigned to an event
+ */
+async function createEditorAssignmentTodo(
+  tenantId: string,
+  userId: string,
+  eventName: string,
+  projectName: string,
+  projectId: string,
+  clientEventId: string,
+  editingDueDate: Date | undefined,
+  eventEndDate: Date,
+  requestId: string
+): Promise<void> {
+  try {
+    const dueDate = editingDueDate || eventEndDate;
+    const dueDateStr = dueDate ? new Date(dueDate).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }) : '';
+    
+    const description = dueDateStr 
+      ? `Complete editing for ${eventName} in ${projectName} - Due ${dueDateStr}`
+      : `Complete editing for ${eventName} in ${projectName}`;
+
+    await Todo.create({
+      todoId: `todo_${nanoid()}`,
+      tenantId,
+      userId,
+      description,
+      projectId,
+      eventId: clientEventId,
+      priority: 'high',
+      dueDate: dueDate,
+      redirectUrl: `/projects/${projectId}`,
+      addedBy: 'system',
+      isDone: false
+    });
+
+    logger.info(`[${requestId}] Created editing todo for editor`, {
+      tenantId,
+      userId,
+      clientEventId
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to create editing todo for editor`, {
+      tenantId,
+      userId,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Create todo for designer when assigned to an event
+ */
+async function createDesignerAssignmentTodo(
+  tenantId: string,
+  userId: string,
+  eventName: string,
+  projectName: string,
+  projectId: string,
+  clientEventId: string,
+  albumDesignDueDate: Date | undefined,
+  eventEndDate: Date,
+  requestId: string
+): Promise<void> {
+  try {
+    const dueDate = albumDesignDueDate || eventEndDate;
+    const dueDateStr = dueDate ? new Date(dueDate).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    }) : '';
+    
+    const description = dueDateStr 
+      ? `Complete album design for ${eventName} in ${projectName} - Due ${dueDateStr}`
+      : `Complete album design for ${eventName} in ${projectName}`;
+
+    await Todo.create({
+      todoId: `todo_${nanoid()}`,
+      tenantId,
+      userId,
+      description,
+      projectId,
+      eventId: clientEventId,
+      priority: 'high',
+      dueDate: dueDate,
+      redirectUrl: `/projects/${projectId}`,
+      addedBy: 'system',
+      isDone: false
+    });
+
+    logger.info(`[${requestId}] Created design todo for designer`, {
+      tenantId,
+      userId,
+      clientEventId
+    });
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to create design todo for designer`, {
+      tenantId,
+      userId,
+      error: error.message
+    });
+  }
+}
 
 const sanitizeSegment = (value: string) =>
   value
@@ -447,6 +556,19 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
             'editor',
             updates.editingDueDate
           );
+
+          // Create todo for the editor
+          await createEditorAssignmentTodo(
+            tenantId,
+            editorMember.userId,
+            eventName,
+            projectName,
+            updatedClientEvent.projectId,
+            updatedClientEvent.clientEventId,
+            updates.editingDueDate,
+            updatedClientEvent.toDatetime,
+            requestId
+          );
         }
       }
 
@@ -461,6 +583,19 @@ export const updateClientEvent = async (req: AuthRequest, res: Response) => {
             projectName,
             'designer',
             updates.albumDesignDueDate
+          );
+
+          // Create todo for the designer
+          await createDesignerAssignmentTodo(
+            tenantId,
+            designerMember.userId,
+            eventName,
+            projectName,
+            updatedClientEvent.projectId,
+            updatedClientEvent.clientEventId,
+            updates.albumDesignDueDate,
+            updatedClientEvent.toDatetime,
+            requestId
           );
         }
       }

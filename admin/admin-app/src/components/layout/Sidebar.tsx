@@ -218,9 +218,9 @@ export const Sidebar: React.FC = () => {
     if (isAdmin) {
       return items; // Admin sees all items
     }
-    // User only sees Dashboard, Albums, Calendar
+    // User only sees Dashboard, My Tasks, Albums, Calendar
     return items.filter(item => 
-      ['dashboard', 'albums', 'calendar'].includes(item.id)
+      ['dashboard', 'todos', 'albums', 'calendar'].includes(item.id)
     );
   }, [isAdmin, projectCount, proposalCount]);
 

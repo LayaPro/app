@@ -2,16 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal.js';
 import { Button } from './Button.js';
 import { Textarea } from './Textarea.js';
+import { DatePicker } from './DatePicker.js';
 import styles from './CommentModal.module.css';
 
 interface CommentModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (comment: string) => void;
+  onSubmit: (comment: string, dueDate?: Date) => void;
   title: string;
   placeholder?: string;
   submitText?: string;
   isLoading?: boolean;
+  uploaderName?: string;
+  showDueDate?: boolean;
 }
 
 export const CommentModal: React.FC<CommentModalProps> = ({
@@ -21,25 +24,35 @@ export const CommentModal: React.FC<CommentModalProps> = ({
   title,
   placeholder = 'Enter your comment...',
   submitText = 'Submit',
-  isLoading = false
+  isLoading = false,
+  uploaderName,
+  showDueDate = false
 }) => {
   const [comment, setComment] = useState('');
+  const [dueDate, setDueDate] = useState('');
 
   useEffect(() => {
     if (!isOpen) {
       setComment('');
+      setDueDate('');
     }
   }, [isOpen]);
 
   const handleSubmit = () => {
     if (comment.trim()) {
-      onSubmit(comment.trim());
+      const dueDateObj = dueDate ? new Date(dueDate) : undefined;
+      onSubmit(comment.trim(), dueDateObj);
     }
   };
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="medium">
       <div className={styles.content}>
+        {uploaderName && (
+          <div className={styles.uploaderInfo}>
+            <strong>Assignee:</strong> {uploaderName}
+          </div>
+        )}
         <Textarea
           label="Comments"
           value={comment}
@@ -51,6 +64,18 @@ export const CommentModal: React.FC<CommentModalProps> = ({
           info="Describe the changes needed in detail"
           disabled={isLoading}
         />
+        {showDueDate && (
+          <div style={{ marginTop: '1rem' }}>
+            <DatePicker
+              label="Due Date (Optional)"
+              value={dueDate}
+              onChange={setDueDate}
+              placeholder="Select due date"
+              allowPast={false}
+              info="Set a deadline for completing the re-edit"
+            />
+          </div>
+        )}
       </div>
       <div className={styles.actions}>
         <Button

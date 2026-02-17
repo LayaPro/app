@@ -9,6 +9,9 @@ import Team from '../models/team';
 import EventDeliveryStatus from '../models/eventDeliveryStatus';
 import Proposal from '../models/proposal';
 import Tenant from '../models/tenant';
+import Todo from '../models/todo';
+import Role from '../models/role';
+import User from '../models/user';
 import { AuthRequest } from '../middleware/auth';
 import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
@@ -16,6 +19,149 @@ import { logAudit, auditEvents } from '../utils/auditLogger';
 import { NotificationUtils } from '../services/notificationUtils';
 
 const logger = createModuleLogger('ProjectController');
+
+/**
+ * Create todos for newly added events in a project
+ */
+async function createTodosForNewEvents(
+  tenantId: string,
+  projectId: string,
+  projectName: string,
+  newEvents: any[],
+  requestId: string
+): Promise<void> {
+  try {
+    // Find events without team members
+    const eventsWithoutTeam = newEvents.filter(event => 
+      !event.teamMembersAssigned || event.teamMembersAssigned.length === 0
+    );
+
+    if (eventsWithoutTeam.length > 0) {
+      logger.info(`[${requestId}] Creating todos for ${eventsWithoutTeam.length} new events without team members`, { tenantId, projectId });
+
+      // Find Admin role
+      const adminRole = await Role.findOne({
+        $or: [
+          { tenantId: '-1', name: 'Admin' },
+          { tenantId, name: 'Admin' }
+        ]
+      });
+
+      if (adminRole) {
+        // Find all active admin users
+        const adminUsers = await User.find({
+          tenantId,
+          roleId: adminRole.roleId,
+          isActive: true
+        });
+
+        // Create a todo for each event without team members
+        for (const event of eventsWithoutTeam) {
+          // Get event master data for event name
+          const eventMaster = await Event.findOne({ 
+            eventId: event.eventId,
+            tenantId: { $in: [tenantId, -1] }
+          });
+
+          const eventName = eventMaster?.eventDesc || 'Event';
+          const description = `Assign team members to ${eventName} for project: ${projectName}`;
+
+          // Create todo for each admin
+          for (const admin of adminUsers) {
+            await Todo.create({
+              todoId: `todo_${nanoid()}`,
+              tenantId,
+              userId: admin.userId,
+              description,
+              projectId,
+              eventId: event.clientEventId,
+              priority: 'high',
+              redirectUrl: `/projects/${projectId}`,
+              addedBy: 'system',
+              isDone: false
+            });
+          }
+
+          logger.info(`[${requestId}] Created team assignment todo for new event`, { 
+            tenantId, 
+            projectId,
+            eventId: event.clientEventId,
+            eventName,
+            adminCount: adminUsers.length
+          });
+        }
+      }
+    }
+
+    // Find events WITH team members assigned
+    const eventsWithTeam = newEvents.filter(event => 
+      event.teamMembersAssigned && event.teamMembersAssigned.length > 0
+    );
+
+    if (eventsWithTeam.length > 0) {
+      logger.info(`[${requestId}] Creating todos for ${eventsWithTeam.length} new events with assigned team members`, { tenantId, projectId });
+
+      for (const event of eventsWithTeam) {
+        // Get event master data for event name
+        const eventMaster = await Event.findOne({ 
+          eventId: event.eventId,
+          tenantId: { $in: [tenantId, -1] }
+        });
+
+        const eventName = eventMaster?.eventDesc || 'Event';
+        const eventDate = new Date(event.fromDatetime).toLocaleDateString('en-US', { 
+          month: 'short', 
+          day: 'numeric', 
+          year: 'numeric' 
+        });
+
+        // Get team member details
+        const teamMembers = await Team.find({
+          memberId: { $in: event.teamMembersAssigned },
+          tenantId
+        });
+
+        // Create todo for each assigned team member
+        for (const member of teamMembers) {
+          // Only create todo if team member has a user account
+          if (member.userId) {
+            const description = `Complete ${eventName} for ${projectName} on ${eventDate}`;
+
+            await Todo.create({
+              todoId: `todo_${nanoid()}`,
+              tenantId,
+              userId: member.userId,
+              description,
+              projectId,
+              eventId: event.clientEventId,
+              priority: 'medium',
+              dueDate: event.fromDatetime,
+              redirectUrl: `/projects/${projectId}`,
+              addedBy: 'system',
+              isDone: false
+            });
+
+            logger.info(`[${requestId}] Created event completion todo for team member`, { 
+              tenantId, 
+              projectId,
+              eventId: event.clientEventId,
+              eventName,
+              memberId: member.memberId,
+              userId: member.userId
+            });
+          }
+        }
+      }
+    }
+  } catch (error: any) {
+    logger.error(`[${requestId}] Failed to create todos for new events`, {
+      tenantId,
+      projectId,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
 
 export const createProject = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
@@ -617,6 +763,141 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       financeCreated: !!projectFinance
     });
 
+    // Create todos for events without team members (non-blocking)
+    if (createdEvents.length > 0) {
+      try {
+        // Find events without team members
+        const eventsWithoutTeam = createdEvents.filter(event => 
+          !event.teamMembersAssigned || event.teamMembersAssigned.length === 0
+        );
+
+        if (eventsWithoutTeam.length > 0) {
+          logger.info(`[${requestId}] Creating todos for ${eventsWithoutTeam.length} events without team members`, { tenantId, projectId });
+
+          // Find Admin role
+          const adminRole = await Role.findOne({
+            $or: [
+              { tenantId: '-1', name: 'Admin' },
+              { tenantId, name: 'Admin' }
+            ]
+          });
+
+          if (adminRole) {
+            // Find all active admin users
+            const adminUsers = await User.find({
+              tenantId,
+              roleId: adminRole.roleId,
+              isActive: true
+            });
+
+            // Create a todo for each event without team members
+            for (const event of eventsWithoutTeam) {
+              // Get event master data for event name
+              const eventMaster = await Event.findOne({ 
+                eventId: event.eventId,
+                tenantId: { $in: [tenantId, -1] }
+              });
+
+              const eventName = eventMaster?.eventDesc || 'Event';
+              const description = `Assign team members to ${eventName} for project: ${projectData.projectName}`;
+
+              // Create todo for each admin
+              for (const admin of adminUsers) {
+                await Todo.create({
+                  todoId: `todo_${nanoid()}`,
+                  tenantId,
+                  userId: admin.userId,
+                  description,
+                  projectId,
+                  eventId: event.clientEventId,
+                  priority: 'high',
+                  redirectUrl: `/projects/${projectId}`,
+                  addedBy: 'system',
+                  isDone: false
+                });
+              }
+
+              logger.info(`[${requestId}] Created team assignment todo for event`, { 
+                tenantId, 
+                projectId,
+                eventId: event.clientEventId,
+                eventName,
+                adminCount: adminUsers.length
+              });
+            }
+          }
+        }
+
+        // Find events WITH team members assigned
+        const eventsWithTeam = createdEvents.filter(event => 
+          event.teamMembersAssigned && event.teamMembersAssigned.length > 0
+        );
+
+        if (eventsWithTeam.length > 0) {
+          logger.info(`[${requestId}] Creating todos for ${eventsWithTeam.length} events with assigned team members`, { tenantId, projectId });
+
+          for (const event of eventsWithTeam) {
+            // Get event master data for event name
+            const eventMaster = await Event.findOne({ 
+              eventId: event.eventId,
+              tenantId: { $in: [tenantId, -1] }
+            });
+
+            const eventName = eventMaster?.eventDesc || 'Event';
+            const eventDate = new Date(event.fromDatetime).toLocaleDateString('en-US', { 
+              month: 'short', 
+              day: 'numeric', 
+              year: 'numeric' 
+            });
+
+            // Get team member details
+            const teamMembers = await Team.find({
+              memberId: { $in: event.teamMembersAssigned },
+              tenantId
+            });
+
+            // Create todo for each assigned team member
+            for (const member of teamMembers) {
+              // Only create todo if team member has a user account
+              if (member.userId) {
+                const description = `Complete ${eventName} for ${projectData.projectName} on ${eventDate}`;
+
+                await Todo.create({
+                  todoId: `todo_${nanoid()}`,
+                  tenantId,
+                  userId: member.userId,
+                  description,
+                  projectId,
+                  eventId: event.clientEventId,
+                  priority: 'medium',
+                  dueDate: event.fromDatetime,
+                  redirectUrl: `/projects/${projectId}`,
+                  addedBy: 'system',
+                  isDone: false
+                });
+
+                logger.info(`[${requestId}] Created event completion todo for team member`, { 
+                  tenantId, 
+                  projectId,
+                  eventId: event.clientEventId,
+                  eventName,
+                  memberId: member.memberId,
+                  userId: member.userId
+                });
+              }
+            }
+          }
+        }
+      } catch (todoError: any) {
+        logger.error(`[${requestId}] Failed to create team assignment todos`, {
+          tenantId,
+          projectId,
+          error: todoError.message
+        });
+        // Don't fail the request if todo creation fails
+      }
+    }
+
     // Audit log
     logAudit({
       action: auditEvents.TENANT_UPDATED,
@@ -808,6 +1089,41 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
       projectId,
       financeUpdated: !!projectFinance
     });
+
+    // Create todos for newly added events (non-blocking)
+    if (events) {
+      try {
+        const updatedEvents = await ClientEvent.find({ projectId });
+        
+        // Find newly created events (ones without clientEventId in the request)
+        const newEventIds = events
+          .filter((e: any) => !e.clientEventId)
+          .map(() => true); // Just to get count
+        
+        if (newEventIds.length > 0) {
+          logger.info(`[${requestId}] Found ${newEventIds.length} newly added events, creating todos`, { tenantId, projectId });
+
+          // Get all current events to identify the new ones
+          const newEvents = updatedEvents.slice(-newEventIds.length); // Get last N events (newly created)
+
+          // Create todos for the new events
+          await createTodosForNewEvents(
+            tenantId,
+            projectId,
+            updatedProject?.projectName || 'Project',
+            newEvents,
+            requestId
+          );
+        }
+      } catch (todoError: any) {
+        logger.error(`[${requestId}] Failed to create todos for new events`, {
+          tenantId,
+          projectId,
+          error: todoError.message,
+          stack: todoError.stack
+        });
+      }
+    }
 
     // Audit log
     logAudit({

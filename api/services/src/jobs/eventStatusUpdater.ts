@@ -7,8 +7,114 @@ import { NotificationUtils } from '../services/notificationUtils';
 import { emitEventStatusUpdate } from '../services/socketService';
 import { createModuleLogger } from '../utils/logger';
 import { logAudit, auditEvents } from '../utils/auditLogger';
+import Todo from '../models/todo';
+import Role from '../models/role';
+import User from '../models/user';
+import Event from '../models/event';
 
 const logger = createModuleLogger('EventStatusUpdaterCron');
+
+/**
+ * Create todos for admins to assign editor when shoot completes
+ */
+async function createEditorAssignmentTodos(
+  tenantId: string,
+  clientEventId: string,
+  eventId: string,
+  projectId: string,
+  project: any,
+  jobId: string
+): Promise<void> {
+  try {
+    const adminRole = await Role.findOne({
+      $or: [
+        { name: 'Admin', tenantId: '-1' },
+        { name: 'Admin', tenantId }
+      ]
+    });
+
+    if (!adminRole) {
+      logger.warn(`[${jobId}] Admin role not found`, { tenantId });
+      return;
+    }
+
+    logger.info(`[${jobId}] Admin role found`, { tenantId, roleId: adminRole.roleId });
+
+    const adminUsers = await User.find({
+      tenantId,
+      roleId: adminRole.roleId,
+      isActive: true
+    });
+
+    logger.info(`[${jobId}] Admin users query completed`, { 
+      tenantId, 
+      roleId: adminRole.roleId,
+      usersFound: adminUsers.length,
+      userIds: adminUsers.map(u => u.userId)
+    });
+
+    if (adminUsers.length === 0) {
+      logger.warn(`[${jobId}] No active admin users found`, { tenantId, roleId: adminRole.roleId });
+      return;
+    }
+
+    const eventMaster = await Event.findOne({ eventId });
+    const eventName = eventMaster?.eventCode || 'Unknown Event';
+
+    // Check if todos already exist for this event
+    const existingTodos = await Todo.find({
+      tenantId,
+      eventId: clientEventId,
+      description: { $regex: `Assign editor to.*${eventName}.*${project.projectName}` },
+      isDone: false
+    });
+
+    if (existingTodos.length > 0) {
+      logger.info(`[${jobId}] Editor assignment todos already exist`, {
+        tenantId,
+        clientEventId,
+        existingCount: existingTodos.length
+      });
+      return;
+    }
+
+    logger.info(`[${jobId}] Creating editor assignment todos for admins`, {
+      tenantId,
+      clientEventId,
+      adminCount: adminUsers.length
+    });
+
+    for (const admin of adminUsers) {
+      await Todo.create({
+        todoId: nanoid(),
+        tenantId,
+        userId: admin.userId,
+        description: `Start editing/Assign editor to ${eventName} for ${project.projectName} - Shoot completed`,
+        projectId,
+        eventId: clientEventId,
+        priority: 'high',
+        redirectUrl: `/projects/${projectId}`,
+        isDone: false,
+        addedBy: 'system',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+    }
+
+    logger.info(`[${jobId}] Editor assignment todos created successfully`, {
+      tenantId,
+      clientEventId,
+      todosCreated: adminUsers.length
+    });
+  } catch (error: any) {
+    logger.error(`[${jobId}] Error creating editor assignment todos`, {
+      tenantId,
+      eventId,
+      error: error.message,
+      stack: error.stack
+    });
+  }
+}
 
 /**
  * Cron job to automatically update event statuses based on datetime
@@ -238,6 +344,9 @@ export const startEventStatusUpdater = () => {
                 });
                 await NotificationUtils.notifyAssignEditorNeeded(event, project.projectName);
                 logger.info(`[${jobId}] Editor notification sent`, { tenantId, eventId });
+
+                // Create todos for admins to assign editor
+                await createEditorAssignmentTodos(tenantId, eventId, event.eventId, projectId, project, jobId);
               } else {
                 logger.warn(`[${jobId}] Project not found`, { tenantId, eventId, projectId });
               }
