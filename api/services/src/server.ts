@@ -281,6 +281,7 @@ app.put('/storage/subscription/:tenantId', authenticate, requireAdmin, storageCo
 
 // ---------- Finance Stats routes ----------
 app.get('/finance-stats', authenticate, financeStatsController.getFinanceStats);
+app.get('/finance-overview', authenticate, financeStatsController.getFinanceOverview);
 
 // ---------- Search routes ----------
 app.get('/search', authenticate, searchController.globalSearch);

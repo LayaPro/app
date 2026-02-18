@@ -1,0 +1,56 @@
+.subNav {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+}
+
+.subNavLink {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  flex: 1;
+  justify-content: center;
+}
+
+.subNavLink svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
+}
+
+.subNavLink:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.subNavLink.active {
+  background: var(--color-primary);
+  color: white;
+}
+
+.subNavLink.active:hover {
+  background: var(--color-primary-dark);
+}
+
+@media (max-width: 768px) {
+  .subNav {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .subNavLink {
+    justify-content: flex-start;
+    flex: none;
+  }
+}

@@ -17,7 +17,11 @@ import Dashboard from './pages/Dashboard/index.js';
 import Albums from './pages/Albums/index.js';
 import Projects from './pages/Projects/index.js';
 import Proposals from './pages/Proposals/index.js';
-import Finances from './pages/Finances/index.js';
+import FinancesLayout from './pages/Finances/FinancesLayout.js';
+import FinancesOverview from './pages/Finances/FinancesOverview.js';
+import FinancesCustomers from './pages/Finances/FinancesCustomers.js';
+import FinancesTeamMembers from './pages/Finances/FinancesTeamMembers.js';
+import FinancesExpenses from './pages/Finances/FinancesExpenses.js';
 import Calendar from './pages/Calendar/index.js';
 import Statistics from './pages/Statistics/index.js';
 import Settings from './pages/Settings/index.js';
@@ -171,7 +175,15 @@ function App() {
           <Route path="/projects/:id" element={<Projects />} />
           <Route path={ROUTES.PROPOSALS} element={<Proposals />} />
           <Route path="/proposals/:id" element={<Proposals />} />
-          <Route path={ROUTES.FINANCES} element={<Finances />} />
+          
+          {/* Finances routes with nested sub-routes */}
+          <Route path={ROUTES.FINANCES} element={<FinancesLayout />}>
+            <Route path={ROUTES.FINANCES_OVERVIEW} element={<FinancesOverview />} />
+            <Route path={ROUTES.FINANCES_CUSTOMERS} element={<FinancesCustomers />} />
+            <Route path={ROUTES.FINANCES_TEAM_MEMBERS} element={<FinancesTeamMembers />} />
+            <Route path={ROUTES.FINANCES_EXPENSES} element={<FinancesExpenses />} />
+          </Route>
+          
           <Route path={ROUTES.CALENDAR} element={<Calendar />} />
           <Route path={ROUTES.STATISTICS} element={<Statistics />} />
           

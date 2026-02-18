@@ -9,6 +9,10 @@ export const ROUTES = {
   ALBUMS: '/albums',
   CALENDAR: '/calendar',
   FINANCES: '/finances',
+  FINANCES_OVERVIEW: '/finances/overview',
+  FINANCES_CUSTOMERS: '/finances/customers',
+  FINANCES_TEAM_MEMBERS: '/finances/team-members',
+  FINANCES_EXPENSES: '/finances/expenses',
   STATISTICS: '/statistics',
   
   // Access Management

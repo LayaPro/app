@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { teamApi, teamFinanceApi, clientEventApi, expenseApi } from '../../../services/api';
+import { teamApi, teamFinanceApi, clientEventApi, expenseApi, expenseTypeApi, projectApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { Modal } from '../../../components/ui/Modal';
@@ -8,6 +8,7 @@ import { useToast } from '../../../context/ToastContext';
 import { Input } from '../../../components/ui/Input';
 import { DatePicker } from '../../../components/ui/DatePicker';
 import { Select } from '../../../components/ui/Select';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Textarea } from '../../../components/ui/Textarea';
 import { AmountInput } from '../../../components/ui/AmountInput';
 import styles from './FinanceTables.module.css';
@@ -51,17 +52,38 @@ interface TeamMemberWithFinance {
   eventCount?: number;
 }
 
+interface ExpenseType {
+  expenseTypeId: string;
+  name: string;
+  description?: string;
+  requiresProject: boolean;
+  requiresEvent: boolean;
+  requiresMember: boolean;
+  displayOrder: number;
+  isActive: boolean;
+}
+
 export const TeamFinanceTable = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithFinance[]>([]);
   const [expenses, setExpenses] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMemberWithFinance | null>(null);
+  const [expenseTypes, setExpenseTypes] = useState<ExpenseType[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [projectEvents, setProjectEvents] = useState<any[]>([]);
+  const [clientEvents, setClientEvents] = useState<any[]>([]);
+  const [filteredProjects, setFilteredProjects] = useState<any[]>([]);
+  const [selectedMemberPendingPayable, setSelectedMemberPendingPayable] = useState<number | null>(null);
   const [transactionForm, setTransactionForm] = useState({
     datetime: new Date().toISOString().split('T')[0],
     time: '',
     amount: '',
     comment: '',
-    nature: 'paid' as 'paid' | 'bonus' | 'deduction'
+    nature: 'paid' as 'paid' | 'bonus' | 'deduction',
+    expenseTypeId: '',
+    projectId: '',
+    eventId: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -72,6 +94,9 @@ export const TeamFinanceTable = () => {
   useEffect(() => {
     fetchTeamMembersWithFinances();
     fetchExpenses();
+    fetchExpenseTypes();
+    fetchProjects();
+    fetchClientEvents();
   }, []);
 
   useEffect(() => {
@@ -106,9 +131,63 @@ export const TeamFinanceTable = () => {
     }
   }, [openMenuId]);
 
+  // Filter projects based on selected team member
+  useEffect(() => {
+    if (transactionForm.expenseTypeId && selectedMember?.memberId && clientEvents.length > 0) {
+      const memberEventsByProject = clientEvents.filter((event: any) =>
+        event.teamMembersAssigned &&
+        Array.isArray(event.teamMembersAssigned) &&
+        event.teamMembersAssigned.includes(selectedMember.memberId)
+      );
+
+      const projectIds = [...new Set(memberEventsByProject.map((event: any) => event.projectId))];
+      const filtered = projects.filter(p => projectIds.includes(p.projectId));
+      setFilteredProjects(filtered);
+
+      if (transactionForm.projectId && !projectIds.includes(transactionForm.projectId)) {
+        setTransactionForm(prev => ({ ...prev, projectId: '', eventId: '' }));
+      }
+    } else {
+      setFilteredProjects(projects);
+    }
+  }, [transactionForm.expenseTypeId, selectedMember?.memberId, clientEvents, projects]);
+
+  useEffect(() => {
+    if (transactionForm.projectId) {
+      const selectedProject = projects.find(p => p.projectId === transactionForm.projectId);
+      if (selectedProject && selectedProject.events) {
+        let mappedEvents = selectedProject.events.map((projectEvent: any) => ({
+          ...projectEvent,
+          eventName: projectEvent.eventName || 'Unnamed Event'
+        }));
+
+        if (selectedMember?.memberId) {
+          const memberClientEventIds = clientEvents
+            .filter((ce: any) =>
+              ce.projectId === transactionForm.projectId &&
+              ce.teamMembersAssigned &&
+              Array.isArray(ce.teamMembersAssigned) &&
+              ce.teamMembersAssigned.includes(selectedMember.memberId)
+            )
+            .map((ce: any) => ce.clientEventId);
+
+          mappedEvents = mappedEvents.filter((pe: any) =>
+            memberClientEventIds.includes(pe.clientEventId)
+          );
+        }
+
+        setProjectEvents(mappedEvents);
+      } else {
+        setProjectEvents([]);
+      }
+      setTransactionForm(prev => ({ ...prev, eventId: '' }));
+    } else {
+      setProjectEvents([]);
+    }
+  }, [transactionForm.projectId, selectedMember?.memberId, projects, clientEvents]);
+
   const fetchTeamMembersWithFinances = async () => {
-    try {
-      const [teamResponse, financeResponse, eventsResponse] = await Promise.all([
+    try {      setLoading(true);      const [teamResponse, financeResponse, eventsResponse] = await Promise.all([
         teamApi.getAll(),
         teamFinanceApi.getAll(),
         clientEventApi.getAll()
@@ -142,6 +221,8 @@ export const TeamFinanceTable = () => {
     } catch (error) {
       console.error('Error fetching team members with finances:', error);
       showToast('error', 'Failed to load finance data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -154,26 +235,68 @@ export const TeamFinanceTable = () => {
     }
   };
 
+  const fetchExpenseTypes = async () => {
+    try {
+      const response = await expenseTypeApi.getAll();
+      setExpenseTypes(response.expenseTypes || []);
+    } catch (error) {
+      console.error('Error fetching expense types:', error);
+    }
+  };
+
+  const fetchProjects = async () => {
+    try {
+      const response = await projectApi.getAll();
+      setProjects(response.projects || []);
+    } catch (error) {
+      console.error('Error fetching projects:', error);
+    }
+  };
+
+  const fetchClientEvents = async () => {
+    try {
+      const response = await clientEventApi.getAll();
+      setClientEvents(response.clientEvents || []);
+    } catch (error) {
+      console.error('Error fetching client events:', error);
+    }
+  };
+
   const getMemberName = (member: TeamMemberWithFinance) => {
     return `${member.firstName} ${member.lastName}`;
   };
 
+  if (loading) {
+    return (
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading team finance data...</p>
+      </div>
+    );
+  }
 
   const formatCurrency = (amount?: number) => {
     if (amount === undefined || amount === null) return '—';
     return `₹${amount.toLocaleString('en-IN')}`;
   };
 
-  const handleOpenModal = (member: TeamMemberWithFinance) => {
-    setSelectedMember(member);
+  const handleOpenModal = (member?: TeamMemberWithFinance) => {
+    if (member) {
+      setSelectedMember(member);
+    }
     const now = new Date();
     setTransactionForm({
       datetime: now.toISOString().split('T')[0],
-      time: now.toTimeString().slice(0, 5),
+      time: '',
       amount: '',
       comment: '',
-      nature: 'paid'
+      nature: 'paid',
+      expenseTypeId: '',
+      projectId: '',
+      eventId: ''
     });
+    setProjectEvents([]);
+    setSelectedMemberPendingPayable(null);
     setIsAddPaymentModalOpen(true);
   };
 
@@ -185,33 +308,38 @@ export const TeamFinanceTable = () => {
       time: '',
       amount: '',
       comment: '',
-      nature: 'paid'
+      nature: 'paid',
+      expenseTypeId: '',
+      projectId: '',
+      eventId: ''
     });
+    setProjectEvents([]);
+    setSelectedMemberPendingPayable(null);
   };
 
   const handleSubmitTransaction = async () => {
-    if (!selectedMember || !transactionForm.amount) {
+    if (!selectedMember || !transactionForm.amount || !transactionForm.expenseTypeId) {
       showToast('error', 'Please fill in all required fields');
       return;
     }
 
     try {
       setIsSubmitting(true);
-      // Combine date and time
-      const datetimeString = transactionForm.time 
-        ? `${transactionForm.datetime}T${transactionForm.time}:00`
-        : `${transactionForm.datetime}T00:00:00`;
-      
-      await teamFinanceApi.addTransaction(selectedMember.memberId, {
-        datetime: datetimeString,
+
+      await expenseApi.create({
+        expenseTypeId: transactionForm.expenseTypeId,
+        projectId: transactionForm.projectId || undefined,
+        eventId: transactionForm.eventId || undefined,
+        memberId: selectedMember.memberId,
         amount: parseFloat(transactionForm.amount),
         comment: transactionForm.comment,
-        nature: transactionForm.nature
+        date: transactionForm.datetime
       });
 
       showToast('success', 'Payment added successfully');
       handleCloseModal();
-      fetchTeamMembersWithFinances(); // Refresh data
+      fetchExpenses(); // Refresh data
+      fetchTeamMembersWithFinances();
     } catch (error: any) {
       console.error('Error adding payment:', error);
       showToast('error', error.message || 'Failed to add payment');
@@ -245,6 +373,35 @@ export const TeamFinanceTable = () => {
     }
     return colors[Math.abs(hash) % colors.length];
   };
+
+  // Build options for expense form
+  const expenseTypeOptions = expenseTypes
+    .filter(et => et.isActive && et.requiresMember)
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map(et => ({
+      value: et.expenseTypeId,
+      label: et.name
+    }));
+
+  const selectedExpenseType = expenseTypes.find(et => et.expenseTypeId === transactionForm.expenseTypeId);
+
+  const projectOptions = filteredProjects.map(p => ({
+    value: p.projectId,
+    label: p.projectName
+  }));
+
+  const eventOptions = [
+    { value: '', label: 'No Event' },
+    ...projectEvents.map(e => ({
+      value: e.eventId || e.clientEventId,
+      label: e.eventName || 'Unnamed Event'
+    }))
+  ];
+
+  const teamMemberOptions = teamMembers.map(m => ({
+    value: m.memberId,
+    label: `${m.firstName} ${m.lastName}`
+  }));
 
   const columns: Column<TeamMemberWithFinance>[] = [
     {
@@ -359,7 +516,7 @@ export const TeamFinanceTable = () => {
       header: 'Paid Amount',
       sortable: true,
       render: (row) => (
-        <span style={{ fontWeight: 600, color: '#1f2937' }}>
+        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
           {formatCurrency(row.finance?.paidAmount)}
         </span>
       )
@@ -732,60 +889,250 @@ export const TeamFinanceTable = () => {
   return (
     <>
       <DataTable
+        title="Team Finance"
+        titleIcon={
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+        }
         columns={columns}
         data={teamMembers}
         renderExpandedRow={renderExpandedRow}
         emptyMessage="No team members found"
         itemsPerPage={5}
+        onCreateClick={() => handleOpenModal()}
+        createButtonText="Add Payment"
       />
 
       <Modal
         isOpen={isAddPaymentModalOpen}
         onClose={handleCloseModal}
-        title={`Make Payment - ${selectedMember ? getMemberName(selectedMember) : ''}`}
+        title={`Make Payment - ${selectedMember ? getMemberName(selectedMember) : 'Select Member'}`}
         size="medium"
       >
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <DatePicker
-            label="Date"
-            value={transactionForm.datetime}
-            onChange={(value) => setTransactionForm({ ...transactionForm, datetime: value })}
-            required
-            info="Select the date when this salary payment was made"
-          />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '14px',
+              fontWeight: '500',
+              color: 'var(--text-primary)'
+            }}>
+              Expense Type <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <SearchableSelect
+              value={transactionForm.expenseTypeId}
+              onChange={(value) => setTransactionForm(prev => ({ ...prev, expenseTypeId: value, projectId: '', eventId: '' }))}
+              options={expenseTypeOptions}
+              placeholder="Select expense type (team member payments)"
+            />
+          </div>
 
-          <AmountInput
-            label="Amount"
-            value={transactionForm.amount}
-            onChange={(value) => setTransactionForm({ ...transactionForm, amount: value })}
-            placeholder="Enter amount"
-            required
-            info="Enter the payment amount. Use bonus for additional payments or deduction for salary reductions"
-          />
+          {selectedExpenseType?.requiresMember && !selectedMember?.memberId && (
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'var(--text-primary)'
+              }}>
+                Team Member <span style={{ color: '#ef4444' }}>*</span>
+              </label>
+              <SearchableSelect
+                value={selectedMember?.memberId || ''}
+                onChange={(value) => {
+                  const member = teamMembers.find(m => m.memberId === value);
+                  if (member) {
+                    setSelectedMember(member);
+                  }
+                }}
+                options={teamMemberOptions}
+                placeholder="Select team member"
+              />
+              {selectedMember?.memberId && (
+                <p style={{ 
+                  fontSize: '12px', 
+                  color: 'var(--text-secondary)', 
+                  marginTop: '6px',
+                  fontStyle: 'italic'
+                }}>
+                  Projects and events filtered to show only those where this member is assigned
+                </p>
+              )}
+            </div>
+          )}
 
-          <Select
-            label="Type"
-            value={transactionForm.nature}
-            onChange={(value) => setTransactionForm({ ...transactionForm, nature: value as any })}
-            options={[
-              { value: 'paid', label: 'Regular Payment' },
-              { value: 'bonus', label: 'Bonus' },
-              { value: 'deduction', label: 'Deduction' }
-            ]}
-            required
-            info="Regular Payment: Monthly salary | Bonus: Additional payment | Deduction: Amount deducted from salary"
-          />
+          {selectedExpenseType?.requiresMember && selectedMember?.memberId && (
+            <div style={{
+              padding: '12px',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '8px'
+            }}>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'var(--text-primary)'
+              }}>
+                Team Member
+              </label>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '50%',
+                  background: getAvatarColors(getMemberName(selectedMember)).bg,
+                  border: `2px solid ${getAvatarColors(getMemberName(selectedMember)).border}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  color: getAvatarColors(getMemberName(selectedMember)).text,
+                  flexShrink: 0
+                }}>
+                  {getMemberName(selectedMember)
+                    .split(' ')
+                    .map(n => n[0])
+                    .join('')
+                    .toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ 
+                    fontWeight: 600, 
+                    color: 'var(--text-primary)' 
+                  }}>
+                    {getMemberName(selectedMember)}
+                  </div>
+                  <div style={{ 
+                    fontSize: '0.875rem', 
+                    color: 'var(--text-secondary)' 
+                  }}>
+                    {selectedMember.profileName || 'No Profile'}
+                  </div>
+                </div>
+              </div>
+              <p style={{ 
+                fontSize: '12px', 
+                color: 'var(--text-secondary)', 
+                marginTop: '8px',
+                marginBottom: 0,
+                fontStyle: 'italic'
+              }}>
+                Projects and events filtered to show only those where this member is assigned
+              </p>
+            </div>
+          )}
 
-          <Textarea
-            label="Comment"
-            value={transactionForm.comment}
-            onChange={(e) => setTransactionForm({ ...transactionForm, comment: e.target.value })}
-            placeholder="Add a note (optional)"
-            rows={3}
-            maxLength={500}
-            showCharCount={true}
-            info="Optional notes about this payment (e.g., reason for bonus or deduction)"
-          />
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '14px',
+              fontWeight: '500',
+              color: 'var(--text-primary)'
+            }}>
+              Project {selectedExpenseType?.requiresProject && <span style={{ color: '#ef4444' }}>*</span>}
+            </label>
+            <SearchableSelect
+              value={transactionForm.projectId}
+              onChange={(value) => setTransactionForm(prev => ({ ...prev, projectId: value }))}
+              options={projectOptions}
+              placeholder={selectedExpenseType?.requiresProject ? "Select project" : "Select project or leave for general payment"}
+              disabled={selectedExpenseType?.requiresMember && !selectedMember?.memberId}
+            />
+            {transactionForm.projectId && selectedMemberPendingPayable !== null && (
+              <p style={{ 
+                fontSize: '12px', 
+                color: 'var(--text-secondary)', 
+                marginTop: '6px',
+                fontStyle: 'italic'
+              }}>
+                Pending payable for this project: ₹{selectedMemberPendingPayable.toLocaleString('en-IN')}
+              </p>
+            )}
+          </div>
+
+          {transactionForm.projectId && projectEvents.length > 0 && (
+            <div>
+              <label style={{ 
+                display: 'block', 
+                marginBottom: '8px', 
+                fontSize: '14px',
+                fontWeight: '500',
+                color: 'var(--text-primary)'
+              }}>
+                Event {selectedExpenseType?.requiresEvent && <span style={{ color: '#ef4444' }}>*</span>}
+              </label>
+              <Select
+                value={transactionForm.eventId}
+                onChange={(value) => setTransactionForm(prev => ({ ...prev, eventId: value }))}
+                options={eventOptions}
+                placeholder={selectedExpenseType?.requiresEvent ? "Select event" : "Select event (optional)"}
+              />
+            </div>
+          )}
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '14px',
+              fontWeight: '500',
+              color: 'var(--text-primary)'
+            }}>
+              Date
+            </label>
+            <DatePicker
+              value={transactionForm.datetime}
+              onChange={(value) => setTransactionForm({ ...transactionForm, datetime: value })}
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '14px',
+              fontWeight: '500',
+              color: 'var(--text-primary)'
+            }}>
+              Amount <span style={{ color: '#ef4444' }}>*</span>
+            </label>
+            <AmountInput
+              value={transactionForm.amount}
+              onChange={(value) => setTransactionForm(prev => ({ ...prev, amount: value }))}
+              placeholder="Enter amount"
+            />
+          </div>
+
+          <div>
+            <label style={{ 
+              display: 'block', 
+              marginBottom: '8px', 
+              fontSize: '14px',
+              fontWeight: '500',
+              color: 'var(--text-primary)'
+            }}>
+              Notes
+            </label>
+            <Textarea
+              value={transactionForm.comment}
+              onChange={(e) => setTransactionForm(prev => ({ ...prev, comment: e.target.value }))}
+              placeholder="Add notes (optional)"
+              rows={3}
+              maxLength={500}
+              showCharCount={true}
+            />
+          </div>
 
           <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
             <button
@@ -793,9 +1140,9 @@ export const TeamFinanceTable = () => {
               disabled={isSubmitting}
               style={{
                 padding: '0.625rem 1.25rem',
-                background: '#f3f4f6',
-                color: '#374151',
-                border: 'none',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                border: '1px solid var(--border-color)',
                 borderRadius: '0.5rem',
                 fontSize: '0.875rem',
                 fontWeight: 600,
@@ -807,16 +1154,16 @@ export const TeamFinanceTable = () => {
             </button>
             <button
               onClick={handleSubmitTransaction}
-              disabled={isSubmitting || !transactionForm.amount}
+              disabled={isSubmitting || !transactionForm.amount || !transactionForm.expenseTypeId}
               style={{
                 padding: '0.625rem 1.25rem',
-                background: isSubmitting || !transactionForm.amount ? '#d1d5db' : '#6366f1',
+                background: isSubmitting || !transactionForm.amount || !transactionForm.expenseTypeId ? '#d1d5db' : '#6366f1',
                 color: 'white',
                 border: 'none',
                 borderRadius: '0.5rem',
                 fontSize: '0.875rem',
                 fontWeight: 600,
-                cursor: isSubmitting || !transactionForm.amount ? 'not-allowed' : 'pointer',
+                cursor: isSubmitting || !transactionForm.amount || !transactionForm.expenseTypeId ? 'not-allowed' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.5rem'

@@ -22,6 +22,8 @@ interface DataTableProps<T> {
   customFilters?: React.ReactNode;
   customActions?: React.ReactNode;
   onRowClick?: (row: T) => void;
+  title?: string;
+  titleIcon?: React.ReactNode;
   // Server-side pagination props
   serverSide?: boolean;
   currentPage?: number;
@@ -59,6 +61,8 @@ export function DataTable<T extends Record<string, any>>({
   onPageChange: externalOnPageChange,
   searchValue,
   onSearchChange,
+  title,
+  titleIcon,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -172,6 +176,12 @@ export function DataTable<T extends Record<string, any>>({
     <div className={styles.tableContainer}>
       {/* Toolbar with Search, Sort, and Create Button */}
       <div className={styles.toolbar}>
+        {title && (
+          <h2 className={styles.tableTitle}>
+            {titleIcon}
+            {title}
+          </h2>
+        )}
         <div className={styles.toolbarLeft}>
           <div className={styles.searchContainer}>
             <svg className={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">

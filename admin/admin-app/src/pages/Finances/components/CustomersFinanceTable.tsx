@@ -60,6 +60,19 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
   const [customerFilter, setCustomerFilter] = useState<string>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<string>('all');
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
+  const [isCustomerOverviewModalOpen, setIsCustomerOverviewModalOpen] = useState(false);
+  const [selectedCustomerData, setSelectedCustomerData] = useState<{
+    customerName: string;
+    projects: ProjectWithFinance[];
+    totalBudget: number;
+    totalReceived: number;
+    totalExpenses: number;
+    pendingPayments: number;
+    netProfit: number;
+    profitMargin: number;
+    collectionRate: number;
+    expensesByCategory?: { [key: string]: number };
+  } | null>(null);
   const [selectedProject, setSelectedProject] = useState<ProjectWithFinance | null>(null);
   const [transactionForm, setTransactionForm] = useState({
     datetime: new Date().toISOString().split('T')[0],
@@ -273,6 +286,57 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
     });
   };
 
+  const handleOpenCustomerOverview = async (customerName: string) => {
+    // Get all projects for this customer
+    const customerProjects = projects.filter(p => {
+      const projCustomerName = p.contactPerson || getCustomerName(p);
+      return projCustomerName === customerName;
+    });
+
+    // Fetch all expenses for these projects to get breakdown by category
+    let expensesByCategory: { [key: string]: number } = {};
+    try {
+      for (const project of customerProjects) {
+        const expensesResponse = await expenseApi.getAll({ projectId: project.projectId, limit: 1000 });
+        const expenses = expensesResponse?.expenses || [];
+        expenses.forEach((expense: any) => {
+          const category = expense.expenseTypeName || 'Other';
+          expensesByCategory[category] = (expensesByCategory[category] || 0) + (expense.amount || 0);
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching expenses for overview:', error);
+    }
+
+    // Calculate totals
+    const totalBudget = customerProjects.reduce((sum, p) => sum + (p.finance?.totalBudget || 0), 0);
+    const totalReceived = customerProjects.reduce((sum, p) => sum + (p.finance?.receivedAmount || 0), 0);
+    const totalExpenses = customerProjects.reduce((sum, p) => sum + (p.totalExpenses || 0), 0);
+    const pendingPayments = totalBudget - totalReceived;
+    const netProfit = totalReceived - totalExpenses;
+    const profitMargin = totalReceived > 0 ? (netProfit / totalReceived) * 100 : 0;
+    const collectionRate = totalBudget > 0 ? (totalReceived / totalBudget) * 100 : 0;
+
+    setSelectedCustomerData({
+      customerName,
+      projects: customerProjects,
+      totalBudget,
+      totalReceived,
+      totalExpenses,
+      pendingPayments,
+      netProfit,
+      profitMargin,
+      collectionRate,
+      expensesByCategory
+    });
+    setIsCustomerOverviewModalOpen(true);
+  };
+
+  const handleCloseCustomerOverview = () => {
+    setIsCustomerOverviewModalOpen(false);
+    setSelectedCustomerData(null);
+  };
+
   const handleSubmitTransaction = async () => {
     if (!selectedProject || !transactionForm.amount) {
       showToast('error', 'Please fill in all required fields');
@@ -484,6 +548,21 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
                 className={styles.actionsDropdownItem}
                 onClick={(e) => {
                   e.stopPropagation();
+                  const customerName = row.contactPerson || getCustomerName(row);
+                  handleOpenCustomerOverview(customerName);
+                  setOpenMenuId(null);
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                View Details
+              </button>
+              <button
+                className={styles.actionsDropdownItem}
+                onClick={(e) => {
+                  e.stopPropagation();
                   handleAddPaymentClick(row);
                   setOpenMenuId(null);
                 }}
@@ -669,14 +748,9 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
 
   if (loading) {
     return (
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'center', 
-        alignItems: 'center', 
-        padding: '3rem',
-        color: 'var(--text-secondary)'
-      }}>
-        Loading finance data...
+      <div className={styles.loadingContainer}>
+        <div className={styles.spinner}></div>
+        <p style={{ color: 'var(--text-secondary)', margin: 0 }}>Loading finance data...</p>
       </div>
     );
   }
@@ -684,12 +758,22 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
   return (
     <>
       <DataTable
+        title="Customer Finance Records"
+        titleIcon={
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+        }
         columns={columns}
         data={filteredProjects}
         emptyMessage="No customer finance records found"
         renderExpandedRow={renderExpandedRow}
         getRowKey={(row) => row.projectId}
         itemsPerPage={5}
+        onRowClick={(row) => {
+          const customerName = row.contactPerson || getCustomerName(row);
+          handleOpenCustomerOverview(customerName);
+        }}
         customFilters={
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <Select
@@ -839,6 +923,347 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Customer Overview Modal */}
+      <Modal
+        isOpen={isCustomerOverviewModalOpen}
+        onClose={handleCloseCustomerOverview}
+        title={`Customer Overview - ${selectedCustomerData?.customerName || ''}`}
+        size="large"
+      >
+        {selectedCustomerData && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Summary Cards */}
+            <div style={{ 
+              display: 'grid', 
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+              gap: '1rem' 
+            }}>
+              <div style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
+                border: '1px solid rgba(16, 185, 129, 0.2)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-secondary)', 
+                  marginBottom: '0.5rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontWeight: 600
+                }}>
+                  Total Revenue
+                </div>
+                <div style={{ 
+                  fontSize: '1.75rem', 
+                  fontWeight: 700, 
+                  color: '#10b981',
+                  marginBottom: '0.25rem'
+                }}>
+                  {formatAmount(selectedCustomerData.totalReceived)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                  {selectedCustomerData.collectionRate.toFixed(1)}% collected
+                </div>
+              </div>
+
+              <div style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(245, 158, 11, 0.05) 100%)',
+                border: '1px solid rgba(245, 158, 11, 0.2)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-secondary)', 
+                  marginBottom: '0.5rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontWeight: 600
+                }}>
+                  Total Expenses
+                </div>
+                <div style={{ 
+                  fontSize: '1.75rem', 
+                  fontWeight: 700, 
+                  color: '#f59e0b',
+                  marginBottom: '0.25rem'
+                }}>
+                  {formatAmount(selectedCustomerData.totalExpenses)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                  Across all projects
+                </div>
+              </div>
+
+              <div style={{
+                padding: '1rem',
+                background: `linear-gradient(135deg, ${selectedCustomerData.netProfit >= 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(239, 68, 68, 0.1)'} 0%, ${selectedCustomerData.netProfit >= 0 ? 'rgba(59, 130, 246, 0.05)' : 'rgba(239, 68, 68, 0.05)'} 100%)`,
+                border: `1px solid ${selectedCustomerData.netProfit >= 0 ? 'rgba(59, 130, 246, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+                borderRadius: '12px'
+              }}>
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-secondary)', 
+                  marginBottom: '0.5rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontWeight: 600
+                }}>
+                  Net Profit
+                </div>
+                <div style={{ 
+                  fontSize: '1.75rem', 
+                  fontWeight: 700, 
+                  color: selectedCustomerData.netProfit >= 0 ? '#3b82f6' : '#ef4444',
+                  marginBottom: '0.25rem'
+                }}>
+                  {formatAmount(selectedCustomerData.netProfit)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                  {selectedCustomerData.profitMargin.toFixed(1)}% margin
+                </div>
+              </div>
+
+              <div style={{
+                padding: '1rem',
+                background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%)',
+                border: '1px solid rgba(139, 92, 246, 0.2)',
+                borderRadius: '12px'
+              }}>
+                <div style={{ 
+                  fontSize: '0.75rem', 
+                  color: 'var(--text-secondary)', 
+                  marginBottom: '0.5rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.5px',
+                  fontWeight: 600
+                }}>
+                  Pending Payments
+                </div>
+                <div style={{ 
+                  fontSize: '1.75rem', 
+                  fontWeight: 700, 
+                  color: '#8b5cf6',
+                  marginBottom: '0.25rem'
+                }}>
+                  {formatAmount(selectedCustomerData.pendingPayments)}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-tertiary)' }}>
+                  {selectedCustomerData.totalBudget > 0 ? ((selectedCustomerData.pendingPayments / selectedCustomerData.totalBudget) * 100).toFixed(1) : 0}% remaining
+                </div>
+              </div>
+            </div>
+
+            {/* Budget Overview */}
+            <div style={{
+              padding: '1.25rem',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px'
+            }}>
+              <h3 style={{ 
+                margin: '0 0 1rem 0', 
+                fontSize: '1rem', 
+                fontWeight: 600, 
+                color: 'var(--text-primary)' 
+              }}>
+                Financial Overview
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Budget</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{formatAmount(selectedCustomerData.totalBudget)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Amount Received</span>
+                  <span style={{ fontWeight: 600, color: '#10b981' }}>{formatAmount(selectedCustomerData.totalReceived)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>Total Expenses</span>
+                  <span style={{ fontWeight: 600, color: '#f59e0b' }}>{formatAmount(selectedCustomerData.totalExpenses)}</span>
+                </div>
+                <div style={{ 
+                  height: '1px', 
+                  background: 'var(--border-color)', 
+                  margin: '0.5rem 0' 
+                }}></div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 600 }}>Net Profit</span>
+                  <span style={{ 
+                    fontWeight: 700, 
+                    fontSize: '1.125rem',
+                    color: selectedCustomerData.netProfit >= 0 ? '#10b981' : '#ef4444' 
+                  }}>
+                    {formatAmount(selectedCustomerData.netProfit)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Expenses by Category */}
+            {selectedCustomerData.expensesByCategory && Object.keys(selectedCustomerData.expensesByCategory).length > 0 && (
+              <div style={{
+                padding: '1.25rem',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                borderRadius: '12px'
+              }}>
+                <h3 style={{ 
+                  margin: '0 0 1rem 0', 
+                  fontSize: '1rem', 
+                  fontWeight: 600, 
+                  color: 'var(--text-primary)' 
+                }}>
+                  Expenses by Category
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {Object.entries(selectedCustomerData.expensesByCategory)
+                    .sort(([, a], [, b]) => b - a)
+                    .map(([category, amount]) => {
+                      const percentage = selectedCustomerData.totalExpenses > 0 
+                        ? ((amount / selectedCustomerData.totalExpenses) * 100).toFixed(1)
+                        : 0;
+                      
+                      return (
+                        <div key={category} style={{
+                          padding: '0.75rem',
+                          background: 'var(--bg-primary)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '8px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ 
+                              fontWeight: 500, 
+                              color: 'var(--text-primary)', 
+                              marginBottom: '0.25rem',
+                              fontSize: '0.875rem'
+                            }}>
+                              {category}
+                            </div>
+                            <div style={{ 
+                              height: '4px',
+                              background: 'var(--border-color)',
+                              borderRadius: '2px',
+                              overflow: 'hidden'
+                            }}>
+                              <div style={{
+                                height: '100%',
+                                width: `${percentage}%`,
+                                background: 'linear-gradient(90deg, #f59e0b 0%, #f97316 100%)',
+                                borderRadius: '2px'
+                              }}></div>
+                            </div>
+                          </div>
+                          <div style={{ 
+                            textAlign: 'right',
+                            paddingLeft: '1rem',
+                            whiteSpace: 'nowrap'
+                          }}>
+                            <div style={{ 
+                              fontSize: '0.875rem', 
+                              fontWeight: 600,
+                              color: '#f59e0b'
+                            }}>
+                              {formatAmount(amount)}
+                            </div>
+                            <div style={{ 
+                              fontSize: '0.75rem', 
+                              color: 'var(--text-secondary)'
+                            }}>
+                              {percentage}%
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* Projects List */}
+            <div style={{
+              padding: '1.25rem',
+              background: 'var(--bg-secondary)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '12px'
+            }}>
+              <h3 style={{ 
+                margin: '0 0 1rem 0', 
+                fontSize: '1rem', 
+                fontWeight: 600, 
+                color: 'var(--text-primary)' 
+              }}>
+                Projects ({selectedCustomerData.projects.length})
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {selectedCustomerData.projects.map((project) => {
+                  const projectNetProfit = (project.finance?.receivedAmount || 0) - (project.totalExpenses || 0);
+                  return (
+                    <div 
+                      key={project.projectId}
+                      style={{
+                        padding: '1rem',
+                        background: 'var(--bg-primary)',
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        transition: 'all 0.2s',
+                        cursor: 'default'
+                      }}
+                    >
+                      <div style={{ flex: 1 }}>
+                        <div style={{ 
+                          fontWeight: 600, 
+                          color: 'var(--text-primary)', 
+                          marginBottom: '0.25rem' 
+                        }}>
+                          {project.projectName}
+                        </div>
+                        <div style={{ 
+                          fontSize: '0.75rem', 
+                          color: 'var(--text-secondary)',
+                          display: 'flex',
+                          gap: '1rem'
+                        }}>
+                          <span>Budget: {formatAmount(project.finance?.totalBudget || 0)}</span>
+                          <span>Received: {formatAmount(project.finance?.receivedAmount || 0)}</span>
+                          <span>Expenses: {formatAmount(project.totalExpenses || 0)}</span>
+                        </div>
+                      </div>
+                      <div style={{ 
+                        textAlign: 'right',
+                        paddingLeft: '1rem'
+                      }}>
+                        <div style={{ 
+                          fontSize: '0.75rem', 
+                          color: 'var(--text-secondary)',
+                          marginBottom: '0.25rem'
+                        }}>
+                          Profit
+                        </div>
+                        <div style={{ 
+                          fontWeight: 700,
+                          fontSize: '1rem',
+                          color: projectNetProfit >= 0 ? '#10b981' : '#ef4444'
+                        }}>
+                          {formatAmount(projectNetProfit)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </Modal>
     </>
   );

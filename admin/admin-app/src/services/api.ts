@@ -593,6 +593,15 @@ export const financeStatsApi = {
     });
     return handleResponse(response);
   },
+  getOverview: async () => {
+    const response = await fetch(`${API_BASE_URL}/finance-overview`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
 };
 
 export const dashboardStatsApi = {
