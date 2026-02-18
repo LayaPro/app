@@ -35,6 +35,9 @@ export const ROUTES = {
   
   // Organization
   ORGANIZATION: '/organization',
+  ORGANIZATION_BASIC_DETAILS: '/organization/basic-details',
+  ORGANIZATION_TERMS: '/organization/terms',
+  ORGANIZATION_DELIVERABLES: '/organization/deliverables',
   
   STORAGE: '/storage',
   SETTINGS: '/settings',

@@ -93,7 +93,14 @@ const Projects = () => {
         <ProjectStats stats={stats} />
       </div>
 
-      <ProjectsTable onStatsUpdate={setStats} initialProjectFilter={projectIdFilter} />
+      <ProjectsTable
+        onStatsUpdate={setStats}
+        initialProjectFilter={projectIdFilter}
+        onCreateProject={() => {
+          dispatch(clearEditingProject());
+          setShowWizard(true);
+        }}
+      />
       
       {showHelp && helpContent && (
         <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />

@@ -30,6 +30,27 @@ export const sanitizeTextInput = (input: string): string => {
 };
 
 /**
+ * Sanitize URL input (website, social media links)
+ * Strips HTML/script injection but preserves all valid URL characters
+ */
+export const sanitizeUrl = (input: string): string => {
+  if (!input) return '';
+
+  // Remove HTML tags
+  let sanitized = input.replace(/<[^>]*>/g, '');
+
+  // Remove script-related content
+  sanitized = sanitized.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+
+  // Block javascript: protocol and event handlers
+  sanitized = sanitized.replace(/javascript:/gi, '');
+  sanitized = sanitized.replace(/on\w+\s*=/gi, '');
+
+  // Trim whitespace only — preserve all valid URL characters (/, :, ?, =, &, %, #, etc.)
+  return sanitized.trim();
+};
+
+/**
  * Sanitize name fields (first name, last name)
  * Allows: letters, spaces, hyphens, apostrophes
  */

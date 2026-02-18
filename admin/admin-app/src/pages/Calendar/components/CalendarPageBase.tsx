@@ -33,7 +33,7 @@ const CalendarPageBase = ({ filterEvents, extraHeader, onDataLoaded }: CalendarP
   const [searchParams] = useSearchParams();
   const urlView = searchParams.get('view') as CalendarView | null;
 
-  const [currentView, setCurrentView] = useState<CalendarView>(urlView && ['month', 'week', 'day'].includes(urlView) ? urlView : 'month');
+  const [currentView, setCurrentView] = useState<CalendarView>(urlView && ['month', 'week', 'day', 'list'].includes(urlView) ? urlView : 'month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [weekStart, setWeekStart] = useState(getWeekStart(new Date()));
   const [rawEvents, setRawEvents] = useState<ClientEvent[]>([]);

@@ -4,7 +4,7 @@ import { Input, Textarea, Button, Loading, ImageUpload, PhoneInput, InfoBox } fr
 import { countries } from '../../components/ui/PhoneInput';
 import styles from '../EventsSetup/EventCard.module.css';
 import { organizationApi } from '../../services/api.js';
-import { sanitizeTextInput, sanitizeTextarea } from '../../utils/sanitize.js';
+import { sanitizeTextInput, sanitizeTextarea, sanitizeUrl } from '../../utils/sanitize.js';
 import type { Organization } from '../../types/index.js';
 
 interface BasicDetailsCardProps {
@@ -118,10 +118,10 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
       phone: formData.phone, // Don't sanitize - just numbers
       countryCode: formData.countryCode, // Don't sanitize - need the + symbol
       address: sanitizeTextarea(formData.address),
-      website: sanitizeTextInput(formData.website),
-      facebook: sanitizeTextInput(formData.facebook),
-      instagram: sanitizeTextInput(formData.instagram),
-      youtube: sanitizeTextInput(formData.youtube),
+      website: sanitizeUrl(formData.website),
+      facebook: sanitizeUrl(formData.facebook),
+      instagram: sanitizeUrl(formData.instagram),
+      youtube: sanitizeUrl(formData.youtube),
     };
 
     try {
@@ -151,13 +151,8 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
   }
 
   return (
-    <div>
-      <div className={styles.contentWrapper}>
-        <InfoBox>
-          Configure your organization's basic information, branding, and contact details. This information will be used in proposals and customer-facing materials.
-        </InfoBox>
-
-        <div className={styles.formGrid}>
+    <>
+      <div className={styles.formGrid}>
           {/* Left Column */}
           <div className={styles.formColumn}>
             <Input
@@ -297,7 +292,7 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
           </div>
         </div>
 
-        <div className={styles.buttonGroup}>
+        <div className={styles.buttonGroup} style={{ borderTop: 'none', paddingTop: 0 }}>
           {organization && (
             <Button
               variant="secondary"
@@ -332,7 +327,6 @@ export const BasicDetailsCard: FC<BasicDetailsCardProps> = ({
             {isSaving ? 'Saving...' : organization ? 'Save Changes' : 'Create Organization'}
           </Button>
         </div>
-      </div>
-    </div>
+    </>
   );
 };

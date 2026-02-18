@@ -3,8 +3,9 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
+import { Button } from '../../../components/ui/Button';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import { Modal } from '../../../components/ui/Modal';
-import { Select } from '../../../components/ui/Select';
 import { ConfirmationModal } from '../../../components/ui/ConfirmationModal';
 import { ViewProposalModal } from './ViewProposalModal';
 import { useToast } from '../../../context/ToastContext';
@@ -50,8 +51,6 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
   const itemsPerPage = 8;
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [proposalFilter, setProposalFilter] = useState<string>('');
-  const [searchTerm, setSearchTerm] = useState<string>('');
-  const [debouncedSearch, setDebouncedSearch] = useState<string>('');
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0 });
   const [isSendModalOpen, setIsSendModalOpen] = useState(false);
@@ -73,22 +72,9 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
     }
   }, [initialProposalFilter]);
 
-  // Debounce search term
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedSearch(searchTerm);
-      // Reset to page 1 when search changes
-      if (currentPage !== 1) {
-        setCurrentPage(1);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [searchTerm]);
-
   useEffect(() => {
     fetchProposals();
-  }, [currentPage, debouncedSearch, statusFilter]);
+  }, [currentPage, statusFilter]);
 
   // Reset to page 1 when status filter changes
   useEffect(() => {
@@ -137,9 +123,6 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
       // Add filters to API call
       if (statusFilter && statusFilter !== 'all') {
         params.status = statusFilter;
-      }
-      if (debouncedSearch) {
-        params.search = debouncedSearch;
       }
       
       const response = await proposalApi.getAll(params);
@@ -591,66 +574,46 @@ export const ProposalsTable: React.FC<ProposalsTableProps> = ({ onEdit, onDataCh
           totalPages={totalPages}
           totalItems={totalItems}
           onPageChange={(page) => setCurrentPage(page)}
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
+          title="Proposals"
+          titleIcon={
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          }
+          hideSearch
           onRowClick={(proposal) => {
             setViewProposal(proposal);
             setIsViewModalOpen(true);
           }}
-          customFilters={
-            <Select
-              value={statusFilter}
-              onChange={setStatusFilter}
-              options={[
-                { value: 'all', label: 'All Statuses' },
-                { value: 'draft', label: 'Draft' },
-                { value: 'sent', label: 'Sent' },
-                { value: 'accepted', label: 'Accepted' },
-                { value: 'project_created', label: 'Project Created' }
-              ]}
-              placeholder="Filter by status"
-              className={styles.statusFilterSelect}
-            />
-          }
           customActions={
-            onCreateProposal && (
-              <button
-                onClick={onCreateProposal}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  padding: '10px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #6366f1, #8b5cf6)',
-                  color: 'white',
-                  cursor: 'pointer',
-                  fontSize: '14px',
-                  fontWeight: '600',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(99, 102, 241, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <svg 
-                  width="20" 
-                  height="20" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-                Add Proposal
-              </button>
-            )
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ width: '160px' }}>
+                <SearchableSelect
+                  value={statusFilter}
+                  onChange={(v) => {
+                    setStatusFilter(v);
+                    setCurrentPage(1);
+                  }}
+                  options={[
+                    { value: 'all', label: 'All Statuses' },
+                    { value: 'draft', label: 'Draft' },
+                    { value: 'sent', label: 'Sent' },
+                    { value: 'accepted', label: 'Accepted' },
+                    { value: 'project_created', label: 'Project Created' }
+                  ]}
+                  placeholder="All Statuses"
+                  compact
+                />
+              </div>
+              {onCreateProposal && (
+                <Button variant="primary" onClick={onCreateProposal}>
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '6px' }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  Add Proposal
+                </Button>
+              )}
+            </div>
           }
       />
 

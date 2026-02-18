@@ -80,13 +80,8 @@ export const TermsCard: FC<TermsCardProps> = ({
   }
 
   return (
-    <div>
-      <div className={styles.contentWrapper}>
-        <InfoBox>
-          Define your terms of service, payment terms, and policies. These will be included in proposals and customer agreements.
-        </InfoBox>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
+    <>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', marginBottom: '24px' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: '600', color: 'var(--text-primary)' }}>
               Terms of Service
@@ -168,7 +163,7 @@ export const TermsCard: FC<TermsCardProps> = ({
           </div>
         </div>
 
-        <div className={styles.buttonGroup}>
+        <div className={styles.buttonGroup} style={{ borderTop: 'none', paddingTop: 0 }}>
           {organization && (
             <Button
               variant="secondary"
@@ -193,7 +188,6 @@ export const TermsCard: FC<TermsCardProps> = ({
             {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
-      </div>
-    </div>
+    </>
   );
 };

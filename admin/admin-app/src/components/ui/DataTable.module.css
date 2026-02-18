@@ -21,8 +21,8 @@
 .tableTitle svg {
   color: var(--color-primary);
   flex-shrink: 0;
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
 }
 
 .tableWrapper {

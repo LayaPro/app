@@ -4,6 +4,7 @@ import { projectApi, eventDeliveryStatusApi, proposalApi } from '../../../servic
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { SearchableSelect } from '../../../components/ui/SearchableSelect';
+import { Button } from '../../../components/ui/Button';
 import { Modal } from '../../../components/ui/Modal';
 import { useAppDispatch } from '../../../store/index.js';
 import { setEditingProject } from '../../../store/slices/projectSlice.js';
@@ -56,9 +57,10 @@ interface ProjectsTableProps {
     dueSoon: number;
   }) => void;
   initialProjectFilter?: string | null;
+  onCreateProject?: () => void;
 }
 
-export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsTableProps = {}) => {
+export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter, onCreateProject }: ProjectsTableProps = {}) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -809,7 +811,6 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
-        <p>Loading projects...</p>
       </div>
     );
   }
@@ -867,87 +868,100 @@ export const ProjectsTable = ({ onStatsUpdate, initialProjectFilter }: ProjectsT
         totalPages={totalPages}
         totalItems={totalItems}
         onPageChange={(page) => setCurrentPage(page)}
+        title="Projects"
+        titleIcon={
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+          </svg>
+        }
+        hideSearch
         onRowClick={(project) => {
           setSelectedProject(project);
           setViewModalOpen(true);
         }}
-        customFilters={
-        <>
-          {/* Project Name Filter */}
-          <div className={styles.filterSelectWrapper}>
-            <SearchableSelect
-              value={projectNameFilter}
-              onChange={setProjectNameFilter}
-              options={[
-                { value: '', label: 'All Projects' },
-                ...projects.map(project => ({
-                  value: project.projectId,
-                  label: project.projectName
-                }))
-              ]}
-              placeholder="Select project..."
-            />
-          </div>
-          
-          <div className={styles.exportContainer} ref={exportRef}>
-            <button 
-              className={styles.exportButton}
-              onClick={(e) => {
-                const button = e.currentTarget;
-                const rect = button.getBoundingClientRect();
-                setIsExportOpen(!isExportOpen);
-                
-                if (!isExportOpen) {
-                  setTimeout(() => {
-                    const dropdown = button.nextElementSibling as HTMLElement;
-                    if (dropdown) {
-                      dropdown.style.top = `${rect.bottom + 4}px`;
-                      dropdown.style.right = `${window.innerWidth - rect.right}px`;
-                    }
-                  }, 0);
-                }
-              }}
-            >
-              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Export
-            </button>
-            {isExportOpen && (
-              <div className={styles.exportDropdown}>
-                <button 
-                  className={styles.exportDropdownItem}
-                  onClick={handleExportCSV}
-                >
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  Export as CSV
-                </button>
-                <button 
-                  className={styles.exportDropdownItem}
-                  onClick={handleExportPDF}
-                >
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  Export as PDF
-                </button>
-                <div className={styles.exportDropdownDivider} />
-                <button 
-                  className={styles.exportDropdownItem}
-                  onClick={handlePrint}
-                >
-                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                  </svg>
-                  Print
-                </button>
-              </div>
+        customActions={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '160px' }}>
+              <SearchableSelect
+                value={projectNameFilter}
+                onChange={setProjectNameFilter}
+                options={[
+                  { value: '', label: 'All Projects' },
+                  ...projects.map(project => ({
+                    value: project.projectId,
+                    label: project.projectName
+                  }))
+                ]}
+                placeholder="All Projects"
+                compact
+              />
+            </div>
+            <div className={styles.exportContainer} ref={exportRef}>
+              <button
+                className={styles.exportButton}
+                onClick={(e) => {
+                  const button = e.currentTarget;
+                  const rect = button.getBoundingClientRect();
+                  setIsExportOpen(!isExportOpen);
+                  if (!isExportOpen) {
+                    setTimeout(() => {
+                      const dropdown = button.nextElementSibling as HTMLElement;
+                      if (dropdown) {
+                        dropdown.style.top = `${rect.bottom + 4}px`;
+                        dropdown.style.right = `${window.innerWidth - rect.right}px`;
+                      }
+                    }, 0);
+                  }
+                }}
+              >
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Export
+              </button>
+              {isExportOpen && (
+                <div className={styles.exportDropdown}>
+                  <button
+                    className={styles.exportDropdownItem}
+                    onClick={handleExportCSV}
+                  >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export as CSV
+                  </button>
+                  <button
+                    className={styles.exportDropdownItem}
+                    onClick={handleExportPDF}
+                  >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                    Export as PDF
+                  </button>
+                  <div className={styles.exportDropdownDivider} />
+                  <button
+                    className={styles.exportDropdownItem}
+                    onClick={handlePrint}
+                  >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    Print
+                  </button>
+                </div>
+              )}
+            </div>
+            {onCreateProject && (
+              <Button variant="primary" onClick={onCreateProject}>
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '6px' }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                New Project
+              </Button>
             )}
           </div>
-        </>
-      }
+        }
       />
       
       <AssignEditorModal 

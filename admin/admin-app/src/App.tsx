@@ -52,6 +52,10 @@ import { setCredentials } from './store/slices/authSlice.js';
 
 // Organization page
 import Organization from './pages/Organization/index.js';
+import OrganizationLayout from './pages/Organization/OrganizationLayout.js';
+import OrganizationBasicDetails from './pages/Organization/OrganizationBasicDetails.js';
+import OrganizationTerms from './pages/Organization/OrganizationTerms.js';
+import OrganizationDeliverables from './pages/Organization/OrganizationDeliverables.js';
 
 // Storage page
 import Storage from './pages/Storage/index.js';
@@ -208,7 +212,11 @@ function App() {
           <Route path={ROUTES.PROJECTS_SETUP} element={<ProjectsSetup />} />
           
           {/* Organization */}
-          <Route path={ROUTES.ORGANIZATION} element={<Organization />} />
+          <Route path={ROUTES.ORGANIZATION} element={<OrganizationLayout />}>
+            <Route path={ROUTES.ORGANIZATION_BASIC_DETAILS} element={<OrganizationBasicDetails />} />
+            <Route path={ROUTES.ORGANIZATION_TERMS} element={<OrganizationTerms />} />
+            <Route path={ROUTES.ORGANIZATION_DELIVERABLES} element={<OrganizationDeliverables />} />
+          </Route>
           
           {/* Search Results */}
           <Route path="/search" element={<SearchResults />} />

@@ -210,13 +210,8 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
   }
 
   return (
-    <div>
-      <div className={styles.contentWrapper}>
-        <InfoBox>
-          Define deliverables that will be included in your proposals. These items will be shown to clients in proposals.
-        </InfoBox>
-
-        <DataTable
+    <>
+      <DataTable
           columns={columns}
           data={deliverables}
           itemsPerPage={10}
@@ -273,7 +268,6 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
             </Button>
           </div>
         </div>
-      </div>
 
       {/* Add Modal */}
       <Modal
@@ -391,7 +385,7 @@ export const DeliverablesCard: FC<DeliverablesCardProps> = ({
         variant="danger"
         isLoading={isSaving}
       />
-    </div>
+    </>
   );
 };
 

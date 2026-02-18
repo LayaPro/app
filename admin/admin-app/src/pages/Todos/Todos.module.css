@@ -64,8 +64,32 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1.5rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
+  flex-wrap: wrap;
+}
+
+.toolbarTitle {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.toolbarTitle svg {
+  width: 28px;
+  height: 28px;
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.toolbarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
 }
 
@@ -218,6 +242,22 @@
   padding: 4rem;
   text-align: center;
   color: var(--text-secondary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .emptyState {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { todoApi, teamApi } from '../../services/api';
+import { SearchableSelect } from '../../components/ui/SearchableSelect';
 import { Select } from '../../components/ui/Select';
 import { Modal, Button, Input, DatePicker, Pagination } from '../../components/ui';
 import { PageHeader } from '../../components/help/index.js';
@@ -205,60 +206,71 @@ const Todos = () => {
       <div className={styles.content}>
         {/* Toolbar */}
         <div className={styles.toolbar}>
-          <div className={styles.toolbarLeft}>
-            <div className={styles.searchContainer}>
-            <svg className={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          <div className={styles.toolbarTitle}>
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
             </svg>
-            <input
-              type="text"
-              placeholder="Search tasks..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className={styles.searchInput}
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className={styles.clearButton}
-              >
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+            My Tasks
           </div>
 
-            <div className={styles.filters}>
-              <Select
+          <div className={styles.toolbarRight}>
+            <div className={styles.searchContainer}>
+              <svg className={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className={styles.searchInput}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className={styles.clearButton}
+                >
+                  <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            <div style={{ width: '130px' }}>
+              <SearchableSelect
                 value={filter}
                 onChange={(value) => setFilter(value as any)}
                 options={filterOptions}
                 placeholder="Status"
-                className={styles.filterSelect}
+                compact
               />
-              <Select
+            </div>
+            <div style={{ width: '150px' }}>
+              <SearchableSelect
                 value={priorityFilter}
                 onChange={setPriorityFilter}
                 options={priorityOptions}
-                placeholder="Priority"
-                className={styles.filterSelect}
+                placeholder="All Priorities"
+                compact
               />
             </div>
-          </div>
 
-          <Button onClick={handleCreateTask}>
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Create Task
-          </Button>
+            <Button onClick={handleCreateTask}>
+              <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ marginRight: '6px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Create Task
+            </Button>
+          </div>
         </div>
 
         {/* Todos List */}
         <div className={styles.todosContainer}>
           {loading ? (
-            <div className={styles.loading}>Loading tasks...</div>
+            <div className={styles.loading}>
+              <div className={styles.spinner} />
+            </div>
           ) : filteredTodos.length === 0 ? (
             <div className={styles.emptyState}>
               <svg className={styles.emptyIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
