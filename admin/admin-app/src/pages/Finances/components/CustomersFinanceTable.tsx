@@ -411,13 +411,31 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
     },
     {
       key: 'totalExpenses',
-      header: 'Extra Expense',
+      header: 'Expenses',
       sortable: true,
       render: (row) => (
         <span style={{ color: row.totalExpenses ? '#ef4444' : 'var(--text-secondary)', fontWeight: 600 }}>
           {formatAmount(row.totalExpenses || 0)}
         </span>
       ),
+    },
+    {
+      key: 'profit',
+      header: 'Profit',
+      sortable: true,
+      render: (row) => {
+        const received = row.finance?.receivedAmount || 0;
+        const expenses = row.totalExpenses || 0;
+        const profit = received - expenses;
+        return (
+          <span style={{ 
+            color: profit > 0 ? '#10b981' : profit < 0 ? '#ef4444' : 'var(--text-secondary)', 
+            fontWeight: 600 
+          }}>
+            {formatAmount(profit)}
+          </span>
+        );
+      },
     },
     {
       key: 'projectId',

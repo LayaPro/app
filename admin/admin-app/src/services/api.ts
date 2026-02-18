@@ -1293,8 +1293,10 @@ export const auditApi = {
 // Expense API
 export const expenseApi = {
   create: async (data: {
+    expenseTypeId: string;
     projectId?: string;
     eventId?: string;
+    memberId?: string;
     amount: number;
     comment: string;
     date: string;
@@ -1346,8 +1348,10 @@ export const expenseApi = {
   },
 
   update: async (expenseId: string, data: {
+    expenseTypeId?: string;
     projectId?: string;
     eventId?: string;
+    memberId?: string;
     amount?: number;
     comment?: string;
     date?: string;
@@ -1396,3 +1400,32 @@ export const expenseApi = {
   },
 };
 
+// Expense Type API
+export const expenseTypeApi = {
+  getAll: async () => {
+    const response = await fetch(`${API_BASE_URL}/expense-types`, {
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+    });
+    return handleResponse(response);
+  },
+
+  create: async (data: {
+    name: string;
+    description?: string;
+    requiresProject: boolean;
+    requiresEvent: boolean;
+  }) => {
+    const response = await fetch(`${API_BASE_URL}/expense-types`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${getAuthToken()}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+    return handleResponse(response);
+  },
+};

@@ -10,6 +10,7 @@ import ImageStatus from './models/imageStatus';
 import Module from './models/module';
 import RolePermission from './models/rolePermission';
 import { SubscriptionPlan } from './models/subscriptionPlan';
+import ExpenseType from './models/expenseType';
 
 dotenv.config();
 
@@ -578,6 +579,146 @@ async function seedDatabase() {
     }
     if (existingPlansCount > 0) {
       console.log(`✓ ${existingPlansCount} subscription plan(s) already exist`);
+    }
+
+    // 11. Create default expense types (GLOBAL - shared across all tenants)
+    const defaultExpenseTypes = [
+      {
+        name: 'Photography Charges',
+        description: 'Costs for photography services and photographers',
+        requiresProject: true,
+        requiresEvent: false,
+        requiresMember: true,
+        displayOrder: 1,
+        isActive: true
+      },
+      {
+        name: 'Videography Charges',
+        description: 'Costs for videography services and videographers',
+        requiresProject: true,
+        requiresEvent: false,
+        requiresMember: true,
+        displayOrder: 2,
+        isActive: true
+      },
+      {
+        name: 'Drone Charges',
+        description: 'Aerial photography and videography costs',
+        requiresProject: true,
+        requiresEvent: false,
+        requiresMember: true,
+        displayOrder: 3,
+        isActive: true
+      },
+      {
+        name: 'Album Designing Charges',
+        description: 'Album design and layout costs',
+        requiresProject: true,
+        requiresEvent: false,
+        requiresMember: true,
+        displayOrder: 4,
+        isActive: true
+      },
+      {
+        name: 'Photo Editing Charges',
+        description: 'Photo editing and retouching costs',
+        requiresProject: true,
+        requiresEvent: false,
+        requiresMember: true,
+        displayOrder: 5,
+        isActive: true
+      },
+      {
+        name: 'Team Salary (Monthly)',
+        description: 'Team member monthly salaries',
+        requiresProject: false,
+        requiresEvent: false,
+        requiresMember: true,
+        displayOrder: 6,
+        isActive: true
+      },
+      {
+        name: 'Travel',
+        description: 'Travel and transportation expenses',
+        requiresProject: false,
+        requiresEvent: false,
+        requiresMember: false,
+        displayOrder: 7,
+        isActive: true
+      },
+      {
+        name: 'Fuel',
+        description: 'Fuel and vehicle costs',
+        requiresProject: false,
+        requiresEvent: false,
+        requiresMember: false,
+        displayOrder: 8,
+        isActive: true
+      },
+      {
+        name: 'Purchase of Equipments',
+        description: 'Costs for purchasing equipment',
+        requiresProject: false,
+        requiresEvent: false,
+        requiresMember: false,
+        displayOrder: 9,
+        isActive: true
+      },
+      {
+        name: 'Album Printing',
+        description: 'Album printing and production costs',
+        requiresProject: true,
+        requiresEvent: false,
+        requiresMember: false,
+        displayOrder: 10,
+        isActive: true
+      },
+      {
+        name: 'General',
+        description: 'General and miscellaneous expenses',
+        requiresProject: false,
+        requiresEvent: false,
+        requiresMember: false,
+        displayOrder: 11,
+        isActive: true
+      }
+    ];
+
+    console.log('\n✓ Creating default expense types (Global)...');
+    let createdExpenseTypesCount = 0;
+    let existingExpenseTypesCount = 0;
+
+    for (const expenseTypeData of defaultExpenseTypes) {
+      const existing = await ExpenseType.findOne({ 
+        name: expenseTypeData.name,
+        tenantId: '-1'
+      });
+
+      if (!existing) {
+        const expenseTypeId = `exptype_${nanoid()}`;
+        await ExpenseType.create({
+          expenseTypeId,
+          tenantId: '-1', // Global data
+          name: expenseTypeData.name,
+          description: expenseTypeData.description,
+          requiresProject: expenseTypeData.requiresProject,
+          requiresEvent: expenseTypeData.requiresEvent,
+          requiresMember: expenseTypeData.requiresMember,
+          displayOrder: expenseTypeData.displayOrder,
+          isActive: expenseTypeData.isActive
+        });
+        createdExpenseTypesCount++;
+        console.log(`  ✓ Created expense type: ${expenseTypeData.name}`);
+      } else {
+        existingExpenseTypesCount++;
+      }
+    }
+
+    if (createdExpenseTypesCount > 0) {
+      console.log(`✓ Created ${createdExpenseTypesCount} new expense type(s)`);
+    }
+    if (existingExpenseTypesCount > 0) {
+      console.log(`✓ ${existingExpenseTypesCount} expense type(s) already exist`);
     }
 
     console.log('\n✅ Database seeding completed successfully!');

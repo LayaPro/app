@@ -5,6 +5,8 @@ export interface IExpense extends Document {
   tenantId: string;
   projectId?: string;
   eventId?: string;
+  memberId?: string;
+  expenseTypeId?: string;
   amount: number;
   comment: string;
   date: Date;
@@ -36,6 +38,14 @@ const ExpenseSchema = new Schema<IExpense>(
       type: String,
       index: true,
     },
+    memberId: {
+      type: String,
+      index: true,
+    },
+    expenseTypeId: {
+      type: String,
+      index: true,
+    },
     amount: {
       type: Number,
       required: true,
@@ -56,8 +66,8 @@ const ExpenseSchema = new Schema<IExpense>(
     },
     category: {
       type: String,
-      enum: ['general', 'equipment', 'travel', 'venue', 'food', 'other'],
-      default: 'general',
+      enum: ['salary', 'equipment', 'travel', 'venue', 'food', 'printing', 'other'],
+      default: 'other',
     },
     receiptUrl: {
       type: String,

@@ -15,6 +15,8 @@ export interface ITeamFinance extends Document {
   memberId: string; // Reference to Team Member
   monthlySalary?: number;
   totalPaid?: number;
+  totalPayable?: number; // Total amount owed to team member across all projects
+  paidAmount?: number; // Total already paid through expenses
   lastPaymentDate?: Date;
   nextPaymentDate?: Date;
   pendingAmount?: number;
@@ -41,6 +43,8 @@ const TeamFinanceSchema = new Schema<ITeamFinance>(
     memberId: { type: String, required: true, index: true },
     monthlySalary: { type: Number },
     totalPaid: { type: Number, default: 0 },
+    totalPayable: { type: Number, default: 0 },
+    paidAmount: { type: Number, default: 0 },
     lastPaymentDate: { type: Date },
     nextPaymentDate: { type: Date },
     pendingAmount: { type: Number, default: 0 },

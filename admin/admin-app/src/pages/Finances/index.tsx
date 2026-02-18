@@ -15,13 +15,46 @@ const Finances = () => {
   const [searchParams] = useSearchParams();
   const customerParam = searchParams.get('customer');
   const [showHelp, setShowHelp] = useState(false);
+  const [customersKey, setCustomersKey] = useState(0);
+  const [teamKey, setTeamKey] = useState(0);
+  const [expensesKey, setExpensesKey] = useState(0);
   const helpContent = getHelpContent('finances');
 
   const refreshStats = useCallback(() => {
     setStatsKey(prev => prev + 1);
   }, []);
 
+  const handleTabChange = useCallback((tabId: string) => {
+    // Refresh the active tab's data
+    if (tabId === 'customers') {
+      setCustomersKey(prev => prev + 1);
+    } else if (tabId === 'team') {
+      setTeamKey(prev => prev + 1);
+    } else if (tabId === 'expenses') {
+      setExpensesKey(prev => prev + 1);
+    }
+  }, []);
+
   const tabs: Tab[] = [
+    {
+      id: 'expenses',
+      label: 'Expenses',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+          />
+        </svg>
+      ),
+      content: (
+        <div className={styles.tableWrapper}>
+          <ExpensesTable key={expensesKey} />
+        </div>
+      ),
+    },
     {
       id: 'customers',
       label: 'Customers',
@@ -37,7 +70,7 @@ const Finances = () => {
       ),
       content: (
         <div className={styles.tableWrapper}>
-          <CustomersFinanceTable onDataChange={refreshStats} initialCustomerFilter={customerParam} />
+          <CustomersFinanceTable key={customersKey} onDataChange={refreshStats} initialCustomerFilter={customerParam} />
         </div>
       ),
     },
@@ -56,26 +89,7 @@ const Finances = () => {
       ),
       content: (
         <div className={styles.tableWrapper}>
-          <TeamFinanceTable />
-        </div>
-      ),
-    },
-    {
-      id: 'expenses',
-      label: 'Expenses',
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-          />
-        </svg>
-      ),
-      content: (
-        <div className={styles.tableWrapper}>
-          <ExpensesTable />
+          <TeamFinanceTable key={teamKey} />
         </div>
       ),
     },
@@ -85,7 +99,7 @@ const Finances = () => {
     <>
       <PageHeader onHelpClick={() => setShowHelp(true)} />
       <FinanceStats key={statsKey} />
-      <Tabs tabs={tabs} />
+      <Tabs tabs={tabs} onTabChange={handleTabChange} />
       {showHelp && helpContent && (
         <HelpPanel help={helpContent} onClose={() => setShowHelp(false)} />
       )}

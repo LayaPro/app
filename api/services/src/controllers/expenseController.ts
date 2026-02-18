@@ -1,9 +1,13 @@
 import { Request, Response } from 'express';
+import mongoose from 'mongoose';
 import { Expense } from '../models/expense';
 import Project from '../models/project';
 import Event from '../models/event';
+import ExpenseType from '../models/expenseType';
+import Team from '../models/team';
 import { nanoid } from 'nanoid';
 import { createModuleLogger } from '../utils/logger';
+import { updateTeamMemberPaidAmount } from '../utils/teamFinanceUtils';
 
 const logger = createModuleLogger('ExpenseController');
 
@@ -19,51 +23,124 @@ interface AuthRequest extends Request {
 // Create expense
 export const createExpense = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid();
+  const session = await mongoose.startSession();
+  session.startTransaction();
   
   try {
-    const { projectId, eventId, amount, comment, date, category, receiptUrl } = req.body;
+    const { expenseTypeId, projectId, eventId, memberId, amount, comment, date, category, receiptUrl } = req.body;
     const tenantId = req.user?.tenantId;
     const addedBy = req.user?.userId;
 
     if (!tenantId || !addedBy) {
+      await session.abortTransaction();
+      session.endSession();
       logger.error(`[${requestId}] Missing tenant or user info`);
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
+    if (!expenseTypeId) {
+      await session.abortTransaction();
+      session.endSession();
+      logger.error(`[${requestId}] Missing expense type`);
+      return res.status(400).json({ message: 'Expense type is required' });
+    }
+
+    // Validate expense type
+    const expenseType = await ExpenseType.findOne({ 
+      expenseTypeId, 
+      $or: [{ tenantId: '-1' }, { tenantId }],
+      isActive: true 
+    }).session(session);
+
+    if (!expenseType) {
+      await session.abortTransaction();
+      session.endSession();
+      logger.error(`[${requestId}] Invalid expense type`, { expenseTypeId });
+      return res.status(400).json({ message: 'Invalid expense type' });
+    }
+
+    // Validate required fields based on expense type
+    if (expenseType.requiresProject && !projectId) {
+      await session.abortTransaction();
+      session.endSession();
+      logger.error(`[${requestId}] Project required for expense type`, { expenseTypeId });
+      return res.status(400).json({ message: 'Project is required for this expense type' });
+    }
+
+    if (expenseType.requiresEvent && !eventId) {
+      await session.abortTransaction();
+      session.endSession();
+      logger.error(`[${requestId}] Event required for expense type`, { expenseTypeId });
+      return res.status(400).json({ message: 'Event is required for this expense type' });
+    }
+
+    if (expenseType.requiresMember && !memberId) {
+      await session.abortTransaction();
+      session.endSession();
+      logger.error(`[${requestId}] Member required for expense type`, { expenseTypeId });
+      return res.status(400).json({ message: 'Team member is required for this expense type' });
+    }
+
     if (!amount || amount <= 0) {
+      await session.abortTransaction();
+      session.endSession();
       logger.error(`[${requestId}] Invalid amount`);
       return res.status(400).json({ message: 'Amount must be greater than 0' });
     }
 
     if (!comment || !comment.trim()) {
+      await session.abortTransaction();
+      session.endSession();
       logger.error(`[${requestId}] Missing comment`);
       return res.status(400).json({ message: 'Comment is required' });
     }
 
     const expenseId = `exp_${nanoid()}`;
 
-    const expense = new Expense({
+    const [expense] = await Expense.create([{
       expenseId,
       tenantId,
+      expenseTypeId,
       projectId: projectId || undefined,
       eventId: eventId || undefined,
+      memberId: memberId || undefined,
       amount: parseFloat(amount),
       comment: comment.trim(),
       date: date ? new Date(date) : new Date(),
       addedBy,
-      category: category || 'general',
+      category: category || 'other',
       receiptUrl: receiptUrl || undefined,
-    });
-
-    await expense.save();
+    }], { session });
 
     logger.info(`[${requestId}] Expense created`, { expenseId, tenantId, amount });
+
+    // Update team member paid amount if this expense is a payment to a team member
+    // Any expense type that requires a member is considered a payment to them
+    if (memberId && expenseType.requiresMember) {
+      try {
+        await updateTeamMemberPaidAmount(memberId, tenantId, parseFloat(amount), session);
+        logger.info(`[${requestId}] Updated team member paid amount`, { memberId, amount, expenseType: expenseType.name });
+      } catch (payableError: any) {
+        await session.abortTransaction();
+        session.endSession();
+        logger.error(`[${requestId}] Failed to update paid amount`, { 
+          memberId, 
+          error: payableError.message 
+        });
+        return res.status(500).json({ message: 'Failed to update team finance', error: payableError.message });
+      }
+    }
+
+    await session.commitTransaction();
+    session.endSession();
 
     return res.status(201).json({
       message: 'Expense created successfully',
       expense,
     });
   } catch (error: any) {
+    await session.abortTransaction();
+    session.endSession();
     logger.error(`[${requestId}] Error creating expense:`, error);
     return res.status(500).json({ message: 'Failed to create expense', error: error.message });
   }
@@ -115,6 +192,8 @@ export const getAllExpenses = async (req: AuthRequest, res: Response) => {
       expenses.map(async (expense) => {
         let projectName = undefined;
         let eventName = undefined;
+        let expenseTypeName = undefined;
+        let memberName = undefined;
 
         if (expense.projectId) {
           const project = await Project.findOne({ projectId: expense.projectId }).lean();
@@ -126,10 +205,22 @@ export const getAllExpenses = async (req: AuthRequest, res: Response) => {
           eventName = event?.eventDesc || event?.eventCode;
         }
 
+        if (expense.expenseTypeId) {
+          const expenseType = await ExpenseType.findOne({ expenseTypeId: expense.expenseTypeId }).lean();
+          expenseTypeName = expenseType?.name;
+        }
+
+        if (expense.memberId) {
+          const member = await Team.findOne({ memberId: expense.memberId }).lean();
+          memberName = member ? `${member.firstName} ${member.lastName}` : undefined;
+        }
+
         return {
           ...expense,
           projectName,
           eventName,
+          expenseTypeName,
+          memberName,
         };
       })
     );
@@ -176,6 +267,8 @@ export const getExpenseById = async (req: AuthRequest, res: Response) => {
     // Populate project and event names
     let projectName = undefined;
     let eventName = undefined;
+    let expenseTypeName = undefined;
+    let memberName = undefined;
 
     if (expense.projectId) {
       const project = await Project.findOne({ projectId: expense.projectId }).lean();
@@ -187,10 +280,22 @@ export const getExpenseById = async (req: AuthRequest, res: Response) => {
       eventName = event?.eventDesc || event?.eventCode;
     }
 
+    if (expense.expenseTypeId) {
+      const expenseType = await ExpenseType.findOne({ expenseTypeId: expense.expenseTypeId }).lean();
+      expenseTypeName = expenseType?.name;
+    }
+
+    if (expense.memberId) {
+      const member = await Team.findOne({ memberId: expense.memberId }).lean();
+      memberName = member ? `${member.firstName} ${member.lastName}` : undefined;
+    }
+
     const enrichedExpense = {
       ...expense,
       projectName,
       eventName,
+      expenseTypeName,
+      memberName,
     };
 
     logger.info(`[${requestId}] Expense retrieved`, { expenseId });
@@ -222,10 +327,40 @@ export const updateExpense = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ message: 'Expense not found' });
     }
 
-    const { projectId, eventId, amount, comment, date, category, receiptUrl } = req.body;
+    const { expenseTypeId, projectId, eventId, memberId, amount, comment, date, category, receiptUrl } = req.body;
+
+    // If expenseTypeId is being updated, validate it and its requirements
+    if (expenseTypeId !== undefined) {
+      const expenseType = await ExpenseType.findOne({ 
+        expenseTypeId, 
+        $or: [{ tenantId: '-1' }, { tenantId }],
+        isActive: true 
+      });
+
+      if (!expenseType) {
+        logger.error(`[${requestId}] Invalid expense type`, { expenseTypeId });
+        return res.status(400).json({ message: 'Invalid expense type' });
+      }
+
+      // Validate required fields based on new expense type
+      if (expenseType.requiresProject && !projectId && !expense.projectId) {
+        return res.status(400).json({ message: 'Project is required for this expense type' });
+      }
+
+      if (expenseType.requiresEvent && !eventId && !expense.eventId) {
+        return res.status(400).json({ message: 'Event is required for this expense type' });
+      }
+
+      if (expenseType.requiresMember && !memberId && !expense.memberId) {
+        return res.status(400).json({ message: 'Team member is required for this expense type' });
+      }
+
+      expense.expenseTypeId = expenseTypeId;
+    }
 
     if (projectId !== undefined) expense.projectId = projectId || undefined;
     if (eventId !== undefined) expense.eventId = eventId || undefined;
+    if (memberId !== undefined) expense.memberId = memberId || undefined;
     if (amount !== undefined) {
       if (amount <= 0) {
         return res.status(400).json({ message: 'Amount must be greater than 0' });

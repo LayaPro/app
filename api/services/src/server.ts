@@ -42,6 +42,7 @@ import * as storageController from './controllers/storageController';
 import * as storageBreakdownController from './controllers/storageBreakdownController';
 import * as todoController from './controllers/todoController';
 import * as expenseController from './controllers/expenseController';
+import * as expenseTypeController from './controllers/expenseTypeController';
 import { NotificationController } from './controllers/notificationController';
 import auditLogController from './controllers/auditLogController';
 import { authenticate } from './middleware/auth';
@@ -219,6 +220,14 @@ app.get('/expenses/:expenseId', authenticate, expenseController.getExpenseById);
 app.put('/expenses/:expenseId', authenticate, requireAdmin, expenseController.updateExpense);
 app.delete('/expenses/:expenseId', authenticate, requireAdmin, expenseController.deleteExpense);
 app.get('/expenses/stats', authenticate, expenseController.getExpenseStats);
+
+// ---------- Expense Type routes ----------
+app.post('/expense-types', authenticate, requireAdmin, expenseTypeController.createExpenseType);
+app.get('/expense-types', authenticate, expenseTypeController.getAllExpenseTypes);
+app.get('/expense-types/:expenseTypeId', authenticate, expenseTypeController.getExpenseTypeById);
+app.put('/expense-types/:expenseTypeId', authenticate, requireAdmin, expenseTypeController.updateExpenseType);
+app.delete('/expense-types/:expenseTypeId', authenticate, requireAdmin, expenseTypeController.deleteExpenseType);
+app.post('/expense-types/seed', authenticate, requireAdmin, expenseTypeController.seedDefaultExpenseTypes);
 
 // ---------- Image routes ----------
 app.post('/create-image', authenticate, requireAdmin, imageController.createImage);

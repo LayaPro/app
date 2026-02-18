@@ -18,6 +18,7 @@ import { logAudit, auditEvents } from '../utils/auditLogger';
 
 import { NotificationUtils } from '../services/notificationUtils';
 import { sendProjectWelcomeEmail } from '../services/emailService';
+import { recalculateProjectTeamPayables } from '../utils/teamFinanceUtils';
 
 const logger = createModuleLogger('ProjectController');
 
@@ -286,6 +287,18 @@ export const createProject = async (req: AuthRequest, res: Response) => {
 
     logger.info(`[${requestId}] Project created`, { tenantId, projectId, projectName });
 
+    // Recalculate team payables for all assigned members
+    try {
+      await recalculateProjectTeamPayables(projectId, tenantId);
+      logger.info(`[${requestId}] Team payables recalculated for new project`, { projectId });
+    } catch (payableError: any) {
+      logger.error(`[${requestId}] Failed to recalculate team payables`, { 
+        projectId, 
+        error: payableError.message 
+      });
+      // Don't fail project creation if payable calculation fails
+    }
+
     // Audit log
     logAudit({
       action: auditEvents.TENANT_UPDATED,
@@ -527,6 +540,20 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
 
     logger.info(`[${requestId}] Project updated`, { tenantId, projectId });
 
+    // Recalculate team payables if team members were modified
+    if (updates.teamMembers || updates.events) {
+      try {
+        await recalculateProjectTeamPayables(projectId, tenantId);
+        logger.info(`[${requestId}] Team payables recalculated after project update`, { projectId });
+      } catch (payableError: any) {
+        logger.error(`[${requestId}] Failed to recalculate team payables`, { 
+          projectId, 
+          error: payableError.message 
+        });
+        // Don't fail project update if payable calculation fails
+      }
+    }
+
     // Audit log
     logAudit({
       action: auditEvents.TENANT_UPDATED,
@@ -584,9 +611,31 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
       s3ProjectFolderName: project.s3ProjectFolderName
     };
 
+    // Get team members before deleting
+    const teamMemberIds = project.teamMembers?.map((tm: any) => tm.memberId) || [];
+
     await Project.deleteOne({ projectId });
 
     logger.info(`[${requestId}] Project deleted`, { tenantId, projectId });
+
+    // Recalculate payables for all team members who were on this project
+    if (teamMemberIds.length > 0) {
+      try {
+        const { recalculateTeamMemberPayable } = require('../utils/teamFinanceUtils');
+        for (const memberId of teamMemberIds) {
+          await recalculateTeamMemberPayable(memberId, tenantId);
+        }
+        logger.info(`[${requestId}] Team payables recalculated after project deletion`, { 
+          projectId, 
+          memberCount: teamMemberIds.length 
+        });
+      } catch (payableError: any) {
+        logger.error(`[${requestId}] Failed to recalculate team payables`, { 
+          projectId, 
+          error: payableError.message 
+        });
+      }
+    }
 
     // Audit log
     logAudit({
@@ -856,6 +905,18 @@ export const createProjectWithDetails = async (req: AuthRequest, res: Response) 
       eventsCreated: createdEvents.length,
       financeCreated: !!projectFinance
     });
+
+    // Recalculate team payables for all assigned members (non-blocking)
+    try {
+      await recalculateProjectTeamPayables(projectId, tenantId);
+      logger.info(`[${requestId}] Team payables recalculated for new project`, { projectId });
+    } catch (payableError: any) {
+      logger.error(`[${requestId}] Failed to recalculate team payables`, { 
+        projectId, 
+        error: payableError.message 
+      });
+      // Don't fail project creation if payable calculation fails
+    }
 
     // Create todos for events without team members (non-blocking)
     if (createdEvents.length > 0) {
@@ -1183,6 +1244,18 @@ export const updateProjectWithDetails = async (req: AuthRequest, res: Response) 
       projectId,
       financeUpdated: !!projectFinance
     });
+
+    // Recalculate team payables for all assigned members (non-blocking)
+    try {
+      await recalculateProjectTeamPayables(projectId, tenantId);
+      logger.info(`[${requestId}] Team payables recalculated after project update`, { projectId });
+    } catch (payableError: any) {
+      logger.error(`[${requestId}] Failed to recalculate team payables`, { 
+        projectId, 
+        error: payableError.message 
+      });
+      // Don't fail project update if payable calculation fails
+    }
 
     // Create todos for newly added events (non-blocking)
     if (events) {

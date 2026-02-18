@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { teamApi, teamFinanceApi } from '../../../services/api';
+import { teamApi, teamFinanceApi, clientEventApi, expenseApi } from '../../../services/api';
 import { DataTable } from '../../../components/ui/DataTable';
 import type { Column } from '../../../components/ui/DataTable';
 import { Modal } from '../../../components/ui/Modal';
@@ -26,6 +26,8 @@ interface TeamFinance {
   memberId: string;
   monthlySalary?: number;
   totalPaid?: number;
+  totalPayable?: number; // Total amount owed to team member across all projects
+  paidAmount?: number; // Total already paid through expenses
   lastPaymentDate?: Date;
   nextPaymentDate?: Date;
   pendingAmount?: number;
@@ -45,10 +47,13 @@ interface TeamMemberWithFinance {
   paymentType?: string;
   salary?: string | number;
   finance?: TeamFinance;
+  projectCount?: number;
+  eventCount?: number;
 }
 
 export const TeamFinanceTable = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithFinance[]>([]);
+  const [expenses, setExpenses] = useState<any[]>([]);
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
   const [selectedMember, setSelectedMember] = useState<TeamMemberWithFinance | null>(null);
   const [transactionForm, setTransactionForm] = useState({
@@ -66,6 +71,7 @@ export const TeamFinanceTable = () => {
 
   useEffect(() => {
     fetchTeamMembersWithFinances();
+    fetchExpenses();
   }, []);
 
   useEffect(() => {
@@ -102,24 +108,49 @@ export const TeamFinanceTable = () => {
 
   const fetchTeamMembersWithFinances = async () => {
     try {
-      const [teamResponse, financeResponse] = await Promise.all([
+      const [teamResponse, financeResponse, eventsResponse] = await Promise.all([
         teamApi.getAll(),
-        teamFinanceApi.getAll()
+        teamFinanceApi.getAll(),
+        clientEventApi.getAll()
       ]);
 
       const membersData = teamResponse?.teamMembers || [];
       const financesData = financeResponse?.teamFinances || [];
+      const eventsData = eventsResponse?.clientEvents || [];
 
-      // Map finances to team members
-      const membersWithFinances = membersData.map((member: any) => ({
-        ...member,
-        finance: financesData.find((f: TeamFinance) => f.memberId === member.memberId)
-      }));
+      // Calculate project and event counts per member
+      const membersWithFinances = membersData.map((member: any) => {
+        // Find all events where this member is assigned
+        const memberEvents = eventsData.filter((event: any) => 
+          event.teamMembersAssigned && 
+          Array.isArray(event.teamMembersAssigned) && 
+          event.teamMembersAssigned.includes(member.memberId)
+        );
+        
+        // Count unique projects
+        const uniqueProjects = new Set(memberEvents.map((event: any) => event.projectId));
+        
+        return {
+          ...member,
+          finance: financesData.find((f: TeamFinance) => f.memberId === member.memberId),
+          projectCount: uniqueProjects.size,
+          eventCount: memberEvents.length
+        };
+      });
 
       setTeamMembers(membersWithFinances);
     } catch (error) {
       console.error('Error fetching team members with finances:', error);
       showToast('error', 'Failed to load finance data');
+    }
+  };
+
+  const fetchExpenses = async () => {
+    try {
+      const response = await expenseApi.getAll({ limit: 500 });
+      setExpenses(response.expenses || []);
+    } catch (error) {
+      console.error('Error fetching expenses:', error);
     }
   };
 
@@ -307,25 +338,44 @@ export const TeamFinanceTable = () => {
       }
     },
     {
-      key: 'totalPaid',
+      key: 'totalPayable',
       header: 'Total Payable',
       sortable: true,
       render: (row) => (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <span style={{ fontWeight: 600, color: '#059669' }}>
+            {formatCurrency(row.finance?.totalPayable)}
+          </span>
+          {(row.projectCount || row.eventCount) ? (
+            <span style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
+              {row.projectCount || 0} project{row.projectCount !== 1 ? 's' : ''} • {row.eventCount || 0} event{row.eventCount !== 1 ? 's' : ''}
+            </span>
+          ) : null}
+        </div>
+      )
+    },
+    {
+      key: 'paidAmount',
+      header: 'Paid Amount',
+      sortable: true,
+      render: (row) => (
         <span style={{ fontWeight: 600, color: '#1f2937' }}>
-          {formatCurrency(row.finance?.totalPaid)}
+          {formatCurrency(row.finance?.paidAmount)}
         </span>
       )
     },
     {
       key: 'pendingAmount',
-      header: 'Pending Payment',
+      header: 'Pending',
       sortable: true,
       render: (row) => {
-        const pending = row.finance?.pendingAmount || 0;
+        const totalPayable = row.finance?.totalPayable || 0;
+        const paidAmount = row.finance?.paidAmount || 0;
+        const pending = totalPayable - paidAmount;
         return (
           <span style={{ 
-            color: pending > 0 ? '#dc2626' : '#6b7280',
-            fontWeight: pending > 0 ? 600 : 400
+            color: pending > 0 ? '#dc2626' : pending < 0 ? '#059669' : '#6b7280',
+            fontWeight: pending !== 0 ? 600 : 400
           }}>
             {formatCurrency(pending)}
           </span>
@@ -420,65 +470,18 @@ export const TeamFinanceTable = () => {
       (a, b) => new Date(b.datetime).getTime() - new Date(a.datetime).getTime()
     );
 
+    // Filter expenses for this member
+    const memberExpenses = expenses.filter(exp => exp.memberId === member.memberId);
+    const sortedExpenses = [...memberExpenses].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+
     return (
       <div style={{ 
-        background: 'linear-gradient(to bottom, #f9fafb, #ffffff)',
-        borderRadius: '0.5rem',
-        overflow: 'hidden'
+        padding: '0',
+        background: 'var(--bg-secondary)',
       }}>
-        {/* Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          padding: '0.5rem 1rem',
-          borderBottom: '1px solid #e5e7eb'
-        }}>
-          <h3 style={{
-            fontSize: '0.875rem',
-            fontWeight: 700,
-            color: '#1f2937',
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-            margin: 0
-          }}>
-            Transactions
-          </h3>
-          <button
-            onClick={() => handleOpenModal(member)}
-            style={{
-              padding: '0.375rem 0.75rem',
-              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-              color: 'white',
-              border: 'none',
-              borderRadius: '0.375rem',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-            }}
-          >
-            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Make Payment
-          </button>
-        </div>
-
-        {/* Transactions List */}
-        {sortedTransactions.length === 0 ? (
-          <div style={{
-            padding: '2rem',
-            textAlign: 'center',
-            color: '#9ca3af',
-            fontSize: '0.875rem'
-          }}>
-            No transactions yet
-          </div>
-        ) : (
+        {sortedTransactions.length > 0 && (
           <div style={{ padding: '0.5rem' }}>
             {/* Table Header */}
             <div style={{
@@ -580,6 +583,146 @@ export const TeamFinanceTable = () => {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* Expenses Section */}
+        <div style={{
+          padding: '0.25rem 1.5rem 0',
+          borderTop: sortedTransactions.length > 0 ? '1px solid var(--border-color)' : 'none'
+        }}>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '0.375rem'
+          }}>
+            <svg width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" style={{ color: 'var(--color-primary)' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+            </svg>
+            <h3 style={{ 
+              margin: 0, 
+              fontSize: '0.75rem', 
+              fontWeight: 600, 
+              color: 'var(--text-secondary)',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em'
+            }}>
+              Expense Payments
+            </h3>
+            <span style={{
+              marginLeft: 'auto',
+              padding: '0.125rem 0.5rem',
+              background: 'var(--color-primary)',
+              color: 'white',
+              fontSize: '0.6875rem',
+              fontWeight: 600,
+              borderRadius: '9999px'
+            }}>
+              {sortedExpenses.length}
+            </span>
+          </div>
+        </div>
+        
+        {sortedExpenses.length === 0 ? (
+          <div style={{ 
+            padding: '2rem 1.5rem', 
+            textAlign: 'center',
+            color: 'var(--text-tertiary)'
+          }}>
+            <svg width="32" height="32" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24" style={{ margin: '0 auto 0.5rem', opacity: 0.5 }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
+            </svg>
+            <p style={{ margin: 0, fontSize: '0.8125rem', fontWeight: 500 }}>No expenses yet</p>
+          </div>
+        ) : (
+          <div style={{ padding: '0.25rem 1.5rem 0.5rem' }}>
+            <div style={{ 
+              background: 'var(--bg-primary)',
+              borderRadius: '0.375rem',
+              overflow: 'hidden',
+              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+              border: '1px solid var(--border-color)'
+            }}>
+              {sortedExpenses.map((expense, index) => (
+                <div 
+                  key={expense.expenseId} 
+                  style={{ 
+                    display: 'grid',
+                    gridTemplateColumns: '1.75fr 1fr 1fr 2fr',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.75rem',
+                    borderBottom: index < sortedExpenses.length - 1 ? '1px solid var(--border-color)' : 'none',
+                    transition: 'background 0.15s',
+                    background: 'var(--bg-primary)'
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.background = 'var(--bg-primary)'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <div style={{
+                      width: '1.75rem',
+                      height: '1.75rem',
+                      borderRadius: '0.375rem',
+                      background: 'rgba(239, 68, 68, 0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0
+                    }}>
+                      <svg width="14" height="14" fill="none" stroke="#ef4444" strokeWidth="2.5" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5v-15m0 0l-6.75 6.75M12 4.5l6.75 6.75" />
+                      </svg>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '0.0625rem' }}>
+                        {new Date(expense.date).toLocaleDateString('en-IN', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </div>
+                      <div style={{ fontSize: '0.6875rem', color: 'var(--text-secondary)' }}>
+                        {expense.expenseTypeName || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ 
+                      fontSize: '0.8125rem', 
+                      fontWeight: 700, 
+                      color: '#ef4444'
+                    }}>
+                      - ₹{expense.amount.toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ 
+                      fontSize: '0.6875rem', 
+                      color: 'var(--text-secondary)',
+                      fontWeight: 500
+                    }}>
+                      {expense.projectName || '—'}
+                    </div>
+                  </div>
+                  
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <div style={{ 
+                      fontSize: '0.75rem', 
+                      color: expense.comment ? '#475569' : '#94a3b8',
+                      fontStyle: expense.comment ? 'normal' : 'italic',
+                      lineHeight: '1.4',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {expense.comment || 'No comment'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
