@@ -1,6 +1,7 @@
 import type { CalendarView } from '../../../utils/calendar';
 import { formatDateString } from '../../../utils/calendar';
 import { DatePicker } from '../../../components/ui/DatePicker';
+import { SearchableSelect } from '../../../components/ui/SearchableSelect';
 import styles from '../Calendar.module.css';
 
 interface CalendarHeaderProps {
@@ -13,6 +14,9 @@ interface CalendarHeaderProps {
   onToday: () => void;
   onMonthChange: (date: Date) => void;
   onNewEvent: () => void;
+  memberOptions?: Array<{ value: string; label: string }>;
+  selectedMemberId?: string;
+  onMemberChange?: (id: string) => void;
 }
 
 export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
@@ -25,6 +29,9 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   onToday,
   onMonthChange,
   onNewEvent,
+  memberOptions,
+  selectedMemberId,
+  onMemberChange,
 }) => {
   const handleDateChange = (dateStr: string) => {
     if (dateStr) {
@@ -36,32 +43,39 @@ export const CalendarHeader: React.FC<CalendarHeaderProps> = ({
   return (
     <div style={{ marginBottom: '1.5rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-        {/* View Switcher */}
-        <div className={styles.viewSwitcher}>
-          <button
-            className={`${styles.viewButton} ${currentView === 'list' ? styles.active : ''}`}
-            onClick={() => onViewChange('list')}
-          >
-            List
-          </button>
-          <button
-            className={`${styles.viewButton} ${currentView === 'month' ? styles.active : ''}`}
-            onClick={() => onViewChange('month')}
-          >
-            Month
-          </button>
-          <button
-            className={`${styles.viewButton} ${currentView === 'week' ? styles.active : ''}`}
-            onClick={() => onViewChange('week')}
-          >
-            Week
-          </button>
-          <button
-            className={`${styles.viewButton} ${currentView === 'day' ? styles.active : ''}`}
-            onClick={() => onViewChange('day')}
-          >
-            Day
-          </button>
+        {/* Left group: view switcher + member filter */}
+        <div className={styles.listFilters}>
+          <div className={styles.viewSwitcher}>
+            <button
+              className={`${styles.viewButton} ${currentView === 'month' ? styles.active : ''}`}
+              onClick={() => onViewChange('month')}
+            >
+              Month
+            </button>
+            <button
+              className={`${styles.viewButton} ${currentView === 'week' ? styles.active : ''}`}
+              onClick={() => onViewChange('week')}
+            >
+              Week
+            </button>
+            <button
+              className={`${styles.viewButton} ${currentView === 'day' ? styles.active : ''}`}
+              onClick={() => onViewChange('day')}
+            >
+              Day
+            </button>
+          </div>
+
+          {memberOptions && memberOptions.length > 1 && (
+            <div className={styles.filterField}>
+              <SearchableSelect
+                value={selectedMemberId || ''}
+                onChange={(v) => onMemberChange?.(v)}
+                options={memberOptions}
+                placeholder="All team members"
+              />
+            </div>
+          )}
         </div>
 
         {/* New Event Button */}

@@ -98,6 +98,17 @@
   text-align: left;
 }
 
+.compact {
+  padding: 9px 10px !important;
+  font-size: 13px !important;
+  gap: 8px !important;
+}
+
+.compact .calendarIcon {
+  width: 16px;
+  height: 16px;
+}
+
 .dateButton:hover {
   border-color: rgb(99, 102, 241);
 }
@@ -125,10 +136,16 @@
 .selectedText {
   color: var(--text-primary);
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .placeholder {
   color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .dropdown {

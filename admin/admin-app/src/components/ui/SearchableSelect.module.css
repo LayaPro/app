@@ -110,6 +110,12 @@
   line-height: 1.5;
 }
 
+.compact {
+  padding: 7px 10px !important;
+  font-size: 13px !important;
+  line-height: 1.4 !important;
+}
+
 .selectButton:hover {
   border-color: var(--color-primary);
 }

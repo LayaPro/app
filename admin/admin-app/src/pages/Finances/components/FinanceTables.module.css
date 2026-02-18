@@ -139,6 +139,15 @@
   stroke-width: 2;
 }
 
+.actionsDropdownItemDanger {
+  color: #dc2626;
+}
+
+.actionsDropdownItemDanger:hover {
+  background: rgba(220, 38, 38, 0.08);
+  color: #dc2626;
+}
+
 .statusFilterSelect {
   min-width: 220px;
 }

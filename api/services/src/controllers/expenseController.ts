@@ -158,12 +158,20 @@ export const getAllExpenses = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: 'Unauthorized' });
     }
 
-    const { projectId, startDate, endDate, page = '1', limit = '50' } = req.query;
+    const { projectId, startDate, endDate, memberId, expenseTypeId, page = '1', limit = '50' } = req.query;
 
     const query: any = { tenantId };
 
     if (projectId) {
       query.projectId = projectId;
+    }
+
+    if (memberId) {
+      query.memberId = memberId;
+    }
+
+    if (expenseTypeId) {
+      query.expenseTypeId = expenseTypeId;
     }
 
     if (startDate || endDate) {

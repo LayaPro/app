@@ -33,6 +33,7 @@ interface DataTableProps<T> {
   // Controlled search props
   searchValue?: string;
   onSearchChange?: (value: string) => void;
+  hideSearch?: boolean;
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -63,6 +64,7 @@ export function DataTable<T extends Record<string, any>>({
   onSearchChange,
   title,
   titleIcon,
+  hideSearch = false,
 }: DataTableProps<T>) {
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<{ key: string; direction: 'asc' | 'desc' } | null>(null);
@@ -182,36 +184,40 @@ export function DataTable<T extends Record<string, any>>({
             {title}
           </h2>
         )}
-        <div className={styles.toolbarLeft}>
-          <div className={styles.searchContainer}>
-            <svg className={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search..."
-              value={activeSearchTerm}
-              onChange={(e) => {
-                handleSearchChange(e.target.value);
-                if (!serverSide) {
-                  setCurrentPage(1);
-                }
-              }}
-              className={styles.searchInput}
-            />
-            {activeSearchTerm && (
-              <button
-                onClick={() => handleSearchChange('')}
-                className={styles.clearButton}
-              >
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        {(!hideSearch || customFilters) && (
+          <div className={styles.toolbarLeft}>
+            {!hideSearch && (
+              <div className={styles.searchContainer}>
+                <svg className={styles.searchIcon} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
-              </button>
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  value={activeSearchTerm}
+                  onChange={(e) => {
+                    handleSearchChange(e.target.value);
+                    if (!serverSide) {
+                      setCurrentPage(1);
+                    }
+                  }}
+                  className={styles.searchInput}
+                />
+                {activeSearchTerm && (
+                  <button
+                    onClick={() => handleSearchChange('')}
+                    className={styles.clearButton}
+                  >
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
             )}
+            {customFilters}
           </div>
-          {customFilters}
-        </div>
+        )}
         
         {customActions}
         

@@ -23,6 +23,8 @@ import FinancesCustomers from './pages/Finances/FinancesCustomers.js';
 import FinancesTeamMembers from './pages/Finances/FinancesTeamMembers.js';
 import FinancesExpenses from './pages/Finances/FinancesExpenses.js';
 import Calendar from './pages/Calendar/index.js';
+import EventsList from './pages/Calendar/EventsList.js';
+import EventsCalendar from './pages/Calendar/EventsCalendar.js';
 import Statistics from './pages/Statistics/index.js';
 import Settings from './pages/Settings/index.js';
 import AuditTrail from './pages/AuditTrail/index.js';
@@ -185,6 +187,8 @@ function App() {
           </Route>
           
           <Route path={ROUTES.CALENDAR} element={<Calendar />} />
+          <Route path={ROUTES.CALENDAR_EVENTS_LIST} element={<EventsList />} />
+          <Route path={ROUTES.CALENDAR_EVENTS_CALENDAR} element={<EventsCalendar />} />
           <Route path={ROUTES.STATISTICS} element={<Statistics />} />
           
           {/* Access Control routes */}

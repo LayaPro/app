@@ -273,7 +273,11 @@ export const getAllTeamMembers = async (req: AuthRequest, res: Response) => {
   const requestId = nanoid(8);
   const tenantId = req.user?.tenantId;
 
-  logger.info(`[${requestId}] Fetching all team members`, { tenantId });
+  const page = parseInt(req.query.page as string) || 1;
+  const limit = parseInt(req.query.limit as string) || 0; // 0 = no limit (all)
+  const memberId = req.query.memberId as string | undefined;
+
+  logger.info(`[${requestId}] Fetching all team members`, { tenantId, page, limit, memberId });
 
   try {
     if (!tenantId) {
@@ -281,8 +285,18 @@ export const getAllTeamMembers = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ message: 'Tenant ID is required' });
     }
 
+    const query: Record<string, any> = { tenantId };
+    if (memberId) query.memberId = memberId;
+
+    const totalItems = await Team.countDocuments(query);
+
+    let dbQuery = Team.find(query).sort({ createdAt: -1 });
+    if (limit > 0) {
+      dbQuery = dbQuery.skip((page - 1) * limit).limit(limit) as typeof dbQuery;
+    }
+
     // Get all team members for this tenant
-    const teamMembers = await Team.find({ tenantId }).sort({ createdAt: -1 }).lean();
+    const teamMembers = await dbQuery.lean();
 
     logger.debug(`[${requestId}] Found ${teamMembers.length} team members`);
 
@@ -324,7 +338,13 @@ export const getAllTeamMembers = async (req: AuthRequest, res: Response) => {
     return res.status(200).json({
       message: 'Team members retrieved successfully',
       count: teamMembersWithProfiles.length,
-      teamMembers: teamMembersWithProfiles
+      teamMembers: teamMembersWithProfiles,
+      pagination: limit > 0 ? {
+        currentPage: page,
+        totalPages: Math.ceil(totalItems / limit),
+        totalItems,
+        itemsPerPage: limit,
+      } : null,
     });
   } catch (err: any) {
     logger.error(`[${requestId}] Get all team members failed`, {

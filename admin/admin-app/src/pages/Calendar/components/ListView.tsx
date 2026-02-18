@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import type { ClientEvent } from '@/types/shared';
 import { DataTable } from '../../../components/ui/DataTable';
@@ -11,19 +11,19 @@ import styles from '../Calendar.module.css';
 import badgeStyles from './ListView.module.css';
 
 interface ListViewProps {
-  events: ClientEvent[];
   eventTypes: Map<string, { eventDesc: string; eventAlias?: string }>;
-  projects: Map<string, { projectName: string; displayPic?: string }>;
+  projects: Map<string, { projectName: string; displayPic?: string; brideFirstName?: string; brideLastName?: string; groomFirstName?: string; groomLastName?: string; contactPerson?: string }>;
   teamMembers: Map<string, { firstName: string; lastName: string }>;
   eventDeliveryStatuses: Map<string, { statusCode: string; statusDescription: string; step: number }>;
   onEventClick: (event: ClientEvent) => void;
   onEventDelete?: (eventId: string) => void;
   onStatusChange?: () => void;
+  onAddEvent?: () => void;
   initialProjectFilter?: string;
+  refreshKey?: number;
 }
 
 export const ListView: React.FC<ListViewProps> = ({
-  events,
   eventTypes,
   projects,
   teamMembers,
@@ -31,15 +31,67 @@ export const ListView: React.FC<ListViewProps> = ({
   onEventClick,
   onEventDelete,
   onStatusChange,
+  onAddEvent,
   initialProjectFilter = '',
+  refreshKey,
 }) => {
-  const [searchTerm] = useState('');
-  const [selectedPeople] = useState<string[]>([]);
+  const ITEMS_PER_PAGE = 10;
+  const [events, setEvents] = useState<ClientEvent[]>([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
   const [selectedProject, setSelectedProject] = useState(initialProjectFilter);
+  const [selectedMember, setSelectedMember] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selectedEventType, setSelectedEventType] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+
+  const fetchEvents = useCallback(async (
+    page: number,
+    projectId = '',
+    memberId = '',
+    eventTypeId = '',
+    statusId = '',
+    from = '',
+    to = '',
+  ) => {
+    setEventsLoading(true);
+    try {
+      const res = await clientEventApi.getAll({
+        page,
+        limit: ITEMS_PER_PAGE,
+        projectId: projectId || undefined,
+        memberId: memberId || undefined,
+        eventTypeId: eventTypeId || undefined,
+        statusId: statusId || undefined,
+        dateFrom: from || undefined,
+        dateTo: to || undefined,
+      });
+      setEvents(res.clientEvents || []);
+      setCurrentPage(res.pagination?.currentPage ?? page);
+      setTotalPages(res.pagination?.totalPages ?? 1);
+      setTotalItems(res.pagination?.totalItems ?? 0);
+    } catch (err) {
+      console.error('Error fetching events:', err);
+    } finally {
+      setEventsLoading(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    fetchEvents(1, initialProjectFilter);
+  }, []);
+
+  // Refresh trigger from parent (after create/edit)
+  useEffect(() => {
+    if (refreshKey !== undefined && refreshKey > 0) {
+      fetchEvents(1, selectedProject, selectedMember, selectedEventType, selectedStatus, dateFrom, dateTo);
+      setCurrentPage(1);
+    }
+  }, [refreshKey]);
   const [openActionDropdown, setOpenActionDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; right: number } | null>(null);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -81,88 +133,20 @@ export const ListView: React.FC<ListViewProps> = ({
   };
 
   const confirmDelete = async () => {
-    if (!eventToDelete || !onEventDelete) return;
+    if (!eventToDelete) return;
 
     try {
       setIsDeleting(true);
-      onEventDelete(eventToDelete.clientEventId);
+      await clientEventApi.delete(eventToDelete.clientEventId);
+      if (onEventDelete) onEventDelete(eventToDelete.clientEventId);
       setEventToDelete(null);
+      fetchEvents(currentPage, selectedProject, selectedMember, selectedEventType, selectedStatus, dateFrom, dateTo);
     } catch (error) {
       console.error('Error deleting event:', error);
     } finally {
       setIsDeleting(false);
     }
   };
-
-  // Filter events
-  const filteredEvents = useMemo(() => {
-    let filtered = [...events];
-
-    // Search filter
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter((event) => {
-        const eventType = eventTypes.get(event.eventId);
-        const eventTypeName = (eventType?.eventDesc || '').toLowerCase();
-        const venue = (event.venue || '').toLowerCase();
-        const city = (event.city || '').toLowerCase();
-        const notes = (event.notes || '').toLowerCase();
-        
-        return (
-          eventTypeName.includes(searchLower) ||
-          venue.includes(searchLower) ||
-          city.includes(searchLower) ||
-          notes.includes(searchLower)
-        );
-      });
-    }
-
-    // People filter
-    if (selectedPeople.length > 0) {
-      filtered = filtered.filter((event) =>
-        event.teamMembersAssigned?.some((memberId) => selectedPeople.includes(memberId))
-      );
-    }
-
-    // Project filter
-    if (selectedProject) {
-      filtered = filtered.filter((event) => event.projectId === selectedProject);
-    }
-
-    // Date range filter
-    if (dateFrom) {
-      const fromDate = new Date(dateFrom);
-      filtered = filtered.filter(
-        (event) => event.fromDatetime && new Date(event.fromDatetime) >= fromDate
-      );
-    }
-    if (dateTo) {
-      const toDate = new Date(dateTo);
-      toDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(
-        (event) => event.fromDatetime && new Date(event.fromDatetime) <= toDate
-      );
-    }
-
-    // Event type filter
-    if (selectedEventType) {
-      filtered = filtered.filter((event) => event.eventId === selectedEventType);
-    }
-
-    // Status filter
-    if (selectedStatus) {
-      filtered = filtered.filter((event) => event.eventDeliveryStatusId === selectedStatus);
-    }
-
-    // Sort by date (ascending)
-    filtered.sort((a, b) => {
-      const dateA = a.fromDatetime ? new Date(a.fromDatetime).getTime() : 0;
-      const dateB = b.fromDatetime ? new Date(b.fromDatetime).getTime() : 0;
-      return dateA - dateB;
-    });
-
-    return filtered;
-  }, [events, searchTerm, selectedPeople, selectedProject, dateFrom, dateTo, selectedEventType, selectedStatus, eventTypes]);
 
   // Define table columns
   const columns: Column<ClientEvent>[] = [
@@ -211,6 +195,14 @@ export const ListView: React.FC<ListViewProps> = ({
           .slice(0, 2)
           .join('');
         const colors = getAvatarColors(projectName);
+        const brideName = project?.brideFirstName && project?.brideLastName
+          ? `${project.brideFirstName} ${project.brideLastName}`
+          : project?.brideFirstName || '';
+        const groomName = project?.groomFirstName && project?.groomLastName
+          ? `${project.groomFirstName} ${project.groomLastName}`
+          : project?.groomFirstName || '';
+        const clientName = project?.contactPerson ||
+          (brideName && groomName ? `${brideName} & ${groomName}` : brideName || groomName || '');
         return (
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             {project?.displayPic ? (
@@ -232,7 +224,12 @@ export const ListView: React.FC<ListViewProps> = ({
                 {initials}
               </div>
             )}
-            <span>{projectName}</span>
+            <div>
+              <div style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{projectName}</div>
+              {clientName && (
+                <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{clientName}</div>
+              )}
+            </div>
           </div>
         );
       }
@@ -525,13 +522,16 @@ export const ListView: React.FC<ListViewProps> = ({
 
   const handleClearFilters = () => {
     setSelectedProject('');
+    setSelectedMember('');
     setSelectedEventType('');
     setDateFrom('');
     setDateTo('');
     setSelectedStatus('');
+    fetchEvents(1, '', '', '', '', '', '');
+    setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedProject || selectedEventType || dateFrom || dateTo || selectedStatus;
+  const hasActiveFilters = selectedProject || selectedMember || selectedEventType || dateFrom || dateTo || selectedStatus;
 
   // Get available next status for an event
   const getNextAvailableStatus = (currentStatusId: string | undefined) => {
@@ -588,10 +588,8 @@ export const ListView: React.FC<ListViewProps> = ({
       setSelectedEventForStatus(null);
       setNewStatusId('');
       
-      // Refresh the events list
-      if (onStatusChange) {
-        onStatusChange();
-      }
+      // Refresh events
+      fetchEvents(currentPage, selectedProject, selectedMember, selectedEventType, selectedStatus, dateFrom, dateTo);
     } catch (error) {
       console.error('Error updating status:', error);
       setStatusError('Failed to update status. Please try again.');
@@ -604,17 +602,32 @@ export const ListView: React.FC<ListViewProps> = ({
     <div className={styles.listView}>
       <DataTable
         columns={columns}
-        data={filteredEvents}
-        itemsPerPage={15}
+        data={events}
+        itemsPerPage={ITEMS_PER_PAGE}
         emptyMessage="No events found matching your filters"
         getRowKey={(event) => event.clientEventId}
         onRowClick={(event) => {
           setSelectedEventForView(event);
           setViewModalOpen(true);
         }}
-        customFilters={
-          <div className={styles.listFilters}>
-            <div className={styles.filterField}>
+        title="Events"
+        titleIcon={
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        }
+        hideSearch
+        serverSide
+        currentPage={currentPage}
+        totalPages={totalPages}
+        totalItems={totalItems}
+        onPageChange={(page) => {
+          setCurrentPage(page);
+          fetchEvents(page, selectedProject, selectedMember, selectedEventType, selectedStatus, dateFrom, dateTo);
+        }}
+        customActions={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ width: '140px' }}>
               <SearchableSelect
                 options={[
                   { value: '', label: 'All Projects' },
@@ -624,12 +637,35 @@ export const ListView: React.FC<ListViewProps> = ({
                   }))
                 ]}
                 value={selectedProject}
-                onChange={setSelectedProject}
+                onChange={(v) => {
+                  setSelectedProject(v);
+                  setCurrentPage(1);
+                  fetchEvents(1, v, selectedMember, selectedEventType, selectedStatus, dateFrom, dateTo);
+                }}
                 placeholder="All Projects"
+                compact
               />
             </div>
-
-            <div className={styles.filterField}>
+            <div style={{ width: '140px' }}>
+              <SearchableSelect
+                options={[
+                  { value: '', label: 'All Members' },
+                  ...Array.from(teamMembers.entries()).map(([memberId, member]) => ({
+                    value: memberId,
+                    label: `${member.firstName} ${member.lastName}`
+                  }))
+                ]}
+                value={selectedMember}
+                onChange={(v) => {
+                  setSelectedMember(v);
+                  setCurrentPage(1);
+                  fetchEvents(1, selectedProject, v, selectedEventType, selectedStatus, dateFrom, dateTo);
+                }}
+                placeholder="All Members"
+                compact
+              />
+            </div>
+            <div style={{ width: '140px' }}>
               <SearchableSelect
                 options={[
                   { value: '', label: 'All Event Types' },
@@ -639,12 +675,16 @@ export const ListView: React.FC<ListViewProps> = ({
                   }))
                 ]}
                 value={selectedEventType}
-                onChange={setSelectedEventType}
-                placeholder="All Event Types"
+                onChange={(v) => {
+                  setSelectedEventType(v);
+                  setCurrentPage(1);
+                  fetchEvents(1, selectedProject, selectedMember, v, selectedStatus, dateFrom, dateTo);
+                }}
+                placeholder="All Types"
+                compact
               />
             </div>
-
-            <div className={styles.filterField}>
+            <div style={{ width: '140px' }}>
               <SearchableSelect
                 options={[
                   { value: '', label: 'All Statuses' },
@@ -654,31 +694,43 @@ export const ListView: React.FC<ListViewProps> = ({
                   }))
                 ]}
                 value={selectedStatus}
-                onChange={setSelectedStatus}
+                onChange={(v) => {
+                  setSelectedStatus(v);
+                  setCurrentPage(1);
+                  fetchEvents(1, selectedProject, selectedMember, selectedEventType, v, dateFrom, dateTo);
+                }}
                 placeholder="All Statuses"
+                compact
               />
             </div>
-
-            <div className={styles.filterField}>
+            <div style={{ width: '160px' }}>
               <DatePicker
                 value={dateFrom}
-                onChange={setDateFrom}
+                onChange={(v) => {
+                  setDateFrom(v);
+                  setCurrentPage(1);
+                  fetchEvents(1, selectedProject, selectedMember, selectedEventType, selectedStatus, v, dateTo);
+                }}
                 placeholder="From Date"
                 includeTime={false}
                 allowPast={true}
+                compact
               />
             </div>
-
-            <div className={styles.filterField}>
+            <div style={{ width: '160px' }}>
               <DatePicker
                 value={dateTo}
-                onChange={setDateTo}
+                onChange={(v) => {
+                  setDateTo(v);
+                  setCurrentPage(1);
+                  fetchEvents(1, selectedProject, selectedMember, selectedEventType, selectedStatus, dateFrom, v);
+                }}
                 placeholder="To Date"
                 includeTime={false}
                 allowPast={true}
+                compact
               />
             </div>
-
             {hasActiveFilters && (
               <button
                 className={styles.quickClearButton}
@@ -690,6 +742,12 @@ export const ListView: React.FC<ListViewProps> = ({
                 </svg>
               </button>
             )}
+            <Button variant="primary" onClick={onAddEvent}>
+              <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ marginRight: '6px' }}>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Add Event
+            </Button>
           </div>
         }
       />

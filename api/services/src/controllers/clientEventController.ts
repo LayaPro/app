@@ -530,53 +530,99 @@ export const getAllClientEvents = async (req: AuthRequest, res: Response) => {
 
     const isAdmin = roleName === 'Admin';
 
-    let clientEvents;
+    // Pagination
+    const pageNum = parseInt(req.query.page as string) || 1;
+    const limitNum = parseInt(req.query.limit as string) || 0; // 0 = no limit (backward compat)
+
+    // Filters
+    const filterProjectId = req.query.projectId as string | undefined;
+    const filterMemberId = req.query.memberId as string | undefined;
+    const filterEventTypeId = req.query.eventTypeId as string | undefined;
+    const filterStatusId = req.query.statusId as string | undefined;
+    const filterDateFrom = req.query.dateFrom as string | undefined;
+    const filterDateTo = req.query.dateTo as string | undefined;
+
+    // Build base access query
+    let baseQuery: any;
     if (isAdmin) {
-      // Admin sees all events in their tenant
-      clientEvents = await ClientEvent.find({ tenantId }).sort({ createdAt: -1 }).lean();
+      baseQuery = { tenantId };
     } else {
-      // Find the user's team member ID
       const teamMember = await Team.findOne({ userId, tenantId }).lean();
-      
-      // Non-admin users see events where they are:
-      // 1. Assigned as team members, OR
-      // 2. Assigned as album editor (by userId or memberId), OR
-      // 3. Assigned as album designer (by userId or memberId)
-      const query: any = {
-        tenantId,
-        $or: [
-          { albumEditor: userId },
-          { albumDesigner: userId }
-        ]
-      };
-      
-      // Add conditions for memberId if user is a team member
+      const accessOr: any[] = [
+        { albumEditor: userId },
+        { albumDesigner: userId },
+      ];
       if (teamMember) {
         const memberId = teamMember.memberId;
-        query.$or.push({ teamMembersAssigned: memberId });
-        query.$or.push({ albumEditor: memberId });
-        query.$or.push({ albumDesigner: memberId });
+        accessOr.push({ teamMembersAssigned: memberId });
+        accessOr.push({ albumEditor: memberId });
+        accessOr.push({ albumDesigner: memberId });
       }
-      
-      clientEvents = await ClientEvent.find(query).sort({ createdAt: -1 }).lean();
+      baseQuery = { tenantId, $or: accessOr };
     }
 
-    logger.info(`[${requestId}] Client events retrieved`, { 
-      tenantId,
-      count: clientEvents.length,
-      isAdmin 
-    });
+    // Build filter conditions
+    const filterConditions: any = {};
+    if (filterProjectId) filterConditions.projectId = filterProjectId;
+    if (filterEventTypeId) filterConditions.eventId = filterEventTypeId;
+    if (filterStatusId) filterConditions.eventDeliveryStatusId = filterStatusId;
+    if (filterMemberId) {
+      filterConditions.$or = [
+        { teamMembersAssigned: filterMemberId },
+        { albumEditor: filterMemberId },
+        { albumDesigner: filterMemberId },
+      ];
+    }
+    if (filterDateFrom || filterDateTo) {
+      filterConditions.fromDatetime = {};
+      if (filterDateFrom) filterConditions.fromDatetime.$gte = new Date(filterDateFrom);
+      if (filterDateTo) {
+        const toDate = new Date(filterDateTo);
+        toDate.setHours(23, 59, 59, 999);
+        filterConditions.fromDatetime.$lte = toDate;
+      }
+    }
 
-    return res.status(200).json({
-      message: 'Client events retrieved successfully',
-      count: clientEvents.length,
-      clientEvents
-    });
+    const hasFilters = Object.keys(filterConditions).length > 0;
+    const finalQuery = hasFilters ? { $and: [baseQuery, filterConditions] } : baseQuery;
+
+    if (limitNum > 0) {
+      // Paginated response
+      const skip = (pageNum - 1) * limitNum;
+      const [clientEvents, totalCount] = await Promise.all([
+        ClientEvent.find(finalQuery).sort({ fromDatetime: 1 }).skip(skip).limit(limitNum).lean(),
+        ClientEvent.countDocuments(finalQuery),
+      ]);
+
+      logger.info(`[${requestId}] Client events retrieved (paginated)`, { tenantId, page: pageNum, limit: limitNum, totalCount });
+
+      return res.status(200).json({
+        message: 'Client events retrieved successfully',
+        clientEvents,
+        pagination: {
+          currentPage: pageNum,
+          totalPages: Math.ceil(totalCount / limitNum),
+          totalItems: totalCount,
+          itemsPerPage: limitNum,
+        },
+      });
+    } else {
+      // Non-paginated (backward compatibility)
+      const clientEvents = await ClientEvent.find(finalQuery).sort({ createdAt: -1 }).lean();
+
+      logger.info(`[${requestId}] Client events retrieved`, { tenantId, count: clientEvents.length, isAdmin });
+
+      return res.status(200).json({
+        message: 'Client events retrieved successfully',
+        count: clientEvents.length,
+        clientEvents,
+      });
+    }
   } catch (err: any) {
-    logger.error(`[${requestId}] Error fetching client events`, { 
+    logger.error(`[${requestId}] Error fetching client events`, {
       tenantId,
       error: err.message,
-      stack: err.stack 
+      stack: err.stack,
     });
     return res.status(500).json({ message: 'Internal server error' });
   }

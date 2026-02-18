@@ -55,8 +55,12 @@ interface CustomersFinanceTableProps {
 }
 
 export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ onDataChange, initialCustomerFilter }) => {
+  const ITEMS_PER_PAGE = 8;
   const [projects, setProjects] = useState<ProjectWithFinance[]>([]);
+  const [allProjectsForFilter, setAllProjectsForFilter] = useState<ProjectWithFinance[]>([]);
   const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [customerFilter, setCustomerFilter] = useState<string>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<string>('all');
   const [isAddPaymentModalOpen, setIsAddPaymentModalOpen] = useState(false);
@@ -88,14 +92,17 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
   const { showToast } = useToast();
 
   useEffect(() => {
-    fetchProjectsWithFinances();
+    fetchAllProjectsForFilter();
+    fetchProjectsWithFinances(1, 'all');
   }, []);
 
   useEffect(() => {
-    if (initialCustomerFilter && projects.length > 0) {
+    if (initialCustomerFilter && allProjectsForFilter.length > 0) {
       setCustomerFilter(initialCustomerFilter);
+      setCurrentPage(1);
+      fetchProjectsWithFinances(1, initialCustomerFilter);
     }
-  }, [initialCustomerFilter, projects]);
+  }, [initialCustomerFilter, allProjectsForFilter]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -146,12 +153,7 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
   const filteredProjects = useMemo(() => {
     let filtered = projects;
 
-    // Filter by customer
-    if (customerFilter !== 'all') {
-      filtered = filtered.filter(project => project.projectId === customerFilter);
-    }
-
-    // Filter by date range
+    // Date range filter stays client-side (filters on nested transaction data)
     if (dateRangeFilter !== 'all') {
       const now = new Date();
       filtered = filtered.filter(project => {
@@ -179,23 +181,27 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
     }
 
     return filtered;
-  }, [projects, customerFilter, dateRangeFilter]);
+  }, [projects, dateRangeFilter]);
 
   const customerOptions = useMemo(() => {
     const options = [{ value: 'all', label: 'All Customers' }];
-    projects.forEach(project => {
+    allProjectsForFilter.forEach(project => {
       options.push({
         value: project.projectId,
         label: project.projectName
       });
     });
     return options;
-  }, [projects]);
+  }, [allProjectsForFilter]);
 
-  const fetchProjectsWithFinances = async () => {
+  const fetchProjectsWithFinances = async (page = 1, customerIdFilter = 'all') => {
     try {
       setLoading(true);
-      const response = await projectApi.getAll();
+      const response = await projectApi.getAll({
+        page,
+        limit: ITEMS_PER_PAGE,
+        projectId: customerIdFilter !== 'all' ? customerIdFilter : undefined,
+      });
       const projectsData = response?.projects || [];
 
       const projectsWithExpenses = await Promise.all(
@@ -212,13 +218,22 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
         })
       );
 
-      // Projects already include finance data from backend
       setProjects(projectsWithExpenses);
+      setTotalCount(response?.pagination?.totalItems ?? projectsData.length);
     } catch (error) {
       console.error('Error fetching projects with finances:', error);
       showToast('error', 'Failed to load finance data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllProjectsForFilter = async () => {
+    try {
+      const response = await projectApi.getAll();
+      setAllProjectsForFilter(response?.projects || []);
+    } catch (error) {
+      console.error('Error fetching projects for filter:', error);
     }
   };
 
@@ -372,7 +387,7 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
 
       showToast('success', 'Transaction added successfully');
       handleCloseModal();
-      fetchProjectsWithFinances(); // Refresh data
+      fetchProjectsWithFinances(currentPage, customerFilter); // Refresh data
       onDataChange?.(); // Refresh stats
     } catch (error: any) {
       console.error('Error adding transaction:', error);
@@ -746,7 +761,7 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
     );
   };
 
-  if (loading) {
+  if (loading && projects.length === 0) {
     return (
       <div className={styles.loadingContainer}>
         <div className={styles.spinner}></div>
@@ -754,6 +769,17 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
       </div>
     );
   }
+
+  const handleCustomerFilterChange = (value: string) => {
+    setCustomerFilter(value);
+    setCurrentPage(1);
+    fetchProjectsWithFinances(1, value);
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchProjectsWithFinances(page, customerFilter);
+  };
 
   return (
     <>
@@ -769,7 +795,12 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
         emptyMessage="No customer finance records found"
         renderExpandedRow={renderExpandedRow}
         getRowKey={(row) => row.projectId}
-        itemsPerPage={5}
+        serverSide={true}
+        currentPage={currentPage}
+        totalPages={Math.ceil(totalCount / ITEMS_PER_PAGE)}
+        totalItems={totalCount}
+        onPageChange={handlePageChange}
+        hideSearch
         onRowClick={(row) => {
           const customerName = row.contactPerson || getCustomerName(row);
           handleOpenCustomerOverview(customerName);
@@ -778,7 +809,7 @@ export const CustomersFinanceTable: React.FC<CustomersFinanceTableProps> = ({ on
           <div style={{ display: 'flex', gap: '0.75rem' }}>
             <Select
               value={customerFilter}
-              onChange={setCustomerFilter}
+              onChange={handleCustomerFilterChange}
               options={customerOptions}
               placeholder="Filter by customer"
               className={styles.statusFilterSelect}

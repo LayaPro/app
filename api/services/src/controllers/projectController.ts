@@ -360,11 +360,16 @@ export const getAllProjects = async (req: AuthRequest, res: Response) => {
       }
     }
 
+    // Build query — support optional projectId filter
+    const projectIdFilter = req.query.projectId as string | undefined;
+    const baseQuery: Record<string, any> = { tenantId };
+    if (projectIdFilter) baseQuery.projectId = projectIdFilter;
+
     // Get total count for pagination
-    const totalCount = await Project.countDocuments({ tenantId });
+    const totalCount = await Project.countDocuments(baseQuery);
 
     // Get paginated projects for the tenant
-    const projects = await Project.find({ tenantId })
+    const projects = await Project.find(baseQuery)
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)

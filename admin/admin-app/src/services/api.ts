@@ -252,8 +252,13 @@ export const roleApi = {
 
 // Team API
 export const teamApi = {
-  getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/get-all-team-members`, {
+  getAll: async (options?: { page?: number; limit?: number; memberId?: string }) => {
+    const params = new URLSearchParams();
+    if (options?.page) params.append('page', String(options.page));
+    if (options?.limit) params.append('limit', String(options.limit));
+    if (options?.memberId) params.append('memberId', options.memberId);
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const response = await fetch(`${API_BASE_URL}/get-all-team-members${query}`, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json',
@@ -411,10 +416,11 @@ export const projectApi = {
     return handleResponse(response);
   },
 
-  getAll: async (options?: { page?: number; limit?: number }) => {
+  getAll: async (options?: { page?: number; limit?: number; projectId?: string }) => {
     const params = new URLSearchParams();
     if (options?.page) params.append('page', options.page.toString());
     if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.projectId) params.append('projectId', options.projectId);
     
     const url = `${API_BASE_URL}/get-all-projects${params.toString() ? `?${params.toString()}` : ''}`;
     const response = await fetch(url, {
@@ -618,8 +624,27 @@ export const dashboardStatsApi = {
 
 // Client Event API (Calendar Events)
 export const clientEventApi = {
-  getAll: async () => {
-    const response = await fetch(`${API_BASE_URL}/get-all-client-events`, {
+  getAll: async (options?: {
+    page?: number;
+    limit?: number;
+    projectId?: string;
+    memberId?: string;
+    eventTypeId?: string;
+    statusId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }) => {
+    const params = new URLSearchParams();
+    if (options?.page) params.append('page', options.page.toString());
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.projectId) params.append('projectId', options.projectId);
+    if (options?.memberId) params.append('memberId', options.memberId);
+    if (options?.eventTypeId) params.append('eventTypeId', options.eventTypeId);
+    if (options?.statusId) params.append('statusId', options.statusId);
+    if (options?.dateFrom) params.append('dateFrom', options.dateFrom);
+    if (options?.dateTo) params.append('dateTo', options.dateTo);
+    const url = `${API_BASE_URL}/get-all-client-events${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await fetch(url, {
       headers: {
         'Authorization': `Bearer ${getAuthToken()}`,
         'Content-Type': 'application/json',
@@ -1325,6 +1350,8 @@ export const expenseApi = {
 
   getAll: async (params?: {
     projectId?: string;
+    memberId?: string;
+    expenseTypeId?: string;
     startDate?: string;
     endDate?: string;
     page?: number;
@@ -1332,6 +1359,8 @@ export const expenseApi = {
   }) => {
     const queryParams = new URLSearchParams();
     if (params?.projectId) queryParams.append('projectId', params.projectId);
+    if (params?.memberId) queryParams.append('memberId', params.memberId);
+    if (params?.expenseTypeId) queryParams.append('expenseTypeId', params.expenseTypeId);
     if (params?.startDate) queryParams.append('startDate', params.startDate);
     if (params?.endDate) queryParams.append('endDate', params.endDate);
     if (params?.page) queryParams.append('page', params.page.toString());

@@ -8,6 +8,8 @@ export const ROUTES = {
   PROPOSALS: '/proposals',
   ALBUMS: '/albums',
   CALENDAR: '/calendar',
+  CALENDAR_EVENTS_LIST: '/calendar/events-list',
+  CALENDAR_EVENTS_CALENDAR: '/calendar/events-calendar',
   FINANCES: '/finances',
   FINANCES_OVERVIEW: '/finances/overview',
   FINANCES_CUSTOMERS: '/finances/customers',

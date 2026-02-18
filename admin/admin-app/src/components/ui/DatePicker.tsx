@@ -14,6 +14,7 @@ interface DatePickerProps {
   onTimeChange?: (value: string) => void;
   info?: string;
   allowPast?: boolean;
+  compact?: boolean;
 }
 
 export const DatePicker: React.FC<DatePickerProps> = ({
@@ -29,6 +30,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
   onTimeChange,
   info,
   allowPast = false,
+  compact = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -299,7 +301,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
       <div ref={pickerRef}>
         <button
           type="button"
-          className={`${styles.dateButton} ${error ? styles.error : ''} ${isOpen ? styles.open : ''}`}
+          className={`${styles.dateButton} ${compact ? styles.compact : ''} ${error ? styles.error : ''} ${isOpen ? styles.open : ''}`}
           onClick={() => setIsOpen(!isOpen)}
           aria-label={label ? `${label} date picker` : 'Date picker'}
           aria-expanded={isOpen}
