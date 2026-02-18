@@ -540,8 +540,8 @@ export const updateProject = async (req: AuthRequest, res: Response) => {
 
     logger.info(`[${requestId}] Project updated`, { tenantId, projectId });
 
-    // Recalculate team payables if team members were modified
-    if (updates.teamMembers || updates.events) {
+    // Recalculate team payables if events were modified
+    if (updates.events) {
       try {
         await recalculateProjectTeamPayables(projectId, tenantId);
         logger.info(`[${requestId}] Team payables recalculated after project update`, { projectId });
@@ -611,23 +611,30 @@ export const deleteProject = async (req: AuthRequest, res: Response) => {
       s3ProjectFolderName: project.s3ProjectFolderName
     };
 
-    // Get team members before deleting
-    const teamMemberIds = project.teamMembers?.map((tm: any) => tm.memberId) || [];
+    // Get team members from events before deleting
+    const projectEvents = await ClientEvent.find({ projectId, tenantId }).lean();
+    const teamMemberIds = new Set<string>();
+    projectEvents.forEach(event => {
+      if (event.teamMembersAssigned && Array.isArray(event.teamMembersAssigned)) {
+        event.teamMembersAssigned.forEach(memberId => teamMemberIds.add(memberId as string));
+      }
+    });
+    const teamMemberIdsArray = Array.from(teamMemberIds);
 
     await Project.deleteOne({ projectId });
 
     logger.info(`[${requestId}] Project deleted`, { tenantId, projectId });
 
     // Recalculate payables for all team members who were on this project
-    if (teamMemberIds.length > 0) {
+    if (teamMemberIdsArray.length > 0) {
       try {
         const { recalculateTeamMemberPayable } = require('../utils/teamFinanceUtils');
-        for (const memberId of teamMemberIds) {
+        for (const memberId of teamMemberIdsArray) {
           await recalculateTeamMemberPayable(memberId, tenantId);
         }
         logger.info(`[${requestId}] Team payables recalculated after project deletion`, { 
           projectId, 
-          memberCount: teamMemberIds.length 
+          memberCount: teamMemberIdsArray.length 
         });
       } catch (payableError: any) {
         logger.error(`[${requestId}] Failed to recalculate team payables`, { 
